@@ -24,11 +24,15 @@ from .output import report as R
 from .output.xlsx import write_xlsx
 from .parsing.document import load_document
 from .prompts import load_prompt
+from .tasks.financials import earnings as earnings_mod
 from .tasks.financials.analyze import analyze
 from .tasks.financials.extract import extract_financials
 from .tasks.report_check.claims import extract_claims
 from .tasks.report_check.verify import verify_claims
 from .tasks.valuation.build_plan import build_plan
+from .tasks.valuation import comps as comps_mod
+from .tasks.valuation import scenarios as scenarios_mod
+from .tasks.valuation import three_statement as ts_mod
 from .tasks.valuation.run import run_dcf, workbook_sheets
 
 
@@ -93,10 +97,23 @@ def _p_analyze(ctx: dict[str, Any]):
     return out
 
 
+@financials_pipeline.step("earnings", "earnings")
+def _p_earnings(ctx: dict[str, Any]):
+    a = ctx["analysis"]
+    s1 = next((s for s in a["signals"] if s["id"] == "S1"), None)
+    cells = {(c["metric_id"], c["period"]): c["value"] for c in a["truth_table"]}
+    nr, npp = cells.get(("non_recurring", a["period"])), cells.get(("np_parent", a["period"]))
+    share = nr / npp * 100 if nr is not None and npp else None
+    out = earnings_mod.run(ctx["extract"]["facts"], a["period"], estimates_path=ctx.get("estimates"),
+                           guidance_path=ctx.get("guidance"), nonrec_share=share if s1 or share else None)
+    _write(ctx, "financials/earnings.json", out)
+    return out
+
+
 @financials_pipeline.step("report", "financials_report")
 def _p_report(ctx: dict[str, Any]):
     com = commentary(ctx["company"], ctx["analysis"], ctx.get("llm"))
-    md = R.render_financials(ctx["company"], ctx["extract"], ctx["analysis"], com)
+    md = R.render_financials(ctx["company"], ctx["extract"], ctx["analysis"], com) + R.render_earnings(ctx["earnings"])
     _write(ctx, "financials/report.md", md)
     return {"commentary": com is not None}
 
@@ -120,13 +137,75 @@ def _v_plan(ctx: dict[str, Any]):
 def _v_dcf(ctx: dict[str, Any]):
     res = run_dcf(ctx["plan"], ctx["assumptions_data"].get("current_price"))
     _write(ctx, "valuation/valuation.json", res)
-    if res.get("status") == "ok" and tracing.current() is not None:
-        path = tracing.current().dir / "valuation" / "model.xlsx"
-        write_xlsx(path, workbook_sheets(ctx["plan"], res))
-        tracing.current().register_artifact(path)
-    _write(ctx, "valuation/report.md",
-           R.render_valuation(ctx["company"], ctx["plan"], res, ctx["plan_notes"], ctx["assumptions_data"]))
     return res
+
+
+@valuation_pipeline.step("three_statement", "three_statement")
+def _v_three_statement(ctx: dict[str, Any]):
+    plan, notes = ts_mod.build_plan(ctx["extract"]["facts"], ctx["assumptions_data"], company=ctx["company"],
+                                    period=ctx["analysis"]["period"])
+    ctx["three_statement_notes"] = notes
+    _write(ctx, "valuation/three_statement_plan.json", plan)
+    out = ts_mod.run(plan)
+    _write(ctx, "valuation/three_statement.json", out)
+    return out
+
+
+@valuation_pipeline.step("scenarios", "scenarios")
+def _v_scenarios(ctx: dict[str, Any]):
+    if ctx["valuation"].get("status") != "ok":
+        return None
+    payload = scenarios_mod.build_payload(ctx["extract"]["facts"], ctx["analysis"]["period"], ctx["valuation"],
+                                          ctx["plan"], ctx["assumptions_data"], ctx["analysis"]["signals"])
+    out = scenarios_mod.run(payload)
+    _write(ctx, "valuation/scenarios.json", out)
+    return out
+
+
+@valuation_pipeline.step("comps", "comps")
+def _v_comps(ctx: dict[str, Any]):
+    if not ctx.get("peers"):
+        return None
+    target = comps_mod.target_row(ctx["extract"]["facts"], ctx["analysis"]["period"], ctx["plan"], ctx["company"],
+                                  ctx["assumptions_data"])
+    peers = comps_mod.load_peers(ctx["peers"])
+    out = comps_mod.run(peers, target, ctx["valuation"].get("value_range"))
+    _write(ctx, "valuation/comps.json", out)
+    tr = tracing.current()
+    if tr is not None:
+        path = tr.dir / "valuation" / "comps_formula_workbook.xlsx"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        info = comps_mod.write_formula_workbook(path, target, peers, "CNY", ctx["assumptions_data"]["valuation_date"])
+        if info is not None:
+            tr.register_artifact(path)
+    return out
+
+
+@valuation_pipeline.step("valuation_report", "valuation_report")
+def _v_report(ctx: dict[str, Any]):
+    res = ctx["valuation"]
+    md = R.render_valuation(ctx["company"], ctx["plan"], res, ctx["plan_notes"], ctx["assumptions_data"])
+    if ctx.get("three_statement"):
+        md += R.render_three_statement(ctx["three_statement"], ctx["three_statement_notes"])
+    if ctx.get("scenarios"):
+        md += R.render_scenarios(ctx["scenarios"])
+    if ctx.get("comps"):
+        md += R.render_comps(ctx["comps"])
+    _write(ctx, "valuation/report.md", md)
+    if res.get("status") == "ok" and tracing.current() is not None:
+        sheets = workbook_sheets(ctx["plan"], res)
+        ts = ctx.get("three_statement")
+        if ts:
+            for name, st in ts["statements"].items():
+                sheets[f"三表-{name}"] = [["项目"] + st["periods"]] + [[r["name"]] + r["values"] for r in st["rows"]]
+        cp = ctx.get("comps")
+        if cp:
+            cols = ["ticker", "company", "peer_tier", "equity_value", "ev", "ev_revenue", "ev_ebitda", "ev_ebit", "pe_ltm", "pe_ntm"]
+            sheets["可比公司"] = [cols] + [[r.get(c) for c in cols] for r in cp["rows"]]
+        path = tracing.current().dir / "valuation" / "model.xlsx"
+        write_xlsx(path, sheets)
+        tracing.current().register_artifact(path)
+    return {"sections": [k for k in ("three_statement", "scenarios", "comps") if ctx.get(k)]}
 
 
 # ------------------------------------------------------------------ 赛题5

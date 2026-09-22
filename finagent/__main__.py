@@ -32,6 +32,9 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--company", default="目标公司")
     ap.add_argument("--assumptions", help="估值假设 JSON")
     ap.add_argument("--report", help="待核查研报草稿（PDF / MD）")
+    ap.add_argument("--peers", help="可比公司 CSV（可选，启用相对估值）")
+    ap.add_argument("--estimates", help="一致预期/内部预期 CSV（可选，启用超预期分析）")
+    ap.add_argument("--guidance", help="业绩预告 CSV（可选）")
     ap.add_argument("--llm", choices=["live", "replay", "off"], help="覆盖 LLM_MODE")
     ap.add_argument("--llm-extract", default="fallback", choices=["fallback", "all", "off"])
     ap.add_argument("--runs-dir")
@@ -59,12 +62,18 @@ def main(argv: list[str] | None = None) -> int:
                 ap.error("缺少参数：" + ", ".join("--" + m for m in missing))
             ctx = {"input": args.input, "fiscal_year": args.year, "period": args.period, "company": args.company,
                    "assumptions": args.assumptions, "report": args.report, "llm": llm,
+                   "peers": args.peers, "estimates": args.estimates, "guidance": args.guidance,
                    "llm_extract": args.llm_extract}
             pipelines.run(args.task, ctx)
             summary = {"run_dir": str(tr.dir), "financials": ctx["analysis"]["summary"]}
             if "valuation" in ctx:
                 summary["valuation"] = {"model_status": ctx["valuation"].get("model_status"),
                                         "value_range": ctx["valuation"].get("value_range")}
+            if ctx.get("comps") and ctx["comps"].get("range"):
+                summary["comps_range"] = ctx["comps"]["range"]
+            if ctx.get("three_statement"):
+                summary["three_statement"] = {"model_status": ctx["three_statement"]["model_status"],
+                                              "integrity_all_pass": all(c["status"] == "pass" for c in ctx["three_statement"]["integrity"])}
             if "check" in ctx:
                 summary["check"] = ctx["check"]["summary"]
             tr.write_json("summary.json", summary)

@@ -55,6 +55,8 @@ METRICS: list[Metric] = [
     Metric("cash", "货币资金", "balance", aliases=("货币资金",), claim_aliases=("货币资金",)),
     Metric("accounts_receivable", "应收账款", "balance", aliases=("应收账款",), claim_aliases=("应收账款",)),
     Metric("inventory", "存货", "balance", aliases=("存货",), claim_aliases=("存货",)),
+    Metric("fixed_assets", "固定资产", "balance", aliases=("固定资产",), claim_aliases=("固定资产",)),
+    Metric("construction_in_progress", "在建工程", "balance", aliases=("在建工程",), claim_aliases=("在建工程",)),
     Metric("accounts_payable", "应付账款", "balance", aliases=("应付账款",), claim_aliases=("应付账款",)),
     Metric("short_debt", "短期借款", "balance", aliases=("短期借款",)),
     Metric("current_ltd", "一年内到期的非流动负债", "balance", aliases=("一年内到期的非流动负债",)),
