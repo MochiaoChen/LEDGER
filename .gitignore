@@ -1,0 +1,7 @@
+.env
+__pycache__/
+*.pyc
+.pytest_cache/
+runs/*
+!runs/.gitkeep
+# 注意：.cache/llm/ 需要随代码提交，供评审 replay 复现

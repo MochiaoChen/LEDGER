@@ -1,0 +1,108 @@
+# FinAgent：可追溯的金融投研智能体
+
+2026 北京市大学生金融人工智能竞赛参赛作品。覆盖以下选题：
+
+| 选题 | 模块 | 输出 |
+|---|---|---|
+| 2. 上市公司财务报告分析 | `tasks/financials` | 指标表（附来源页码）、同比/环比、勾稽校验、异常信号（非经常性损益、利润现金流背离、营运资本错配、会计口径变化） |
+| 4. 自动化估值建模 | `tasks/valuation` | 三情景 DCF（FCFF）、估值区间、WACC×g 等敏感性矩阵、`model.xlsx` |
+| 5. 研究报告纠错核查 | `tasks/report_check` | 逐条断言核查：正确 / 数值错误 / 单位错误 / 期间错配 / 口径错误 / 方向错误 / 无法核实，附来源与修改建议 |
+
+## 设计原则
+
+1. **LLM 不做算术。** LLM 负责理解非标准文本、抽取补漏、写文字解读和做任务规划；所有数值计算都由确定性代码完成。
+2. **每个数字都能回到原文。** 抽取结果带 `{文件, 页码, chunk, 行, 列}`；LLM 的抽取结果必须能在原文中找到对应数字，否则丢弃（证据校验）。
+3. **双通道交叉验证。** 规则通道和 LLM 通道的结果一致时记为 `rule+llm`；不一致时不静默取舍，而是记为问题，交人工复核。
+4. **三个任务共用一张真值表。** 财报分析产出的“真值表”同时供估值和研报核查使用，三者口径一致。
+5. **可追溯、可复现。** 每次运行生成 `runs/<run_id>/`，包括：`events.jsonl`（文件读取哈希、步骤、工具调用、LLM 调用）、`manifest.json`（输入/产物哈希、配置、版本）和全部产物。LLM 响应按请求哈希缓存；`LLM_MODE=replay` 可以离线复现。
+
+```
+财报 PDF/MD ─parse─▶ extract(规则+LLM) ─▶ analyze ─▶ 财报分析报告      [赛题2]
+                                            │ 真值表
+                                            ├─▶ build_plan ─▶ DCF ─▶ 估值报告+xlsx  [赛题4]
+研报草稿 ───parse─▶ claims(规则+LLM) ──────┴─▶ verify ─▶ 核查报告     [赛题5]
+
+全程：RunTracer → runs/<run_id>/events.jsonl + manifest.json
+```
+
+## 目录
+
+```
+finagent/
+  core/          config · llm（OpenAI 兼容客户端+缓存）· tracing（追踪）· tools（Tool 注册）
+                 orchestrator（Pipeline + Agent 循环）· numbers（中文单位/精度）
+  parsing/       document.py：PDF/MD → 带页码锚点的 Chunk
+  tasks/
+    financials/  schema（A股指标字典）· extract（规则+LLM+证据校验）· analyze（计算/勾稽/信号）
+    valuation/   build_plan（财报→DCF 输入）· dcf（FCFF 引擎）· run（执行/敏感性/xlsx）
+    report_check/ claims（断言抽取）· verify（核查与错误诊断）
+  output/        report.py：Markdown/CSV 报告（事实｜推论｜观点）· xlsx.py：无依赖 xlsx 写出
+  prompts/       *.md Prompt 模板
+  pipelines.py   三条流水线 + Agent 工具注册
+data/samples/    样例：虚构公司年报节选、估值假设、植入错误的研报草稿
+eval/            金标准与评测脚本
+tests/           pytest
+```
+
+## 快速开始
+
+```bash
+python -m finagent all --input data/samples/annual_report_2024.md --year 2024 --company 星河智造 --assumptions data/samples/valuation_assumptions.json --report data/samples/research_draft.md --llm off
+```
+
+不需要任何第三方依赖或 API Key 就能跑通（只走规则通道）。产物在 `runs/<run_id>/` 下：
+
+- `financials/report.md`、`facts.csv`、`analysis.json`
+- `valuation/report.md`、`model.xlsx`、`valuation.json`
+- `check/report.md`、`findings.csv`
+
+分任务运行：`python -m finagent financials|valuation|check ...`
+
+### 启用大模型
+
+```bash
+cp .env.example .env
+```
+
+在 `.env` 中填写 `LLM_BASE_URL`、`LLM_MODEL`、`LLM_API_KEY`，支持 DeepSeek、通义千问、智谱等 OpenAI 兼容接口。然后：
+
+```bash
+python -m finagent all --input 年报.pdf --year 2024 --assumptions 假设.json --report 研报.pdf --llm live
+```
+
+Agent 模式（由 LLM 自主规划调用工具）：
+
+```bash
+python -m finagent ask "分析 data/samples/annual_report_2024.md（2024年报），再用 data/samples/valuation_assumptions.json 估值"
+```
+
+### 复现（评审用）
+
+```bash
+python -m finagent all ... --llm replay
+```
+
+`replay` 模式只读取 `.cache/llm/` 中的缓存，不访问网络；如果缺少缓存会直接报错。提交代码时需一并提交 `.cache/llm/`。
+
+### 评测与测试
+
+```bash
+python eval/run_eval.py
+```
+
+```bash
+python -m pytest -q tests
+```
+
+`run_eval.py` 输出字段抽取准确率，以及纠错的召回率、准确率、误报数和错误类型准确率。
+
+## 待办
+
+- [ ] 真实 A 股年报 PDF 联调（pdfplumber 表格跨页、合并单元格）；扫描件接入 OCR
+- [ ] 扩充评测集：10～20 份真实财报 + 人工植入错误的研报
+- [ ] 季报：单季拆分（Q4 = 全年 − 前三季度）与环比
+- [ ] 估值：可比公司相对估值交叉验证；EBIT 口径精细化（剔除投资收益、公允价值变动）
+- [ ] Web 界面（Streamlit）与运行日志回放页
+- [ ] 研报核查：估值倍数（PE/PB）核查（需要股价数据）
+
+第三方组件见 [THIRD_PARTY.md](THIRD_PARTY.md)。

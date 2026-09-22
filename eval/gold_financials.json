@@ -1,0 +1,21 @@
+{
+  "_doc": "annual_report_2024.md 的金标准字段（单位：元；每股为元/股；比率为%）。",
+  "document": "data/samples/annual_report_2024.md",
+  "fiscal_year": 2024,
+  "facts": {
+    "revenue|2024": 5862340125.36, "revenue|2023": 5120451338.72, "revenue|2022": 4583210006.15,
+    "operating_cost|2024": 4034118660.40, "operating_cost|2023": 3521806902.11,
+    "rd_expense|2024": 312650000.00,
+    "net_profit|2024": 646102000.00, "net_profit|2023": 543065000.00,
+    "np_parent|2024": 612380000.00, "np_parent|2023": 518210000.00,
+    "np_parent_deducted|2024": 443950000.00, "np_parent_deducted|2023": 470650000.00,
+    "non_recurring|2024": 168430000.00, "non_recurring|2023": 47560000.00,
+    "gov_subsidy|2024": 98650000.00,
+    "ocf|2024": 238460000.00, "ocf|2023": 581330000.00,
+    "capex|2024": 685200000.00,
+    "cash|2024": 1356700000.00, "accounts_receivable|2024": 1985600000.00, "accounts_receivable|2023": 1402300000.00,
+    "inventory|2024": 1120500000.00, "total_assets|2024": 9842300000.00, "total_liabilities|2024": 4512600000.00,
+    "equity_parent|2024": 5021400000.00, "minority_equity|2024": 308300000.00,
+    "eps_basic|2024": 0.77, "eps_basic|2023": 0.65, "roe_weighted|2024": 12.63, "total_shares|2024": 800000000
+  }
+}

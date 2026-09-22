@@ -1,0 +1,14 @@
+{
+  "_doc": "research_draft.md 中人为植入的错误（金标准）。match: 断言 quote 需包含的文本；verdict: 期望结论。未列出的可核验断言均应判为“正确”。",
+  "report": "data/samples/research_draft.md",
+  "financials": "data/samples/annual_report_2024.md",
+  "errors": [
+    {"id": "E1", "match": "归母净利润6.46亿元", "claim_type": "level", "verdict": "口径错误", "note": "6.46 亿元为净利润（含少数股东损益），归母净利润应为 6.12 亿元"},
+    {"id": "E2", "match": "同比增长25.30%", "claim_type": "yoy", "verdict": "数值错误", "note": "归母净利润同比应为 18.17%"},
+    {"id": "E3", "match": "经营活动现金流量净额2.38万元", "claim_type": "level", "verdict": "单位错误", "note": "应为 2.38 亿元"},
+    {"id": "E4", "match": "毛利率为32.50%", "claim_type": "ratio", "verdict": "数值错误", "note": "毛利率应为 31.19%"},
+    {"id": "E5", "match": "提升1.2个百分点", "claim_type": "pp_change", "verdict": "数值错误", "note": "毛利率同比变动约 -0.03 个百分点"},
+    {"id": "E6", "match": "营业成本35.22亿元", "claim_type": "level", "verdict": "期间错配", "note": "35.22 亿元为 2023 年营业成本，2024 年为 40.34 亿元"},
+    {"id": "E7", "match": "同比增长28.50%", "claim_type": "yoy", "verdict": "数值错误", "note": "应收账款同比应为 41.60%"}
+  ]
+}
