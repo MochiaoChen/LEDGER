@@ -265,6 +265,44 @@ def write_formula_workbook(path: Path, result: dict[str, Any], currency: str, va
                     Formula('IF(COUNT(E2:E3)=0,"",MEDIAN(E2:E3))', _cached(rg.get("mid"))),
                     Formula('IF(COUNT(F2:F3)=0,"",MAX(F2:F3))', _cached(rg.get("high")))])
 
+    # 敏感性：核心同业（剔除离群）P25/中位数/P75 倍数 × 目标公司分母变动 → 隐含股价
+    shocks = [-0.10, -0.05, 0.0, 0.05, 0.10]
+    bridge_v = (sum(_f(target.get(c)) or 0 for c in ("debt", "minority_interest"))
+                - (_f(target.get("cash")) or 0) - (_f(target.get("other_non_op_assets")) or 0))
+    shares_v = _f(target.get("basic_shares"))
+    sens: list[list[Any]] = []
+    for key, den_row, title, den_name in (("ev_ebitda", 2, "EV/EBITDA 倍数 × EBITDA 变动 → 隐含股价（元）", "EBITDA"),
+                                          ("pe_ltm", 3, "P/E（LTM）倍数 × 归母净利润变动 → 隐含股价（元）", "归母净利润")):
+        top = len(sens) + 1  # 标题行号
+        sens += [[title], ["倍数档位", "倍数", *[f"{den_name} {s:+.0%}" for s in shocks]],
+                 ["", "变动", *shocks]]
+        den_v = dict(zip(PRIMARY, result["implied"]))[key]["denominator_mm"]
+        for lvl, label, srow in (("p25", "P25", 11), ("median", "中位数", 10), ("p75", "P75", 12)):
+            r = len(sens) + 1
+            m_v = result["stats"][key]["core_ex_outliers"][lvl]
+            line: list[Any] = [label, Formula(f"统计!{SCOL[key]}{srow}", _cached(m_v))]
+            for j, s in enumerate(shocks):
+                col = chr(67 + j)
+                num = f"$B{r}*隐含股价!$B${den_row}*(1+{col}${top + 2})"
+                expr = f"({num}-隐含股价!$B$5)/隐含股价!$B$6" if key == "ev_ebitda" else f"{num}/隐含股价!$B$6"
+                ok = m_v is not None and den_v is not None and shares_v
+                v = None
+                if ok:
+                    v = m_v * den_v * (1 + s)
+                    v = (v - bridge_v) / shares_v if key == "ev_ebitda" else v / shares_v
+                line.append(Formula(f'IF(AND(ISNUMBER($B{r}),ISNUMBER(隐含股价!$B${den_row})),'
+                                    f'IF(N(隐含股价!$B$6)<>0,{expr},""),"")', _cached(v)))
+            sens.append(line)
+        sens.append([])
+
+    # 来源台账：逐家公司的数据日期、来源、入选/剔除理由与可信度（引用同业数据，改输入即同步）
+    ledger_cols = [("ticker", "代码"), ("company", "公司"), ("peer_tier", "分层"), ("market_data_date", "数据日期"),
+                   ("source_name", "来源"), ("inclusion_rationale", "入选理由"),
+                   ("exclusion_rationale", "剔除理由"), ("confidence", "可信度")]
+    ledger = [[cn for _, cn in ledger_cols]] + [
+        [Formula(f'同业数据!{IN[c]}{i}&""', "" if r.get(c) in (None, "") else str(r.get(c))) for c, _ in ledger_cols]
+        for i, r in enumerate(rows, 2)]
+
     readme = [
         ["项目", "内容"],
         ["目标公司", target.get("company")], ["代码", target.get("ticker")], ["估值日期", valuation_date],
@@ -273,6 +311,9 @@ def write_formula_workbook(path: Path, result: dict[str, Any], currency: str, va
         ["倍数", "股权价值 = 股价 × 股本；EV = 股权价值 + 有息负债 + 少数股东权益 − 现金 − 非经营性资产；分母 ≤ 0 记 NM"],
         ["统计", "仅核心同业（Core）；P25/P75 按 QUARTILE（与 PERCENTILE.INC 一致）；样本 ≥ 4 时按 IQR 法标记离群，不删除数据"],
         ["隐含股价", "核心同业（剔除离群）P25 / 中位数 / P75 倍数 × 目标公司分母，EV 倍数再扣股权桥后除以股本"],
+        ["敏感性", "核心同业（剔除离群）P25 / 中位数 / P75 倍数 × 目标公司 EBITDA 或归母净利润 ±10% 的隐含股价"],
+        ["来源台账", "每家公司的数据日期、来源、入选/剔除理由与可信度"],
         ["状态", f"{result['status']}（核心同业 {result['core_peer_count']} 家）"],
     ]
-    write_xlsx(path, {"说明": readme, "同业数据": inputs, "倍数": mult, "统计": stat, "隐含股价": implied})
+    write_xlsx(path, {"说明": readme, "同业数据": inputs, "倍数": mult, "统计": stat, "隐含股价": implied,
+                      "敏感性": sens, "来源台账": ledger})

@@ -48,3 +48,18 @@ def test_formula_workbook_cached_values_match_comps(run_dir):
     cells = dict(re.findall(r'<c r="([A-Z]+\d+)">.*?<v>([^<]*)</v></c>', sheet))
     for ref, key in (("B9", "low"), ("C9", "mid"), ("D9", "high")):
         assert float(cells[ref]) == comps["range"][key]
+
+
+def test_formula_workbook_sensitivity_and_ledger(run_dir):
+    """敏感性表 0% 列 = 隐含股价；来源台账覆盖目标公司与全部同业。"""
+    comps = json.loads((run_dir / "valuation" / "comps_formula_workbook.xlsx").parent.joinpath("comps.json")
+                       .read_text(encoding="utf-8"))
+    with zipfile.ZipFile(run_dir / "valuation" / "comps_formula_workbook.xlsx") as z:
+        sens = z.read("xl/worksheets/sheet6.xml").decode("utf-8")
+        ledger = z.read("xl/worksheets/sheet7.xml").decode("utf-8")
+    cells = dict(re.findall(r'<c r="([A-Z]+\d+)">.*?<v>([^<]*)</v></c>', sens))
+    implied = {r["multiple"]: r for r in comps["implied"]}
+    for first_row, name in ((4, "EV/EBITDA"), (11, "P/E（LTM）")):
+        for off, lvl in enumerate(("p25", "median", "p75")):
+            assert float(cells[f"E{first_row + off}"]) == pytest.approx(implied[name][lvl], rel=1e-12)
+    assert ledger.count("<row ") == len(comps["rows"]) + 1
