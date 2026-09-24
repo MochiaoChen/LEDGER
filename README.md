@@ -36,16 +36,15 @@ finagent/
     financials/  schema（A股指标字典）· extract（规则+LLM+证据校验）· analyze（计算/勾稽/信号）
                  earnings（归因桥 + 预期/预告对比 + EPS 质量）
     valuation/   build_plan（财报→DCF 输入）· dcf（FCFF 引擎）· run（执行/敏感性/xlsx）
-                 three_statement（三表）· scenarios（情景偏度）· comps（相对估值）
-  vendor.py      加载 third_party 中的原插件脚本
+                 three_statement + ts_engine（三表联动）· scenarios + scenario_tables（情景偏度）
+                 comps（相对估值 + 公式工作簿）
     report_check/ claims（断言抽取）· verify（核查与错误诊断）
   output/        report.py：Markdown/CSV 报告（事实｜推论｜观点）· xlsx.py：无依赖 xlsx 写出
   prompts/       *.md Prompt 模板
   pipelines.py   三条流水线 + Agent 工具注册
 data/samples/    样例：虚构公司年报节选、估值假设、同业、一致预期、业绩预告、植入错误的研报草稿
-third_party/     原插件代码（原样引入，见 THIRD_PARTY.md）
 eval/            金标准与评测脚本
-tests/           pytest
+tests/           pytest；golden/ 为原插件引擎产出的快照（见 THIRD_PARTY.md）
 ```
 
 ## 快速开始
@@ -62,7 +61,7 @@ python -m finagent all --input data/samples/annual_report_2024.md --year 2024 --
 
 - `financials/report.md`、`facts.csv`、`analysis.json`
 - `financials/earnings.json`（归因桥、预期对比、业绩预告、EPS 质量）
-- `valuation/report.md`、`model.xlsx`（DCF + 三表 + 可比公司）、`comps_formula_workbook.xlsx`（原插件公式模板）、`three_statement.json`、`scenarios.json`、`comps.json`
+- `valuation/report.md`、`model.xlsx`（DCF + 三表 + 可比公司）、`comps_formula_workbook.xlsx`（带公式、可在 Excel 中复算的 comps 表）、`three_statement.json`、`scenarios.json`、`comps.json`
 - `check/report.md`、`findings.csv`
 
 分任务运行：`python -m finagent financials|valuation|check ...`
@@ -104,6 +103,9 @@ python -m pytest -q tests
 ```
 
 `run_eval.py` 输出字段抽取准确率，以及纠错的召回率、准确率、误报数和错误类型准确率。
+
+与原 Public Equity Investing 插件引擎的一致性：`tests/test_golden.py` 始终运行（对比 `tests/golden/` 快照）；
+`tests/test_parity_reference.py` 在能找到原插件时逐项对照随机输入（`FINAGENT_REFERENCE_PLUGIN=<插件目录>`，否则跳过）。
 
 ## 待办
 

@@ -1,0 +1,239 @@
+{
+  "period": "2024",
+  "profit_bridge": {
+    "period": "2024",
+    "base_period": "2023",
+    "np_parent_start": 518210000.0,
+    "np_parent_end": 612380000.0,
+    "delta": 94170000.0,
+    "items": [
+      {
+        "item": "收入规模效应",
+        "value": 231623406.3932841,
+        "share_of_change": 2.4596305234499747,
+        "formula": "Δ营业收入 × 上年毛利率"
+      },
+      {
+        "item": "毛利率效应",
+        "value": -2046378.043284553,
+        "share_of_change": -0.021730679019693673,
+        "formula": "本年营业收入 × Δ毛利率"
+      },
+      {
+        "item": "销售费用",
+        "value": -28080000.0,
+        "share_of_change": -0.29818413507486463,
+        "formula": "−Δ销售费用"
+      },
+      {
+        "item": "管理费用",
+        "value": -16210000.0,
+        "share_of_change": -0.17213549962833175,
+        "formula": "−Δ管理费用"
+      },
+      {
+        "item": "研发费用",
+        "value": -44210000.0,
+        "share_of_change": -0.4694701072528406,
+        "formula": "−Δ研发费用"
+      },
+      {
+        "item": "财务费用",
+        "value": 6800000.0,
+        "share_of_change": 0.07220983328023786,
+        "formula": "−Δ财务费用"
+      },
+      {
+        "item": "其他经营损益",
+        "value": -32017028.349999428,
+        "share_of_change": -0.33999180577678056,
+        "formula": "Δ(营业利润 − 毛利 + 四项费用)：含税金及附加、投资收益、公允价值变动、减值、其他收益"
+      },
+      {
+        "item": "营业外收支",
+        "value": 5360000.0,
+        "share_of_change": 0.056918339173834556,
+        "formula": "Δ(利润总额 − 营业利润)"
+      },
+      {
+        "item": "所得税",
+        "value": -18183000.0,
+        "share_of_change": -0.19308697037273018,
+        "formula": "−Δ所得税费用"
+      },
+      {
+        "item": "少数股东损益",
+        "value": -8867000.0,
+        "share_of_change": -0.0941594987788043,
+        "formula": "−Δ(净利润 − 归母净利润)"
+      }
+    ],
+    "closure_error": 1.341104507446289e-07,
+    "non_recurring_delta": 120870000.0,
+    "non_recurring_share_of_delta": 1.283529786556228,
+    "drivers_ranked": [
+      "收入规模效应",
+      "研发费用",
+      "其他经营损益"
+    ]
+  },
+  "beat_miss": [
+    {
+      "metric": "Revenue",
+      "period": "2024",
+      "units": "百万元",
+      "reported": 5862.34012536,
+      "consensus": 5750.0,
+      "internal": 5900.0,
+      "delta_cons": 112.34012535999955,
+      "surprise_cons": 0.01953741310608688,
+      "delta_int": -37.65987464000045,
+      "surprise_int": -0.006383029600000077,
+      "source_tag": "annual_report_2024.md p.6 c0006",
+      "gaap_flag": "GAAP",
+      "comparable_gaap_metric": "",
+      "reconciliation_source_tag": "",
+      "notes": "",
+      "metric_cn": "营业收入"
+    },
+    {
+      "metric": "Operating Income",
+      "period": "2024",
+      "units": "百万元",
+      "reported": 742.56,
+      "consensus": 715.0,
+      "internal": null,
+      "delta_cons": 27.559999999999945,
+      "surprise_cons": 0.038545454545454466,
+      "delta_int": null,
+      "surprise_int": null,
+      "source_tag": "annual_report_2024.md p.106 c0022",
+      "gaap_flag": "GAAP",
+      "comparable_gaap_metric": "",
+      "reconciliation_source_tag": "",
+      "notes": "",
+      "metric_cn": "营业利润"
+    },
+    {
+      "metric": "Net Income Attributable",
+      "period": "2024",
+      "units": "百万元",
+      "reported": 612.38,
+      "consensus": 590.0,
+      "internal": 560.0,
+      "delta_cons": 22.379999999999995,
+      "surprise_cons": 0.0379322033898305,
+      "delta_int": 52.379999999999995,
+      "surprise_int": 0.09353571428571428,
+      "source_tag": "annual_report_2024.md p.6 c0006",
+      "gaap_flag": "GAAP",
+      "comparable_gaap_metric": "",
+      "reconciliation_source_tag": "",
+      "notes": "",
+      "metric_cn": "归母净利润"
+    },
+    {
+      "metric": "Adjusted Net Income Attributable",
+      "period": "2024",
+      "units": "百万元",
+      "reported": 443.95,
+      "consensus": 520.0,
+      "internal": null,
+      "delta_cons": -76.05000000000001,
+      "surprise_cons": -0.14625000000000002,
+      "delta_int": null,
+      "surprise_int": null,
+      "source_tag": "annual_report_2024.md p.6 c0006",
+      "gaap_flag": "Non-GAAP",
+      "comparable_gaap_metric": "",
+      "reconciliation_source_tag": "",
+      "notes": "",
+      "metric_cn": "扣非归母净利润"
+    },
+    {
+      "metric": "GAAP EPS (Diluted)",
+      "period": "2024",
+      "units": "元/股",
+      "reported": 0.77,
+      "consensus": 0.74,
+      "internal": null,
+      "delta_cons": 0.030000000000000027,
+      "surprise_cons": 0.04054054054054058,
+      "delta_int": null,
+      "surprise_int": null,
+      "source_tag": "annual_report_2024.md p.6 c0006",
+      "gaap_flag": "GAAP",
+      "comparable_gaap_metric": "",
+      "reconciliation_source_tag": "",
+      "notes": "non-recurring gain: 非经常性损益占归母净利润 27.5%",
+      "metric_cn": "基本每股收益"
+    },
+    {
+      "metric": "Adjusted EPS",
+      "period": "2024",
+      "units": "元/股",
+      "reported": 0.5549375,
+      "consensus": null,
+      "internal": null,
+      "delta_cons": null,
+      "surprise_cons": null,
+      "delta_int": null,
+      "surprise_int": null,
+      "source_tag": "计算：扣非归母净利润/总股本",
+      "gaap_flag": "Non-GAAP",
+      "comparable_gaap_metric": "GAAP EPS (Diluted)",
+      "reconciliation_source_tag": "",
+      "notes": "",
+      "metric_cn": "扣非每股收益"
+    }
+  ],
+  "guidance": [
+    {
+      "metric": "Net Income Attributable",
+      "period": "2024",
+      "units": "百万元",
+      "low": 580.0,
+      "high": 640.0,
+      "midpoint": 610.0,
+      "consensus": 590.0,
+      "internal": 560.0,
+      "delta_cons_mid": 20.0,
+      "delta_int_mid": 50.0,
+      "source_tag": "2024年度业绩预告（虚构）（2025-01-20）",
+      "metric_cn": "归母净利润",
+      "actual": 612.38,
+      "actual_vs_mid": 0.003901639344262353,
+      "position": "预告区间上半部"
+    },
+    {
+      "metric": "Adjusted Net Income Attributable",
+      "period": "2024",
+      "units": "百万元",
+      "low": 420.0,
+      "high": 480.0,
+      "midpoint": 450.0,
+      "consensus": 520.0,
+      "internal": null,
+      "delta_cons_mid": -70.0,
+      "delta_int_mid": null,
+      "source_tag": "2024年度业绩预告（虚构）（2025-01-20）",
+      "metric_cn": "扣非归母净利润",
+      "actual": 443.95,
+      "actual_vs_mid": -0.013444444444444481,
+      "position": "预告区间下半部"
+    }
+  ],
+  "eps_quality": [
+    {
+      "period": "2024",
+      "eps": 0.77,
+      "adjusted_eps": 0.5549375,
+      "status": "需展开 EPS 质量拆解",
+      "flags": [
+        "存在失真项：一次性收益、非经常性损益"
+      ],
+      "read_through": "不应将全部 EPS 超预期视为可持续，需先剥离：存在失真项：一次性收益、非经常性损益"
+    }
+  ],
+  "limitations": []
+}

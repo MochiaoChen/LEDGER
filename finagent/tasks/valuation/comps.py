@@ -5,7 +5,7 @@
   - EV 倍数配 EV 口径分母（收入/EBITDA/EBIT），P/E 配归母净利润；分母 ≤ 0 记 NM
   - 统计：中位数优先；P25/P75 作为估值区间；IQR 法（Q1 − 1.5×IQR, Q3 + 1.5×IQR）标记离群值但不删除数据
   - 仅核心同业（Core）驱动估值区间；次要同业（Secondary）仅作参照；Excluded 列示剔除理由
-另外：若安装了 XlsxWriter，调用原插件 create_comps_template.create_workbook 生成带公式的 Excel comps 表。
+另外：write_formula_workbook 生成带公式的 Excel comps 表（标准库写出，公式可在 Excel 中复算，缓存值与 comps.json 一致）。
 
 同业 CSV 列名与原插件模板一致：ticker, company, peer_tier, price, basic_shares, debt, minority_interest, cash,
 other_non_op_assets, revenue_ltm, ebitda_ltm, ebit_ltm, net_income_ltm, eps_cy1, market_data_date, source_name,
@@ -21,6 +21,7 @@ from pathlib import Path
 from typing import Any
 
 from ...core import tracing
+from ...output.xlsx import Formula, write_xlsx
 from ..financials.analyze import FactTable
 
 MM = 1e6
@@ -147,15 +148,131 @@ def run(peers: list[dict[str, Any]], target: dict[str, Any], dcf_range: dict[str
                          for r in rows if r["peer_tier"] == "Excluded"]}
 
 
-def write_formula_workbook(path: Path, target: dict[str, Any], peers: list[dict[str, Any]],
-                           currency: str, valuation_date: str) -> dict[str, Any] | None:
-    """若安装 XlsxWriter，用原插件模板脚本生成带公式的 comps Excel；否则跳过。"""
-    try:
-        import xlsxwriter  # noqa: F401
-    except ImportError:
-        tracing.log("comps_formula_workbook_skipped", reason="XlsxWriter 未安装")
-        return None
-    from ...vendor import load
-    mod = load("comps-valuation", "create_comps_template")
-    rows = [{k.lower(): ("" if v is None else str(v)) for k, v in r.items()} for r in [target] + peers]
-    return mod.create_workbook(path, target["company"], str(target["ticker"]), currency, valuation_date, rows)
+# ---------------------------------------------------------------- 公式工作簿
+
+INPUT_COLUMNS = ["ticker", "company", "peer_tier", "price", "basic_shares", "debt", "minority_interest", "cash",
+                 "other_non_op_assets", "revenue_ltm", "ebitda_ltm", "ebit_ltm", "net_income_ltm", "eps_cy1",
+                 "market_data_date", "source_name", "inclusion_rationale", "exclusion_rationale", "confidence"]
+IN = {c: chr(65 + i) for i, c in enumerate(INPUT_COLUMNS)}  # 同业数据 列字母
+# 倍数表：D 股权价值、E EV、F..J 五个倍数、K..O 对应离群标记；分子取 倍数 表列，分母取 同业数据 列
+STAT_KEYS = [(k, n, num, den) for k, n, num, den in MULTIPLES] + [("pe_ntm", "P/E（NTM）", "price", "eps_cy1")]
+MCOL = {k: chr(70 + i) for i, (k, *_) in enumerate(STAT_KEYS)}
+FCOL = {k: chr(75 + i) for i, (k, *_) in enumerate(STAT_KEYS)}
+SCOL = {k: chr(66 + i) for i, (k, *_) in enumerate(STAT_KEYS)}  # 统计 表列
+# 统计表行：(行号, 标签, 结果路径)
+STAT_ROWS = [(2, "核心同业样本数", ("core", "n")), (3, "核心中位数", ("core", "median")),
+             (4, "核心均值", ("core", "mean")), (5, "核心 P25", ("core", "p25")), (6, "核心 P75", ("core", "p75")),
+             (7, "IQR 下限（P25 − 1.5×IQR）", ("core", "low_fence")),
+             (8, "IQR 上限（P75 + 1.5×IQR）", ("core", "high_fence")),
+             (9, "剔除离群后样本数", ("core_ex_outliers", "n")), (10, "剔除离群后中位数", ("core_ex_outliers", "median")),
+             (11, "剔除离群后 P25", ("core_ex_outliers", "p25")), (12, "剔除离群后 P75", ("core_ex_outliers", "p75")),
+             (13, "核心+次要 样本数", ("all_peers", "n")), (14, "核心+次要 中位数", ("all_peers", "median")),
+             (15, "目标公司倍数", ("target",)), (16, "目标相对核心中位数溢价", ("premium_vs_core_median",))]
+
+
+def _num_or_text(v: Any) -> Any:
+    x = _f(v)
+    return x if x is not None else (None if v in (None, "") else str(v))
+
+
+def _cached(v: Any) -> Any:
+    return "" if v is None else v
+
+
+def write_formula_workbook(path: Path, result: dict[str, Any], currency: str, valuation_date: str) -> None:
+    """把 run() 的结果写成带公式的工作簿：输入 → 倍数 → 统计（核心同业、IQR 离群）→ 隐含股价区间。"""
+    rows = result["rows"]
+    last = len(rows) + 1  # 数据末行（第 2 行为目标公司）
+    target = rows[0]
+
+    inputs = [INPUT_COLUMNS] + [[_num_or_text(r.get(c)) for c in INPUT_COLUMNS] for r in rows]
+
+    mult = [["代码", "公司", "分层", "股权价值", "EV"] + [n for _, n, *_ in STAT_KEYS]
+            + [f"{n} 离群" for _, n, *_ in STAT_KEYS]]
+    for i, r in enumerate(rows, 2):
+        d = lambda c: f"同业数据!{IN[c]}{i}"  # noqa: E731
+        line: list[Any] = [Formula(d(c), r.get(c)) for c in ("ticker", "company", "peer_tier")]
+        line.append(Formula(f'IF(AND(ISNUMBER({d("price")}),ISNUMBER({d("basic_shares")})),'
+                            f'{d("price")}*{d("basic_shares")},"")', _cached(r["equity_value"])))
+        line.append(Formula(f'IF(ISNUMBER(D{i}),D{i}+N({d("debt")})+N({d("minority_interest")})-N({d("cash")})'
+                            f'-N({d("other_non_op_assets")}),"")', _cached(r["ev"])))
+        for key, _, num, den in STAT_KEYS:
+            n = {"ev": f"E{i}", "equity_value": f"D{i}", "price": d("price")}[num]
+            line.append(Formula(f'IF(OR(NOT(ISNUMBER({n})),NOT(ISNUMBER({d(den)}))),"",'
+                                f'IF({d(den)}<=0,"NM",{n}/{d(den)}))', _cached(r[key])))
+        for key, *_ in STAT_KEYS:
+            m, sc = f"{MCOL[key]}{i}", SCOL[key]
+            flag = "离群" if r["ticker"] in result["stats"][key]["outliers"] else ""
+            line.append(Formula(f'IF(AND(C{i}="Core",ISNUMBER({m}),统计!{sc}$2>=4),'
+                                f'IF(OR({m}<统计!{sc}$7,{m}>统计!{sc}$8),"离群",""),"")', flag))
+        mult.append(line)
+
+    stat = [["统计量"] + [n for _, n, *_ in STAT_KEYS]] + [[label] for _, label, _ in STAT_ROWS]
+    for key, *_ in STAT_KEYS:
+        rng, fl, c = f"倍数!{MCOL[key]}$3:{MCOL[key]}${last}", f"倍数!{FCOL[key]}$3:{FCOL[key]}${last}", SCOL[key]
+        core = f'(倍数!$C$3:$C${last}="Core")*ISNUMBER({rng})'
+        clean = f'{core}*({fl}="")'
+        allp = f'((倍数!$C$3:$C${last}="Core")+(倍数!$C$3:$C${last}="Secondary"))*ISNUMBER({rng})'
+
+        def agg(fn: str, cond: str, n_row: int, extra: str = "") -> str:
+            return f'IF({c}{n_row}=0,"",{fn}(IF({cond},{rng}){extra}))'
+
+        exprs = {
+            2: (f"SUMPRODUCT({core})", False), 3: (agg("MEDIAN", core, 2), True),
+            4: (agg("AVERAGE", core, 2), True), 5: (agg("QUARTILE", core, 2, ",1"), True),
+            6: (agg("QUARTILE", core, 2, ",3"), True), 7: (f'IF({c}2=0,"",{c}5-1.5*({c}6-{c}5))', False),
+            8: (f'IF({c}2=0,"",{c}6+1.5*({c}6-{c}5))', False), 9: (f"SUMPRODUCT({clean})", False),
+            10: (agg("MEDIAN", clean, 9), True), 11: (agg("QUARTILE", clean, 9, ",1"), True),
+            12: (agg("QUARTILE", clean, 9, ",3"), True), 13: (f"SUMPRODUCT({allp})", False),
+            14: (agg("MEDIAN", allp, 13), True), 15: (f"倍数!{MCOL[key]}2", False),
+            16: (f'IF(AND(ISNUMBER({c}15),ISNUMBER({c}3)),IF({c}3<>0,{c}15/{c}3-1,""),"")', False),
+        }
+        st = result["stats"][key]
+        for row, _, path_ in STAT_ROWS:
+            v: Any = st
+            for k in path_:
+                v = v[k]
+            expr, arr = exprs[row]
+            stat[row - 1].append(Formula(expr, _cached(v), array=arr))
+
+    implied = [["倍数", "目标公司分母（百万元）", "核心样本数（剔除离群）", "P25 隐含股价（元）", "中位数隐含股价（元）",
+                "P75 隐含股价（元）"]]
+    den_col = {"ev_ebitda": IN["ebitda_ltm"], "pe_ltm": IN["net_income_ltm"]}
+    for i, (key, imp) in enumerate(zip(PRIMARY, result["implied"]), 2):
+        c = SCOL[key]
+        line = [imp["multiple"], Formula(f"同业数据!{den_col[key]}2", _cached(imp["denominator_mm"])),
+                Formula(f"统计!{c}9", imp["n_core"])]
+        for lvl, srow in (("p25", 11), ("median", 10), ("p75", 12)):
+            m = f"统计!{c}{srow}"
+            value = f"({m}*$B{i}-$B$5)/$B$6" if key.startswith("ev_") else f"{m}*$B{i}/$B$6"
+            line.append(Formula(f'IF(AND(ISNUMBER({m}),ISNUMBER($B{i})),IF(AND($B{i}>0,N($B$6)<>0),{value},""),"")',
+                                _cached(imp[lvl])))
+        implied.append(line)
+    t = lambda c: f"N(同业数据!{IN[c]}2)"  # noqa: E731
+    implied += [  # 第 5、6 行被上方隐含股价公式引用
+        [],
+        ["股权桥调整（有息负债+少数股东权益−现金−非经营性资产，百万元）",
+         Formula(f'{t("debt")}+{t("minority_interest")}-{t("cash")}-{t("other_non_op_assets")}',
+                 sum(_f(target.get(c)) or 0 for c in ("debt", "minority_interest"))
+                 - (_f(target.get("cash")) or 0) - (_f(target.get("other_non_op_assets")) or 0))],
+        ["目标公司股本（百万股）", Formula(f"同业数据!{IN['basic_shares']}2", _f(target.get("basic_shares")))],
+        [],
+        ["估值区间", "低（P25 最小值）", "中（中位数的中位数）", "高（P75 最大值）"],
+    ]
+    rg = result["range"] or {}
+    implied.append(["隐含股价（元）",
+                    Formula('IF(COUNT(D2:D3)=0,"",MIN(D2:D3))', _cached(rg.get("low"))),
+                    Formula('IF(COUNT(E2:E3)=0,"",MEDIAN(E2:E3))', _cached(rg.get("mid"))),
+                    Formula('IF(COUNT(F2:F3)=0,"",MAX(F2:F3))', _cached(rg.get("high")))])
+
+    readme = [
+        ["项目", "内容"],
+        ["目标公司", target.get("company")], ["代码", target.get("ticker")], ["估值日期", valuation_date],
+        ["币种与单位", f"{currency}；金额百万元，股本百万股，股价与每股价值元"],
+        ["同业数据", "输入表：第 2 行为目标公司，其余为同业；可直接修改输入，其他表公式自动重算"],
+        ["倍数", "股权价值 = 股价 × 股本；EV = 股权价值 + 有息负债 + 少数股东权益 − 现金 − 非经营性资产；分母 ≤ 0 记 NM"],
+        ["统计", "仅核心同业（Core）；P25/P75 按 QUARTILE（与 PERCENTILE.INC 一致）；样本 ≥ 4 时按 IQR 法标记离群，不删除数据"],
+        ["隐含股价", "核心同业（剔除离群）P25 / 中位数 / P75 倍数 × 目标公司分母，EV 倍数再扣股权桥后除以股本"],
+        ["状态", f"{result['status']}（核心同业 {result['core_peer_count']} 家）"],
+    ]
+    write_xlsx(path, {"说明": readme, "同业数据": inputs, "倍数": mult, "统计": stat, "隐含股价": implied})

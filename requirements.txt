@@ -1,6 +1,3 @@
-# finagent 自研部分仅依赖 Python 3.10+ 标准库；以下为原插件（third_party）与可选功能依赖
-pandas>=2.0           # 业绩深度分析（earnings-deep-dive/run_plan.py）
-openpyxl>=3.0.10      # 原插件 Excel 读写
-XlsxWriter>=3.0.0     # 原插件 comps 公式工作簿（create_comps_template.py）
+# finagent 仅依赖 Python 3.10+ 标准库；以下为可选功能与测试依赖
 pdfplumber>=0.11      # 解析 PDF 财报/研报
 pytest>=8.0           # 测试

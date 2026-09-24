@@ -1,7 +1,7 @@
-"""三表模型：A 股财报抽取结果 → 原插件三表引擎（three-statement-model-builder/skill_core.py）。
+"""三表模型：A 股财报抽取结果 → 三表联动引擎（ts_engine.py）。
 
 本模块只负责口径映射（A 股科目 → 引擎 plan，单位百万元）与结果整理；
-利润表/资产负债表/现金流量表联动、营运资本、PP&E、债务与现金归集、勾稽检查均由原引擎完成。
+利润表/资产负债表/现金流量表联动、营运资本、PP&E、债务与现金归集、勾稽检查由 ts_engine 完成。
 
 口径映射（推论/简化，写入报告）：
   营业费用 opex = 销售费用 + 管理费用 + 研发费用（税金及附加等未单列项并入其他）
@@ -15,14 +15,10 @@ from __future__ import annotations
 from typing import Any
 
 from ...core import tracing
-from ...vendor import load
 from ..financials.analyze import FactTable
+from . import ts_engine as eng
 
 MM = 1e6
-
-
-def _engine():
-    return load("three-statement-model-builder", "skill_core")
 
 
 def _hist(t: FactTable, year: str) -> tuple[dict[str, float], dict[str, float], list[str]]:
@@ -176,11 +172,10 @@ STATEMENT_ROWS = {
 
 @tracing.traced("run_three_statement")
 def run(plan: dict[str, Any]) -> dict[str, Any]:
-    eng = _engine()
-    p = eng.normalize_plan(plan, None)
+    p = eng.normalize_plan(plan)
     outputs = eng.run_scenarios(p)
     sens = eng.run_sensitivities(p)
-    hard, warn, checks = eng.evaluate_hard_failures_and_warnings(p, outputs)
+    hard, warn, _ = eng.evaluate(p, outputs)
     status = eng.model_status(hard, warn, p)
     base = outputs["base"]
     labels = [per.label for per in base["periods"]]
@@ -203,7 +198,7 @@ def run(plan: dict[str, Any]) -> dict[str, Any]:
         "periods": labels,
         "statements": statements,
         "integrity": integrity,
-        "scenario_summary": {k: eng.summarize_result(v) for k, v in outputs.items()},
+        "scenario_summary": {k: eng.summarize(v) for k, v in outputs.items()},
         "covenants": {k: base["covenants_liquidity"][k] for k in ("net_debt", "net_leverage", "interest_coverage", "liquidity")},
         "sensitivities": sens,
         "hard_failures": hard,

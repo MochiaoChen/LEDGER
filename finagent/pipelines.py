@@ -174,10 +174,8 @@ def _v_comps(ctx: dict[str, Any]):
     tr = tracing.current()
     if tr is not None:
         path = tr.dir / "valuation" / "comps_formula_workbook.xlsx"
-        path.parent.mkdir(parents=True, exist_ok=True)
-        info = comps_mod.write_formula_workbook(path, target, peers, "CNY", ctx["assumptions_data"]["valuation_date"])
-        if info is not None:
-            tr.register_artifact(path)
+        comps_mod.write_formula_workbook(path, out, "CNY", ctx["assumptions_data"]["valuation_date"])
+        tr.register_artifact(path)
     return out
 
 
