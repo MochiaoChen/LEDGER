@@ -1,33 +1,35 @@
 # 第三方组件说明
 
-## 1. Public Equity Investing 插件（原样引入，未修改）
+## 1. Public Equity Investing 插件（参照其计算规则自研实现，不包含其代码）
 
 | 项目 | 内容 |
 |---|---|
-| 位置 | `third_party/public_equity_investing/`（保留原目录结构） |
-| 来源 | Public Equity Investing 插件（见该目录下 `README.md`） |
-| 许可证 | 原插件标注为 **Proprietary – Internal Use Only**（见 `third_party/public_equity_investing/LICENSE.txt`），**不得对外再分发**；本仓库为私有仓库 |
-| 修改情况 | 未修改任何文件，由 `finagent/vendor.py` 按文件路径加载 |
+| 来源 | OpenAI Public Equity Investing 插件 0.1.31 |
+| 许可证 | 原插件标注为 **Proprietary – Internal Use Only** |
+| 本仓库包含的原插件代码 | **无**。早期版本通过 `third_party/` 原样引入并调用，现已全部删除，改为自研实现 |
+| 仍参照的内容 | 下表所列引擎的计算口径、判定阈值、输出字段名与英文代码值（如 `input required`、`senior-review-ready`），以保证改造前后结果一致 |
 
-| 原插件模块 | 在本项目中的用途 | 调用位置 |
+| 参照的原插件引擎 | 本项目自研实现 | 一致性校验 |
 |---|---|---|
-| `skills/three-statement-model-builder/scripts/skill_core.py`、`validate_plan.py` | 三表联动预测：利润表/资产负债表/现金流量表、营运资本、PP&E、债务与现金归集、勾稽检查、情景与敏感性 | `finagent/tasks/valuation/three_statement.py` |
-| `skills/scenario-sensitivity-generator/scripts/materialize_public_equity_sensitivities.py` | 三情景目标价与偏度、盈亏平衡概率、倍数/EPS/KPI/流动性敏感性、跟踪触发表、就绪度判定 | `finagent/tasks/valuation/scenarios.py` |
-| `skills/comps-valuation/scripts/create_comps_template.py` | 生成带公式的 comps Excel 工作簿（需 XlsxWriter） | `finagent/tasks/valuation/comps.py` |
-| `skills/comps-valuation/references/*.md` | 相对估值计算规则（EV 桥、倍数配对、NM、IQR 离群值、P25/P75 区间），据此实现计算 | `finagent/tasks/valuation/comps.py` |
-| `skills/earnings-deep-dive/scripts/run_plan.py` 及 `utils/` | 实际 vs 预期（beat/miss）、业绩预告中值对比、EPS 质量筛查规则 | `finagent/tasks/financials/earnings.py` |
-| `skills/dcf-model-builder/scripts/skill_core.py` | 作为参照实现，测试中与自研 `dcf.py` 逐项对比（误差 < 1e-9） | `tests/test_new_modules.py` |
-| `shared/` | 原插件公共模块，供上述脚本内部导入 | — |
+| `three-statement-model-builder/scripts/skill_core.py`（三表联动、营运资本、PP&E、债务与现金归集、勾稽、情景与敏感性、模型状态判定） | `finagent/tasks/valuation/ts_engine.py` | 浮点逐位相等 |
+| `scenario-sensitivity-generator/scripts/materialize_public_equity_sensitivities.py`（三情景目标价与偏度、倍数/EPS/KPI/流动性敏感性、跟踪触发表、就绪度） | `finagent/tasks/valuation/scenario_tables.py` | 输出逐字节相等 |
+| `earnings-deep-dive/scripts/run_plan.py`（beat/miss、业绩预告中值对比、EPS 质量筛查规则） | `finagent/tasks/financials/earnings.py` | 逐字段相等 |
+| `dcf-model-builder/scripts/skill_core.py`（FCFF DCF） | `finagent/tasks/valuation/dcf.py` | 相对误差 < 1e-9 |
+| `comps-valuation/references/*.md`（EV 桥、倍数配对、NM、IQR 离群值、P25/P75 区间） | `finagent/tasks/valuation/comps.py` | — |
+| `comps-valuation/scripts/create_comps_template.py`（英文 comps 公式模板） | 未沿用模板；`comps.write_formula_workbook` 另行生成中文公式工作簿，数值与 `comps.json` 一致 | 公式独立重算与缓存值相等 |
+
+校验方式：
+- `tests/golden/`：改造前用原插件引擎跑样例得到的产物快照；`tests/test_golden.py` 要求自研实现的产物与之完全相等（无需原插件即可运行）。
+- `tests/test_parity_reference.py`：本地存在原插件时（`FINAGENT_REFERENCE_PLUGIN`），用样例、边界值和数百组随机输入逐项对照；找不到原插件时跳过。
 
 ## 2. 开源依赖
 
 | 名称 | 版本 | 许可证 | 使用范围 |
 |---|---|---|---|
-| pandas | ≥2.0 | BSD-3-Clause | 业绩深度分析（原插件 run_plan.py 依赖） |
-| openpyxl | ≥3.0.10 | MIT | 原插件 Excel 读写 |
-| XlsxWriter | ≥3.0 | BSD-2-Clause | 原插件 comps 公式工作簿 |
 | pdfplumber | ≥0.11 | MIT | PDF 文本与表格抽取 |
 | pytest | ≥8.0 | MIT | 测试 |
+
+`finagent/` 其余部分仅使用 Python 标准库（含 xlsx 写出）。
 
 ## 3. 大语言模型
 
@@ -37,5 +39,6 @@
 
 ## 4. 自主开发部分
 
-`finagent/` 下除 `vendor.py` 加载的原插件代码外均为自主开发：编排与追踪（core）、LLM 客户端、文档解析、A 股指标字典与抽取、
-财务分析与异常信号、利润变动归因桥、DCF 引擎（`dcf.py`）、A 股口径到原插件引擎的映射层、相对估值计算、研报核查、报告与 xlsx 输出、评测与测试。
+`finagent/` 下全部代码均为自主开发：编排与追踪（core）、LLM 客户端、文档解析、A 股指标字典与抽取、财务分析与异常信号、
+利润变动归因桥、业绩预期对比、DCF 引擎、三表联动引擎、情景敏感性表格、相对估值与公式工作簿、研报核查、报告与 xlsx 输出、评测与测试。
+其中第 1 节所列模块的计算规则参照原插件，如实标注于此。

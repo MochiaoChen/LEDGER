@@ -1,7 +1,6 @@
-"""情景偏度与多维敏感性：DCF / 财报结果 → 原插件情景敏感性生成器
-（scenario-sensitivity-generator/materialize_public_equity_sensitivities.py）。
+"""情景偏度与多维敏感性：DCF / 财报结果 → 情景表格引擎（scenario_tables.py）。
 
-本模块负责组装 payload（单位：金额百万元、每股元），表格计算由原脚本完成：
+本模块负责组装 payload（单位：金额百万元、每股元），表格计算由 scenario_tables 完成：
   - price_target_scenario：三情景目标价、预期收益、盈亏平衡概率、下行/上行比、偏度与行动规则
   - valuation_sensitivity：EV/EBITDA 与 P/E 倍数对应的隐含股价
   - eps_revision_sensitivity：EPS 修正 × 估值倍数变化
@@ -15,8 +14,8 @@ from __future__ import annotations
 from typing import Any
 
 from ...core import tracing
-from ...vendor import load
 from ..financials.analyze import FactTable
+from . import scenario_tables as eng
 
 TABLES = ["price_target_scenario", "valuation_sensitivity", "eps_revision_sensitivity",
           "kpi_driver_sensitivity", "equity_liquidity_downside", "thesis_trigger_table"]
@@ -41,10 +40,6 @@ SIGNAL_TRIGGERS = {
     "S7": ("毛利率同比变动", "±3 个百分点", "拆分价格、成本与结构因素"),
     "S8": ("会计政策/口径变更", "出现追溯调整", "使用调整后可比数据重算同比"),
 }
-
-
-def _engine():
-    return load("scenario-sensitivity-generator", "materialize_public_equity_sensitivities")
 
 
 def build_payload(facts: list[dict[str, Any]], period: str, dcf_result: dict[str, Any], plan: dict[str, Any],
@@ -108,7 +103,6 @@ def dcf_result_desc(res: dict[str, Any], scenario: str) -> str:
 
 @tracing.traced("run_scenario_tables")
 def run(payload: dict[str, Any]) -> dict[str, Any]:
-    eng = _engine()
     tables = [eng.BUILDERS[name](payload) for name in TABLES]
     for tb in tables:
         tb["name_cn"] = TABLE_CN.get(tb["name"], tb["name"])
