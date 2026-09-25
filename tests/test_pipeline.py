@@ -36,9 +36,11 @@ def test_valuation(ctx):
     r = v["value_range"]
     assert r["low"] < r["base"] < r["high"]
     # 回归基准：与参考 DCF 实现逐项对比一致时的结果（样例公司）
-    assert r["base"] == pytest.approx(14.37780469668347, rel=1e-9)
-    assert r["low"] == pytest.approx(7.818038481424233, rel=1e-9)
-    assert r["high"] == pytest.approx(22.714096923421934, rel=1e-9)
+    # DCF 预测现金流由三表模型驱动后的回归基准
+    assert r["base"] == pytest.approx(9.368415844413468, rel=1e-9)
+    assert r["low"] == pytest.approx(6.912515017221512, rel=1e-9)
+    assert r["high"] == pytest.approx(12.240232002839248, rel=1e-9)
+    assert all(row["source"] == "three_statement" for row in v["forecast_base"])
     assert v["sensitivity_directionality"]["passed"]
 
 

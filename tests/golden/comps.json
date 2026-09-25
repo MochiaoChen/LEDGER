@@ -415,10 +415,10 @@
     "high": 17.356700581395348
   },
   "dcf_cross_check": {
-    "dcf_base": 14.37780469668347,
+    "dcf_base": 9.368415844413468,
     "comps_mid": 15.433494532839964,
-    "dcf_vs_comps_mid": -0.06840251466770264,
-    "ranges_overlap": true
+    "dcf_vs_comps_mid": -0.39298155550714686,
+    "ranges_overlap": false
   },
   "status": "senior-review-ready",
   "core_peer_count": 5,

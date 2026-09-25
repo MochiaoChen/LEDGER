@@ -129,6 +129,15 @@ def _v_plan(ctx: dict[str, Any]):
     plan, notes = build_plan(ctx["extract"]["facts"], ctx["assumptions_data"], company=ctx["company"],
                              period=ctx["analysis"]["period"], source_name=Path(ctx["input"]).name)
     ctx["plan_notes"] = notes
+    ts_plan, ts_notes = ts_mod.build_plan(ctx["extract"]["facts"], ctx["assumptions_data"], company=ctx["company"],
+                                          period=ctx["analysis"]["period"])
+    ctx["three_statement_notes"] = ts_notes
+    _write(ctx, "valuation/three_statement_plan.json", ts_plan)
+    ctx["three_statement"] = ts_mod.run(ts_plan)
+    _write(ctx, "valuation/three_statement.json", ctx["three_statement"])
+    plan["three_statement_forecast"] = ctx["three_statement"]["dcf_drivers"]
+    notes.append({"type": "model_link", "item": "DCF 驱动",
+                  "detail": "预测期收入、EBIT、现金税、折旧摊销、资本开支和营运资本变动均来自三表联动模型"})
     _write(ctx, "valuation/plan.json", plan)
     return plan
 
@@ -142,6 +151,8 @@ def _v_dcf(ctx: dict[str, Any]):
 
 @valuation_pipeline.step("three_statement", "three_statement")
 def _v_three_statement(ctx: dict[str, Any]):
+    if ctx.get("three_statement"):
+        return ctx["three_statement"]
     plan, notes = ts_mod.build_plan(ctx["extract"]["facts"], ctx["assumptions_data"], company=ctx["company"],
                                     period=ctx["analysis"]["period"])
     ctx["three_statement_notes"] = notes
