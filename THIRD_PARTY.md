@@ -20,6 +20,8 @@
 
 校验方式：
 - `tests/golden/`：改造前用原插件引擎跑样例得到的产物快照；`tests/test_golden.py` 要求自研实现的产物与之完全相等（无需原插件即可运行）。
+  2026-09-28 因有意修改口径（EBIT 剔除投资收益与公允价值变动、三表经营费用改为轧差、DCF 由三表驱动、comps 增加利润率）
+  重新生成了快照；各引擎本身未改，仍由 `test_parity_reference.py` 与原插件逐项对照。
 - `tests/test_parity_reference.py`：本地存在原插件时（`FINAGENT_REFERENCE_PLUGIN`），用样例、边界值和数百组随机输入逐项对照；找不到原插件时跳过。
 
 ## 2. 开源依赖

@@ -9,7 +9,7 @@ from typing import Any
 from ...core import tracing
 from ...core.numbers import fmt_pct, fmt_yi, half_ulp, pct_change, safe_div
 from ...parsing.document import Document
-from .schema import BY_ID
+from .schema import BY_ID, is_flow
 
 KEY_METRICS = [
     "revenue", "operating_cost", "rd_expense", "operating_profit", "net_profit", "np_parent",
@@ -40,6 +40,7 @@ class FactTable:
 
     def __init__(self, facts: list[dict[str, Any]]):
         self.cells: dict[tuple[str, str], dict[str, Any]] = {(f["metric_id"], f["period"]): f for f in facts}
+        self.quarter_basis: dict[tuple[str, str], frozenset[tuple[str, str]]] = {}
 
     def v(self, metric: str, period: str) -> float | None:
         f = self.cells.get((metric, period))
@@ -81,7 +82,45 @@ def prior_periods(period: str) -> tuple[str | None, str | None]:
     return yoy, qoq
 
 
+# ------------------------------------------------------------------ 季度拆分
+# 定期报告只披露累计数（一季报=单季；半年报 H1；三季报另有第三季度单季与前三季度累计 Q1-3；年报全年，
+# 另有“分季度主要财务指标”单季表）。发生额类指标按下列规则互推，时点数/每股/比率不拆分：
+#   单季：Q2 = H1 − Q1；Q3 = Q1-3 − H1；Q4 = 全年 − Q1-3
+#   累计（缺失时）：H1 = Q1 + Q2；Q1-3 = H1 + Q3
+PERIOD_CN = {"": "全年", "H1": "上半年累计", "Q1-3": "前三季度累计",
+             "Q1": "第一季度", "Q2": "第二季度", "Q3": "第三季度", "Q4": "第四季度"}
+QUARTER_RULES = [  # (目标, 左操作数, 右操作数, 符号)
+    ("H1", "Q1", "Q2", 1), ("Q1-3", "H1", "Q3", 1),
+    ("Q2", "H1", "Q1", -1), ("Q3", "Q1-3", "H1", -1), ("Q4", "", "Q1-3", -1),
+]
+QUARTERS = ["Q1", "Q2", "Q3", "Q4"]
+
+
+def _split_quarters(t: FactTable) -> dict[tuple[str, str], frozenset[tuple[str, str]]]:
+    """按 QUARTER_RULES 补齐单季与累计数，派生值登记公式与来源。
+    返回每个可用单元格所依赖的“财报列示”单元格集合，供 _tieouts 判断一项核对是否只是自己和自己比。"""
+    basis = {k: frozenset([k]) for k, f in t.cells.items() if f.get("method") != "derived" and is_flow(k[0])}
+    years = sorted({p[:4] for (_, p) in basis if re.fullmatch(r"20\d{2}.*", p)})
+    for mid in sorted({m for m, _ in basis}):
+        for y in years:
+            changed = True
+            while changed:
+                changed = False
+                for target, a, b, sign in QUARTER_RULES:
+                    key, ka, kb = (mid, y + target), (mid, y + a), (mid, y + b)
+                    if key in t.cells or ka not in basis or kb not in basis:
+                        continue
+                    op = "+" if sign > 0 else "−"
+                    t.add_derived(mid, y + target, t.v(*ka) + sign * t.v(*kb),
+                                  f"{PERIOD_CN[a]} {op} {PERIOD_CN[b]}", [ka, kb])
+                    basis[key] = basis[ka] | basis[kb]
+                    changed = True
+    return basis
+
+
 def _derive(t: FactTable) -> None:
+    if not t.quarter_basis:
+        t.quarter_basis = _split_quarters(t)
     for p in t.periods():
         rev, cost = t.v("revenue", p), t.v("operating_cost", p)
         if rev and cost is not None:
@@ -175,7 +214,33 @@ def _tieouts(t: FactTable, period: str) -> list[dict[str, Any]]:
         checks.append({"check": f"{BY_ID[base].name} 财报列示同比 vs 计算同比", "status": "pass" if ok else "fail",
                        "lhs": f["value"], "rhs": round(calc, 4), "diff": f["value"] - calc,
                        "evidence": [t.src(mid, p), t.src(base, p), t.src(base, yoy_p)]})
+    # 财报列示的单季数 vs 累计数相减（如年报分季度表的第四季度 vs 全年 − 三季报前三季度累计）；
+    # 操作数本身由该单季推出时（自己和自己比）不核对
+    y, basis = p[:4], t.quarter_basis
+    for mid in sorted({m for m, per in basis if per.startswith(y)}):
+        for target, a, b, sign in QUARTER_RULES:
+            key, ka, kb = (mid, y + target), (mid, y + a), (mid, y + b)
+            if sign > 0 or basis.get(key) != frozenset([key]) or ka not in basis or kb not in basis \
+                    or key in basis[ka] | basis[kb]:
+                continue
+            chk(f"{BY_ID[mid].name} {y} 年{PERIOD_CN[target]} = {PERIOD_CN[a]} − {PERIOD_CN[b]}",
+                t.v(*key), t.v(*ka) - t.v(*kb), 1e-4, sorted(basis[ka] | basis[kb] | {key}))
     return checks
+
+
+def _quarterly(t: FactTable, year: str) -> dict[str, Any] | None:
+    """单季表（发生额类核心指标 + 毛利率）：逐季给出数值与来源方式（财报列示 / 累计数相减推出）。"""
+    rows = []
+    for mid in [m for m in KEY_METRICS if is_flow(m)] + ["gross_margin"]:
+        cells = {q: t.cells.get((mid, year + q)) for q in QUARTERS}
+        if not any(cells.values()):
+            continue
+        rows.append({"metric_id": mid, "metric": BY_ID[mid].name,
+                     "values": {q: c["value"] if c else None for q, c in cells.items()},
+                     "methods": {q: (None if c is None else "derived" if c.get("method") == "derived" else "reported")
+                                 for q, c in cells.items()},
+                     "formulas": {q: c.get("formula") for q, c in cells.items() if c and c.get("formula")}})
+    return {"year": year, "rows": rows} if rows else None
 
 
 def _signals(t: FactTable, period: str, doc: Document | None, extract_issues: list[dict]) -> list[Signal]:
@@ -272,6 +337,7 @@ def analyze(facts: list[dict[str, Any]], *, period: str | None = None, doc: Docu
         "changes": _changes(t, period),
         "tieouts": _tieouts(t, period),
         "signals": [x.to_dict() for x in _signals(t, period, doc, extract_issues or [])],
+        "quarterly": _quarterly(t, period[:4]),
         "truth_table": [dict(v) for v in t.cells.values()],
     }
     result["summary"] = {

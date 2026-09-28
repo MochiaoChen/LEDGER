@@ -35,13 +35,13 @@ def test_valuation(ctx):
     assert v["status"] == "ok" and not v["checks"]["hard_failures"]
     r = v["value_range"]
     assert r["low"] < r["base"] < r["high"]
-    # 回归基准：与参考 DCF 实现逐项对比一致时的结果（样例公司）
-    # DCF 预测现金流由三表模型驱动后的回归基准
-    assert r["base"] == pytest.approx(9.368415844413468, rel=1e-9)
-    assert r["low"] == pytest.approx(6.912515017221512, rel=1e-9)
-    assert r["high"] == pytest.approx(12.240232002839248, rel=1e-9)
-    assert all(row["source"] == "three_statement" for row in v["forecast_base"])
+    # 回归基准（样例公司）：DCF 由三表模型驱动、EBIT 剔除投资收益与公允价值变动后的结果；
+    # DCF 引擎本身与参考实现的逐项对照见 test_parity_reference.py
+    assert r["base"] == pytest.approx(11.666818880388837, rel=1e-9)
+    assert r["low"] == pytest.approx(6.168577718229366, rel=1e-9)
+    assert r["high"] == pytest.approx(17.72500146281172, rel=1e-9)
     assert v["sensitivity_directionality"]["passed"]
+    assert v["three_statement_tie"]["status"] == "pass"
 
 
 def test_report_check(ctx):

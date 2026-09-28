@@ -124,6 +124,166 @@
    "scope": "consolidated"
   },
   {
+   "metric_id": "revenue",
+   "period": "2024Q1",
+   "raw_value": "1,203,450,000.00",
+   "unit": "元",
+   "page": 7,
+   "label": "营业收入",
+   "table": "分季度主要财务指标",
+   "scope": "consolidated"
+  },
+  {
+   "metric_id": "revenue",
+   "period": "2024Q2",
+   "raw_value": "1,418,720,000.00",
+   "unit": "元",
+   "page": 7,
+   "label": "营业收入",
+   "table": "分季度主要财务指标",
+   "scope": "consolidated"
+  },
+  {
+   "metric_id": "revenue",
+   "period": "2024Q3",
+   "raw_value": "1,475,630,000.00",
+   "unit": "元",
+   "page": 7,
+   "label": "营业收入",
+   "table": "分季度主要财务指标",
+   "scope": "consolidated"
+  },
+  {
+   "metric_id": "revenue",
+   "period": "2024Q4",
+   "raw_value": "1,764,540,125.36",
+   "unit": "元",
+   "page": 7,
+   "label": "营业收入",
+   "table": "分季度主要财务指标",
+   "scope": "consolidated"
+  },
+  {
+   "metric_id": "np_parent",
+   "period": "2024Q1",
+   "raw_value": "118,260,000.00",
+   "unit": "元",
+   "page": 7,
+   "label": "归属于上市公司股东的净利润",
+   "table": "分季度主要财务指标",
+   "scope": "consolidated"
+  },
+  {
+   "metric_id": "np_parent",
+   "period": "2024Q2",
+   "raw_value": "142,530,000.00",
+   "unit": "元",
+   "page": 7,
+   "label": "归属于上市公司股东的净利润",
+   "table": "分季度主要财务指标",
+   "scope": "consolidated"
+  },
+  {
+   "metric_id": "np_parent",
+   "period": "2024Q3",
+   "raw_value": "139,870,000.00",
+   "unit": "元",
+   "page": 7,
+   "label": "归属于上市公司股东的净利润",
+   "table": "分季度主要财务指标",
+   "scope": "consolidated"
+  },
+  {
+   "metric_id": "np_parent",
+   "period": "2024Q4",
+   "raw_value": "211,720,000.00",
+   "unit": "元",
+   "page": 7,
+   "label": "归属于上市公司股东的净利润",
+   "table": "分季度主要财务指标",
+   "scope": "consolidated"
+  },
+  {
+   "metric_id": "np_parent_deducted",
+   "period": "2024Q1",
+   "raw_value": "101,420,000.00",
+   "unit": "元",
+   "page": 7,
+   "label": "归属于上市公司股东的扣除非经常性损益的净利润",
+   "table": "分季度主要财务指标",
+   "scope": "consolidated"
+  },
+  {
+   "metric_id": "np_parent_deducted",
+   "period": "2024Q2",
+   "raw_value": "118,350,000.00",
+   "unit": "元",
+   "page": 7,
+   "label": "归属于上市公司股东的扣除非经常性损益的净利润",
+   "table": "分季度主要财务指标",
+   "scope": "consolidated"
+  },
+  {
+   "metric_id": "np_parent_deducted",
+   "period": "2024Q3",
+   "raw_value": "112,680,000.00",
+   "unit": "元",
+   "page": 7,
+   "label": "归属于上市公司股东的扣除非经常性损益的净利润",
+   "table": "分季度主要财务指标",
+   "scope": "consolidated"
+  },
+  {
+   "metric_id": "np_parent_deducted",
+   "period": "2024Q4",
+   "raw_value": "111,500,000.00",
+   "unit": "元",
+   "page": 7,
+   "label": "归属于上市公司股东的扣除非经常性损益的净利润",
+   "table": "分季度主要财务指标",
+   "scope": "consolidated"
+  },
+  {
+   "metric_id": "ocf",
+   "period": "2024Q1",
+   "raw_value": "-186,540,000.00",
+   "unit": "元",
+   "page": 7,
+   "label": "经营活动产生的现金流量净额",
+   "table": "分季度主要财务指标",
+   "scope": "consolidated"
+  },
+  {
+   "metric_id": "ocf",
+   "period": "2024Q2",
+   "raw_value": "52,310,000.00",
+   "unit": "元",
+   "page": 7,
+   "label": "经营活动产生的现金流量净额",
+   "table": "分季度主要财务指标",
+   "scope": "consolidated"
+  },
+  {
+   "metric_id": "ocf",
+   "period": "2024Q3",
+   "raw_value": "98,760,000.00",
+   "unit": "元",
+   "page": 7,
+   "label": "经营活动产生的现金流量净额",
+   "table": "分季度主要财务指标",
+   "scope": "consolidated"
+  },
+  {
+   "metric_id": "ocf",
+   "period": "2024Q4",
+   "raw_value": "273,930,000.00",
+   "unit": "元",
+   "page": 7,
+   "label": "经营活动产生的现金流量净额",
+   "table": "分季度主要财务指标",
+   "scope": "consolidated"
+  },
+  {
    "metric_id": "gov_subsidy",
    "period": "2024",
    "raw_value": "98,650,000.00",
@@ -580,6 +740,46 @@
    "unit": "元",
    "page": 106,
    "label": "财务费用",
+   "table": "合并利润表",
+   "scope": "consolidated"
+  },
+  {
+   "metric_id": "investment_income",
+   "period": "2024",
+   "raw_value": "23,500,000.00",
+   "unit": "元",
+   "page": 106,
+   "label": "加：投资收益（损失以“－”号填列）",
+   "table": "合并利润表",
+   "scope": "consolidated"
+  },
+  {
+   "metric_id": "investment_income",
+   "period": "2023",
+   "raw_value": "15,800,000.00",
+   "unit": "元",
+   "page": 106,
+   "label": "加：投资收益（损失以“－”号填列）",
+   "table": "合并利润表",
+   "scope": "consolidated"
+  },
+  {
+   "metric_id": "fair_value_change",
+   "period": "2024",
+   "raw_value": "41,200,000.00",
+   "unit": "元",
+   "page": 106,
+   "label": "公允价值变动收益（损失以“－”号填列）",
+   "table": "合并利润表",
+   "scope": "consolidated"
+  },
+  {
+   "metric_id": "fair_value_change",
+   "period": "2023",
+   "raw_value": "8,000,000.00",
+   "unit": "元",
+   "page": 106,
+   "label": "公允价值变动收益（损失以“－”号填列）",
    "table": "合并利润表",
    "scope": "consolidated"
   },

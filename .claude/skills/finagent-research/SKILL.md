@@ -1,6 +1,6 @@
 ---
 name: finagent-research
-description: A 股上市公司投研（Skill 版本）：直接读年报 PDF 抽取财务数据，经程序校验后完成财报分析、DCF/三表/可比公司估值与研报纠错。用户给出 A 股年报（PDF），要求分析财报、估值、核查研报草稿，或提到 FinAgent / 赛题 2、4、5 时使用。
+description: A 股上市公司投研（Skill 版本）：直接读年报/季报 PDF 抽取财务数据，经程序校验后完成财报分析（含单季拆分）、三表驱动的 DCF/可比公司估值与研报纠错。用户给出 A 股年报或季报（PDF），要求分析财报、估值、核查研报草稿，或提到 FinAgent / 赛题 2、4、5 时使用。
 ---
 
 # FinAgent 投研（Skill 版本）
@@ -38,6 +38,11 @@ PY -m finagent locate --input <年报.pdf>
 
 输出 `suggested_reads`（建议读的页码范围）、`parent_only_pages`（母公司报表页，注意避开）、
 `unit_hints`（各页单位）、`no_text_layer_pages`（扫描页）。若关键章节没找到，用 Grep/Read 在目录页里找页码。
+`sections.quarterly` 是年报“分季度主要财务指标”页，单季数据要一并抄。
+
+**同时有季报时**（用户要单季数据，或给了一季报/半年报/三季报）：年报作 `--input`，季报对每份也跑一次 `locate`，
+抽取时条目写 `source_file`，后续命令都加 `--supplement <季报>`（可多次）。单季由程序拆分：
+Q4 = 全年 − 前三季度累计，Q3 = 前三季度 − 半年度，Q2 = 半年度 − 一季度，写法见 extraction.md“季度数据”。
 
 ### 2. 读页并抽取
 
@@ -49,16 +54,16 @@ PY -m finagent locate --input <年报.pdf>
 ### 3. 校验与修正（循环，最多 3 轮）
 
 ```bash
-PY -m finagent verify-facts --input <年报.pdf> --year <年度> --facts data/extractions/<公司>_<年度>/facts.json
+PY -m finagent verify-facts --input <年报.pdf> --year <年度> --facts data/extractions/<公司>_<年度>/facts.json [--supplement <季报.pdf>]
 ```
 
 返回 `ok: true` 才能继续。否则按输出逐项处理：
 
 | 输出 | 含义 | 处理 |
 |---|---|---|
-| `rejected` | 数字没在所写页码的原文里找到 / 字段不合法 / 非合并口径 | 回到该页核对：页码、数字写法、单位、是否误取母公司报表 |
+| `rejected` | 数字没在所写页码的原文里找到 / 字段不合法 / 非合并口径 / `source_file` 未传入 | 回到该页核对：页码、数字写法、单位、是否误取母公司报表；季报条目检查 `source_file` 与 `--supplement` |
 | `conflicts` | 同一指标两处取值不同，或与程序规则通道结果不同 | 回原文确认哪个对；确属原文不一致的，保留并在交付说明中写明 |
-| `tieout_failures` | 勾稽不平（资产≠负债+权益等） | 通常是抄错一位或期间列看反，回表核对 |
+| `tieout_failures` | 勾稽不平（资产≠负债+权益、第四季度≠全年−前三季度等） | 通常是抄错一位、期间列看反，或把累计数当成单季，回表核对 |
 | `missing` 且 `blocking: true` | 本期核心指标缺失 | 去对应报表补抄；财报确实没有的写明原因 |
 
 3 轮后仍未解决的问题，不要硬改数字，如实写进交付说明。
@@ -74,11 +79,24 @@ PY -m finagent verify-facts --input <年报.pdf> --year <年度> --facts data/ex
 PY -m finagent all --input <年报.pdf> --year <年度> --company <公司> \
   --assumptions <假设.json> --report <研报草稿> \
   --facts data/extractions/<公司>_<年度>/facts.json --claims data/extractions/<公司>_<年度>/claims.json \
-  --llm off
+  [--supplement <季报.pdf>] --llm off
 ```
 
 可选：`--peers`、`--estimates`、`--guidance`（格式见 `data/samples/`）。只做财报分析用 `financials`，
 不核查研报时去掉 `--report/--claims` 并改用 `valuation`。命令会打印运行目录 `runs/<run_id>/`。
+要分析单季（如第四季度）加 `--period 2024Q4`，同比、环比按单季计算。
+
+估值口径（写解读、起草假设文件时要知道）：
+
+- 程序先跑三表模型，**DCF 的收入、EBIT、折旧摊销、资本开支、营运资本和税率都取自三表模型同一情景**。
+  假设文件的情景只需要 `revenue_growth`、`capex_percent_revenue`、`terminal_growth_rate`、`wacc_adjustment`；
+  利润率、周转天数的情景差异写在 `three_statement.gross_margin_shift` / `ar_days_shift`（样例见
+  `data/samples/valuation_assumptions.json`）。旧文件里的 `ebit_margin` 等字段会被忽略，报告里有提示。
+- EBIT = 利润总额 + 财务费用 − 投资收益 − 公允价值变动收益。剔除的投资类资产应在假设文件 `non_operating_assets`
+  中加回，未设置时报告会提示“每股价值偏保守”。
+- comps 工作簿（`valuation/comps_formula_workbook.xlsx`）有“利润率对比”页，可用来解释目标公司倍数的溢价/折价。
+- `valuation/model.xlsx` 与 comps 工作簿按投行模型排版（输入蓝、公式黑、跨表引用绿，千分位括号负数，期间横排）。
+  新增或修改工作表必须遵守 [references/workbook.md](references/workbook.md)，交付前在 Excel 中打开自查。
 
 ### 6. 写解读并过数字护栏
 

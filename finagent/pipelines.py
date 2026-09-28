@@ -2,7 +2,7 @@
 
     财报 ──parse──▶ extract ──▶ analyze ──▶ 财报分析报告           （赛题2）
                                   │
-                                  ├──▶ build_plan ──▶ DCF ──▶ 估值报告  （赛题4）
+                                  ├──▶ 三表模型 ──▶ build_plan ──▶ DCF ──▶ 估值报告  （赛题4）
                                   │
     研报 ──parse──▶ claims ──────┴──▶ verify ──▶ 核查报告          （赛题5）
 
@@ -34,7 +34,8 @@ from .tasks.valuation.build_plan import build_plan
 from .tasks.valuation import comps as comps_mod
 from .tasks.valuation import scenarios as scenarios_mod
 from .tasks.valuation import three_statement as ts_mod
-from .tasks.valuation.run import run_dcf, workbook_sheets
+from .tasks.valuation.run import run_dcf
+from .tasks.valuation.workbook import model_sheets
 
 
 # ------------------------------------------------------------------ 公共步骤
@@ -89,7 +90,8 @@ def _p_extract(ctx: dict[str, Any]):
     if ctx.get("facts_file"):  # Skill 版本：接入 Claude Code 中模型读 PDF 的抽取结果，仍经确定性校验
         payload = json.loads(tracing.read_file(ctx["facts_file"]).decode("utf-8"))
         _write(ctx, "financials/skill_extraction.json", payload)
-        out = ingest(ctx["doc"], payload, fiscal_year=ctx.get("fiscal_year"))
+        out = ingest(ctx["doc"], payload, fiscal_year=ctx.get("fiscal_year"),
+                     supplements=[load_document(x) for x in ctx.get("supplements") or []])
     else:
         out = extract_financials(ctx["doc"], fiscal_year=ctx.get("fiscal_year"), llm=ctx.get("llm"),
                                  llm_mode=ctx.get("llm_extract", "fallback"))
@@ -132,37 +134,11 @@ def _p_report(ctx: dict[str, Any]):
 valuation_pipeline = Pipeline("valuation")
 
 
-@valuation_pipeline.step("build_plan", "plan")
-def _v_plan(ctx: dict[str, Any]):
-    raw = tracing.read_file(ctx["assumptions"])
-    ctx["assumptions_data"] = json.loads(raw.decode("utf-8"))
-    plan, notes = build_plan(ctx["extract"]["facts"], ctx["assumptions_data"], company=ctx["company"],
-                             period=ctx["analysis"]["period"], source_name=Path(ctx["input"]).name)
-    ctx["plan_notes"] = notes
-    ts_plan, ts_notes = ts_mod.build_plan(ctx["extract"]["facts"], ctx["assumptions_data"], company=ctx["company"],
-                                          period=ctx["analysis"]["period"])
-    ctx["three_statement_notes"] = ts_notes
-    _write(ctx, "valuation/three_statement_plan.json", ts_plan)
-    ctx["three_statement"] = ts_mod.run(ts_plan)
-    _write(ctx, "valuation/three_statement.json", ctx["three_statement"])
-    plan["three_statement_forecast"] = ctx["three_statement"]["dcf_drivers"]
-    notes.append({"type": "model_link", "item": "DCF 驱动",
-                  "detail": "预测期收入、EBIT、现金税、折旧摊销、资本开支和营运资本变动均来自三表联动模型"})
-    _write(ctx, "valuation/plan.json", plan)
-    return plan
-
-
-@valuation_pipeline.step("dcf", "valuation")
-def _v_dcf(ctx: dict[str, Any]):
-    res = run_dcf(ctx["plan"], ctx["assumptions_data"].get("current_price"))
-    _write(ctx, "valuation/valuation.json", res)
-    return res
-
-
+# 三表模型先行：DCF 的各情景经营预测取自三表模型输出（见 build_plan / run_dcf 的一致性核对）
 @valuation_pipeline.step("three_statement", "three_statement")
 def _v_three_statement(ctx: dict[str, Any]):
-    if ctx.get("three_statement"):
-        return ctx["three_statement"]
+    raw = tracing.read_file(ctx["assumptions"])
+    ctx["assumptions_data"] = json.loads(raw.decode("utf-8"))
     plan, notes = ts_mod.build_plan(ctx["extract"]["facts"], ctx["assumptions_data"], company=ctx["company"],
                                     period=ctx["analysis"]["period"])
     ctx["three_statement_notes"] = notes
@@ -170,6 +146,23 @@ def _v_three_statement(ctx: dict[str, Any]):
     out = ts_mod.run(plan)
     _write(ctx, "valuation/three_statement.json", out)
     return out
+
+
+@valuation_pipeline.step("build_plan", "plan")
+def _v_plan(ctx: dict[str, Any]):
+    plan, notes = build_plan(ctx["extract"]["facts"], ctx["assumptions_data"], company=ctx["company"],
+                             period=ctx["analysis"]["period"], source_name=Path(ctx["input"]).name,
+                             three_statement=ctx["three_statement"])
+    ctx["plan_notes"] = notes
+    _write(ctx, "valuation/plan.json", plan)
+    return plan
+
+
+@valuation_pipeline.step("dcf", "valuation")
+def _v_dcf(ctx: dict[str, Any]):
+    res = run_dcf(ctx["plan"], ctx["assumptions_data"].get("current_price"), ctx["three_statement"]["dcf_drivers"])
+    _write(ctx, "valuation/valuation.json", res)
+    return res
 
 
 @valuation_pipeline.step("scenarios", "scenarios")
@@ -212,15 +205,7 @@ def _v_report(ctx: dict[str, Any]):
         md += R.render_comps(ctx["comps"])
     _write(ctx, "valuation/report.md", md)
     if res.get("status") == "ok" and tracing.current() is not None:
-        sheets = workbook_sheets(ctx["plan"], res)
-        ts = ctx.get("three_statement")
-        if ts:
-            for name, st in ts["statements"].items():
-                sheets[f"三表-{name}"] = [["项目"] + st["periods"]] + [[r["name"]] + r["values"] for r in st["rows"]]
-        cp = ctx.get("comps")
-        if cp:
-            cols = ["ticker", "company", "peer_tier", "equity_value", "ev", "ev_revenue", "ev_ebitda", "ev_ebit", "pe_ltm", "pe_ntm"]
-            sheets["可比公司"] = [cols] + [[r.get(c) for c in cols] for r in cp["rows"]]
+        sheets = model_sheets(ctx["company"], ctx["plan"], res, ctx.get("three_statement"), ctx.get("comps"))
         path = tracing.current().dir / "valuation" / "model.xlsx"
         write_xlsx(path, sheets)
         tracing.current().register_artifact(path)

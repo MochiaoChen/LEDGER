@@ -5,7 +5,7 @@
   "as_of_date": "2024-12-31",
   "current_price": 12.80,
   "rationale": {
-    "forecast": "收入增速参考公司在手订单与行业装机增速；EBIT 利润率以 2024 年实际 13.7% 为起点，基准情景小幅修复；营运资本占收入比维持 2024 年高位（约 32%），不假设回款显著改善。",
+    "forecast": "DCF 各情景的经营预测由三表模型生成：收入增速参考公司在手订单与行业装机增速；资本开支率随新产线投产逐年回落；毛利率、经营费用率、应收/存货/应付周转天数、折旧率与税率默认取 2024 年实际值（EBIT 口径剔除投资收益与公允价值变动）。悲观情景假设价格战使毛利率下降 2 个百分点、应收账款周转天数延长 15 天；乐观情景毛利率提升 1 个百分点、周转天数缩短 10 天。",
     "wacc": "无风险利率取 10 年期国债收益率假设 1.8%；β 取可比设备制造公司均值 1.10；股权风险溢价 6.5%；规模溢价 1%；税后债务成本按 3.5% 贷款利率、15% 高新技术企业税率。",
     "terminal_value": "永续增长率 2%，不高于名义 GDP 长期增速假设；退出 EV/EBITDA 10 倍作交叉验证。"
   },
@@ -32,36 +32,28 @@
     "base": {
       "description": "订单平稳交付，利润率小幅修复，营运资本占用维持高位。",
       "revenue_growth": [0.12, 0.10, 0.08, 0.06, 0.05],
-      "ebit_margin": [0.137, 0.140, 0.143, 0.145, 0.145],
-      "tax_rate": 0.15,
-      "da_percent_revenue": 0.058,
       "capex_percent_revenue": [0.10, 0.09, 0.08, 0.07, 0.065],
-      "nwc_percent_revenue": [0.32, 0.32, 0.315, 0.31, 0.31],
       "terminal_growth_rate": 0.02,
       "wacc_adjustment": 0.0
     },
     "downside": {
       "description": "行业价格战，收入增速放缓，毛利率承压，应收回款进一步恶化。",
       "revenue_growth": [0.05, 0.03, 0.03, 0.03, 0.03],
-      "ebit_margin": [0.120, 0.115, 0.115, 0.12, 0.12],
-      "tax_rate": 0.15,
-      "da_percent_revenue": 0.06,
       "capex_percent_revenue": [0.10, 0.09, 0.08, 0.075, 0.07],
-      "nwc_percent_revenue": [0.34, 0.345, 0.345, 0.34, 0.34],
       "terminal_growth_rate": 0.015,
       "wacc_adjustment": 0.005
     },
     "upside": {
       "description": "海外订单放量，规模效应带动利润率提升，回款改善。",
       "revenue_growth": [0.18, 0.15, 0.12, 0.09, 0.07],
-      "ebit_margin": [0.14, 0.148, 0.155, 0.16, 0.16],
-      "tax_rate": 0.15,
-      "da_percent_revenue": 0.056,
       "capex_percent_revenue": [0.10, 0.085, 0.075, 0.065, 0.06],
-      "nwc_percent_revenue": [0.31, 0.30, 0.29, 0.285, 0.28],
       "terminal_growth_rate": 0.025,
       "wacc_adjustment": -0.0025
     }
+  },
+  "three_statement": {
+    "gross_margin_shift": {"downside": -0.02, "upside": 0.01},
+    "ar_days_shift": {"downside": 15, "upside": -10}
   },
   "sensitivities": {
     "wacc_delta": [-0.01, -0.005, 0.0, 0.005, 0.01],

@@ -83,6 +83,8 @@ def parse_period(cell: str, fiscal_year: int | None = None) -> str | None:
             year = fiscal_year
         elif any(k in s for k in ("上期", "上年", "期初", "上年同期")):
             year = fiscal_year - 1
+        elif any(k in s for keys, suffix in _Q[:4] for k in keys):  # 年报“分季度主要财务指标”表头只写季度
+            year = fiscal_year
     if year is None:
         return None
     for keys, suffix in _Q:
@@ -271,38 +273,8 @@ def extract_financials(doc: Document, *, fiscal_year: int | None, llm: LLMClient
         issues += llm_issues
     facts, merge_issues = merge(rule_facts, llm_facts)
     issues += merge_issues
-    facts, split_count = split_single_quarters(facts)
     return {
         "facts": [f.to_dict() for f in sorted(facts, key=lambda x: (x.metric_id, x.period))],
         "issues": [i.to_dict() for i in issues],
-        "stats": {"rule_facts": len(rule_facts), "llm_facts": len(llm_facts), "merged": len(facts),
-                  "derived_single_quarters": split_count},
+        "stats": {"rule_facts": len(rule_facts), "llm_facts": len(llm_facts), "merged": len(facts)},
     }
-
-
-def split_single_quarters(facts: list[Fact]) -> tuple[list[Fact], int]:
-    """由累计流量数据派生单季值；已有单季披露优先，不做覆盖。"""
-    cells = {f.key: f for f in facts}
-    made: list[Fact] = []
-    formulas = (("Q2", "H1", "Q1"), ("Q3", "Q1-3", "H1"), ("Q4", "", "Q1-3"))
-    for metric in sorted({f.metric_id for f in facts}):
-        base = metric.split(".")[0]
-        spec = BY_ID.get(base)
-        if not spec or spec.kind != "amount" or spec.statement not in {"income", "cashflow", "key_data"}:
-            continue
-        years = sorted({f.period[:4] for f in facts if f.metric_id == metric and re.fullmatch(r"20\d{2}(?:H1|Q1|Q1-3)?", f.period)})
-        for year in years:
-            for quarter, cumulative_suffix, prior_suffix in formulas:
-                target = (metric, year + quarter)
-                cumulative = (metric, year + cumulative_suffix)
-                prior = (metric, year + prior_suffix)
-                if target in cells or cumulative not in cells or prior not in cells:
-                    continue
-                a, b = cells[cumulative], cells[prior]
-                f = Fact(metric, target[1], a.value - b.value, f"{a.value} - {b.value}", a.unit,
-                         {"derived_from": [a.source, b.source],
-                          "formula": f"{cumulative[1]} - {prior[1]}"},
-                         a.label, "derived", "high")
-                cells[target] = f
-                made.append(f)
-    return facts + made, len(made)

@@ -2,9 +2,12 @@
 
 本模块只负责口径映射（A 股科目 → 引擎 plan，单位百万元）与结果整理；
 利润表/资产负债表/现金流量表联动、营运资本、PP&E、债务与现金归集、勾稽检查由 ts_engine 完成。
+各情景的经营预测同时导出为 DCF 驱动（dcf_drivers），DCF 由三表模型驱动。
 
 口径映射（推论/简化，写入报告）：
-  营业费用 opex = 销售费用 + 管理费用 + 研发费用（税金及附加等未单列项并入其他）
+  EBIT 与 DCF 同口径：利润总额 + 财务费用 − 投资收益 − 公允价值变动收益（build_plan.EBIT_PARTS）
+  经营费用 opex（不含折旧摊销）= 毛利 − EBIT − 折旧摊销，为轧差项：A 股折旧摊销已计入成本费用，
+    税金及附加、减值、其他收益、营业外收支等未单列项也并入其中，保证历史期引擎 EBIT = 上述经营性 EBIT
   利息 = 财务费用；PP&E = 固定资产 + 在建工程；有息负债 = 短借 + 一年内到期 + 长借 + 应付债券 + 租赁负债
   其他资产 = 资产总计 − 货币资金 − 应收 − 存货 − PP&E；其他负债 = 负债合计 − 应付账款 − 有息负债
   股东权益（含少数股东）全部计入 common_equity，retained_earnings 期初置 0（仅影响列示，不影响勾稽）
@@ -17,6 +20,7 @@ from typing import Any
 from ...core import tracing
 from ..financials.analyze import FactTable
 from . import ts_engine as eng
+from .build_plan import EBIT_PARTS
 
 MM = 1e6
 
@@ -31,10 +35,11 @@ def _hist(t: FactTable, year: str) -> tuple[dict[str, float], dict[str, float], 
             return 0.0
         return x / MM
 
+    rev, cogs, da = v("revenue"), v("operating_cost"), v("depreciation") + v("amortization")
+    ebit = sum(sign * v(m) for m, sign in EBIT_PARTS)
     is_ = {
-        "revenue": v("revenue"), "cogs": v("operating_cost"),
-        "opex": v("selling_expense") + v("admin_expense") + v("rd_expense"),
-        "da": v("depreciation") + v("amortization"), "interest": v("finance_expense"),
+        "revenue": rev, "cogs": cogs, "opex": rev - cogs - ebit - da,
+        "da": da, "interest": v("finance_expense"),
         "taxes": v("income_tax"), "net_income": v("net_profit"),
     }
     ppe = v("fixed_assets") + v("construction_in_progress")
@@ -49,7 +54,8 @@ def _hist(t: FactTable, year: str) -> tuple[dict[str, float], dict[str, float], 
         "total_liabilities_equity": tl + te,
     }
     # 引擎在 build 时对 bonds_payable 等缺失科目按 0 处理属正常（公司无该科目），不视为缺失
-    optional = {"bonds_payable", "lease_liab", "current_ltd", "construction_in_progress", "amortization"}
+    optional = {"bonds_payable", "lease_liab", "current_ltd", "construction_in_progress", "amortization",
+                "investment_income", "fair_value_change"}  # 后两项缺失已在 DCF 口径说明中列示
     missing = [m for m in missing if m.split("@")[0] not in optional]
     return is_, bs, missing
 
@@ -84,9 +90,11 @@ def build_plan(facts: list[dict[str, Any]], assumptions: dict[str, Any], *, comp
 
     notes = [
         {"type": "inference", "item": "三表口径",
-         "detail": "opex=销售+管理+研发；利息=财务费用；PP&E=固定资产+在建工程；其他资产/负债为轧差项；权益合并列示"},
+         "detail": "EBIT 与 DCF 同口径（剔除投资收益与公允价值变动）；经营费用=毛利−EBIT−折旧摊销（轧差，含税金及附加、"
+                   "减值、其他收益、营业外收支）；利息=财务费用；PP&E=固定资产+在建工程；其他资产/负债为轧差项；权益合并列示"},
         {"type": "inference", "item": "默认驱动",
-         "detail": "未在假设文件指定的毛利率、费用率、周转天数、折旧率、税率、利率均取 {} 年实际值".format(y)},
+         "detail": "未在假设文件指定的毛利率、费用率、周转天数、折旧率、税率、利率均取 {} 年实际值；"
+                   "悲观/乐观情景在此基础上按 three_statement.gross_margin_shift / ar_days_shift 调整".format(y)},
     ] + [{"type": "placeholder", "item": m, "detail": "财报未抽取到，按 0 处理"} for m in miss1]
 
     plan = {
@@ -141,7 +149,10 @@ def build_plan(facts: list[dict[str, Any]], assumptions: dict[str, Any], *, comp
                                  "ppe": {"capex_pct_revenue": vec(dcf_sc[k]["capex_percent_revenue"])},
                                  "costs": {"cogs": {"gross_margin": vec(
                                      [x + ts.get("gross_margin_shift", {}).get(k, 0.0) for x in
-                                      (vec(g("gross_margin")).values())])}}}}
+                                      (vec(g("gross_margin")).values())])}},
+                                 **({"working_capital": {"ar_days": vec(
+                                     [x + ts["ar_days_shift"][k] for x in vec(g("ar_days")).values()])}}
+                                    if k in ts.get("ar_days_shift", {}) else {})}}
                for k in ("downside", "upside")},
         },
         "sensitivities": ts.get("sensitivities", {
@@ -155,7 +166,7 @@ def build_plan(facts: list[dict[str, Any]], assumptions: dict[str, Any], *, comp
 
 STATEMENT_ROWS = {
     "利润表": ("income_statement", [("revenue", "营业收入"), ("cogs", "营业成本"), ("gross_profit", "毛利"),
-                                   ("opex", "期间费用"), ("ebitda", "EBITDA"), ("da", "折旧摊销"), ("ebit", "EBIT"),
+                                   ("opex", "经营费用（不含折旧摊销）"), ("ebitda", "EBITDA"), ("da", "折旧摊销"), ("ebit", "EBIT"),
                                    ("interest", "利息费用"), ("ebt", "税前利润"), ("book_taxes", "所得税"),
                                    ("net_income", "净利润")]),
     "资产负债表": ("balance_sheet", [("cash", "货币资金"), ("ar", "应收账款"), ("inventory", "存货"),
@@ -193,14 +204,6 @@ def run(plan: dict[str, Any]) -> dict[str, Any]:
     ]
     for it in integrity:
         it["status"] = "pass" if it["max_abs_error"] <= 1e-6 else "fail"
-    dcf_drivers = {}
-    for name, output in outputs.items():
-        inc, cf = output["income_statement"], output["cash_flow_statement"]
-        dcf_drivers[name] = [{
-            "period": str(per.year), "revenue": inc["revenue"][i], "ebit": inc["ebit"][i],
-            "cash_taxes": inc["cash_taxes"][i], "da": inc["da"][i], "capex": cf["capex"][i],
-            "change_nwc": cf["change_nwc"][i],
-        } for i, per in enumerate(output["periods"])]
     return {
         "model_status": status,
         "periods": labels,
@@ -212,5 +215,26 @@ def run(plan: dict[str, Any]) -> dict[str, Any]:
         "hard_failures": hard,
         "warnings": warn,
         "historical_drivers": plan.get("_historical_drivers"),
-        "dcf_drivers": dcf_drivers,
+        "dcf_drivers": {k: _dcf_drivers(p, v) for k, v in outputs.items()},
     }
+
+
+def _dcf_drivers(plan: dict[str, Any], r: dict[str, Any]) -> dict[str, Any]:
+    """三表模型单一情景 → DCF 预测向量（比率按收入折算，DCF 引擎还原后与三表逐期一致）。
+    税率取现金税率：FCFF 按 EBIT 计无杠杆税负，不含利息抵税。"""
+    is_ = r["income_statement"]
+    rev = is_["revenue"]
+    prev = [float(plan["revenue"].get("base_revenue") or eng.last_hist_is(plan)["revenue"])] + rev[:-1]
+    ratio = lambda xs: [x / y if y else 0.0 for x, y in zip(xs, rev)]  # noqa: E731
+    out = {
+        "periods": [per.label for per in r["periods"]],
+        "revenue": rev, "ebit": is_["ebit"], "da": is_["da"], "capex": r["ppe"]["capex"],
+        "nwc": r["working_capital"]["nwc"],
+        "revenue_growth": [x / y - 1 if y else 0.0 for x, y in zip(rev, prev)],
+        "ebit_margin": ratio(is_["ebit"]),
+        "tax_rate": [float(plan["tax"]["cash_tax_rate"])] * len(rev),
+        "da_percent_revenue": ratio(is_["da"]),
+        "capex_percent_revenue": ratio(r["ppe"]["capex"]),
+        "nwc_percent_revenue": ratio(r["working_capital"]["nwc"]),
+    }
+    return out

@@ -42,7 +42,7 @@ def test_comps(ctx):
     assert cp["rows"][-1]["pe_ltm"] == "NM"  # 亏损公司 P/E 记 NM
     assert cp["stats"]["ev_revenue"]["outliers"] == ["示例003"]  # IQR 离群值
     r = cp["range"]
-    assert r["low"] == pytest.approx(13.93297, rel=1e-6) and r["high"] == pytest.approx(17.3567006, rel=1e-6)
+    assert r["low"] == pytest.approx(13.0999575, rel=1e-6) and r["high"] == pytest.approx(17.3567006, rel=1e-6)
     assert (ctx["run_dir"] / "valuation" / "comps_formula_workbook.xlsx").exists()
 
 
