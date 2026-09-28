@@ -59,6 +59,8 @@ PY -m finagent verify-facts --input <年报.pdf> --year <年度> --facts data/ex
 
 返回 `ok: true` 才能继续。否则按输出逐项处理：
 
+`all --facts` 也会执行相同的阻断检查；若有拒收、冲突、核心缺失或勾稽失败，流水线会在估值前停止。
+
 | 输出 | 含义 | 处理 |
 |---|---|---|
 | `rejected` | 数字没在所写页码的原文里找到 / 字段不合法 / 非合并口径 / `source_file` 未传入 | 回到该页核对：页码、数字写法、单位、是否误取母公司报表；季报条目检查 `source_file` 与 `--supplement` |

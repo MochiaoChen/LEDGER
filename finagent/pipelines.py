@@ -106,6 +106,14 @@ def _p_analyze(ctx: dict[str, Any]):
     out = analyze(ctx["extract"]["facts"], period=ctx.get("period"), doc=ctx["doc"],
                   extract_issues=ctx["extract"]["issues"])
     _write(ctx, "financials/analysis.json", out)
+    if ctx.get("facts_file"):
+        extraction = ctx["extract"]
+        conflicts = [i for i in extraction["issues"] if i["type"] in
+                     ("同一指标多处取值不一致", "规则与LLM抽取不一致")]
+        failed_tieouts = [t for t in out["tieouts"] if t["status"] == "fail"]
+        blocking_missing = [m for m in extraction["missing"] if m["blocking"]]
+        if extraction["rejected"] or conflicts or failed_tieouts or blocking_missing:
+            raise ValueError("Skill 抽取未通过校验，请先运行 verify-facts 并处理拒收、冲突、勾稽失败和核心缺失项")
     return out
 
 
@@ -116,7 +124,7 @@ def _p_earnings(ctx: dict[str, Any]):
     cells = {(c["metric_id"], c["period"]): c["value"] for c in a["truth_table"]}
     nr, npp = cells.get(("non_recurring", a["period"])), cells.get(("np_parent", a["period"]))
     share = nr / npp * 100 if nr is not None and npp else None
-    out = earnings_mod.run(ctx["extract"]["facts"], a["period"], estimates_path=ctx.get("estimates"),
+    out = earnings_mod.run(a["truth_table"], a["period"], estimates_path=ctx.get("estimates"),
                            guidance_path=ctx.get("guidance"), nonrec_share=share if s1 or share else None)
     _write(ctx, "financials/earnings.json", out)
     return out
@@ -139,7 +147,7 @@ valuation_pipeline = Pipeline("valuation")
 def _v_three_statement(ctx: dict[str, Any]):
     raw = tracing.read_file(ctx["assumptions"])
     ctx["assumptions_data"] = json.loads(raw.decode("utf-8"))
-    plan, notes = ts_mod.build_plan(ctx["extract"]["facts"], ctx["assumptions_data"], company=ctx["company"],
+    plan, notes = ts_mod.build_plan(ctx["analysis"]["truth_table"], ctx["assumptions_data"], company=ctx["company"],
                                     period=ctx["analysis"]["period"])
     ctx["three_statement_notes"] = notes
     _write(ctx, "valuation/three_statement_plan.json", plan)
@@ -150,7 +158,7 @@ def _v_three_statement(ctx: dict[str, Any]):
 
 @valuation_pipeline.step("build_plan", "plan")
 def _v_plan(ctx: dict[str, Any]):
-    plan, notes = build_plan(ctx["extract"]["facts"], ctx["assumptions_data"], company=ctx["company"],
+    plan, notes = build_plan(ctx["analysis"]["truth_table"], ctx["assumptions_data"], company=ctx["company"],
                              period=ctx["analysis"]["period"], source_name=Path(ctx["input"]).name,
                              three_statement=ctx["three_statement"])
     ctx["plan_notes"] = notes
@@ -169,7 +177,7 @@ def _v_dcf(ctx: dict[str, Any]):
 def _v_scenarios(ctx: dict[str, Any]):
     if ctx["valuation"].get("status") != "ok":
         return None
-    payload = scenarios_mod.build_payload(ctx["extract"]["facts"], ctx["analysis"]["period"], ctx["valuation"],
+    payload = scenarios_mod.build_payload(ctx["analysis"]["truth_table"], ctx["analysis"]["period"], ctx["valuation"],
                                           ctx["plan"], ctx["assumptions_data"], ctx["analysis"]["signals"])
     out = scenarios_mod.run(payload)
     _write(ctx, "valuation/scenarios.json", out)
@@ -180,7 +188,7 @@ def _v_scenarios(ctx: dict[str, Any]):
 def _v_comps(ctx: dict[str, Any]):
     if not ctx.get("peers"):
         return None
-    target = comps_mod.target_row(ctx["extract"]["facts"], ctx["analysis"]["period"], ctx["plan"], ctx["company"],
+    target = comps_mod.target_row(ctx["analysis"]["truth_table"], ctx["analysis"]["period"], ctx["plan"], ctx["company"],
                                   ctx["assumptions_data"])
     peers = comps_mod.load_peers(ctx["peers"])
     out = comps_mod.run(peers, target, ctx["valuation"].get("value_range"))
