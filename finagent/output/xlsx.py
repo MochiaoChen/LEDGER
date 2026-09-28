@@ -91,6 +91,24 @@ class Cell:
 
 
 @dataclass
+class ChartSeries:
+    """图表序列：name 为图例名称，values 为当前工作表内的单元格区域（如 B6:E6）。"""
+    name: str
+    values: str
+    color: str = "4472C4"
+
+
+@dataclass
+class Chart:
+    """原生 Excel 簇状柱形图；categories / series 均引用当前工作表。"""
+    title: str
+    categories: str
+    series: list[ChartSeries]
+    anchor: tuple[int, int, int, int]
+    number_format: str = "0.0"
+
+
+@dataclass
 class Sheet:
     """一张工作表：rows 为二维数据，其余为排版参数（行列号均从 0 开始）。
 
@@ -109,6 +127,7 @@ class Sheet:
     freeze: tuple[int, int] | None = None
     wrap_cols: tuple[int, ...] = ()
     tab_color: str | None = None
+    charts: list[Chart] = field(default_factory=list)
 
 
 # ------------------------------------------------------------------ 样式表
@@ -278,7 +297,7 @@ def _auto_widths(sh: Sheet) -> dict[int, float]:
             for c in range(ncols)}
 
 
-def _sheet_xml(sh: Sheet, book: _StyleBook) -> str:
+def _sheet_xml(sh: Sheet, book: _StyleBook, has_drawing: bool = False) -> str:
     ncols = max((len(r) for r in sh.rows), default=0)
     col_w = _auto_widths(sh)
     body = []
@@ -321,16 +340,17 @@ def _sheet_xml(sh: Sheet, book: _StyleBook) -> str:
     else:
         view = '<sheetView showGridLines="0" zoomScale="90" workbookViewId="0"/>'
     tab = f'<tabColor rgb="FF{sh.tab_color}"/>' if sh.tab_color else ""
-    return ('<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
-            f'<worksheet {_NS}>'
-            f'<sheetPr>{tab}<pageSetUpPr fitToPage="1"/></sheetPr>'
-            f"<sheetViews>{view}</sheetViews>"
-            '<sheetFormatPr defaultRowHeight="16"/>'
+    drawing = '<drawing r:id="rId1"/>' if has_drawing else ""
+    rns = ' xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"' if has_drawing else ""
+    return (('<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+             f'<worksheet {_NS}{rns}>'
+             f'<sheetPr>{tab}<pageSetUpPr fitToPage="1"/></sheetPr>'
+             f'<sheetViews>{view}</sheetViews><sheetFormatPr defaultRowHeight="16"/>')
             + (f"<cols>{''.join(cols)}</cols>" if cols else "")
             + f'<sheetData>{"".join(body)}</sheetData>'
-            '<pageMargins left="0.5" right="0.5" top="0.6" bottom="0.6" header="0.3" footer="0.3"/>'
-            '<pageSetup paperSize="9" orientation="landscape" fitToWidth="1" fitToHeight="0"/>'
-            "</worksheet>")
+            + '<pageMargins left="0.5" right="0.5" top="0.6" bottom="0.6" header="0.3" footer="0.3"/>'
+            + '<pageSetup paperSize="9" orientation="landscape" fitToWidth="1" fitToHeight="0"/>'
+            + drawing + "</worksheet>")
 
 
 def _row_height(sh: Sheet, r: int, role: str, col_w: dict[int, float]) -> str:
@@ -366,20 +386,85 @@ def _has_formula(sheets: dict[str, Sheet]) -> bool:
                for sh in sheets.values() for row in sh.rows for v in row)
 
 
+def _chart_xml(chart: Chart, sheet_name: str, chart_index: int) -> str:
+    """生成最小但完整的簇状柱形图 OOXML；数据仍保留在工作表中，便于审计。"""
+    sheet_ref = "'" + sheet_name.replace("'", "''") + "'!"
+    absolute = lambda rg: ":".join(re.sub(r"([A-Z]+)(\d+)", r"$\1$\2", ref) for ref in rg.split(":"))  # noqa: E731
+    cat = sheet_ref + absolute(chart.categories)
+    series_xml = []
+    for i, s in enumerate(chart.series):
+        values = sheet_ref + absolute(s.values)
+        series_xml.append(
+            f'<c:ser><c:idx val="{i}"/><c:order val="{i}"/>'
+            f'<c:tx><c:v>{escape(s.name)}</c:v></c:tx>'
+            f'<c:spPr><a:solidFill><a:srgbClr val="{s.color}"/></a:solidFill>'
+            '<a:ln><a:noFill/></a:ln></c:spPr>'
+            f'<c:cat><c:strRef><c:f>{escape(cat)}</c:f></c:strRef></c:cat>'
+            f'<c:val><c:numRef><c:f>{escape(values)}</c:f></c:numRef></c:val></c:ser>')
+    ax1, ax2 = 100000 + chart_index * 2, 100001 + chart_index * 2
+    return ('<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+            '<c:chartSpace xmlns:c="http://schemas.openxmlformats.org/drawingml/2006/chart" '
+            'xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main">'
+            '<c:chart><c:title><c:tx><c:rich><a:bodyPr/><a:lstStyle/><a:p><a:r><a:rPr lang="zh-CN" '
+            f'sz="1100" b="1"/><a:t>{escape(chart.title)}</a:t></a:r></a:p></c:rich></c:tx>'
+            '<c:layout/><c:overlay val="0"/></c:title><c:autoTitleDeleted val="0"/>'
+            '<c:plotArea><c:layout/><c:barChart><c:barDir val="col"/><c:grouping val="clustered"/>'
+            '<c:varyColors val="0"/>' + ''.join(series_xml) +
+            f'<c:axId val="{ax1}"/><c:axId val="{ax2}"/></c:barChart>'
+            f'<c:catAx><c:axId val="{ax1}"/><c:scaling><c:orientation val="minMax"/></c:scaling>'
+            f'<c:axPos val="b"/><c:tickLblPos val="nextTo"/><c:crossAx val="{ax2}"/>'
+            '<c:crosses val="autoZero"/><c:auto val="1"/><c:lblAlgn val="ctr"/><c:lblOffset val="100"/></c:catAx>'
+            f'<c:valAx><c:axId val="{ax2}"/><c:scaling><c:orientation val="minMax"/></c:scaling>'
+            f'<c:axPos val="l"/><c:numFmt formatCode="{escape(chart.number_format)}" sourceLinked="0"/>'
+            f'<c:majorGridlines/><c:tickLblPos val="nextTo"/><c:crossAx val="{ax1}"/>'
+            '<c:crosses val="autoZero"/><c:crossBetween val="between"/></c:valAx></c:plotArea>'
+            '<c:legend><c:legendPos val="b"/><c:layout/><c:overlay val="0"/></c:legend>'
+            '<c:plotVisOnly val="1"/><c:dispBlanksAs val="gap"/><c:showDLblsOverMax val="0"/></c:chart>'
+            '<c:printSettings><c:headerFooter/><c:pageMargins b="0.75" l="0.7" r="0.7" t="0.75" '
+            'header="0.3" footer="0.3"/><c:pageSetup/></c:printSettings></c:chartSpace>')
+
+
+def _drawing_xml(charts: list[Chart]) -> str:
+    anchors = []
+    for i, chart in enumerate(charts, 1):
+        c1, r1, c2, r2 = chart.anchor
+        marker = lambda c, r: f'<xdr:col>{c}</xdr:col><xdr:colOff>0</xdr:colOff><xdr:row>{r}</xdr:row><xdr:rowOff>0</xdr:rowOff>'
+        anchors.append(
+            f'<xdr:twoCellAnchor><xdr:from>{marker(c1, r1)}</xdr:from><xdr:to>{marker(c2, r2)}</xdr:to>'
+            '<xdr:graphicFrame macro=""><xdr:nvGraphicFramePr>'
+            f'<xdr:cNvPr id="{i + 1}" name="图表 {i}"/><xdr:cNvGraphicFramePr/></xdr:nvGraphicFramePr>'
+            '<xdr:xfrm/><a:graphic><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/chart">'
+            f'<c:chart xmlns:c="http://schemas.openxmlformats.org/drawingml/2006/chart" '
+            f'xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" r:id="rId{i}"/>'
+            '</a:graphicData></a:graphic></xdr:graphicFrame><xdr:clientData/></xdr:twoCellAnchor>')
+    return ('<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+            '<xdr:wsDr xmlns:xdr="http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing" '
+            'xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main">' + ''.join(anchors) + '</xdr:wsDr>')
+
+
 def write_xlsx(path: str | Path, sheets: dict[str, Sheet | list[list[Any]]]) -> None:
     """sheets：表名 → Sheet（或二维列表，按默认排版）。"""
     specs = {k: v if isinstance(v, Sheet) else Sheet(v) for k, v in sheets.items()}
     used: set[str] = set()
     names = [_safe_name(n, used) for n in specs]
     book = _StyleBook()
-    sheet_xml = [_sheet_xml(sh, book) for sh in specs.values()]
+    sheet_xml = [_sheet_xml(sh, book, bool(sh.charts)) for sh in specs.values()]
     n = len(names)
+    chart_count = sum(len(sh.charts) for sh in specs.values())
+    drawing_count = sum(bool(sh.charts) for sh in specs.values())
     Path(path).parent.mkdir(parents=True, exist_ok=True)
     with zipfile.ZipFile(path, "w", zipfile.ZIP_DEFLATED) as z:
-        z.writestr("[Content_Types].xml", _CT.format(sheets="\n".join(
+        overrides = "\n".join(
             f'<Override PartName="/xl/worksheets/sheet{i}.xml" '
             'ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>'
-            for i in range(1, n + 1))))
+            for i in range(1, n + 1))
+        overrides += "".join(f'<Override PartName="/xl/drawings/drawing{i}.xml" '
+                             'ContentType="application/vnd.openxmlformats-officedocument.drawing+xml"/>'
+                             for i in range(1, drawing_count + 1))
+        overrides += "".join(f'<Override PartName="/xl/charts/chart{i}.xml" '
+                             'ContentType="application/vnd.openxmlformats-officedocument.drawingml.chart+xml"/>'
+                             for i in range(1, chart_count + 1))
+        z.writestr("[Content_Types].xml", _CT.format(sheets=overrides))
         z.writestr("_rels/.rels", _RELS)
         z.writestr("xl/workbook.xml",
                    '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
@@ -398,3 +483,24 @@ def write_xlsx(path: str | Path, sheets: dict[str, Sheet | list[list[Any]]]) -> 
         z.writestr("xl/styles.xml", book.xml())
         for i, xml in enumerate(sheet_xml, 1):
             z.writestr(f"xl/worksheets/sheet{i}.xml", xml)
+        chart_id = drawing_id = 0
+        for sheet_id, (name, sh) in enumerate(zip(names, specs.values()), 1):
+            if not sh.charts:
+                continue
+            drawing_id += 1
+            z.writestr(f"xl/worksheets/_rels/sheet{sheet_id}.xml.rels",
+                       '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+                       '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+                       f'<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/'
+                       f'relationships/drawing" Target="../drawings/drawing{drawing_id}.xml"/></Relationships>')
+            z.writestr(f"xl/drawings/drawing{drawing_id}.xml", _drawing_xml(sh.charts))
+            rels = []
+            for i, chart in enumerate(sh.charts, 1):
+                chart_id += 1
+                z.writestr(f"xl/charts/chart{chart_id}.xml", _chart_xml(chart, name, chart_id))
+                rels.append(f'<Relationship Id="rId{i}" Type="http://schemas.openxmlformats.org/officeDocument/'
+                            f'2006/relationships/chart" Target="../charts/chart{chart_id}.xml"/>')
+            z.writestr(f"xl/drawings/_rels/drawing{drawing_id}.xml.rels",
+                       '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+                       '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+                       + ''.join(rels) + '</Relationships>')

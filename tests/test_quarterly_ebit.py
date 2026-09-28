@@ -196,7 +196,7 @@ def test_comps_margin_sheet(run):
     assert run["comps"]["rows"][2]["ebitda_margin"] == pytest.approx(820 / 4100)
     with zipfile.ZipFile(run["run_dir"] / "valuation" / "comps_formula_workbook.xlsx") as z:
         wb = z.read("xl/workbook.xml").decode("utf-8")
-        sheet = z.read("xl/worksheets/sheet8.xml").decode("utf-8")
+        sheet = z.read("xl/worksheets/sheet9.xml").decode("utf-8")
     assert re.findall(r'<sheet name="([^"]+)"', wb)[-1] == "利润率对比"
     cells = dict(re.findall(r'<c r="([A-Z]+\d+)"(?: [a-z]+="[^"]*")*>(?:(?!</c>).)*?<v>([^<]*)</v></c>', sheet))
     n = len(run["comps"]["rows"])
