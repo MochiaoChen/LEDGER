@@ -124,7 +124,7 @@ python -m finagent all --input data/samples/annual_report_2024.md --year 2024 --
 
 - `financials/report.md`、`facts.csv`、`analysis.json`
 - `financials/earnings.json`（归因桥、预期对比、业绩预告、EPS 质量）
-- `valuation/report.md`、`model.xlsx`（估值汇总、DCF、WACC、敏感性、三表、可比公司；投行模型排版，关键计算为公式）、`comps_formula_workbook.xlsx`（带公式、可在 Excel 中复算的 comps 表，含利润率对比页）、`three_statement.json`、`scenarios.json`、`comps.json`
+- `valuation/report.md`、`model.xlsx`（估值汇总、DCF、WACC、敏感性、三表、可比公司；投行模型排版，关键计算为公式）、`comps_formula_workbook.xlsx`（带公式、可在 Excel 中复算的 comps 表；首张为估值摘要，含估值区间、核心倍数、利润率与两张原生图表）、`three_statement.json`、`scenarios.json`、`comps.json`
 - `check/report.md`、`findings.csv`
 
 分任务运行：`python -m finagent financials|valuation|check ...`
@@ -177,7 +177,8 @@ python -m pytest -q tests
 
 ## 待办
 
-- [ ] 真实 A 股年报 PDF 联调（pdfplumber 表格跨页、合并单元格）；扫描件接入 OCR
+- [x] 真实 A 股年报 PDF 离线资源集（贵州茅台、宁德时代、招商轮船；2025 年报）与文本解析冒烟测试
+- [ ] 真实 A 股年报 PDF 深度联调（pdfplumber 表格跨页、合并单元格）；扫描件接入 OCR
 - [ ] 扩充评测集：10～20 份真实财报 + 人工植入错误的研报
 - [x] 季报：单季拆分（Q4 = 全年 − 前三季度）与环比（Skill 版本支持年报 + 季报）
 - [ ] Agent 版本接入季报：多文件输入、季报表头“本报告期/年初至报告期末”的规则通道识别、LLM 抽取提示词补新指标

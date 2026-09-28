@@ -23,7 +23,7 @@ from pathlib import Path
 from typing import Any
 
 from ...core import tracing
-from ...output.xlsx import Formula, Sheet, write_xlsx
+from ...output.xlsx import Chart, ChartSeries, Formula, Sheet, write_xlsx
 from ..financials.analyze import FactTable
 
 MM = 1e6
@@ -356,7 +356,26 @@ def write_formula_workbook(path: Path, result: dict[str, Any], currency: str, va
     sens_roles = {b + k: role for b in (0, n_sens) for k, role in ((0, "section"), (1, "header"), (4, "key"))}
     margin = _margin_sheet(result)
     top = len(rows) + 2  # 利润率统计区表头（0 起行号）
+    summary = _summary_sheet(result, valuation_date, currency, top + 1)
     write_xlsx(path, {
+        "估值摘要": Sheet(
+            summary,
+            header_rows=0,
+            roles={0: "title", 1: "note", 2: "note", 4: "header", 5: "key", 7: "header", 13: "header"},
+            formats={1: "mult", 2: "mult", 3: "pct1"},
+            row_formats={5: "num2"},
+            widths={0: 28, 1: 17, 2: 17, 3: 22, 4: 17, 5: 20},
+            wrap_cols=(0,),
+            freeze=(0, 0),
+            tab_color="1F3864",
+            charts=[
+                Chart("当前股价与估值区间（元）", "B5:E5",
+                      [ChartSeries("股价 / 每股价值", "B6:E6", "4472C4")], (7, 3, 15, 13), "0.00"),
+                Chart("目标公司与核心同业利润率", "A15:A17",
+                      [ChartSeries("目标公司", "B15:B17", "4472C4"),
+                       ChartSeries("核心同业中位数", "C15:C17", "A5A5A5")], (7, 14, 15, 27), "0.0%"),
+            ],
+        ),
         "说明": Sheet(readme, widths={0: 16, 1: 110}, wrap_cols=(1,), freeze=(1, 0), tab_color="1F3864"),
         "同业数据": Sheet(inputs, formats=INPUT_FORMATS, inputs=True, roles={1: "key"}, freeze=(1, 2),
                       widths={15: 18, 16: 30, 17: 30}, wrap_cols=(16, 17)),
@@ -372,6 +391,45 @@ def write_formula_workbook(path: Path, result: dict[str, Any], currency: str, va
                        roles={1: "key", top: "header", top + 5: "key"},
                        row_formats={top + 1: "int", top + 6: "pp"}, freeze=(1, 2), widths={0: 26}),
     })
+
+
+def _summary_sheet(result: dict[str, Any], valuation_date: str, currency: str, margin_top: int) -> list[list[Any]]:
+    """估值摘要：把关键结论、核心倍数、利润率差异与图表数据集中在首屏。"""
+    target = result["rows"][0]
+    rg = result.get("range") or {}
+    price = _f(target.get("price"))
+    mid = rg.get("mid")
+    upside = mid / price - 1 if isinstance(mid, (int, float)) and price else None
+    sample = str(target.get("company")) == "星河智造"
+    note = ("虚构样例：仅用于演示模型结构与公式联动，不构成投资建议；正式研究必须替换为真实同业、市场数据与可追溯来源。"
+            if sample else "研究输出：估值结论须结合来源台账、口径一致性与最新市场数据复核，不构成投资建议。")
+    out: list[list[Any]] = [
+        ["可比公司估值摘要"],
+        [f'{target.get("company", "")}（{target.get("ticker", "")}）', f"估值日：{valuation_date}", f"币种：{currency}"],
+        [note],
+        [],
+        ["目标公司", "当前股价", "区间低", "区间中枢", "区间高", "中枢上涨空间"],
+        [target.get("company"), Formula(f"同业数据!{IN['price']}2", _cached(price)),
+         Formula("隐含股价!B9", _cached(rg.get("low"))), Formula("隐含股价!C9", _cached(mid)),
+         Formula("隐含股价!D9", _cached(rg.get("high"))),
+         Formula('IF(AND(ISNUMBER(D6),ISNUMBER(B6),B6<>0),D6/B6-1,"")', _cached(upside), fmt="pct1")],
+        [],
+        ["核心倍数与溢价/折价", "核心中位数", "目标公司", "目标相对核心中位数"],
+    ]
+    for key in ("ev_revenue", "ev_ebitda", "ev_ebit", "pe_ltm"):
+        c, st = SCOL[key], result["stats"][key]
+        out.append([st["name"], Formula(f"统计!{c}3", _cached(st["core"]["median"])),
+                    Formula(f"统计!{c}15", _cached(st["target"])),
+                    Formula(f"统计!{c}16", _cached(st["premium_vs_core_median"]))])
+    out += [[], ["利润率对比", "目标公司", "核心同业中位数", "差异（百分点）"]]
+    for i, (key, name, _) in enumerate(MARGINS):
+        c = chr(72 + i)  # H / I / J
+        m = result["margins"][key]
+        diff = m["diff_vs_core_median"]
+        out.append([name, Formula(f"利润率对比!{c}{margin_top + 5}", _cached(m["target"]), fmt="pct1"),
+                    Formula(f"利润率对比!{c}{margin_top + 2}", _cached(m["core"]["median"]), fmt="pct1"),
+                    Formula(f"利润率对比!{c}{margin_top + 6}", _cached(None if diff is None else diff * 100), fmt="pp")])
+    return out
 
 
 def _margin_sheet(result: dict[str, Any]) -> list[list[Any]]:

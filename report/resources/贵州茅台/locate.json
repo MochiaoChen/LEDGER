@@ -1,0 +1,17 @@
+{
+  "source": "600519_贵州茅台_2025_年度报告.pdf",
+  "pages_with_text": 143,
+  "total_pages": 143,
+  "sections": {
+    "key_data": [4, 5, 6],
+    "quarterly": [7, 8],
+    "non_recurring": [7, 8, 111, 142, 143],
+    "balance": [56],
+    "income": [61],
+    "cashflow": [64],
+    "cashflow_supplement": [114, 115, 142],
+    "share_capital": [47, 48]
+  },
+  "suggested_reads": ["4-8", "47-48", "56-58", "61-66", "111", "114-115", "142-143"],
+  "no_text_layer_pages": []
+}

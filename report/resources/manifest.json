@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "fiscal_year": 2025,
+  "reports": [
+    {
+      "company": "贵州茅台酒股份有限公司",
+      "short_name": "贵州茅台",
+      "ticker": "600519",
+      "exchange": "SSE",
+      "filing_date": "2026-04-17",
+      "path": "贵州茅台/600519_贵州茅台_2025_年度报告.pdf",
+      "pages": 143,
+      "size_bytes": 1082847,
+      "sha256": "474905deeaf0f875fc0a1b097a626c0c7852c427faadc5d7fc7816cbf45ea288",
+      "source_url": "https://big5.sse.com.cn/site/cht/www.sse.com.cn/disclosure/listedinfo/announcement/c/new/2026-04-17/600519_20260417_9QS4.pdf"
+    },
+    {
+      "company": "宁德时代新能源科技股份有限公司",
+      "short_name": "宁德时代",
+      "ticker": "300750",
+      "exchange": "SZSE",
+      "filing_date": "2026-03-10",
+      "path": "宁德时代/300750_宁德时代_2025_年度报告.pdf",
+      "pages": 232,
+      "size_bytes": 2043710,
+      "sha256": "c15272977147dee7e6935a38ea0e4fd6855370aabb106f54cfe20f7cf6048ec9",
+      "source_url": "https://disc.static.szse.cn/download/disc/disk03/finalpage/2026-03-10/f019f96b-b960-410b-b88f-08838a36d81b.PDF"
+    },
+    {
+      "company": "招商局能源运输股份有限公司",
+      "short_name": "招商轮船",
+      "ticker": "601872",
+      "exchange": "SSE",
+      "filing_date": "2026-03-27",
+      "path": "招商轮船/601872_招商轮船_2025_年度报告.pdf",
+      "pages": 246,
+      "size_bytes": 2074111,
+      "sha256": "3fe6f99980f9f0c2ac241e2f826660141d118af2fe53eafab49e146ef9464a18",
+      "source_url": "https://www.cmenergyshipping.com/uploads/report/20260327.pdf"
+    }
+  ]
+}

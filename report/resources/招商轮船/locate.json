@@ -1,0 +1,17 @@
+{
+  "source": "601872_招商轮船_2025_年度报告.pdf",
+  "pages_with_text": 246,
+  "total_pages": 246,
+  "sections": {
+    "key_data": [5, 8, 9, 10],
+    "quarterly": [10, 11, 12, 15, 20],
+    "non_recurring": [11, 12, 244, 245],
+    "balance": [98, 117, 208],
+    "income": [103, 117],
+    "cashflow": [107, 117],
+    "cashflow_supplement": [193, 244],
+    "share_capital": [87, 88]
+  },
+  "suggested_reads": ["5", "8-12", "15", "20", "87-88", "98-100", "103-105", "107-109", "117-119", "193", "208-210", "244-245"],
+  "no_text_layer_pages": []
+}

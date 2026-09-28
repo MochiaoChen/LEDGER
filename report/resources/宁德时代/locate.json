@@ -1,0 +1,17 @@
+{
+  "source": "300750_宁德时代_2025_年度报告.pdf",
+  "pages_with_text": 232,
+  "total_pages": 232,
+  "sections": {
+    "key_data": [7, 10, 11, 12, 95, 106],
+    "quarterly": [11, 12],
+    "non_recurring": [12, 13, 231],
+    "balance": [111, 135],
+    "income": [116, 117, 118, 135],
+    "cashflow": [119, 120, 121, 135],
+    "cashflow_supplement": [200, 201, 202, 231],
+    "share_capital": [93, 95, 96]
+  },
+  "suggested_reads": ["7", "10-13", "93", "95-96", "106", "111-113", "116-123", "135-137", "200-202", "231"],
+  "no_text_layer_pages": []
+}
