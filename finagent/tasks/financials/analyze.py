@@ -12,9 +12,9 @@ from ...parsing.document import Document
 from .schema import BY_ID, is_flow
 
 KEY_METRICS = [
-    "revenue", "operating_cost", "rd_expense", "operating_profit", "net_profit", "np_parent",
-    "np_parent_deducted", "non_recurring", "ocf", "accounts_receivable", "inventory",
-    "total_assets", "eps_basic",
+    "revenue", "operating_cost", "tax_surcharge", "selling_expense", "admin_expense", "rd_expense",
+    "finance_expense", "operating_profit", "net_profit", "np_parent", "np_parent_deducted", "non_recurring",
+    "ocf", "cash", "accounts_receivable", "inventory", "contract_liab", "total_assets", "eps_basic",
 ]
 
 CALIBER_KEYWORDS = ["会计政策变更", "会计估计变更", "追溯调整", "重述", "前期差错更正",
@@ -130,6 +130,10 @@ def _derive(t: FactTable) -> None:
                       [("net_profit", p), ("revenue", p)])
         t.add_derived("rd_ratio", p, _pct(t.v("rd_expense", p), rev), "研发费用/营业收入",
                       [("rd_expense", p), ("revenue", p)])
+        t.add_derived("selling_ratio", p, _pct(t.v("selling_expense", p), rev), "销售费用/营业收入",
+                      [("selling_expense", p), ("revenue", p)])
+        t.add_derived("admin_ratio", p, _pct(t.v("admin_expense", p), rev), "管理费用/营业收入",
+                      [("admin_expense", p), ("revenue", p)])
         t.add_derived("debt_ratio", p, _pct(t.v("total_liabilities", p), t.v("total_assets", p)),
                       "负债合计/资产总计", [("total_liabilities", p), ("total_assets", p)])
         t.add_derived("ocf_to_np", p, safe_div(t.v("ocf", p), t.v("np_parent", p)),
@@ -152,7 +156,7 @@ def _pct(a: float | None, b: float | None) -> float | None:
 def _changes(t: FactTable, period: str) -> list[dict[str, Any]]:
     yoy_p, qoq_p = prior_periods(period)
     rows = []
-    for mid in KEY_METRICS + ["gross_margin", "net_margin", "rd_ratio", "debt_ratio"]:
+    for mid in KEY_METRICS + ["gross_margin", "net_margin", "selling_ratio", "admin_ratio", "rd_ratio", "debt_ratio"]:
         cur = t.v(mid, period)
         if cur is None:
             continue

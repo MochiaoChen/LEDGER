@@ -128,7 +128,7 @@ def render_valuation(company: str, plan: dict[str, Any], res: dict[str, Any], no
          f"- 模型状态：`{res['model_status']}`（筛选级：假设来自分析师估计，需复核）",
          f"- **每股价值区间：{vr['low']:.2f} – {vr['high']:.2f} 元，基准 {vr['base']:.2f} 元**"
          + (f"；参考股价 {price:.2f} 元，基准情景空间 {(vr['base'] / price - 1) * 100:+.1f}%" if price else ""), "",
-         "## 一、事实：历史基数（来自财报抽取）", "", "| 项目 | 2024 实际（百万元） |", "|---|---|"]
+         "## 一、事实：历史基数（来自财报抽取）", "", f"| 项目 | {plan['historicals']['latest_year']} 实际（百万元） |", "|---|---|"]
     h = plan["historicals"]
     for k, name in [("revenue", "营业收入"), ("ebit", "EBIT（剔除投资收益与公允价值变动）"), ("da", "折旧摊销"),
                     ("capex", "资本开支"),

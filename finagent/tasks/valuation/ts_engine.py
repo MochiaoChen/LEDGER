@@ -392,9 +392,17 @@ def run_model(plan: dict[str, Any], scenario: str = "base") -> dict[str, Any]:
     flows = {"cash_flow_from_operations": [0.0] * n, "capex": ppe["capex"], **eq}
 
     # 利息依赖期末现金/债务、现金又依赖利息：不动点迭代求解（最多 20 轮，收敛阈值 1e-8）
+    payout = plan.get("equity", {}).get("dividend_payout_ratio")  # 可选：现金分红 = 净利润 × 分红率（本项目扩展）
+
+    def _set_dividends(is_: dict[str, list[float]]) -> None:
+        if payout is not None:
+            eq["dividends"] = [max(0.0, is_["net_income"][i]) * assume(payout, p, 0.0) for i, p in enumerate(periods)]
+            flows["dividends"] = eq["dividends"]
+
     interest = [0.0] * n
     for _ in range(20):
         is_ = _income_statement(plan, periods, revenue, ppe["depreciation"], interest)
+        _set_dividends(is_)
         flows["cash_flow_from_operations"] = _cfo(is_, wc)
         new = _debt(plan, periods, flows)["interest"]
         done = max(abs(new[i] - interest[i]) for i in range(n)) < 1e-8
@@ -402,9 +410,11 @@ def run_model(plan: dict[str, Any], scenario: str = "base") -> dict[str, Any]:
         if done:
             break
     is_ = _income_statement(plan, periods, revenue, ppe["depreciation"], interest)
+    _set_dividends(is_)
     flows["cash_flow_from_operations"] = _cfo(is_, wc)
     debt = _debt(plan, periods, flows)
     is_ = _income_statement(plan, periods, revenue, ppe["depreciation"], debt["interest"])
+    _set_dividends(is_)
     result = {
         "scenario": scenario, "periods": periods, "income_statement": is_, "working_capital": wc, "ppe": ppe,
         "debt": debt, "cash_flow_statement": _cash_flow(is_, wc, ppe, debt, eq),

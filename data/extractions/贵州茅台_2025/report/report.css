@@ -1,0 +1,148 @@
+:root {
+  --serif: "Times New Roman", "Times", "Kaiti SC", "STKaiti", "KaiTi", "楷体", "KaiTi_GB2312", serif;
+  --sans: "Helvetica Neue", "Arial", "PingFang SC", "Source Han Sans SC", "Noto Sans CJK SC",
+          "Microsoft YaHei", sans-serif;
+  --mono: "SF Mono", "Menlo", "Consolas", monospace;
+  --ink: #1F2937; --muted: #6B7280; --rule: #D1D5DB; --light: #F3F5F8;
+  --navy: #1B365D; --slate: #8A9BB0; --brick: #B5482F; --teal: #2F6F6A;
+}
+
+@page {
+  size: A4;
+  margin: 17mm 15mm 15mm 15mm;
+  @top-left { content: "贵州茅台（600519.SH）2025 年报点评"; font: 7.3pt var(--sans); color: #6B7280; }
+  @top-right { content: "公司研究｜年报点评"; font: 7.3pt var(--sans); color: #6B7280; }
+  @bottom-left { content: "请阅读最后一页的免责声明"; font: 6.8pt var(--sans); color: #9CA3AF; }
+  @bottom-right { content: counter(page) " / " counter(pages); font: 7.3pt var(--sans); color: #6B7280; }
+}
+@page :first {
+  margin-top: 12mm;
+  @top-left { content: none; }
+  @top-right { content: none; }
+}
+
+html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+body {
+  margin: 0; color: var(--ink); background: #fff;
+  font-family: var(--serif); font-size: 10.5pt; line-height: 1.62;
+  text-align: justify; line-break: strict; orphans: 3; widows: 3; font-kerning: normal;
+}
+p { margin: 0 0 2.2mm; }
+strong, b { font-weight: 700; }
+code { font-family: var(--mono); font-size: 0.82em; color: #374151; }
+pre {
+  font-family: var(--mono); font-size: 6.6pt; line-height: 1.5; background: var(--light);
+  padding: 2.2mm 3mm; white-space: pre-wrap; word-break: break-all; margin: 1mm 0 3mm;
+}
+
+/* ---------- 标题（楷体加粗，券商研报体例） ---------- */
+:root { --title: "Times New Roman", "Kaiti SC", "STKaiti", "KaiTi", "楷体", serif; }
+h1, h2, h3, .kicker, .point-h, .mast, .subline { text-align: left; }
+h2 {
+  font-family: var(--title); font-size: 13.5pt; font-weight: 700; color: var(--navy); margin: 6mm 0 2.6mm;
+  padding-bottom: 1.2mm; border-bottom: 0.8pt solid var(--navy); break-after: avoid;
+}
+h2 .num { margin-right: 2.5mm; }
+h3 { font-family: var(--title); font-size: 11pt; font-weight: 700; color: var(--navy); margin: 4mm 0 1.6mm; break-after: avoid; }
+p strong { color: var(--navy); }
+
+/* ---------- 首页抬头 ---------- */
+.cover { break-after: page; }
+.mast { display: flex; justify-content: space-between; align-items: flex-end; font-family: var(--title); }
+.mast .date { font-size: 10.5pt; color: var(--ink); margin-bottom: 1.5mm; }
+.mast .who { font-size: 13pt; font-weight: 700; color: var(--ink); }
+.mast .who span { margin-left: 5mm; }
+.mast .brand { font-family: var(--sans); font-size: 15pt; font-weight: 700; color: var(--navy); letter-spacing: 0.3pt; text-align: right; }
+.mast .brand small { display: block; font-size: 7.5pt; font-weight: 400; color: var(--muted); letter-spacing: 2pt; }
+h1 { font-family: var(--title); font-size: 22pt; line-height: 1.3; font-weight: 700; color: var(--navy);
+     margin: 5mm 0 1.5mm; letter-spacing: 0.5pt; word-spacing: 6mm; }
+.subline { display: flex; justify-content: space-between; align-items: baseline; font-family: var(--title);
+  font-size: 12.5pt; font-weight: 700; color: var(--navy); padding-bottom: 1.6mm; border-bottom: 2.4pt solid var(--navy);
+  margin-bottom: 5mm; }
+.subline .kind { font-size: 12.5pt; }
+.cover-grid { display: grid; grid-template-columns: 1fr 58mm; gap: 6mm; align-items: start; }
+.kicker { font-family: var(--title); font-size: 12pt; font-weight: 700; color: var(--navy); margin: 0 0 1.5mm; }
+p.point { font-size: 10.5pt; line-height: 1.52; margin: 0 0 1.7mm; }
+.point-h { font-family: var(--title); font-weight: 700; color: var(--navy); }
+.point-h::before { content: "\25CF"; font-family: var(--sans); font-size: 6.5pt; margin-right: 1.4mm; vertical-align: 1.5pt; }
+
+.rating { display: flex; align-items: baseline; gap: 2mm; border-top: 2pt solid var(--navy);
+  border-bottom: 0.6pt solid var(--navy); padding: 2mm 0 1.6mm; margin-bottom: 1mm; font-family: var(--title); }
+.rating span { font-size: 10.5pt; font-weight: 700; color: var(--ink); }
+.rating b { font-size: 16pt; color: var(--brick); }
+.rating em { font-style: normal; font-size: 9pt; color: var(--muted); }
+.kv.strong b { color: var(--navy); }
+.side { font-family: var(--sans); font-size: 7.8pt; line-height: 1.45; text-align: left; }
+.val-box { background: var(--navy); color: #fff; padding: 3mm 3.4mm; margin-bottom: 4mm; }
+.val-h { font-size: 7.6pt; opacity: 0.85; }
+.val-main { font-size: 18pt; font-weight: 600; margin: 0.6mm 0; font-variant-numeric: tabular-nums; }
+.val-main small { font-size: 8pt; font-weight: 400; }
+.val-sub { font-size: 7.3pt; opacity: 0.9; }
+.side-h {
+  font-size: 8.2pt; font-weight: 600; color: var(--navy); padding-bottom: 1mm; margin-bottom: 1.2mm;
+  border-bottom: 0.6pt solid var(--navy);
+}
+.side-h.gap { margin-top: 3.5mm; }
+.kv { display: flex; justify-content: space-between; align-items: baseline; padding: 0.7mm 0; border-bottom: 0.3pt solid #E5E7EB; }
+.kv span { color: #4B5563; }
+.kv b { font-variant-numeric: tabular-nums; font-weight: 600; }
+.note, .small { font-size: 7pt; color: var(--muted); line-height: 1.5; margin-top: 1.2mm; }
+.small.tight { margin-top: 1.4mm; }
+.side .small { text-align: justify; }
+.cover-table { margin-top: 3mm; }
+
+/* ---------- 图表 ---------- */
+figure { margin: 2.5mm 0 4mm; break-inside: avoid; }
+figcaption {
+  font-family: var(--sans); font-size: 8.3pt; font-weight: 600; color: var(--ink); margin-bottom: 1.6mm;
+  text-align: left; padding-bottom: 1mm; border-bottom: 0.4pt solid var(--rule);
+}
+.fno { color: var(--navy); margin-right: 2mm; }
+figure img { display: block; max-width: 100%; }
+.src { font-family: var(--sans); font-size: 6.7pt; color: #9CA3AF; margin-top: 1.3mm; text-align: left; line-height: 1.4; }
+.src code { white-space: nowrap; }
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: 6mm; align-items: start; }
+.two figure { margin-top: 1mm; }
+
+/* ---------- 表格（三线表） ---------- */
+table { border-collapse: collapse; width: 100%; font-family: var(--sans); font-variant-numeric: tabular-nums; }
+thead { display: table-header-group; }
+tr { break-inside: avoid; }
+table.data { font-size: 7.9pt; line-height: 1.35; border-top: 1pt solid var(--ink); border-bottom: 1pt solid var(--ink); }
+table.data th { font-weight: 600; text-align: right; padding: 1mm 1.6mm; border-bottom: 0.5pt solid var(--ink); white-space: nowrap; }
+table.data td { text-align: right; padding: 0.7mm 1.6mm; border-bottom: 0.3pt solid #E5E7EB; white-space: nowrap; }
+table.data th:first-child, table.data td:first-child { text-align: left; white-space: normal; }
+table.data td.pg, table.data th.pg { color: var(--muted); font-size: 7pt; }
+table.data tr.base td { background: #FFF6DB; }
+table.data tr.total td, table.data tr.sub td { font-weight: 600; border-top: 0.5pt solid var(--ink); }
+table.data tr.grp td { font-weight: 600; color: var(--navy); background: var(--light); padding-top: 0.9mm; }
+table.data.mono td code { font-size: 6.6pt; }
+table.data.nw td:first-child { white-space: nowrap; }
+table.forecast th.est, table.forecast td.est { background: #F4F7FB; }
+table.forecast td.neg, .neg { color: var(--brick); }
+
+table.heat { font-size: 7.8pt; border-top: 1pt solid var(--ink); border-bottom: 1pt solid var(--ink); }
+table.heat th { font-weight: 600; padding: 1.1mm 1mm; text-align: center; border-bottom: 0.5pt solid var(--ink); white-space: nowrap; }
+table.heat tbody th { text-align: left; border-bottom: none; border-right: 0.5pt solid var(--ink); padding-right: 2mm; }
+table.heat th.corner { font-size: 6.8pt; color: var(--muted); font-weight: 400; text-align: left; }
+table.heat td { text-align: center; padding: 1.2mm 0.5mm; border: 0.6pt solid #fff; }
+table.heat td.center { outline: 1.2pt solid var(--ink); outline-offset: -1.2pt; font-weight: 700; }
+
+/* ---------- 附录：财务报表 ---------- */
+.fin-grid { gap: 5mm; }
+table.fin { font-size: 7.3pt; line-height: 1.3; margin-bottom: 4mm; border-top: 1pt solid var(--navy); border-bottom: 0.8pt solid var(--navy); }
+table.fin th { background: var(--navy); color: #fff; font-weight: 600; text-align: right; padding: 1mm 1.4mm; white-space: nowrap; }
+table.fin th:first-child { text-align: left; }
+table.fin th.est { background: #3A5680; }
+table.fin td { text-align: right; padding: 0.6mm 1.4mm; border-bottom: 0.3pt solid #E5E7EB; white-space: nowrap; }
+table.fin td:first-child { text-align: left; }
+table.fin tr.total td { font-weight: 600; }
+
+ul { padding-left: 5mm; margin: 0 0 3mm; }
+li { margin-bottom: 1.3mm; }
+.appendix { font-size: 9pt; break-before: page; }
+.disclaimer {
+  margin-top: 4mm; padding: 2.6mm 3.2mm; border: 0.5pt solid var(--rule); background: #FAFAFA;
+  font-size: 7.2pt; line-height: 1.6; color: #4B5563; font-family: var(--sans);
+}
+.appendix .small { font-family: var(--sans); font-size: 7.6pt; line-height: 1.6; color: #4B5563; text-align: justify; }

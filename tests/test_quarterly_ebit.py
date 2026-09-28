@@ -216,7 +216,7 @@ def test_model_workbook_layout_and_formulas(run):
         names = re.findall(r'<sheet name="([^"]+)"', z.read("xl/workbook.xml").decode("utf-8"))
         styles = z.read("xl/styles.xml").decode("utf-8")
         dcf = z.read(f"xl/worksheets/sheet{names.index('DCF') + 1}.xml").decode("utf-8")
-    assert names[:4] == ["估值汇总", "DCF", "WACC", "敏感性"]
+    assert names[:5] == ["估值汇总", "盈利预测", "DCF", "WACC", "敏感性"]
     assert 'name val="Arial"' in styles and "FF1F3864" in styles and "FF0000FF" in styles
     # 中西文字体配对：文字单元格按字符分段，中文段楷体、西文段 Arial（数值单元格为 Arial）
     assert re.search(r'<rFont val="Arial"/>.{0,80}<t xml:space="preserve">DCF ?</t>.*?<rFont val="KaiTi"/>', dcf)

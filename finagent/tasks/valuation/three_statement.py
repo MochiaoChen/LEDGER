@@ -87,6 +87,12 @@ def build_plan(facts: list[dict[str, Any]], assumptions: dict[str, Any], *, comp
         "interest_rate": is1["interest"] / ((bs0["debt"] + bs1["debt"]) / 2) if bs0["debt"] + bs1["debt"] else 0.04,
     }
     g = lambda k: ts.get(k, hist.get(k))  # noqa: E731
+    gm_by = ts.get("gross_margin_by_scenario") or {}   # 分部预测给出的各情景毛利率 / 经营费用率（segment_forecast）
+    opex_by = ts.get("opex_pct_by_scenario") or {}
+    if "base" in gm_by:
+        ts = {**ts, "gross_margin": gm_by["base"]}
+    if "base" in opex_by:
+        ts = {**ts, "opex_pct": opex_by["base"]}
 
     notes = [
         {"type": "inference", "item": "三表口径",
@@ -140,16 +146,18 @@ def build_plan(facts: list[dict[str, Any]], assumptions: dict[str, Any], *, comp
                                 "min_cash": float(ts.get("min_cash", 0.0)), "sweep_pct": float(ts.get("sweep_pct", 0.0))},
                  "covenants": ts.get("covenants", {})},
         "tax": {"book_tax_rate": g("tax_rate"), "cash_tax_rate": g("tax_rate"), "nol_balance": 0.0},
-        "equity": {"common_equity": bs1["common_equity"], "dividends": vec(ts.get("dividends", 0.0))},
+        "equity": {"common_equity": bs1["common_equity"], "dividends": vec(ts.get("dividends", 0.0)),
+                   **({"dividend_payout_ratio": vec(ts["dividend_payout"])} if "dividend_payout" in ts else {})},
         "other_balance_sheet": {"other_assets": bs1["other_assets"], "other_liabilities": bs1["other_liabilities"]},
         "scenarios": {
             "base": {"description": dcf_sc["base"].get("description", ""), "overrides": {}},
             **{k: {"description": dcf_sc[k].get("description", ""),
                    "overrides": {"revenue": {"growth_rates": vec(dcf_sc[k]["revenue_growth"])},
                                  "ppe": {"capex_pct_revenue": vec(dcf_sc[k]["capex_percent_revenue"])},
-                                 "costs": {"cogs": {"gross_margin": vec(
+                                 "costs": {"cogs": {"gross_margin": vec(gm_by[k]) if k in gm_by else vec(
                                      [x + ts.get("gross_margin_shift", {}).get(k, 0.0) for x in
-                                      (vec(g("gross_margin")).values())])}},
+                                      (vec(g("gross_margin")).values())])},
+                                           **({"opex": {"pct_revenue": vec(opex_by[k])}} if k in opex_by else {})},
                                  **({"working_capital": {"ar_days": vec(
                                      [x + ts["ar_days_shift"][k] for x in vec(g("ar_days")).values()])}}
                                     if k in ts.get("ar_days_shift", {}) else {})}}
@@ -238,3 +246,50 @@ def _dcf_drivers(plan: dict[str, Any], r: dict[str, Any]) -> dict[str, Any]:
         "nwc_percent_revenue": ratio(r["working_capital"]["nwc"]),
     }
     return out
+
+
+DETAIL_SECTIONS = ("income_statement", "working_capital", "ppe", "debt", "cash_flow_statement", "balance_sheet",
+                   "equity_flows")
+
+
+def detail(plan: dict[str, Any]) -> dict[str, Any]:
+    """基准情景的完整计算明细（营运资本、PP&E、债务、分红等辅助表）与各情景驱动，供 model.xlsx 写成公式联动的三表。
+    与 three_statement.json 分开输出：后者与原引擎快照逐字比对，不能增加字段。"""
+    p = eng.normalize_plan(plan)
+    base = eng.run_model(p, "base")
+    tl = p["timeline"]
+    labels = [f"FY{int(tl['start_year']) + i}" for i in range(int(tl["horizon_periods"]))]
+    vec = lambda d: [eng.assume(d, per, 0.0) for per in base["periods"]]  # noqa: E731
+    scen = {}
+    for k in eng.SCENARIOS:
+        q = eng.deep_merge(p, p.get("scenarios", {}).get(k, {}).get("overrides", {}))
+        scen[k] = {"revenue_growth": vec(q["revenue"].get("growth_rates")),
+                   "gross_margin": vec(q["costs"]["cogs"].get("gross_margin")),
+                   "opex_pct": vec(q["costs"]["opex"].get("pct_revenue")),
+                   "capex_pct_revenue": vec(q["ppe"].get("capex_pct_revenue")),
+                   "ar_days": vec(q["working_capital"].get("ar_days"))}
+    return {
+        "periods": labels,
+        "base": {sec: base[sec] for sec in DETAIL_SECTIONS},
+        "drivers": {
+            "opex_pct": vec(p["costs"]["opex"].get("pct_revenue")),
+            "inventory_days": vec(p["working_capital"].get("inventory_days")),
+            "ap_days": vec(p["working_capital"].get("ap_days")),
+            "dep_rate": vec(p["ppe"].get("depreciation_pct_beginning_ppe")),
+            "interest_rate": vec(p["debt"].get("interest_rate")),
+            "mandatory_amortization": vec(p["debt"].get("mandatory_amortization")),
+            "tax_rate": float(p["tax"]["book_tax_rate"]),
+            "dividend_payout": vec(p["equity"].get("dividend_payout_ratio")) if "dividend_payout_ratio" in p["equity"] else None,
+            "dividends": vec(p["equity"].get("dividends")),
+        },
+        "scenarios": scen,
+        "opening": {"ppe": eng.last_bs_value(p, "ppe_net"), "debt": float(p["debt"].get("beginning_debt") or 0.0),
+                    "nwc": eng.last_nwc(p), "cash": eng.last_bs_value(p, "cash")},
+        "supported": (not p["debt"].get("revolver_commitment") and not p["debt"]["cash_sweep"].get("enabled")
+                      and not p["tax"].get("nol_balance")
+                      and not any(vec(p["equity"].get(k)) != [0.0] * len(labels) for k in ("buybacks", "issuance"))
+                      and p["ppe"].get("depreciation_method", "pct_beginning_ppe") == "pct_beginning_ppe"
+                      and p["costs"]["cogs"].get("method", "gross_margin") == "gross_margin"
+                      and p["costs"]["opex"].get("method", "pct_revenue") == "pct_revenue"),
+    }
+
