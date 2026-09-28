@@ -87,10 +87,16 @@ def extract_rule(doc: Document, default_year: int | None) -> list[Claim]:
                 vm = VAL_RE.search(seg[: ym.start()] if ym else seg)
                 if vm and vm.group(2) not in ("个百分点", "pct", "pp"):
                     unit = vm.group(2)
-                    ctype = "ratio" if unit == "%" else "level"
-                    if ctype == "ratio" and kind not in ("pct",):
-                        ctype = "yoy" if re.search(r"增|降|减|升", seg[: vm.start()]) else "ratio"
-                    if not (ctype == "level" and unit == "倍"):
+                    between = seg[: vm.start()]
+                    # “增加0.94亿元”是变动额而非本期值（“增长至/为…”仍是本期值），无法按水平值核对，不抽取
+                    is_delta = not vm.group(0).lstrip().startswith(("为", "达", "至", "实现", "录得", "是")) \
+                        and re.search(r"(增加|减少|增长|下降|提升|提高|降低|上升|下滑)了?\s*$", between)
+                    if unit == "%":
+                        # 金额类指标后的百分数：有增减字样视为增速，否则不是该指标的比率（如“占比”），不抽取
+                        ctype = "ratio" if kind == "pct" else ("yoy" if re.search(r"增|降|减|升", between) else None)
+                    else:
+                        ctype = None if is_delta else "level"
+                    if ctype and not (ctype == "level" and unit == "倍"):
                         claims.append(_mk(claims, mid, period, ctype, vm.group(1), unit,
                                           sent[st:en + vm.end()], sent, loc, is_fc))
                 if ym:
@@ -154,6 +160,43 @@ def merge_claims(rule: list[Claim], llm: list[Claim]) -> list[Claim]:
             merged.append(c)
             seen.add(key)
     return merged
+
+
+CLAIM_TYPES = ("level", "yoy", "ratio", "pp_change")
+
+
+def ingest_claims(doc: Document, payload: dict[str, Any] | list[Any],
+                  default_year: int | None) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    """Skill 版本：接入外部模型拆出的断言。引用须为原文连续片段且包含该数字，否则拒绝；与规则通道去重合并。"""
+    items = payload.get("claims", []) if isinstance(payload, dict) else payload
+    ext: list[Claim] = []
+    rejected: list[dict[str, Any]] = []
+    for i, it in enumerate(items or []):
+        it = it if isinstance(it, dict) else {}
+        quote, raw = str(it.get("quote", "")).strip(), str(it.get("value", "")).strip()
+        ch = next((c for c in doc.chunks if quote and quote in c.text), None)
+        reason = None
+        if it.get("metric_id") not in BY_ID:
+            reason = f"未知指标：{it.get('metric_id')}"
+        elif it.get("claim_type", "level") not in CLAIM_TYPES:
+            reason = f"断言类型不合法：{it.get('claim_type')}"
+        elif ch is None:
+            reason = "quote 不是研报原文中的连续片段"
+        elif raw.lstrip("-").replace(",", "") not in quote.replace(",", ""):
+            reason = f"数值 {raw} 不在 quote 中"
+        else:
+            try:
+                val = float(raw.replace(",", ""))
+            except ValueError:
+                reason = f"数值无法解析：{raw}"
+        if reason:
+            rejected.append({"index": i, "item": it, "reason": reason})
+            continue
+        ext.append(Claim(f"L{len(ext) + 1:03d}", it["metric_id"], str(it.get("period") or default_year),
+                         it.get("claim_type", "level"), raw.lstrip("-"), val, it.get("unit", ""), quote, quote,
+                         {"source": ch.source, "page": ch.page, "chunk_id": ch.chunk_id},
+                         bool(it.get("is_forecast")), "llm"))
+    return [c.to_dict() for c in merge_claims(extract_rule(doc, default_year), ext)], rejected
 
 
 @tracing.traced("extract_claims")

@@ -1,0 +1,748 @@
+{
+ "company": "星河智造",
+ "fiscal_year": 2024,
+ "source_file": "data/samples/annual_report_2024.pdf",
+ "facts": [
+  {
+   "metric_id": "revenue",
+   "period": "2024",
+   "raw_value": "5,862,340,125.36",
+   "unit": "元",
+   "page": 6,
+   "label": "营业收入",
+   "table": "主要会计数据和财务指标",
+   "scope": "consolidated"
+  },
+  {
+   "metric_id": "revenue",
+   "period": "2023",
+   "raw_value": "5,120,451,338.72",
+   "unit": "元",
+   "page": 6,
+   "label": "营业收入",
+   "table": "主要会计数据和财务指标",
+   "scope": "consolidated"
+  },
+  {
+   "metric_id": "np_parent",
+   "period": "2024",
+   "raw_value": "612,380,000.00",
+   "unit": "元",
+   "page": 6,
+   "label": "归属于上市公司股东的净利润",
+   "table": "主要会计数据和财务指标",
+   "scope": "consolidated"
+  },
+  {
+   "metric_id": "np_parent",
+   "period": "2023",
+   "raw_value": "518,210,000.00",
+   "unit": "元",
+   "page": 6,
+   "label": "归属于上市公司股东的净利润",
+   "table": "主要会计数据和财务指标",
+   "scope": "consolidated"
+  },
+  {
+   "metric_id": "np_parent_deducted",
+   "period": "2024",
+   "raw_value": "443,950,000.00",
+   "unit": "元",
+   "page": 6,
+   "label": "归属于上市公司股东的扣除非经常性损益的净利润",
+   "table": "主要会计数据和财务指标",
+   "scope": "consolidated"
+  },
+  {
+   "metric_id": "np_parent_deducted",
+   "period": "2023",
+   "raw_value": "470,650,000.00",
+   "unit": "元",
+   "page": 6,
+   "label": "归属于上市公司股东的扣除非经常性损益的净利润",
+   "table": "主要会计数据和财务指标",
+   "scope": "consolidated"
+  },
+  {
+   "metric_id": "eps_basic",
+   "period": "2024",
+   "raw_value": "0.77",
+   "unit": "元/股",
+   "page": 6,
+   "label": "基本每股收益（元／股）",
+   "table": "主要会计数据和财务指标",
+   "scope": "consolidated"
+  },
+  {
+   "metric_id": "eps_basic",
+   "period": "2023",
+   "raw_value": "0.65",
+   "unit": "元/股",
+   "page": 6,
+   "label": "基本每股收益（元／股）",
+   "table": "主要会计数据和财务指标",
+   "scope": "consolidated"
+  },
+  {
+   "metric_id": "roe_weighted",
+   "period": "2024",
+   "raw_value": "12.63",
+   "unit": "%",
+   "page": 6,
+   "label": "加权平均净资产收益率",
+   "table": "主要会计数据和财务指标",
+   "scope": "consolidated"
+  },
+  {
+   "metric_id": "roe_weighted",
+   "period": "2023",
+   "raw_value": "11.40",
+   "unit": "%",
+   "page": 6,
+   "label": "加权平均净资产收益率",
+   "table": "主要会计数据和财务指标",
+   "scope": "consolidated"
+  },
+  {
+   "metric_id": "total_shares",
+   "period": "2024",
+   "raw_value": "800,000,000",
+   "unit": "股",
+   "page": 6,
+   "label": "总股本（股）",
+   "table": "主要会计数据和财务指标",
+   "scope": "consolidated"
+  },
+  {
+   "metric_id": "total_shares",
+   "period": "2023",
+   "raw_value": "800,000,000",
+   "unit": "股",
+   "page": 6,
+   "label": "总股本（股）",
+   "table": "主要会计数据和财务指标",
+   "scope": "consolidated"
+  },
+  {
+   "metric_id": "gov_subsidy",
+   "period": "2024",
+   "raw_value": "98,650,000.00",
+   "unit": "元",
+   "page": 8,
+   "label": "计入当期损益的政府补助",
+   "table": "非经常性损益项目及金额",
+   "scope": "consolidated"
+  },
+  {
+   "metric_id": "gov_subsidy",
+   "period": "2023",
+   "raw_value": "38,400,000.00",
+   "unit": "元",
+   "page": 8,
+   "label": "计入当期损益的政府补助",
+   "table": "非经常性损益项目及金额",
+   "scope": "consolidated"
+  },
+  {
+   "metric_id": "non_recurring",
+   "period": "2024",
+   "raw_value": "168,430,000.00",
+   "unit": "元",
+   "page": 8,
+   "label": "合计",
+   "table": "非经常性损益项目及金额",
+   "scope": "consolidated"
+  },
+  {
+   "metric_id": "non_recurring",
+   "period": "2023",
+   "raw_value": "47,560,000.00",
+   "unit": "元",
+   "page": 8,
+   "label": "合计",
+   "table": "非经常性损益项目及金额",
+   "scope": "consolidated"
+  },
+  {
+   "metric_id": "cash",
+   "period": "2024",
+   "raw_value": "1,356,700,000.00",
+   "unit": "元",
+   "page": 102,
+   "label": "货币资金",
+   "table": "合并资产负债表",
+   "scope": "consolidated"
+  },
+  {
+   "metric_id": "cash",
+   "period": "2023",
+   "raw_value": "1,602,400,000.00",
+   "unit": "元",
+   "page": 102,
+   "label": "货币资金",
+   "table": "合并资产负债表",
+   "scope": "consolidated"
+  },
+  {
+   "metric_id": "accounts_receivable",
+   "period": "2024",
+   "raw_value": "1,985,600,000.00",
+   "unit": "元",
+   "page": 102,
+   "label": "应收账款",
+   "table": "合并资产负债表",
+   "scope": "consolidated"
+  },
+  {
+   "metric_id": "accounts_receivable",
+   "period": "2023",
+   "raw_value": "1,402,300,000.00",
+   "unit": "元",
+   "page": 102,
+   "label": "应收账款",
+   "table": "合并资产负债表",
+   "scope": "consolidated"
+  },
+  {
+   "metric_id": "inventory",
+   "period": "2024",
+   "raw_value": "1,120,500,000.00",
+   "unit": "元",
+   "page": 102,
+   "label": "存货",
+   "table": "合并资产负债表",
+   "scope": "consolidated"
+  },
+  {
+   "metric_id": "inventory",
+   "period": "2023",
+   "raw_value": "1,010,800,000.00",
+   "unit": "元",
+   "page": 102,
+   "label": "存货",
+   "table": "合并资产负债表",
+   "scope": "consolidated"
+  },
+  {
+   "metric_id": "fixed_assets",
+   "period": "2024",
+   "raw_value": "2,650,000,000.00",
+   "unit": "元",
+   "page": 102,
+   "label": "固定资产",
+   "table": "合并资产负债表",
+   "scope": "consolidated"
+  },
+  {
+   "metric_id": "fixed_assets",
+   "period": "2023",
+   "raw_value": "2,380,000,000.00",
+   "unit": "元",
+   "page": 102,
+   "label": "固定资产",
+   "table": "合并资产负债表",
+   "scope": "consolidated"
+  },
+  {
+   "metric_id": "construction_in_progress",
+   "period": "2024",
+   "raw_value": "420,000,000.00",
+   "unit": "元",
+   "page": 102,
+   "label": "在建工程",
+   "table": "合并资产负债表",
+   "scope": "consolidated"
+  },
+  {
+   "metric_id": "construction_in_progress",
+   "period": "2023",
+   "raw_value": "360,000,000.00",
+   "unit": "元",
+   "page": 102,
+   "label": "在建工程",
+   "table": "合并资产负债表",
+   "scope": "consolidated"
+  },
+  {
+   "metric_id": "total_assets",
+   "period": "2024",
+   "raw_value": "9,842,300,000.00",
+   "unit": "元",
+   "page": 102,
+   "label": "资产总计",
+   "table": "合并资产负债表",
+   "scope": "consolidated"
+  },
+  {
+   "metric_id": "total_assets",
+   "period": "2023",
+   "raw_value": "8,965,100,000.00",
+   "unit": "元",
+   "page": 102,
+   "label": "资产总计",
+   "table": "合并资产负债表",
+   "scope": "consolidated"
+  },
+  {
+   "metric_id": "short_debt",
+   "period": "2024",
+   "raw_value": "620,000,000.00",
+   "unit": "元",
+   "page": 102,
+   "label": "短期借款",
+   "table": "合并资产负债表",
+   "scope": "consolidated"
+  },
+  {
+   "metric_id": "short_debt",
+   "period": "2023",
+   "raw_value": "480,000,000.00",
+   "unit": "元",
+   "page": 102,
+   "label": "短期借款",
+   "table": "合并资产负债表",
+   "scope": "consolidated"
+  },
+  {
+   "metric_id": "accounts_payable",
+   "period": "2024",
+   "raw_value": "1,210,400,000.00",
+   "unit": "元",
+   "page": 102,
+   "label": "应付账款",
+   "table": "合并资产负债表",
+   "scope": "consolidated"
+  },
+  {
+   "metric_id": "accounts_payable",
+   "period": "2023",
+   "raw_value": "1,105,600,000.00",
+   "unit": "元",
+   "page": 102,
+   "label": "应付账款",
+   "table": "合并资产负债表",
+   "scope": "consolidated"
+  },
+  {
+   "metric_id": "current_ltd",
+   "period": "2024",
+   "raw_value": "150,000,000.00",
+   "unit": "元",
+   "page": 102,
+   "label": "一年内到期的非流动负债",
+   "table": "合并资产负债表",
+   "scope": "consolidated"
+  },
+  {
+   "metric_id": "current_ltd",
+   "period": "2023",
+   "raw_value": "120,000,000.00",
+   "unit": "元",
+   "page": 102,
+   "label": "一年内到期的非流动负债",
+   "table": "合并资产负债表",
+   "scope": "consolidated"
+  },
+  {
+   "metric_id": "long_debt",
+   "period": "2024",
+   "raw_value": "900,000,000.00",
+   "unit": "元",
+   "page": 102,
+   "label": "长期借款",
+   "table": "合并资产负债表",
+   "scope": "consolidated"
+  },
+  {
+   "metric_id": "long_debt",
+   "period": "2023",
+   "raw_value": "850,000,000.00",
+   "unit": "元",
+   "page": 102,
+   "label": "长期借款",
+   "table": "合并资产负债表",
+   "scope": "consolidated"
+  },
+  {
+   "metric_id": "lease_liab",
+   "period": "2024",
+   "raw_value": "35,000,000.00",
+   "unit": "元",
+   "page": 102,
+   "label": "租赁负债",
+   "table": "合并资产负债表",
+   "scope": "consolidated"
+  },
+  {
+   "metric_id": "lease_liab",
+   "period": "2023",
+   "raw_value": "41,000,000.00",
+   "unit": "元",
+   "page": 102,
+   "label": "租赁负债",
+   "table": "合并资产负债表",
+   "scope": "consolidated"
+  },
+  {
+   "metric_id": "total_liabilities",
+   "period": "2024",
+   "raw_value": "4,512,600,000.00",
+   "unit": "元",
+   "page": 102,
+   "label": "负债合计",
+   "table": "合并资产负债表",
+   "scope": "consolidated"
+  },
+  {
+   "metric_id": "total_liabilities",
+   "period": "2023",
+   "raw_value": "4,020,700,000.00",
+   "unit": "元",
+   "page": 102,
+   "label": "负债合计",
+   "table": "合并资产负债表",
+   "scope": "consolidated"
+  },
+  {
+   "metric_id": "equity_parent",
+   "period": "2024",
+   "raw_value": "5,021,400,000.00",
+   "unit": "元",
+   "page": 102,
+   "label": "归属于母公司所有者权益合计",
+   "table": "合并资产负债表",
+   "scope": "consolidated"
+  },
+  {
+   "metric_id": "equity_parent",
+   "period": "2023",
+   "raw_value": "4,672,900,000.00",
+   "unit": "元",
+   "page": 102,
+   "label": "归属于母公司所有者权益合计",
+   "table": "合并资产负债表",
+   "scope": "consolidated"
+  },
+  {
+   "metric_id": "minority_equity",
+   "period": "2024",
+   "raw_value": "308,300,000.00",
+   "unit": "元",
+   "page": 102,
+   "label": "少数股东权益",
+   "table": "合并资产负债表",
+   "scope": "consolidated"
+  },
+  {
+   "metric_id": "minority_equity",
+   "period": "2023",
+   "raw_value": "271,500,000.00",
+   "unit": "元",
+   "page": 102,
+   "label": "少数股东权益",
+   "table": "合并资产负债表",
+   "scope": "consolidated"
+  },
+  {
+   "metric_id": "total_equity",
+   "period": "2024",
+   "raw_value": "5,329,700,000.00",
+   "unit": "元",
+   "page": 102,
+   "label": "所有者权益合计",
+   "table": "合并资产负债表",
+   "scope": "consolidated"
+  },
+  {
+   "metric_id": "total_equity",
+   "period": "2023",
+   "raw_value": "4,944,400,000.00",
+   "unit": "元",
+   "page": 102,
+   "label": "所有者权益合计",
+   "table": "合并资产负债表",
+   "scope": "consolidated"
+  },
+  {
+   "metric_id": "total_liab_equity",
+   "period": "2024",
+   "raw_value": "9,842,300,000.00",
+   "unit": "元",
+   "page": 102,
+   "label": "负债和所有者权益总计",
+   "table": "合并资产负债表",
+   "scope": "consolidated"
+  },
+  {
+   "metric_id": "total_liab_equity",
+   "period": "2023",
+   "raw_value": "8,965,100,000.00",
+   "unit": "元",
+   "page": 102,
+   "label": "负债和所有者权益总计",
+   "table": "合并资产负债表",
+   "scope": "consolidated"
+  },
+  {
+   "metric_id": "operating_cost",
+   "period": "2024",
+   "raw_value": "4,034,118,660.40",
+   "unit": "元",
+   "page": 106,
+   "label": "营业成本",
+   "table": "合并利润表",
+   "scope": "consolidated"
+  },
+  {
+   "metric_id": "operating_cost",
+   "period": "2023",
+   "raw_value": "3,521,806,902.11",
+   "unit": "元",
+   "page": 106,
+   "label": "营业成本",
+   "table": "合并利润表",
+   "scope": "consolidated"
+  },
+  {
+   "metric_id": "selling_expense",
+   "period": "2024",
+   "raw_value": "238,410,000.00",
+   "unit": "元",
+   "page": 106,
+   "label": "销售费用",
+   "table": "合并利润表",
+   "scope": "consolidated"
+  },
+  {
+   "metric_id": "selling_expense",
+   "period": "2023",
+   "raw_value": "210,330,000.00",
+   "unit": "元",
+   "page": 106,
+   "label": "销售费用",
+   "table": "合并利润表",
+   "scope": "consolidated"
+  },
+  {
+   "metric_id": "admin_expense",
+   "period": "2024",
+   "raw_value": "301,220,000.00",
+   "unit": "元",
+   "page": 106,
+   "label": "管理费用",
+   "table": "合并利润表",
+   "scope": "consolidated"
+  },
+  {
+   "metric_id": "admin_expense",
+   "period": "2023",
+   "raw_value": "285,010,000.00",
+   "unit": "元",
+   "page": 106,
+   "label": "管理费用",
+   "table": "合并利润表",
+   "scope": "consolidated"
+  },
+  {
+   "metric_id": "rd_expense",
+   "period": "2024",
+   "raw_value": "312,650,000.00",
+   "unit": "元",
+   "page": 106,
+   "label": "研发费用",
+   "table": "合并利润表",
+   "scope": "consolidated"
+  },
+  {
+   "metric_id": "rd_expense",
+   "period": "2023",
+   "raw_value": "268,440,000.00",
+   "unit": "元",
+   "page": 106,
+   "label": "研发费用",
+   "table": "合并利润表",
+   "scope": "consolidated"
+  },
+  {
+   "metric_id": "finance_expense",
+   "period": "2024",
+   "raw_value": "45,300,000.00",
+   "unit": "元",
+   "page": 106,
+   "label": "财务费用",
+   "table": "合并利润表",
+   "scope": "consolidated"
+  },
+  {
+   "metric_id": "finance_expense",
+   "period": "2023",
+   "raw_value": "52,100,000.00",
+   "unit": "元",
+   "page": 106,
+   "label": "财务费用",
+   "table": "合并利润表",
+   "scope": "consolidated"
+  },
+  {
+   "metric_id": "operating_profit",
+   "period": "2024",
+   "raw_value": "742,560,000.00",
+   "unit": "元",
+   "page": 106,
+   "label": "三、营业利润",
+   "table": "合并利润表",
+   "scope": "consolidated"
+  },
+  {
+   "metric_id": "operating_profit",
+   "period": "2023",
+   "raw_value": "626,700,000.00",
+   "unit": "元",
+   "page": 106,
+   "label": "三、营业利润",
+   "table": "合并利润表",
+   "scope": "consolidated"
+  },
+  {
+   "metric_id": "total_profit",
+   "period": "2024",
+   "raw_value": "760,120,000.00",
+   "unit": "元",
+   "page": 106,
+   "label": "四、利润总额",
+   "table": "合并利润表",
+   "scope": "consolidated"
+  },
+  {
+   "metric_id": "total_profit",
+   "period": "2023",
+   "raw_value": "638,900,000.00",
+   "unit": "元",
+   "page": 106,
+   "label": "四、利润总额",
+   "table": "合并利润表",
+   "scope": "consolidated"
+  },
+  {
+   "metric_id": "income_tax",
+   "period": "2024",
+   "raw_value": "114,018,000.00",
+   "unit": "元",
+   "page": 106,
+   "label": "减：所得税费用",
+   "table": "合并利润表",
+   "scope": "consolidated"
+  },
+  {
+   "metric_id": "income_tax",
+   "period": "2023",
+   "raw_value": "95,835,000.00",
+   "unit": "元",
+   "page": 106,
+   "label": "减：所得税费用",
+   "table": "合并利润表",
+   "scope": "consolidated"
+  },
+  {
+   "metric_id": "net_profit",
+   "period": "2024",
+   "raw_value": "646,102,000.00",
+   "unit": "元",
+   "page": 106,
+   "label": "五、净利润",
+   "table": "合并利润表",
+   "scope": "consolidated"
+  },
+  {
+   "metric_id": "net_profit",
+   "period": "2023",
+   "raw_value": "543,065,000.00",
+   "unit": "元",
+   "page": 106,
+   "label": "五、净利润",
+   "table": "合并利润表",
+   "scope": "consolidated"
+  },
+  {
+   "metric_id": "ocf",
+   "period": "2024",
+   "raw_value": "238,460,000.00",
+   "unit": "元",
+   "page": 110,
+   "label": "经营活动产生的现金流量净额",
+   "table": "合并现金流量表",
+   "scope": "consolidated"
+  },
+  {
+   "metric_id": "ocf",
+   "period": "2023",
+   "raw_value": "581,330,000.00",
+   "unit": "元",
+   "page": 110,
+   "label": "经营活动产生的现金流量净额",
+   "table": "合并现金流量表",
+   "scope": "consolidated"
+  },
+  {
+   "metric_id": "capex",
+   "period": "2024",
+   "raw_value": "685,200,000.00",
+   "unit": "元",
+   "page": 110,
+   "label": "购建固定资产、无形资产和其他长期资产支付的现金",
+   "table": "合并现金流量表",
+   "scope": "consolidated"
+  },
+  {
+   "metric_id": "capex",
+   "period": "2023",
+   "raw_value": "540,300,000.00",
+   "unit": "元",
+   "page": 110,
+   "label": "购建固定资产、无形资产和其他长期资产支付的现金",
+   "table": "合并现金流量表",
+   "scope": "consolidated"
+  },
+  {
+   "metric_id": "depreciation",
+   "period": "2024",
+   "raw_value": "298,400,000.00",
+   "unit": "元",
+   "page": 110,
+   "label": "固定资产折旧、油气资产折耗、生产性生物资产折旧",
+   "table": "合并现金流量表（补充资料）",
+   "scope": "consolidated"
+  },
+  {
+   "metric_id": "depreciation",
+   "period": "2023",
+   "raw_value": "265,700,000.00",
+   "unit": "元",
+   "page": 110,
+   "label": "固定资产折旧、油气资产折耗、生产性生物资产折旧",
+   "table": "合并现金流量表（补充资料）",
+   "scope": "consolidated"
+  },
+  {
+   "metric_id": "amortization",
+   "period": "2024",
+   "raw_value": "42,100,000.00",
+   "unit": "元",
+   "page": 110,
+   "label": "无形资产摊销",
+   "table": "合并现金流量表（补充资料）",
+   "scope": "consolidated"
+  },
+  {
+   "metric_id": "amortization",
+   "period": "2023",
+   "raw_value": "38,600,000.00",
+   "unit": "元",
+   "page": 110,
+   "label": "无形资产摊销",
+   "table": "合并现金流量表（补充资料）",
+   "scope": "consolidated"
+  }
+ ],
+ "extracted_by": "Claude Code（finagent-research skill），按页阅读样例 PDF 后抄录（样例年报为虚构数据）"
+}

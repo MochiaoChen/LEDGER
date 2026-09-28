@@ -28,6 +28,9 @@
 |---|---|---|---|
 | pdfplumber | ≥0.11 | MIT | PDF 文本与表格抽取 |
 | pytest | ≥8.0 | MIT | 测试 |
+| fpdf2 | 2.8 | LGPL-3.0 | 仅开发时：`data/samples/build_pdf.py` 生成样例 PDF，不是运行依赖 |
+
+样例 PDF（`data/samples/annual_report_2024.pdf`）内嵌 macOS 系统字体 Arial Unicode 的字形子集，仅用于显示样例数据。
 
 `finagent/` 其余部分仅使用 Python 标准库（含 xlsx 写出）。
 
@@ -36,6 +39,7 @@
 | 名称 | 调用方式 | 使用范围 |
 |---|---|---|
 | 见 `.env`（如 deepseek-chat / qwen-plus / glm-4-plus） | OpenAI 兼容 Chat Completions API | 非标准表格抽取补漏、研报断言抽取补漏、分析文字解读、Agent 规划 |
+| Claude（Anthropic，经 Claude Code 使用） | Claude Code 按 `.claude/skills/finagent-research/SKILL.md` 执行 | Skill 版本：按页阅读年报 PDF 抽取数字、拆分研报断言、撰写解读；所有计算与校验仍由本项目代码完成 |
 
 ## 4. 自主开发部分
 

@@ -1,0 +1,177 @@
+{
+ "report_file": "data/samples/research_draft.md",
+ "claims": [
+  {
+   "metric_id": "revenue",
+   "period": "2024",
+   "claim_type": "level",
+   "value": "58.62",
+   "unit": "亿元",
+   "is_forecast": false,
+   "quote": "2024年公司实现营业收入58.62亿元"
+  },
+  {
+   "metric_id": "revenue",
+   "period": "2024",
+   "claim_type": "yoy",
+   "value": "14.49",
+   "unit": "%",
+   "is_forecast": false,
+   "quote": "同比增长14.49%"
+  },
+  {
+   "metric_id": "np_parent",
+   "period": "2024",
+   "claim_type": "level",
+   "value": "6.46",
+   "unit": "亿元",
+   "is_forecast": false,
+   "quote": "实现归母净利润6.46亿元"
+  },
+  {
+   "metric_id": "np_parent",
+   "period": "2024",
+   "claim_type": "yoy",
+   "value": "25.30",
+   "unit": "%",
+   "is_forecast": false,
+   "quote": "实现归母净利润6.46亿元，同比增长25.30%"
+  },
+  {
+   "metric_id": "np_parent_deducted",
+   "period": "2024",
+   "claim_type": "level",
+   "value": "4.44",
+   "unit": "亿元",
+   "is_forecast": false,
+   "quote": "扣非归母净利润4.44亿元"
+  },
+  {
+   "metric_id": "np_parent_deducted",
+   "period": "2024",
+   "claim_type": "yoy",
+   "value": "-5.67",
+   "unit": "%",
+   "is_forecast": false,
+   "quote": "扣非归母净利润4.44亿元，同比下降5.67%"
+  },
+  {
+   "metric_id": "non_recurring",
+   "period": "2024",
+   "claim_type": "level",
+   "value": "1.68",
+   "unit": "亿元",
+   "is_forecast": false,
+   "quote": "非经常性损益1.68亿元"
+  },
+  {
+   "metric_id": "ocf",
+   "period": "2024",
+   "claim_type": "level",
+   "value": "2.38",
+   "unit": "万元",
+   "is_forecast": false,
+   "quote": "经营活动现金流量净额2.38万元"
+  },
+  {
+   "metric_id": "gross_margin",
+   "period": "2024",
+   "claim_type": "ratio",
+   "value": "32.50",
+   "unit": "%",
+   "is_forecast": false,
+   "quote": "全年毛利率为32.50%"
+  },
+  {
+   "metric_id": "gross_margin",
+   "period": "2024",
+   "claim_type": "pp_change",
+   "value": "1.2",
+   "unit": "pp",
+   "is_forecast": false,
+   "quote": "全年毛利率为32.50%，较上年提升1.2个百分点"
+  },
+  {
+   "metric_id": "rd_expense",
+   "period": "2024",
+   "claim_type": "level",
+   "value": "3.13",
+   "unit": "亿元",
+   "is_forecast": false,
+   "quote": "研发费用3.13亿元"
+  },
+  {
+   "metric_id": "rd_ratio",
+   "period": "2024",
+   "claim_type": "ratio",
+   "value": "5.33",
+   "unit": "%",
+   "is_forecast": false,
+   "quote": "研发费用率5.33%"
+  },
+  {
+   "metric_id": "operating_cost",
+   "period": "2024",
+   "claim_type": "level",
+   "value": "35.22",
+   "unit": "亿元",
+   "is_forecast": false,
+   "quote": "2024年营业成本35.22亿元"
+  },
+  {
+   "metric_id": "eps_basic",
+   "period": "2024",
+   "claim_type": "level",
+   "value": "0.77",
+   "unit": "元/股",
+   "is_forecast": false,
+   "quote": "基本每股收益0.77元"
+  },
+  {
+   "metric_id": "accounts_receivable",
+   "period": "2024",
+   "claim_type": "level",
+   "value": "19.86",
+   "unit": "亿元",
+   "is_forecast": false,
+   "quote": "期末应收账款19.86亿元"
+  },
+  {
+   "metric_id": "accounts_receivable",
+   "period": "2024",
+   "claim_type": "yoy",
+   "value": "28.50",
+   "unit": "%",
+   "is_forecast": false,
+   "quote": "期末应收账款19.86亿元，同比增长28.50%"
+  },
+  {
+   "metric_id": "debt_ratio",
+   "period": "2024",
+   "claim_type": "ratio",
+   "value": "45.85",
+   "unit": "%",
+   "is_forecast": false,
+   "quote": "资产负债率45.85%"
+  },
+  {
+   "metric_id": "cash",
+   "period": "2024",
+   "claim_type": "level",
+   "value": "13.57",
+   "unit": "亿元",
+   "is_forecast": false,
+   "quote": "货币资金13.57亿元"
+  },
+  {
+   "metric_id": "revenue",
+   "period": "2025",
+   "claim_type": "level",
+   "value": "67.50",
+   "unit": "亿元",
+   "is_forecast": true,
+   "quote": "我们预计2025年营业收入67.50亿元"
+  }
+ ],
+ "extracted_by": "Claude Code（finagent-research skill），按页阅读样例 PDF 后抄录（样例年报为虚构数据）"
+}
