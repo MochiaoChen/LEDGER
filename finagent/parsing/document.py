@@ -155,16 +155,19 @@ def _parse_pdf(path: Path) -> list[Chunk]:
 
     chunks: list[Chunk] = []
     unit = ""
+    caption = ""  # 表格标题：取表格上方最近一行；续页无标题时沿用上一张表的标题
     with pdfplumber.open(str(path)) as pdf:
         for pno, page in enumerate(pdf.pages, 1):
             text = page.extract_text() or ""
             units = UNIT_RE.findall(text)
             page_unit = units[0] if units else unit
-            for table in page.extract_tables() or []:
-                rows = [[(c or "").strip() for c in r] for r in table if any(r)]
-                if rows:
-                    chunks.append(Chunk(f"c{len(chunks) + 1:04d}", str(path), pno, "table",
-                                        rows_to_markdown(rows), rows=rows, unit_hint=page_unit))
+            for table in page.find_tables():
+                rows = [[(c or "").strip() for c in r] for r in table.extract() if any(r)]
+                if not rows:
+                    continue
+                caption = _caption_above(page, table.bbox[1]) or caption
+                chunks.append(Chunk(f"c{len(chunks) + 1:04d}", str(path), pno, "table",
+                                    rows_to_markdown(rows), rows=rows, unit_hint=page_unit, caption=caption))
             for para in re.split(r"\n\s*\n", text):
                 if para.strip():
                     chunks.append(Chunk(f"c{len(chunks) + 1:04d}", str(path), pno, "text",
@@ -172,3 +175,19 @@ def _parse_pdf(path: Path) -> list[Chunk]:
             if units:
                 unit = units[-1]
     return chunks
+
+
+TITLE_RE = re.compile(r"表|^[一二三四五六七八九十]+、|^（[一二三四五六七八九十]+）|^\d+[、.]")
+
+
+def _caption_above(page: Any, top: float) -> str:
+    """表格上方最近的标题行（含“表”字或为编号标题），跳过“单位：”行与页眉等普通文字；找不到返回空。"""
+    if top <= 1:
+        return ""
+    above = page.crop((0, 0, page.width, top)).extract_text() or ""
+    lines = [ln.strip() for ln in above.splitlines() if ln.strip()]
+    for ln in reversed(lines):
+        if UNIT_RE.search(ln):
+            continue
+        return ln if len(ln) <= 40 and TITLE_RE.search(ln) else ""
+    return ""

@@ -1,0 +1,89 @@
+# 财务数据抽取规范（facts.json）
+
+## 文件格式
+
+```json
+{
+  "company": "星河智造",
+  "fiscal_year": 2024,
+  "source_file": "annual_report_2024.pdf",
+  "facts": [
+    {"metric_id": "revenue", "period": "2024", "raw_value": "5,862,340,125.36", "unit": "元",
+     "page": 106, "label": "一、营业总收入", "table": "合并利润表", "scope": "consolidated"},
+    {"metric_id": "revenue", "period": "2023", "raw_value": "5,120,310,008.51", "unit": "元",
+     "page": 106, "label": "一、营业总收入", "table": "合并利润表", "scope": "consolidated"}
+  ]
+}
+```
+
+| 字段 | 必填 | 要求 |
+|---|---|---|
+| `metric_id` | 是 | 只能用下表中的 ID |
+| `period` | 是 | 年度 `2024`；半年度 `2024H1`；单季 `2024Q3`；前三季度累计 `2024Q1-3`。“本期/上期”换算成具体年份 |
+| `raw_value` | 是 | **与原文逐字一致**：保留千分位逗号、小数位；括号负数写 `(1,234.56)`；百分比写 `12.34`（不带 %） |
+| `unit` | 是 | 按该表“单位：”标注填 `元/千元/万元/百万元/亿元`；每股收益填 `元/股`；比率填 `%`；股本填 `股/万股/亿股` |
+| `page` | 是 | PDF 页码（从 1 开始，Read 工具的页码），不是年报印刷页码 |
+| `label` | 建议 | 原文科目名，如“归属于上市公司股东的净利润” |
+| `table` | 建议 | 所在表名，如“合并利润表” |
+| `scope` | 是 | 固定写 `consolidated`。母公司报表的数字不要抄 |
+
+程序会自动换算单位、计算同比与各类比率；不要自己换算或改写数字。
+
+## 抽取清单
+
+`kind`：amount 金额；per_share 每股；pct 比率（%）；shares 股数。带 ★ 的是核心指标，本期缺失会被校验阻断。
+
+| metric_id | 名称 | 在哪里找 | kind |
+|---|---|---|---|
+| `revenue` ★ | 营业收入（有“营业总收入”时取营业总收入） | 合并利润表 | amount |
+| `operating_cost` ★ | 营业成本 | 合并利润表 | amount |
+| `selling_expense` | 销售费用 | 合并利润表 | amount |
+| `admin_expense` | 管理费用 | 合并利润表 | amount |
+| `rd_expense` | 研发费用 | 合并利润表 | amount |
+| `finance_expense` | 财务费用 | 合并利润表 | amount |
+| `operating_profit` ★ | 营业利润 | 合并利润表 | amount |
+| `total_profit` ★ | 利润总额 | 合并利润表 | amount |
+| `income_tax` | 所得税费用 | 合并利润表 | amount |
+| `net_profit` ★ | 净利润 | 合并利润表 | amount |
+| `np_parent` ★ | 归属于上市公司股东的净利润 | 主要会计数据和财务指标 | amount |
+| `np_parent_deducted` ★ | 归属于上市公司股东的扣除非经常性损益的净利润 | 主要会计数据和财务指标 | amount |
+| `non_recurring` | 非经常性损益合计 | 非经常性损益项目及金额 | amount |
+| `gov_subsidy` | 计入当期损益的政府补助 | 非经常性损益项目及金额 | amount |
+| `ocf` ★ | 经营活动产生的现金流量净额 | 合并现金流量表 | amount |
+| `capex` ★ | 购建固定资产、无形资产和其他长期资产支付的现金 | 合并现金流量表 | amount |
+| `depreciation` | 固定资产折旧、油气资产折耗、生产性生物资产折旧 | 现金流量表补充资料 | amount |
+| `amortization` | 无形资产摊销 | 现金流量表补充资料 | amount |
+| `cash` ★ | 货币资金 | 合并资产负债表 | amount |
+| `accounts_receivable` | 应收账款 | 合并资产负债表 | amount |
+| `inventory` | 存货 | 合并资产负债表 | amount |
+| `fixed_assets` | 固定资产 | 合并资产负债表 | amount |
+| `construction_in_progress` | 在建工程 | 合并资产负债表 | amount |
+| `accounts_payable` | 应付账款 | 合并资产负债表 | amount |
+| `short_debt` | 短期借款 | 合并资产负债表 | amount |
+| `current_ltd` | 一年内到期的非流动负债 | 合并资产负债表 | amount |
+| `long_debt` | 长期借款 | 合并资产负债表 | amount |
+| `bonds_payable` | 应付债券 | 合并资产负债表 | amount |
+| `lease_liab` | 租赁负债 | 合并资产负债表 | amount |
+| `total_assets` ★ | 资产总计 | 合并资产负债表 | amount |
+| `total_liabilities` ★ | 负债合计 | 合并资产负债表 | amount |
+| `equity_parent` | 归属于母公司所有者权益合计 | 合并资产负债表 | amount |
+| `minority_equity` | 少数股东权益 | 合并资产负债表 | amount |
+| `total_equity` ★ | 所有者权益合计 | 合并资产负债表 | amount |
+| `total_liab_equity` | 负债和所有者权益总计 | 合并资产负债表 | amount |
+| `eps_basic` ★ | 基本每股收益 | 主要会计数据和财务指标 | per_share |
+| `roe_weighted` | 加权平均净资产收益率 | 主要会计数据和财务指标 | pct |
+| `total_shares` | 总股本 | 主要会计数据 / 股本变动情况 | shares |
+
+毛利率、净利率、资产负债率、研发费用率、净现比等由程序计算，不要抽取。
+
+## 易错点
+
+- **合并 vs 母公司**：先看表头标题。`locate` 输出的 `parent_only_pages` 是母公司报表页。
+- **期间列**：资产负债表是“期末余额 / 期初余额”（期初 = 上年末），利润表和现金流量表是“本期发生额 / 上期发生额”。
+  抄之前确认列名，别把两列看反。
+- **跨页表格**：报表常跨 2～3 页，续页没有表头，按上一页的列顺序对应；`page` 写数字实际所在的那一页。
+- **追溯调整**：“主要会计数据”表若有“调整前 / 调整后”两列，上期取**调整后**。
+- **单位**：同一份年报不同表的单位可能不同（元、万元），逐表看“单位：”。
+- **扫描页**（`no_text_layer_pages`）：程序无法逐字核对，这些页的数字会被拒收。遇到时告诉用户，
+  由用户决定是否人工录入。
+- **找不到的科目**（比如公司没有应付债券）：不要填 0，直接不写。

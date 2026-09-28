@@ -8,6 +8,27 @@
 | 4. 自动化估值建模 | `tasks/valuation` | 三情景 DCF（FCFF）、三表联动预测与勾稽、可比公司相对估值（与 DCF 交叉验证）、情景偏度与多维敏感性、`model.xlsx` |
 | 5. 研究报告纠错核查 | `tasks/report_check` | 逐条断言核查：正确 / 数值错误 / 单位错误 / 期间错配 / 口径错误 / 方向错误 / 无法核实，附来源与修改建议 |
 
+## 两个版本
+
+计算引擎（分析、估值、核查、报告）两个版本共用，区别在“谁读文档、谁调度”：
+
+| | Agent 版本 | Skill 版本 |
+|---|---|---|
+| 读年报 / 研报 | pdfplumber 解析 + 规则通道为主，国产大模型（DeepSeek / 千问 / 智谱）补漏 | Claude Code 中的模型直接按页读 PDF 抽取，规则通道交叉校验 |
+| 调度 | `python -m finagent all`（流水线）或 `ask`（程序内 Agent 循环） | Claude Code 按 `.claude/skills/finagent-research/SKILL.md` 执行 |
+| 大模型接入 | OpenAI 兼容 API，`.env` 配置；响应缓存于 `.cache/llm/` 供 `replay` 复现 | Claude Code 自身；抽取结果存 `data/extractions/` 供复现 |
+| 数字护栏 | 抽取证据校验、解读数字护栏 | 同左：`verify-facts` 逐字核对页码原文，`guard` 核对解读数字 |
+
+Skill 版本用法：在 Claude Code 中打开本仓库，给出年报 PDF 并说明需求（如“分析这份年报并估值”），
+模型会按 skill 依次执行 `locate → 读页抽取 → verify-facts（修正循环）→ all --facts → 写解读 → guard`。
+两个版本在样例数据上的产出逐项一致（`tests/test_skill.py`）。样例年报另有 PDF 版
+（`data/samples/annual_report_2024.pdf`，含一张母公司报表用于检验口径），`data/extractions/星河智造_2024/`
+是 Claude Code 按 skill 读该 PDF 写出的抽取文件，可直接用于复现：
+
+```bash
+python -m finagent all --input data/samples/annual_report_2024.pdf --year 2024 --company 星河智造 --assumptions data/samples/valuation_assumptions.json --report data/samples/research_draft.md --facts data/extractions/星河智造_2024/facts.json --claims data/extractions/星河智造_2024/claims.json --llm off
+```
+
 ## 设计原则
 
 1. **LLM 不做算术。** LLM 负责理解非标准文本、抽取补漏、写文字解读和做任务规划；所有数值计算都由确定性代码完成。
@@ -65,6 +86,9 @@ python -m finagent all --input data/samples/annual_report_2024.md --year 2024 --
 - `check/report.md`、`findings.csv`
 
 分任务运行：`python -m finagent financials|valuation|check ...`
+
+Skill 版本的辅助命令（由 Claude Code 调用，也可手动运行）：`locate`（关键页定位）、`schema`（指标清单）、
+`verify-facts`（校验模型抽取结果）、`guard`（解读数字护栏）；主命令加 `--facts` / `--claims` 接入模型抽取结果。
 
 ### 启用大模型
 

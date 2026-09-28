@@ -104,6 +104,8 @@ def extract_rule(doc: Document, fiscal_year: int | None = None) -> tuple[list[Fa
     facts: list[Fact] = []
     issues: list[Issue] = []
     for ch in doc.tables():
+        if "母公司" in ch.caption:  # 只取合并报表；母公司报表科目同名，混入会造成错取
+            continue
         hdr = _header(ch.rows, fiscal_year)
         if hdr is None:
             continue
@@ -210,7 +212,8 @@ def _validate_llm_item(item: dict[str, Any], ch: Chunk) -> Fact | str | None:
 
 
 # ------------------------------------------------------------------ merge
-def merge(rule_facts: list[Fact], llm_facts: list[Fact]) -> tuple[list[Fact], list[Issue]]:
+def merge(rule_facts: list[Fact], llm_facts: list[Fact], prefer: str = "rule") -> tuple[list[Fact], list[Issue]]:
+    """prefer：两通道不一致时保留哪一方（Agent 版本规则为主；Skill 版本模型读原文为主）。均记 issue。"""
     merged: dict[tuple[str, str], Fact] = {}
     issues: list[Issue] = []
     for f in rule_facts:
@@ -232,9 +235,12 @@ def merge(rule_facts: list[Fact], llm_facts: list[Fact]) -> tuple[list[Fact], li
             base.method = "rule+llm"
             base.corroborated_by.append(f.source)
         else:
+            kept = "规则" if prefer == "rule" else "LLM"
             issues.append(Issue("medium", "规则与LLM抽取不一致",
-                                f"{BY_ID[f.metric_id].name} {f.period}：规则={base.raw}，LLM={f.raw}（保留规则结果）",
+                                f"{BY_ID[f.metric_id].name} {f.period}：规则={base.raw}，LLM={f.raw}（保留{kept}结果）",
                                 [base.source, f.source]))
+            if prefer == "llm":
+                merged[f.key] = f
     return list(merged.values()), issues
 
 

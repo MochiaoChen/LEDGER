@@ -26,8 +26,9 @@ from .parsing.document import load_document
 from .prompts import load_prompt
 from .tasks.financials import earnings as earnings_mod
 from .tasks.financials.analyze import analyze
+from .tasks.financials.external import ingest
 from .tasks.financials.extract import extract_financials
-from .tasks.report_check.claims import extract_claims
+from .tasks.report_check.claims import extract_claims, ingest_claims
 from .tasks.report_check.verify import verify_claims
 from .tasks.valuation.build_plan import build_plan
 from .tasks.valuation import comps as comps_mod
@@ -62,12 +63,16 @@ def commentary(company: str, analysis: dict[str, Any], llm: LLMClient | None) ->
         tracing.log("commentary_failed", error=str(exc))
         return None
     text = msg.get("content") or ""
+    return {"text": text, "model": llm.s.llm_model, "unverified_numbers": number_guard(text, data_text)}
+
+
+def number_guard(text: str, data_text: str) -> list[str]:
+    """文字解读中的每个数字都必须出现在输入数据里；返回找不到出处的数字（年份与一位数序号除外）。"""
     allowed = set(re.findall(r"\d+(?:\.\d+)?", data_text.replace(",", "")))
-    # 允许年份与序号类小整数
     nums = [n for n in re.findall(r"\d+(?:\.\d+)?", text.replace(",", "")) if not re.fullmatch(r"20\d{2}|\d", n)]
     unverified = sorted({n for n in nums if n not in allowed and not any(a.startswith(n) for a in allowed)})
     tracing.log("number_guard", checked=len(nums), unverified=unverified)
-    return {"text": text, "model": llm.s.llm_model, "unverified_numbers": unverified}
+    return unverified
 
 
 # ------------------------------------------------------------------ 赛题2
@@ -81,8 +86,13 @@ def _p_parse(ctx: dict[str, Any]):
 
 @financials_pipeline.step("extract", "extract")
 def _p_extract(ctx: dict[str, Any]):
-    out = extract_financials(ctx["doc"], fiscal_year=ctx.get("fiscal_year"), llm=ctx.get("llm"),
-                             llm_mode=ctx.get("llm_extract", "fallback"))
+    if ctx.get("facts_file"):  # Skill 版本：接入 Claude Code 中模型读 PDF 的抽取结果，仍经确定性校验
+        payload = json.loads(tracing.read_file(ctx["facts_file"]).decode("utf-8"))
+        _write(ctx, "financials/skill_extraction.json", payload)
+        out = ingest(ctx["doc"], payload, fiscal_year=ctx.get("fiscal_year"))
+    else:
+        out = extract_financials(ctx["doc"], fiscal_year=ctx.get("fiscal_year"), llm=ctx.get("llm"),
+                                 llm_mode=ctx.get("llm_extract", "fallback"))
     _write(ctx, "financials/facts.json", out)
     _write(ctx, "financials/facts.csv", R.to_csv(out["facts"], ["metric_id", "metric_name", "period", "value", "raw", "unit",
                                                                "label", "method", "confidence", "source"]))
@@ -217,7 +227,14 @@ def _c_parse(ctx: dict[str, Any]):
 
 @check_pipeline.step("claims", "claims")
 def _c_claims(ctx: dict[str, Any]):
-    out = extract_claims(ctx["report_doc"], default_year=ctx.get("fiscal_year"), llm=ctx.get("llm"))
+    if ctx.get("claims_file"):  # Skill 版本：外部模型拆出的断言，引用须为原文片段
+        payload = json.loads(tracing.read_file(ctx["claims_file"]).decode("utf-8"))
+        _write(ctx, "check/skill_claims.json", payload)
+        out, rejected = ingest_claims(ctx["report_doc"], payload, ctx.get("fiscal_year"))
+        if rejected:
+            _write(ctx, "check/claims_rejected.json", rejected)
+    else:
+        out = extract_claims(ctx["report_doc"], default_year=ctx.get("fiscal_year"), llm=ctx.get("llm"))
     _write(ctx, "check/claims.json", out)
     return out
 
