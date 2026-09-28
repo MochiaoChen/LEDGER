@@ -123,6 +123,31 @@ def _terminal_growth(plan: dict[str, Any], scenario: str) -> float:
 
 def forecast(plan: dict[str, Any], scenario: str, growth_delta: float = 0.0,
              margin_delta: float = 0.0) -> list[dict[str, float]]:
+    driven = (plan.get("three_statement_forecast") or {}).get(scenario)
+    if driven:
+        rows = []
+        rev_prev = _num(plan["historicals"]["revenue"])
+        nwc_prev = _num(plan["historicals"]["net_working_capital"])
+        for source in driven:
+            base_rev = _num(source["revenue"])
+            base_growth = base_rev / rev_prev - 1 if rev_prev else 0.0
+            rev = rev_prev * (1 + base_growth + growth_delta)
+            scale = rev / base_rev if base_rev else 1.0
+            margin = _num(source["ebit"]) / base_rev + margin_delta if base_rev else margin_delta
+            ebit = rev * margin
+            tax_rate = _num(source["cash_taxes"]) / _num(source["ebit"]) if _num(source["ebit"]) else 0.0
+            taxes = ebit * tax_rate
+            da, capex = _num(source["da"]) * scale, _num(source["capex"]) * scale
+            d_nwc = _num(source["change_nwc"]) * scale
+            nwc = nwc_prev + d_nwc
+            fcf = ebit - taxes + da - capex - d_nwc
+            rows.append({"period": source["period"], "revenue": rev, "revenue_growth": base_growth + growth_delta,
+                         "ebit": ebit, "ebit_margin": margin, "ebitda": ebit + da, "tax_rate": tax_rate,
+                         "cash_taxes": taxes, "nopat": ebit - taxes, "da": da, "capex": capex,
+                         "nwc": nwc, "change_nwc": d_nwc, "unlevered_fcf": fcf,
+                         "source": "three_statement"})
+            rev_prev, nwc_prev = rev, nwc
+        return rows
     n = plan["timeline"]["horizon_years"]
     sc = plan["scenarios"][scenario]
     v = {f: _vec(sc[f], n) for f in VECTOR_FIELDS}

@@ -193,6 +193,14 @@ def run(plan: dict[str, Any]) -> dict[str, Any]:
     ]
     for it in integrity:
         it["status"] = "pass" if it["max_abs_error"] <= 1e-6 else "fail"
+    dcf_drivers = {}
+    for name, output in outputs.items():
+        inc, cf = output["income_statement"], output["cash_flow_statement"]
+        dcf_drivers[name] = [{
+            "period": str(per.year), "revenue": inc["revenue"][i], "ebit": inc["ebit"][i],
+            "cash_taxes": inc["cash_taxes"][i], "da": inc["da"][i], "capex": cf["capex"][i],
+            "change_nwc": cf["change_nwc"][i],
+        } for i, per in enumerate(output["periods"])]
     return {
         "model_status": status,
         "periods": labels,
@@ -204,4 +212,5 @@ def run(plan: dict[str, Any]) -> dict[str, Any]:
         "hard_failures": hard,
         "warnings": warn,
         "historical_drivers": plan.get("_historical_drivers"),
+        "dcf_drivers": dcf_drivers,
     }

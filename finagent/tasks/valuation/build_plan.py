@@ -33,9 +33,12 @@ def build_plan(facts: list[dict[str, Any]], assumptions: dict[str, Any], *, comp
     revenue = need("revenue")
     total_profit = need("total_profit")
     fin_exp = need("finance_expense")
+    investment_income = need("investment_income")
+    fair_value_change = need("fair_value_change")
     income_tax = need("income_tax")
-    ebit = total_profit + fin_exp  # 近似 EBIT：利润总额 + 财务费用
-    notes.append({"type": "inference", "item": "EBIT", "detail": "EBIT 按“利润总额 + 财务费用”近似，未剔除投资收益与公允价值变动"})
+    ebit = total_profit + fin_exp - investment_income - fair_value_change
+    notes.append({"type": "inference", "item": "EBIT",
+                  "detail": "经营性 EBIT = 利润总额 + 财务费用 − 投资收益 − 公允价值变动收益；损失以负数列示时会被反向加回"})
     da = need("depreciation") + need("amortization")
     capex = need("capex")
     nwc = need("accounts_receivable") + need("inventory") - need("accounts_payable")

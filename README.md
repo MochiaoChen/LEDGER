@@ -46,6 +46,43 @@ python -m finagent all --input data/samples/annual_report_2024.pdf --year 2024 -
 全程：RunTracer → runs/<run_id>/events.jsonl + manifest.json
 ```
 
+### 系统框架
+
+```mermaid
+flowchart LR
+    A[财报 PDF / Markdown] --> B[解析：页码锚点 Chunk]
+    B --> C[规则抽取]
+    B --> D[LLM 补漏]
+    C --> E[证据校验与真值表]
+    D --> E
+    E --> F[财务分析 / 单季拆分]
+    E --> G[三表联动预测]
+    G --> H[DCF：FCFF]
+    H --> I[估值报告与 model.xlsx]
+    E --> J[研报断言核查]
+    K[RunTracer] -.追踪.-> B
+    K -.追踪.-> G
+    K -.追踪.-> H
+```
+
+### 三表驱动 DCF
+
+```mermaid
+flowchart TD
+    A[历史财报真值表] --> B[三表驱动假设]
+    B --> C[利润表：收入 / EBIT / 现金税]
+    B --> D[资产负债表：营运资本 / 债务 / 现金]
+    B --> E[现金流量表：折旧 / Capex / ΔNWC]
+    C --> F[FCFF = EBIT×1-T + D&A - Capex - ΔNWC]
+    D --> F
+    E --> F
+    F --> G[WACC 折现 + 终值]
+    G --> H[企业价值 → 股权价值 → 每股价值]
+```
+
+关键口径：经营性 `EBIT = 利润总额 + 财务费用 − 投资收益 − 公允价值变动收益`；季报流量指标按
+`Q2 = H1 − Q1`、`Q3 = 前三季度 − H1`、`Q4 = 全年 − 前三季度` 拆分，已有单季披露不会被覆盖。
+
 ## 目录
 
 ```
@@ -135,8 +172,8 @@ python -m pytest -q tests
 
 - [ ] 真实 A 股年报 PDF 联调（pdfplumber 表格跨页、合并单元格）；扫描件接入 OCR
 - [ ] 扩充评测集：10～20 份真实财报 + 人工植入错误的研报
-- [ ] 季报：单季拆分（Q4 = 全年 − 前三季度）与环比
-- [ ] 估值：EBIT 口径精细化（剔除投资收益、公允价值变动）；DCF 预测改为由三表模型驱动
+- [x] 季报：单季拆分（Q2/Q3/Q4）与环比
+- [x] 估值：EBIT 剔除投资收益、公允价值变动；DCF 预测由三表模型驱动
 - [ ] Web 界面（Streamlit）与运行日志回放页
 - [ ] 研报核查：估值倍数（PE/PB）核查（需要股价数据）
 
