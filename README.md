@@ -46,6 +46,48 @@ python -m finagent all --input data/samples/annual_report_2024.pdf --year 2024 -
 全程：RunTracer → runs/<run_id>/events.jsonl + manifest.json
 ```
 
+### 系统框架
+
+```mermaid
+flowchart LR
+    A[财报 PDF / Markdown<br/>年报 + 季报] --> B[解析：页码锚点 Chunk]
+    B --> C[规则抽取]
+    B --> D[LLM 补漏（Agent 版）]
+    B --> D2[Claude Code 读页抽取（Skill 版）]
+    C --> E[证据校验与真值表]
+    D --> E
+    D2 --> E
+    E --> F[财务分析 / 单季拆分与分季度勾稽]
+    E --> G[三表联动预测]
+    G --> H[DCF：FCFF]
+    H --> I[估值报告与 model.xlsx]
+    E --> L[可比公司 / 利润率对比]
+    E --> J[研报断言核查]
+    K[RunTracer] -.追踪.-> B
+    K -.追踪.-> G
+    K -.追踪.-> H
+```
+
+### 三表驱动 DCF
+
+```mermaid
+flowchart TD
+    A[历史财报真值表] --> B[三表驱动假设<br/>收入增速、资本开支率 + 毛利率/周转天数情景调整]
+    B --> C[利润表：收入 / EBIT]
+    B --> D[资产负债表：营运资本 / 债务 / 现金]
+    B --> E[现金流量表：折旧 / Capex / ΔNWC]
+    C --> F[FCFF = EBIT ×（1 − 现金税率）+ D&A − Capex − ΔNWC]
+    D --> F
+    E --> F
+    F --> G[WACC 折现 + 终值]
+    G --> H[企业价值 → 股权价值 → 每股价值]
+    F -. 逐期核对 .-> C
+```
+
+关键口径：经营性 `EBIT = 利润总额 + 财务费用 − 投资收益 − 公允价值变动收益`（三表历史期与 DCF 同口径）；
+季报发生额按 `Q2 = H1 − Q1`、`Q3 = 前三季度 − H1`、`Q4 = 全年 − 前三季度` 拆分，财报列示的单季优先，
+并与累计数相减结果互相核对。
+
 ## 目录
 
 ```
