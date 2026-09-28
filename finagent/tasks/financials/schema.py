@@ -27,6 +27,10 @@ METRICS: list[Metric] = [
     Metric("admin_expense", "管理费用", "income", aliases=("管理费用",), claim_aliases=("管理费用",)),
     Metric("rd_expense", "研发费用", "income", aliases=("研发费用",), claim_aliases=("研发费用", "研发投入")),
     Metric("finance_expense", "财务费用", "income", aliases=("财务费用",), claim_aliases=("财务费用",)),
+    # 非经营性损益：计算经营性 EBIT 时从利润总额中剔除（见 valuation/build_plan.py）
+    Metric("investment_income", "投资收益", "income", aliases=("投资收益",), claim_aliases=("投资收益",)),
+    Metric("fair_value_change", "公允价值变动收益", "income", aliases=("公允价值变动收益",),
+           claim_aliases=("公允价值变动收益",)),
     Metric("operating_profit", "营业利润", "income", aliases=("营业利润", "三、营业利润"),
            claim_aliases=("营业利润",)),
     Metric("total_profit", "利润总额", "income", aliases=("利润总额", "四、利润总额"),
@@ -90,17 +94,26 @@ METRICS: list[Metric] = [
 
 BY_ID = {m.id: m for m in METRICS}
 
+
+def is_flow(metric_id: str) -> bool:
+    """期间发生额（利润表、现金流量表、非经常性损益、归母/扣非净利润）：累计数可以相减拆出单季。
+    时点数（资产负债表）、每股收益、比率、股本不能相减。"""
+    m = BY_ID.get(metric_id)
+    return m is not None and m.kind == "amount" and m.statement not in ("balance", "derived")
+
 # 只在“非经常性损益”表中生效的别名（“合计”这类泛化词不能全局匹配）
 SCOPED_ALIASES = {"合计": "non_recurring"}
 
 _PREFIX_RE = re.compile(r"^(?:[一二三四五六七八九十]+、|其中[:：]|加[:：]|减[:：]|\d+[.、])\s*")
 _SUFFIX_RE = re.compile(r"[（(](?:元|元／股|元/股|%|万元|亿元|股)[)）]$")
+# 利润表科目的填列说明，如“投资收益（损失以“－”号填列）”“三、营业利润（亏损以“-”号填列）”
+_SIGN_NOTE_RE = re.compile(r"[（(][^（()）]*以[^（()）]*号填列[)）]$")
 
 
 def clean_label(label: str) -> str:
     s = (label or "").replace(" ", "").replace("　", "").replace("\n", "").strip()
     s = _PREFIX_RE.sub("", s)
-    return s
+    return _SIGN_NOTE_RE.sub("", s)
 
 
 def _alias_index() -> dict[str, str]:

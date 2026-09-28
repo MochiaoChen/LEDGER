@@ -77,7 +77,8 @@ def runs(tmp_path_factory, extraction, claims_payload):
 
 def test_locate_finds_statement_pages(doc):
     loc = locate(doc)
-    assert loc["sections"]["key_data"] == [6] and loc["sections"]["non_recurring"] == [8]
+    assert loc["sections"]["key_data"] == [6, 7] and loc["sections"]["non_recurring"] == [8]
+    assert loc["sections"]["quarterly"] == [7]
     assert loc["sections"]["balance"] == [102] and loc["sections"]["income"] == [106]
     assert "102-104" in loc["suggested_reads"] and "106-108" in loc["suggested_reads"]
     assert loc["unit_hints"]["106"] == "元"
@@ -204,7 +205,7 @@ GOOD_COMMENTARY = """## 事实
 - 归母净利润增加 0.94 亿元，非经常性损益变动相当于其 128%，增量利润全部来自非经常性损益。
 
 ## 观点
-- 盈利质量偏弱。DCF 基准情景每股价值 14.38 元，区间 7.82～22.71 元；不构成投资建议。
+- 盈利质量偏弱。DCF 基准情景每股价值 11.67 元，区间 6.17～17.73 元；不构成投资建议。
 """
 
 

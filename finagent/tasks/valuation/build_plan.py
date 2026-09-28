@@ -1,6 +1,8 @@
-"""把抽取的财务数据 + 估值假设文件 → DCF 引擎的 plan（单位：百万元，人民币）。
+"""把抽取的财务数据 + 估值假设文件 + 三表模型输出 → DCF 引擎的 plan（单位：百万元，人民币）。
 
 历史数据全部来自财报抽取结果（带来源）；缺失项不会被静默补 0，而是记为 placeholder 并在报告中披露。
+预测期由三表模型驱动：各情景的收入增速、EBIT 利润率、折旧摊销率、资本开支率、营运资本占收入比、税率
+都取自三表模型（three_statement.run 的 dcf_drivers），DCF 只负责折现、终值与股权桥，两者口径一致。
 """
 
 from __future__ import annotations
@@ -10,6 +12,14 @@ from typing import Any
 from ..financials.analyze import FactTable
 
 MM = 1e6
+# 经营性 EBIT = 利润总额 + 财务费用 − 投资收益 − 公允价值变动收益（三表模型历史基数用同一口径）
+EBIT_PARTS = [("total_profit", 1.0), ("finance_expense", 1.0), ("investment_income", -1.0),
+              ("fair_value_change", -1.0)]
+EBIT_NOTE = ("EBIT = 利润总额 + 财务费用 − 投资收益 − 公允价值变动收益，剔除投资与公允价值损益；"
+             "资产处置收益、其他收益、减值损失与营业外收支仍留在 EBIT 中（简化）")
+# 由三表模型提供的 DCF 预测向量（与 dcf.VECTOR_FIELDS 一致）
+DRIVER_FIELDS = ["revenue_growth", "ebit_margin", "tax_rate", "da_percent_revenue", "capex_percent_revenue",
+                 "nwc_percent_revenue"]
 
 
 def _v(t: FactTable, metric: str, period: str) -> float | None:
@@ -18,7 +28,8 @@ def _v(t: FactTable, metric: str, period: str) -> float | None:
 
 
 def build_plan(facts: list[dict[str, Any]], assumptions: dict[str, Any], *, company: str,
-               period: str, source_name: str) -> tuple[dict[str, Any], list[dict[str, Any]]]:
+               period: str, source_name: str,
+               three_statement: dict[str, Any]) -> tuple[dict[str, Any], list[dict[str, Any]]]:
     t = FactTable(facts)
     prev = str(int(period[:4]) - 1)
     notes: list[dict[str, Any]] = []
@@ -32,10 +43,14 @@ def build_plan(facts: list[dict[str, Any]], assumptions: dict[str, Any], *, comp
 
     revenue = need("revenue")
     total_profit = need("total_profit")
-    fin_exp = need("finance_expense")
     income_tax = need("income_tax")
-    ebit = total_profit + fin_exp  # 近似 EBIT：利润总额 + 财务费用
-    notes.append({"type": "inference", "item": "EBIT", "detail": "EBIT 按“利润总额 + 财务费用”近似，未剔除投资收益与公允价值变动"})
+    ebit = sum(sign * need(m) for m, sign in EBIT_PARTS)
+    notes.append({"type": "inference", "item": "EBIT", "detail": EBIT_NOTE})
+    non_op = (_v(t, "investment_income", period) or 0.0) + (_v(t, "fair_value_change", period) or 0.0)
+    if non_op and not assumptions.get("non_operating_assets"):
+        notes.append({"type": "inference", "item": "非经营性资产",
+                      "detail": f"EBIT 已剔除投资收益与公允价值变动（本期合计 {non_op:,.1f} 百万元），但假设文件未设置 "
+                                "non_operating_assets：对应的长期股权投资、交易性金融资产等未在股权桥中加回，每股价值偏保守"})
     da = need("depreciation") + need("amortization")
     capex = need("capex")
     nwc = need("accounts_receivable") + need("inventory") - need("accounts_payable")
@@ -87,7 +102,7 @@ def build_plan(facts: list[dict[str, Any]], assumptions: dict[str, Any], *, comp
             "other_debt_like_items": 0.0, "diluted_shares": shares,
             "net_debt_source_id": "src_bridge", "share_count_source_id": "src_shares",
         },
-        "scenarios": assumptions["scenarios"],
+        "scenarios": _scenarios(assumptions["scenarios"], three_statement, notes),
         "sensitivities": assumptions["sensitivities"],
     }
     plan["_historical_ratios"] = {
@@ -98,3 +113,19 @@ def build_plan(facts: list[dict[str, Any]], assumptions: dict[str, Any], *, comp
         "effective_tax_rate": tax_rate,
     }
     return plan, notes
+
+
+def _scenarios(assumed: dict[str, Any], three_statement: dict[str, Any],
+               notes: list[dict[str, Any]]) -> dict[str, Any]:
+    """情景的经营预测向量取自三表模型；假设文件只保留情景说明、永续增长率与 WACC 调整。"""
+    drivers = three_statement["dcf_drivers"]
+    out = {name: {**sc, **{f: drivers[name][f] for f in DRIVER_FIELDS}} for name, sc in assumed.items()}
+    notes.append({"type": "inference", "item": "预测驱动",
+                  "detail": "DCF 各情景的收入、EBIT、折旧摊销、资本开支、营运资本与税率取自三表模型同一情景的输出"
+                            "（收入增速、资本开支率来自假设文件，其余驱动见三表模型口径）"})
+    ignored = sorted({f for sc in assumed.values() for f in DRIVER_FIELDS
+                      if f in sc and f not in ("revenue_growth", "capex_percent_revenue")})
+    if ignored:
+        notes.append({"type": "inference", "item": "假设文件字段",
+                      "detail": "假设文件中的 " + "、".join(ignored) + " 已不再驱动 DCF（由三表模型输出替代）"})
+    return out

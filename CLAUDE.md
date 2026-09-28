@@ -21,6 +21,7 @@
 - **Skill 版本**：`.claude/skills/finagent-research/`，Claude Code 读 PDF 抽取、拆断言、写解读；程序负责
   `locate` 定位、`verify-facts` 逐字校验、`all --facts/--claims` 计算、`guard` 解读护栏。抽取文件存 `data/extractions/`。
 - 两版在样例上产出逐项一致（`tests/test_skill.py`）；改共用代码时两版都要回归。
+- 季报（`--supplement` + 条目 `source_file`）目前只有 Skill 版本支持；Agent 版本仍只读单份报告，待改。
 
 ## 比赛硬约束（违反即扣分或失格）
 
@@ -37,7 +38,10 @@
 - 三个选题端到端跑通；样例数据上抽取准确率、纠错召回率/准确率均为 100%（样例是自造的，不代表真实效果）。
 - 去除对 OpenAI 插件的依赖，引擎全部自研，与原引擎产出一致（PR #1）。
 - Skill 版本：Claude Code 读 PDF + 程序校验计算，与 Agent 版本产出一致；样例 PDF 端到端跑通（PR #3）。
-- 51 个测试通过。
+- 季报单季拆分（Q2 = H1 − Q1，Q3 = Q1-3 − H1，Q4 = 全年 − Q1-3）与分季度勾稽；Skill 版本支持年报 + 季报。
+- EBIT 剔除投资收益与公允价值变动；DCF 由三表模型驱动（逐期一致性核对）；comps 工作簿补利润率对比页。
+- Excel 产物按投行模型排版（`output/xlsx.py` 样式层，规范见 skill 的 `references/workbook.md`）。
+- 64 个测试通过。
 
 **按优先级待做**：
 1. **真实 A 股年报联调**（两个版本都要测）：跨页表格、合并单元格、版式差异；扫描页目前直接拒收，不做 OCR。
@@ -46,7 +50,8 @@
 3. 扩充评测集：10～20 份真实财报 + 人工埋错研报。
 4. Streamlit Web 界面 + 运行日志回放。
 5. Agent 版本接入真实国产模型跑 `--llm live`，并把 `.cache/llm/` 提交进仓库供评审 replay。
-6. （可选）comps 工作簿补利润率对比页。
+6. Agent 版本跟进 Skill 版本：多文件输入（季报）、规则通道识别季报表头“本报告期/年初至报告期末”
+   （现在会被当成年度，所以没有对季报开放）、`prompts/extract_financials.md` 补投资收益与公允价值变动收益。
 
 **截止日期**：**2026-10-18** 初赛提交（计划书 PDF + ≤5 分钟 MP4 视频）；11 月底决赛（现场演示 + 答辩，需可运行原型和现场样例数据）。
 
@@ -74,7 +79,10 @@
 ## 已知问题（改动相关代码时注意）
 
 - 流动性压力测试沿用原插件口径 FCF×(1+冲击)，FCF 为负时方向相反；为保持一致未改，报告里已注明。
-- DCF 的 EBIT 近似为“利润总额 + 财务费用”，未剔除投资收益和公允价值变动。
+- EBIT = 利润总额 + 财务费用 − 投资收益 − 公允价值变动收益；资产处置收益、其他收益、减值、营业外收支仍在 EBIT 内。
+  剔除的投资类资产需在假设文件 `non_operating_assets` 加回，未设置时报告提示估值偏保守。
+- 三表模型的经营费用是轧差项（毛利 − EBIT − 折旧摊销），保证历史期 EBIT 与 DCF 同口径；
+  DCF 情景向量全部取自三表模型，假设文件里的 `ebit_margin` 等字段不再生效。
 - 三表模型期初留存收益置 0，权益合并列示，只影响列示，不影响勾稽。
 - 样例数据全部为虚构，内部完全自洽，真实数据效果会明显下降。
 
@@ -94,7 +102,8 @@
 
 - 环境：`uv venv .venv && uv pip install --python .venv/bin/python -r requirements.txt`（Python 3.12；`.venv/` 不入库）。
 - 改完代码必须跑测试和评测。样例评测指标下降视为回归。
-- 改样例年报要改 `data/samples/build_samples.py` 再重新生成，并同步更新 `eval/gold_financials.json` 和 `eval/labels.json`。
+- 改样例年报要改 `data/samples/build_samples.py` 再重新生成（同时生成样例三季报），并同步更新 `eval/gold_financials.json`、
+  `eval/labels.json`、样例 PDF（`build_pdf.py`）和 `data/extractions/` 下的抽取文件。
 
 ## 代码风格
 

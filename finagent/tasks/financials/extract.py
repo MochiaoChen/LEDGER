@@ -83,6 +83,8 @@ def parse_period(cell: str, fiscal_year: int | None = None) -> str | None:
             year = fiscal_year
         elif any(k in s for k in ("上期", "上年", "期初", "上年同期")):
             year = fiscal_year - 1
+        elif any(k in s for keys, suffix in _Q[:4] for k in keys):  # 年报“分季度主要财务指标”表头只写季度
+            year = fiscal_year
     if year is None:
         return None
     for keys, suffix in _Q:

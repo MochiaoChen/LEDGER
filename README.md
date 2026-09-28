@@ -4,8 +4,8 @@
 
 | 选题 | 模块 | 输出 |
 |---|---|---|
-| 2. 上市公司财务报告分析 | `tasks/financials` | 指标表（附来源页码）、同比/环比、勾稽校验、异常信号（非经常性损益、利润现金流背离、营运资本错配、会计口径变化）、利润变动归因桥、实际 vs 一致预期/业绩预告、EPS 质量筛查 |
-| 4. 自动化估值建模 | `tasks/valuation` | 三情景 DCF（FCFF）、三表联动预测与勾稽、可比公司相对估值（与 DCF 交叉验证）、情景偏度与多维敏感性、`model.xlsx` |
+| 2. 上市公司财务报告分析 | `tasks/financials` | 指标表（附来源页码）、同比/环比、季报单季拆分（Q4 = 全年 − 前三季度）与分季度勾稽、勾稽校验、异常信号（非经常性损益、利润现金流背离、营运资本错配、会计口径变化）、利润变动归因桥、实际 vs 一致预期/业绩预告、EPS 质量筛查 |
+| 4. 自动化估值建模 | `tasks/valuation` | 三表联动预测与勾稽 → 由其驱动的三情景 DCF（FCFF，EBIT 剔除投资收益与公允价值变动）、可比公司相对估值（含利润率对比，与 DCF 交叉验证）、情景偏度与多维敏感性、`model.xlsx` |
 | 5. 研究报告纠错核查 | `tasks/report_check` | 逐条断言核查：正确 / 数值错误 / 单位错误 / 期间错配 / 口径错误 / 方向错误 / 无法核实，附来源与修改建议 |
 
 ## 两个版本
@@ -40,7 +40,7 @@ python -m finagent all --input data/samples/annual_report_2024.pdf --year 2024 -
 ```
 财报 PDF/MD ─parse─▶ extract(规则+LLM) ─▶ analyze ─▶ 财报分析报告      [赛题2]
                                             │ 真值表
-                                            ├─▶ build_plan ─▶ DCF ─▶ 估值报告+xlsx  [赛题4]
+                                            ├─▶ 三表模型 ─▶ build_plan ─▶ DCF ─▶ 估值报告+xlsx  [赛题4]
 研报草稿 ───parse─▶ claims(规则+LLM) ──────┴─▶ verify ─▶ 核查报告     [赛题5]
 
 全程：RunTracer → runs/<run_id>/events.jsonl + manifest.json
@@ -56,7 +56,7 @@ finagent/
   tasks/
     financials/  schema（A股指标字典）· extract（规则+LLM+证据校验）· analyze（计算/勾稽/信号）
                  earnings（归因桥 + 预期/预告对比 + EPS 质量）
-    valuation/   build_plan（财报→DCF 输入）· dcf（FCFF 引擎）· run（执行/敏感性/xlsx）
+    valuation/   build_plan（财报 + 三表输出→DCF 输入）· dcf（FCFF 引擎）· run（执行/敏感性/xlsx/三表一致性核对）
                  three_statement + ts_engine（三表联动）· scenarios + scenario_tables（情景偏度）
                  comps（相对估值 + 公式工作簿）
     report_check/ claims（断言抽取）· verify（核查与错误诊断）
@@ -82,13 +82,15 @@ python -m finagent all --input data/samples/annual_report_2024.md --year 2024 --
 
 - `financials/report.md`、`facts.csv`、`analysis.json`
 - `financials/earnings.json`（归因桥、预期对比、业绩预告、EPS 质量）
-- `valuation/report.md`、`model.xlsx`（DCF + 三表 + 可比公司）、`comps_formula_workbook.xlsx`（带公式、可在 Excel 中复算的 comps 表）、`three_statement.json`、`scenarios.json`、`comps.json`
+- `valuation/report.md`、`model.xlsx`（估值汇总、DCF、WACC、敏感性、三表、可比公司；投行模型排版，关键计算为公式）、`comps_formula_workbook.xlsx`（带公式、可在 Excel 中复算的 comps 表，含利润率对比页）、`three_statement.json`、`scenarios.json`、`comps.json`
 - `check/report.md`、`findings.csv`
 
 分任务运行：`python -m finagent financials|valuation|check ...`
 
 Skill 版本的辅助命令（由 Claude Code 调用，也可手动运行）：`locate`（关键页定位）、`schema`（指标清单）、
 `verify-facts`（校验模型抽取结果）、`guard`（解读数字护栏）；主命令加 `--facts` / `--claims` 接入模型抽取结果。
+Skill 版本可同时接入季报：`--supplement 三季报.pdf`（可多次），抽取条目用 `source_file` 指明出处，
+程序据此拆出单季（样例：`data/samples/q3_report_2024.md`）。Agent 版本暂只读单份报告。
 
 ### 启用大模型
 
@@ -135,8 +137,9 @@ python -m pytest -q tests
 
 - [ ] 真实 A 股年报 PDF 联调（pdfplumber 表格跨页、合并单元格）；扫描件接入 OCR
 - [ ] 扩充评测集：10～20 份真实财报 + 人工植入错误的研报
-- [ ] 季报：单季拆分（Q4 = 全年 − 前三季度）与环比
-- [ ] 估值：EBIT 口径精细化（剔除投资收益、公允价值变动）；DCF 预测改为由三表模型驱动
+- [x] 季报：单季拆分（Q4 = 全年 − 前三季度）与环比（Skill 版本支持年报 + 季报）
+- [ ] Agent 版本接入季报：多文件输入、季报表头“本报告期/年初至报告期末”的规则通道识别、LLM 抽取提示词补新指标
+- [x] 估值：EBIT 剔除投资收益、公允价值变动；DCF 预测改为由三表模型驱动；comps 利润率对比页
 - [ ] Web 界面（Streamlit）与运行日志回放页
 - [ ] 研报核查：估值倍数（PE/PB）核查（需要股价数据）
 

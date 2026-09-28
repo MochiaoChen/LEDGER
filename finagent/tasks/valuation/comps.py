@@ -5,6 +5,8 @@
   - EV 倍数配 EV 口径分母（收入/EBITDA/EBIT），P/E 配归母净利润；分母 ≤ 0 记 NM
   - 统计：中位数优先；P25/P75 作为估值区间；IQR 法（Q1 − 1.5×IQR, Q3 + 1.5×IQR）标记离群值但不删除数据
   - 仅核心同业（Core）驱动估值区间；次要同业（Secondary）仅作参照；Excluded 列示剔除理由
+  - 利润率对比：EBITDA / EBIT / 净利率 = 对应利润 ÷ 营业收入（收入 ≤ 0 记 NM），核心同业分位数与目标公司差距，
+    用于解释目标公司倍数相对同业的溢价/折价
 另外：write_formula_workbook 生成带公式的 Excel comps 表（标准库写出，公式可在 Excel 中复算，缓存值与 comps.json 一致）。
 
 同业 CSV 列名与原插件模板一致：ticker, company, peer_tier, price, basic_shares, debt, minority_interest, cash,
@@ -21,7 +23,7 @@ from pathlib import Path
 from typing import Any
 
 from ...core import tracing
-from ...output.xlsx import Formula, write_xlsx
+from ...output.xlsx import Formula, Sheet, write_xlsx
 from ..financials.analyze import FactTable
 
 MM = 1e6
@@ -32,6 +34,11 @@ MULTIPLES = [
     ("pe_ltm", "P/E（LTM）", "equity_value", "net_income_ltm"),
 ]
 PRIMARY = ["ev_ebitda", "pe_ltm"]
+MARGINS = [
+    ("ebitda_margin", "EBITDA 利润率", "ebitda_ltm"),
+    ("ebit_margin", "EBIT 利润率", "ebit_ltm"),
+    ("net_margin", "净利率", "net_income_ltm"),
+]
 
 
 def _f(x: Any) -> float | None:
@@ -80,6 +87,15 @@ def _metrics(row: dict[str, Any]) -> dict[str, Any]:
     return out
 
 
+def _margins(row: dict[str, Any]) -> dict[str, Any]:
+    rev = _f(row.get("revenue_ltm"))
+    out: dict[str, Any] = {}
+    for key, _, num in MARGINS:
+        n = _f(row.get(num))
+        out[key] = None if n is None or rev is None else ("NM" if rev <= 0 else n / rev)
+    return out
+
+
 def _quantiles(vals: list[float]) -> dict[str, float | None]:
     if not vals:
         return {"n": 0, "median": None, "mean": None, "p25": None, "p75": None, "low_fence": None, "high_fence": None}
@@ -97,7 +113,7 @@ def run(peers: list[dict[str, Any]], target: dict[str, Any], dcf_range: dict[str
     rows = []
     for r in [target] + peers:
         tier = (r.get("peer_tier") or "Core").strip()
-        rows.append({**r, "peer_tier": tier, **_metrics(r)})
+        rows.append({**r, "peer_tier": tier, **_metrics(r), **_margins(r)})
     tgt = rows[0]
     stats: dict[str, dict[str, Any]] = {}
     for key, name, _, _ in MULTIPLES + [("pe_ntm", "P/E（NTM）", "", "")]:
@@ -140,9 +156,18 @@ def run(peers: list[dict[str, Any]], target: dict[str, Any], dcf_range: dict[str
         overlap = min(comps_range["high"], dcf_range["high"]) - max(comps_range["low"], dcf_range["low"])
         cross = {"dcf_base": dcf_range["base"], "comps_mid": comps_range["mid"],
                  "dcf_vs_comps_mid": dcf_range["base"] / comps_range["mid"] - 1, "ranges_overlap": overlap > 0}
+    # 利润率对比：核心同业分位数（不剔除离群值，仅作参照）与目标公司差距
+    margins: dict[str, dict[str, Any]] = {}
+    for key, name, _ in MARGINS:
+        q = _quantiles([r[key] for r in rows[1:] if r["peer_tier"] == "Core" and isinstance(r[key], float)])
+        tv = tgt.get(key)
+        margins[key] = {"name": name, "core": q, "target": tv,
+                        "diff_vs_core_median": tv - q["median"]
+                        if isinstance(tv, float) and q["median"] is not None else None}
     core_n = sum(1 for r in rows[1:] if r["peer_tier"] == "Core")
     status = "screen-grade" if core_n < 4 else "senior-review-ready"
-    return {"rows": rows, "stats": stats, "implied": implied, "range": comps_range, "dcf_cross_check": cross,
+    return {"rows": rows, "stats": stats, "margins": margins, "implied": implied, "range": comps_range,
+            "dcf_cross_check": cross,
             "status": status, "core_peer_count": core_n,
             "excluded": [{"ticker": r["ticker"], "company": r["company"], "reason": r.get("exclusion_rationale", "")}
                          for r in rows if r["peer_tier"] == "Excluded"]}
@@ -154,6 +179,11 @@ INPUT_COLUMNS = ["ticker", "company", "peer_tier", "price", "basic_shares", "deb
                  "other_non_op_assets", "revenue_ltm", "ebitda_ltm", "ebit_ltm", "net_income_ltm", "eps_cy1",
                  "market_data_date", "source_name", "inclusion_rationale", "exclusion_rationale", "confidence"]
 IN = {c: chr(65 + i) for i, c in enumerate(INPUT_COLUMNS)}  # 同业数据 列字母
+INPUT_HEADERS = ["代码", "公司", "分层", "股价（元）", "股本（百万股）", "有息负债（百万元）", "少数股东权益（百万元）",
+                 "现金（百万元）", "非经营性资产（百万元）", "营业收入 LTM（百万元）", "EBITDA LTM（百万元）",
+                 "EBIT LTM（百万元）", "归母净利润 LTM（百万元）", "EPS CY1（元）", "数据日期", "来源", "入选理由",
+                 "剔除理由", "可信度"]
+INPUT_FORMATS = {3: "num2", 4: "num1", **{i: "num1" for i in range(5, 13)}, 13: "num2"}
 # 倍数表：D 股权价值、E EV、F..J 五个倍数、K..O 对应离群标记；分子取 倍数 表列，分母取 同业数据 列
 STAT_KEYS = [(k, n, num, den) for k, n, num, den in MULTIPLES] + [("pe_ntm", "P/E（NTM）", "price", "eps_cy1")]
 MCOL = {k: chr(70 + i) for i, (k, *_) in enumerate(STAT_KEYS)}
@@ -185,7 +215,7 @@ def write_formula_workbook(path: Path, result: dict[str, Any], currency: str, va
     last = len(rows) + 1  # 数据末行（第 2 行为目标公司）
     target = rows[0]
 
-    inputs = [INPUT_COLUMNS] + [[_num_or_text(r.get(c)) for c in INPUT_COLUMNS] for r in rows]
+    inputs = [INPUT_HEADERS] + [[_num_or_text(r.get(c)) for c in INPUT_COLUMNS] for r in rows]
 
     mult = [["代码", "公司", "分层", "股权价值", "EV"] + [n for _, n, *_ in STAT_KEYS]
             + [f"{n} 离群" for _, n, *_ in STAT_KEYS]]
@@ -313,7 +343,76 @@ def write_formula_workbook(path: Path, result: dict[str, Any], currency: str, va
         ["隐含股价", "核心同业（剔除离群）P25 / 中位数 / P75 倍数 × 目标公司分母，EV 倍数再扣股权桥后除以股本"],
         ["敏感性", "核心同业（剔除离群）P25 / 中位数 / P75 倍数 × 目标公司 EBITDA 或归母净利润 ±10% 的隐含股价"],
         ["来源台账", "每家公司的数据日期、来源、入选/剔除理由与可信度"],
+        ["利润率对比", "EBITDA / EBIT / 净利率 = 对应利润 ÷ 营业收入（收入 ≤ 0 记 NM）；核心同业中位数与 P25/P75，"
+                    "目标公司与核心中位数之差（百分点）。目标公司 EBIT 为剔除投资收益与公允价值变动后的经营性口径，"
+                    "同业 EBIT 以来源数据为准"],
         ["状态", f"{result['status']}（核心同业 {result['core_peer_count']} 家）"],
     ]
-    write_xlsx(path, {"说明": readme, "同业数据": inputs, "倍数": mult, "统计": stat, "隐含股价": implied,
-                      "敏感性": sens, "来源台账": ledger})
+    # 排版：只加样式，不改行列位置（公式按固定行列引用）；目标公司行浅黄底，同业数据为输入（蓝色）
+    mult_fmt = {3: "num0", 4: "num0", **{i: "mult" for i in range(5, 10)}}
+    stat_fmt = {r - 1: "mult" for r, *_ in STAT_ROWS}
+    stat_fmt.update({1: "int", 8: "int", 12: "int", 15: "pct1"})
+    n_sens = len(sens) // 2  # 两个敏感性块，每块：标题、表头、变动、P25/中位数/P75、空行
+    sens_roles = {b + k: role for b in (0, n_sens) for k, role in ((0, "section"), (1, "header"), (4, "key"))}
+    margin = _margin_sheet(result)
+    top = len(rows) + 2  # 利润率统计区表头（0 起行号）
+    write_xlsx(path, {
+        "说明": Sheet(readme, widths={0: 16, 1: 110}, wrap_cols=(1,), freeze=(1, 0), tab_color="1F3864"),
+        "同业数据": Sheet(inputs, formats=INPUT_FORMATS, inputs=True, roles={1: "key"}, freeze=(1, 2),
+                      widths={15: 18, 16: 30, 17: 30}, wrap_cols=(16, 17)),
+        "倍数": Sheet(mult, formats=mult_fmt, roles={1: "key"}, freeze=(1, 2)),
+        "统计": Sheet(stat, row_formats=stat_fmt, roles={14: "key"}, widths={0: 30}),
+        "隐含股价": Sheet(implied, formats={1: "num1", 2: "int", 3: "num2", 4: "num2", 5: "num2"},
+                      row_formats={4: "num1", 5: "num1", 8: "num2"}, roles={7: "header", 8: "key"},
+                      widths={0: 44}),
+        "敏感性": Sheet(sens, header_rows=0, roles=sens_roles, formats={1: "mult", **{i: "num2" for i in range(2, 7)}},
+                     row_formats={2: "dpct", n_sens + 2: "dpct"}, widths={0: 14}, freeze=(0, 1)),
+        "来源台账": Sheet(ledger, widths={4: 18, 5: 36, 6: 36}, wrap_cols=(5, 6)),
+        "利润率对比": Sheet(margin, formats={**{i: "num1" for i in range(3, 7)}, **{i: "pct1" for i in range(7, 10)}},
+                       roles={1: "key", top: "header", top + 5: "key"},
+                       row_formats={top + 1: "int", top + 6: "pp"}, freeze=(1, 2), widths={0: 26}),
+    })
+
+
+def _margin_sheet(result: dict[str, Any]) -> list[list[Any]]:
+    """利润率对比页：逐家公司的利润与利润率（引用同业数据，改输入即同步），下方为核心同业统计。"""
+    rows = result["rows"]
+    last = len(rows) + 1
+    num_cols = [("revenue_ltm", "营业收入（百万元）", "D"), ("ebitda_ltm", "EBITDA（百万元）", "E"),
+                ("ebit_ltm", "EBIT（百万元）", "F"), ("net_income_ltm", "归母净利润（百万元）", "G")]
+    mcol = {key: chr(72 + i) for i, (key, *_) in enumerate(MARGINS)}  # H / I / J
+    num_of = {"ebitda_margin": "E", "ebit_margin": "F", "net_margin": "G"}
+    sheet: list[list[Any]] = [["代码", "公司", "分层"] + [n for _, n, _ in num_cols] + [n for _, n, _ in MARGINS]]
+    for i, r in enumerate(rows, 2):
+        line: list[Any] = [Formula(f"同业数据!{IN[c]}{i}", r.get(c)) for c in ("ticker", "company", "peer_tier")]
+        for c, _, _ in num_cols:
+            ref = f"同业数据!{IN[c]}{i}"
+            line.append(Formula(f'IF(ISNUMBER({ref}),{ref},"")', _cached(_f(r.get(c)))))
+        for key, _, _ in MARGINS:
+            n = num_of[key]
+            line.append(Formula(f'IF(AND(ISNUMBER(D{i}),ISNUMBER({n}{i})),IF(D{i}<=0,"NM",{n}{i}/D{i}),"")',
+                                _cached(r[key])))
+        sheet.append(line)
+
+    top = last + 2  # 空一行后为统计区
+    labels = ["核心同业样本数", "核心中位数", "核心 P25", "核心 P75", "目标公司", "目标 − 核心中位数（百分点）"]
+    stat_rows: list[list[Any]] = [["统计（核心同业）", "", "", "", "", "", ""] + [n for _, n, _ in MARGINS]]
+    stat_rows += [[label, "", "", "", "", "", ""] for label in labels]
+    for key, *_ in MARGINS:
+        c, m = mcol[key], result["margins"][key]
+        rng = f"{c}$3:{c}${last}"
+        core = f'($C$3:$C${last}="Core")*ISNUMBER({rng})'
+        n_ref, med_ref = f"{c}{top + 1}", f"{c}{top + 2}"
+        diff = m["diff_vs_core_median"]
+        cells = [
+            Formula(f"SUMPRODUCT({core})", m["core"]["n"]),
+            Formula(f'IF({n_ref}=0,"",MEDIAN(IF({core},{rng})))', _cached(m["core"]["median"]), array=True),
+            Formula(f'IF({n_ref}=0,"",QUARTILE(IF({core},{rng}),1))', _cached(m["core"]["p25"]), array=True),
+            Formula(f'IF({n_ref}=0,"",QUARTILE(IF({core},{rng}),3))', _cached(m["core"]["p75"]), array=True),
+            Formula(f"{c}2", _cached(m["target"])),
+            Formula(f'IF(AND(ISNUMBER({c}2),ISNUMBER({med_ref})),({c}2-{med_ref})*100,"")',
+                    _cached(None if diff is None else diff * 100)),
+        ]
+        for j, cell in enumerate(cells, 1):
+            stat_rows[j].append(cell)
+    return sheet + [[]] + stat_rows

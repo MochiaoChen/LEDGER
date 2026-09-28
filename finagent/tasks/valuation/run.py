@@ -1,4 +1,7 @@
-"""估值执行：调用确定性 DCF 引擎（dcf.py），输出三情景估值、敏感性矩阵与模型检查。"""
+"""估值执行：调用确定性 DCF 引擎（dcf.py），输出三情景估值、敏感性矩阵与模型检查。
+
+DCF 由三表模型驱动：plan 的情景向量取自三表模型，这里再逐期核对 DCF 还原出的收入、EBIT、折旧摊销、
+资本开支、营运资本与三表模型输出一致（不一致即硬性失败）。"""
 
 from __future__ import annotations
 
@@ -13,6 +16,7 @@ SENS_NAMES = {
     "Revenue Growth / EBIT Margin": "收入增速 × EBIT 利润率",
 }
 SCEN_CN = {"base": "基准", "downside": "悲观", "upside": "乐观"}
+TIE_KEYS = ["revenue", "ebit", "da", "capex", "nwc"]
 
 
 def _grid(rows: list[dict[str, Any]], name: str) -> dict[str, Any]:
@@ -30,8 +34,16 @@ def _grid(rows: list[dict[str, Any]], name: str) -> dict[str, Any]:
     }
 
 
+def _tie_to_three_statement(scen: dict[str, dict[str, Any]], drivers: dict[str, dict[str, Any]]) -> dict[str, Any]:
+    """DCF 预测行 vs 三表模型同情景输出的最大绝对偏差（百万元）。"""
+    diff = max(abs(row[k] - drivers[name][k][i])
+               for name, r in scen.items() for i, row in enumerate(r["forecast_rows"]) for k in TIE_KEYS)
+    return {"items": TIE_KEYS, "max_abs_diff_mm": diff, "status": "pass" if diff <= 1e-6 else "fail"}
+
+
 @tracing.traced("run_dcf")
-def run_dcf(plan: dict[str, Any], current_price: float | None = None) -> dict[str, Any]:
+def run_dcf(plan: dict[str, Any], current_price: float | None = None,
+            three_statement_drivers: dict[str, dict[str, Any]] | None = None) -> dict[str, Any]:
     errors = dcf.validate_plan_structure(plan)
     if errors:
         return {"status": "blocked", "errors": errors}
@@ -39,6 +51,10 @@ def run_dcf(plan: dict[str, Any], current_price: float | None = None) -> dict[st
     scen = {name: dcf.run_scenario(p, name) for name in dcf.SCENARIOS}
     sens = dcf.run_sensitivities(p)
     checks = dcf.compute_checks(p, scen, sens)
+    tie = _tie_to_three_statement(scen, three_statement_drivers) if three_statement_drivers else None
+    if tie:
+        msg = f"DCF 预测与三表模型逐期核对（{'、'.join(TIE_KEYS)}），最大偏差 {tie['max_abs_diff_mm']:.2e} 百万元"
+        (checks["informational"] if tie["status"] == "pass" else checks["hard_failures"]).append(msg)
     status = dcf.determine_model_status(p, checks.get("hard_failures", []), checks.get("warnings", []))
 
     summary = []
@@ -67,26 +83,6 @@ def run_dcf(plan: dict[str, Any], current_price: float | None = None) -> dict[st
         "sensitivities": [_grid(sens["rows"], n) for n in SENS_NAMES],
         "sensitivity_directionality": sens.get("directionality"),
         "checks": {k: checks.get(k) for k in ("hard_failures", "warnings", "informational")},
+        "three_statement_tie": tie,
         "historical_ratios": plan.get("_historical_ratios"),
     }
-
-
-def workbook_sheets(plan: dict[str, Any], result: dict[str, Any]) -> dict[str, list[list[Any]]]:
-    """生成 xlsx 的各工作表（数值为计算结果，便于评审核对）。"""
-    sheets: dict[str, list[list[Any]]] = {}
-    sheets["估值汇总"] = [["情景", "WACC", "永续增长率", "企业价值(百万元)", "股权价值(百万元)", "每股价值(元)", "终值占EV", "较现价空间"]] + [
-        [s["scenario_cn"], s["wacc"], s["terminal_growth"], s["enterprise_value_mm"], s["equity_value_mm"],
-         s["value_per_share"], s["tv_percent_ev"], s["upside_vs_price"]] for s in result["scenarios"]]
-    fr = result["forecast_base"]
-    cols = ["period", "revenue", "revenue_growth", "ebit", "ebit_margin", "cash_taxes", "nopat", "da", "capex",
-            "change_nwc", "unlevered_fcf"]
-    sheets["基准情景预测"] = [cols] + [[r.get(c) for c in cols] for r in fr]
-    sheets["历史数据"] = [["项目", "数值(百万元)"]] + [[k, v] for k, v in plan["historicals"].items() if k != "source_id"]
-    sheets["股权桥"] = [["项目", "数值"]] + [[k, v] for k, v in plan["ev_to_equity_bridge"].items() if not k.endswith("source_id")]
-    for g in result["sensitivities"]:
-        rows = [[f"{g['x_axis']} \\ {g['y_axis']}"] + g["y_values"]]
-        rows += [[x] + row for x, row in zip(g["x_values"], g["matrix"])]
-        sheets[g["name"][:28]] = rows
-    sheets["模型检查"] = [["类型", "内容"]] + [[k, m] for k in ("hard_failures", "warnings", "informational")
-                                          for m in (result["checks"].get(k) or [])]
-    return sheets

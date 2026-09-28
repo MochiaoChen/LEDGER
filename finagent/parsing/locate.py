@@ -13,6 +13,7 @@ from .document import Document
 
 SECTIONS = {
     "key_data": ("主要会计数据和财务指标", "主要会计数据", "主要财务指标"),
+    "quarterly": ("分季度主要财务指标", "分季度主要财务数据", "分季度主要会计数据"),
     "non_recurring": ("非经常性损益项目及金额", "非经常性损益项目", "非经常性损益明细"),
     "balance": ("合并资产负债表",),
     "income": ("合并利润表",),

@@ -73,6 +73,17 @@ def render_financials(company: str, extract: dict[str, Any], analysis: dict[str,
         src = (cells.get((mid, p)) or {}).get("source")
         L.append(f"| {r['metric']} | {fmt_value(mid, r['value'])} | {fmt_value(mid, r['yoy_base'])} | {chg} | {qchg} | {loc(src)} |")
 
+    q = analysis.get("quarterly")
+    if q:
+        L += ["", f"### 分季度（单季，{q['year']} 年）", "",
+              "单季数优先取财报列示；缺失时由累计数相减推出（Q2 = 上半年 − Q1；Q3 = 前三季度 − 上半年；"
+              "Q4 = 全年 − 前三季度），标 * 者为推算值。", "",
+              "| 指标 | 第一季度 | 第二季度 | 第三季度 | 第四季度 |", "|---|---|---|---|---|"]
+        for r in q["rows"]:
+            vals = [fmt_value(r["metric_id"], r["values"][k]) + ("*" if r["methods"][k] == "derived" else "")
+                    for k in ("Q1", "Q2", "Q3", "Q4")]
+            L.append(f"| {r['metric']} | " + " | ".join(vals) + " |")
+
     L += ["", "## 二、事实：勾稽与一致性校验", "", "| 校验项 | 结果 | 差异 |", "|---|---|---|"]
     icon = {"pass": "✅ 通过", "fail": "❌ 失败", "not_assessable": "⚪ 无法评估"}
     for c in analysis["tieouts"]:
@@ -119,12 +130,18 @@ def render_valuation(company: str, plan: dict[str, Any], res: dict[str, Any], no
          + (f"；参考股价 {price:.2f} 元，基准情景空间 {(vr['base'] / price - 1) * 100:+.1f}%" if price else ""), "",
          "## 一、事实：历史基数（来自财报抽取）", "", "| 项目 | 2024 实际（百万元） |", "|---|---|"]
     h = plan["historicals"]
-    for k, name in [("revenue", "营业收入"), ("ebit", "EBIT（近似）"), ("da", "折旧摊销"), ("capex", "资本开支"),
+    for k, name in [("revenue", "营业收入"), ("ebit", "EBIT（剔除投资收益与公允价值变动）"), ("da", "折旧摊销"),
+                    ("capex", "资本开支"),
                     ("net_working_capital", "营运资本"), ("change_nwc", "营运资本变动"), ("unlevered_fcf", "无杠杆自由现金流")]:
         L.append(f"| {name} | {h[k]:,.1f} |")
     hr = res.get("historical_ratios") or {}
     L += ["", "历史比率：" + "，".join(f"{k} {v * 100:.1f}%" for k, v in hr.items() if v is not None), "",
           "## 二、推论：三情景估值", "",
+          "各情景的收入、EBIT、折旧摊销、资本开支、营运资本与税率取自三表模型同一情景的输出（见第五节），"
+          "DCF 只做折现、终值与股权桥。"
+          + (f"逐期核对最大偏差 {res['three_statement_tie']['max_abs_diff_mm']:.2e} 百万元"
+             f"（{'✅ 一致' if res['three_statement_tie']['status'] == 'pass' else '❌ 不一致'}）。"
+             if res.get("three_statement_tie") else ""), "",
           "| 情景 | WACC | 永续增长 | EV（百万元） | 股权价值（百万元） | 每股价值（元） | 终值占比 | 隐含EV/EBITDA |",
           "|---|---|---|---|---|---|---|---|"]
     for s in res["scenarios"]:
@@ -293,6 +310,14 @@ def render_comps(res: dict[str, Any]) -> str:
     L += ["", "| 方法 | P25 隐含股价 | 中位数隐含股价 | P75 隐含股价 |", "|---|---|---|---|"]
     for r in res["implied"]:
         L.append(f"| {r['multiple']} | {_mm(r['p25'], 2)} | {_mm(r['median'], 2)} | {_mm(r['p75'], 2)} |")
+    if res.get("margins"):
+        pc = lambda v: "—" if v is None else (v if isinstance(v, str) else f"{v * 100:.1f}%")  # noqa: E731
+        L += ["", "**利润率对比**（核心同业；目标公司 EBIT 为剔除投资收益与公允价值变动后的经营性口径）", "",
+              "| 利润率 | 核心 P25 | 核心中位数 | 核心 P75 | 目标公司 | 相对核心中位数 |", "|---|---|---|---|---|---|"]
+        for m in res["margins"].values():
+            q = m["core"]
+            d = "—" if m["diff_vs_core_median"] is None else f"{m['diff_vs_core_median'] * 100:+.1f}pp"
+            L.append(f"| {m['name']} | {pc(q['p25'])} | {pc(q['median'])} | {pc(q['p75'])} | {pc(m['target'])} | {d} |")
     if res["range"]:
         L += ["", f"- **相对估值区间：{res['range']['low']:.2f} – {res['range']['high']:.2f} 元（中值 {res['range']['mid']:.2f} 元）**"]
     c = res.get("dcf_cross_check")

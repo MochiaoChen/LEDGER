@@ -6,6 +6,8 @@
     "revenue|2024": 5862340125.36, "revenue|2023": 5120451338.72, "revenue|2022": 4583210006.15,
     "operating_cost|2024": 4034118660.40, "operating_cost|2023": 3521806902.11,
     "rd_expense|2024": 312650000.00,
+    "investment_income|2024": 23500000.00, "fair_value_change|2024": 41200000.00,
+    "revenue|2024Q1": 1203450000.00, "revenue|2024Q4": 1764540125.36, "ocf|2024Q1": -186540000.00,
     "net_profit|2024": 646102000.00, "net_profit|2023": 543065000.00,
     "np_parent|2024": 612380000.00, "np_parent|2023": 518210000.00,
     "np_parent_deducted|2024": 443950000.00, "np_parent_deducted|2023": 470650000.00,

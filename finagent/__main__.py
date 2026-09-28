@@ -11,8 +11,8 @@
 Skill 版本（Claude Code 读 PDF，本程序负责定位、校验与计算，见 .claude/skills/finagent-research）：
   python -m finagent locate       --input 年报.pdf               # 关键页定位
   python -m finagent schema                                        # 可抽取指标清单
-  python -m finagent verify-facts --input 年报.pdf --year 2024 --facts extracted.json
-  python -m finagent all ... --facts extracted.json [--claims claims.json]
+  python -m finagent verify-facts --input 年报.pdf --year 2024 --facts extracted.json [--supplement 三季报.pdf]
+  python -m finagent all ... --facts extracted.json [--claims claims.json] [--supplement 三季报.pdf]
   python -m finagent guard        --run-dir runs/<id> --text 解读.md  # 解读数字护栏
 """
 
@@ -50,6 +50,8 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--runs-dir")
     ap.add_argument("--facts", help="Skill 版本：外部模型抽取的财务数据 JSON")
     ap.add_argument("--claims", help="Skill 版本：外部模型拆出的研报断言 JSON")
+    ap.add_argument("--supplement", action="append", default=[],
+                    help="Skill 版本：补充报告（一季报/半年报/三季报等），抽取条目用 source_file 指向它；可多次指定")
     ap.add_argument("--out", help="verify-facts 校验结果输出路径")
     ap.add_argument("--run-dir", help="guard：已完成的运行目录")
     ap.add_argument("--text", help="guard：待检查的文字解读（Markdown）")
@@ -57,6 +59,8 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.task in HELPERS:
         return HELPERS[args.task](args, ap)
+    if args.supplement and not args.facts:  # Agent 版本暂不支持多份报告
+        ap.error("--supplement 目前只用于 Skill 版本，需配合 --facts")
 
     settings = get_settings(llm_mode=args.llm, runs_dir=args.runs_dir)
     llm = LLMClient(settings) if settings.llm_enabled else None
@@ -82,7 +86,8 @@ def main(argv: list[str] | None = None) -> int:
             ctx = {"input": args.input, "fiscal_year": args.year, "period": args.period, "company": args.company,
                    "assumptions": args.assumptions, "report": args.report, "llm": llm,
                    "peers": args.peers, "estimates": args.estimates, "guidance": args.guidance,
-                   "llm_extract": args.llm_extract, "facts_file": args.facts, "claims_file": args.claims}
+                   "llm_extract": args.llm_extract, "facts_file": args.facts, "claims_file": args.claims,
+                   "supplements": args.supplement}
             pipelines.run(args.task, ctx)
             summary = {"run_dir": str(tr.dir), "financials": ctx["analysis"]["summary"]}
             if "valuation" in ctx:
@@ -138,7 +143,8 @@ def cmd_verify_facts(args: argparse.Namespace, ap: argparse.ArgumentParser) -> i
 
     _need(ap, args, "input", "facts")
     doc = load_document(args.input)
-    res = ingest(doc, json.loads(Path(args.facts).read_text(encoding="utf-8")), fiscal_year=args.year)
+    res = ingest(doc, json.loads(Path(args.facts).read_text(encoding="utf-8")), fiscal_year=args.year,
+                 supplements=[load_document(x) for x in args.supplement])
     tieouts = []
     if res["facts"]:
         a = analyze(res["facts"], period=args.period, doc=doc, extract_issues=res["issues"])

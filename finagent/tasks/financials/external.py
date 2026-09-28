@@ -5,11 +5,16 @@
   2. 证据校验：原文数字必须在其声明的页码文本中逐字出现（按数字边界匹配），并定位到具体 chunk；
   3. 与规则通道交叉比对：一致记为 rule+llm；不一致不静默取舍，记 issue（保留外部模型结果）；
   4. 核心指标缺失与勾稽失败一并报告，供模型回到原文修正。
+
+多份报告（年报 + 季报）：主文件之外的一季报/半年报/三季报作为补充文件传入（--supplement），
+抽取条目用 source_file 指明出处，证据在该文件中核对。规则通道只跑主文件：季报表头多写“本报告期/年初至报告期末”，
+规则通道无法可靠区分单季与累计，混入会污染年度数据。单季拆分（Q4 = 全年 − 前三季度等）由 analyze 完成。
 """
 
 from __future__ import annotations
 
 import re
+from pathlib import Path
 from typing import Any
 
 from ...core.numbers import UNIT_FACTORS, close, parse_number
@@ -56,6 +61,16 @@ def find_evidence(doc: Document, page: int, raw: str) -> Chunk | None:
     return None
 
 
+def _pick_doc(item: dict[str, Any], doc: Document, supplements: dict[str, Document]) -> Document | str:
+    """按 source_file 找到条目所在文件；未写时视为主文件。按文件名匹配（不要求路径一致）。"""
+    name = Path(str(item.get("source_file") or "")).name
+    if not name or name == Path(doc.source).name:
+        return doc
+    if name in supplements:
+        return supplements[name]
+    return f"{item.get('metric_id')} {item.get('period')} 的 source_file={name!r} 未作为主文件或补充文件（--supplement）传入"
+
+
 def _to_fact(item: dict[str, Any], doc: Document) -> Fact | str:
     mid = item.get("metric_id")
     if mid not in BY_ID or BY_ID[mid].statement == "derived":
@@ -90,16 +105,20 @@ def _to_fact(item: dict[str, Any], doc: Document) -> Fact | str:
                 str(item.get("label") or metric.name), "llm", confidence="medium")
 
 
-def ingest(doc: Document, payload: dict[str, Any] | list[Any], *,
-           fiscal_year: int | None) -> dict[str, Any]:
-    """校验外部抽取结果并与规则通道合并；返回结构与 extract_financials 一致，另附 rejected / missing。"""
+def ingest(doc: Document, payload: dict[str, Any] | list[Any], *, fiscal_year: int | None,
+           supplements: list[Document] | None = None) -> dict[str, Any]:
+    """校验外部抽取结果并与规则通道合并；返回结构与 extract_financials 一致，另附 rejected / missing。
+    supplements：补充文件（季报等），条目以 source_file 指向其中之一。"""
     items = payload.get("facts", []) if isinstance(payload, dict) else payload
+    extra = {Path(d.source).name: d for d in supplements or []}
     accepted: list[Fact] = []
     rejected: list[dict[str, Any]] = []
     issues: list[Issue] = []
     seen: dict[tuple[str, str], Fact] = {}
     for i, item in enumerate(items or []):
-        f = _to_fact(item if isinstance(item, dict) else {}, doc)
+        item = item if isinstance(item, dict) else {}
+        src = _pick_doc(item, doc, extra)
+        f = src if isinstance(src, str) else _to_fact(item, src)
         if isinstance(f, str):
             rejected.append({"index": i, "item": item, "reason": f})
             continue
@@ -129,7 +148,8 @@ def ingest(doc: Document, payload: dict[str, Any] | list[Any], *,
         "facts": [f.to_dict() for f in sorted(facts, key=lambda x: (x.metric_id, x.period))],
         "issues": [x.to_dict() for x in issues],
         "stats": {"rule_facts": len(rule_facts), "llm_facts": len(accepted), "merged": len(facts),
-                  "rejected": len(rejected), "extractor": EXTRACTOR},
+                  "rejected": len(rejected), "extractor": EXTRACTOR,
+                  "supplements": sorted(extra)},
         "rejected": rejected,
         "missing": missing,
     }

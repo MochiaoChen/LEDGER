@@ -45,7 +45,7 @@ def test_formula_workbook_cached_values_match_comps(run_dir):
         sheet = z.read("xl/worksheets/sheet5.xml").decode("utf-8")  # 隐含股价
         assert b"fullCalcOnLoad" in z.read("xl/workbook.xml")
     assert "xl/worksheets/sheet5.xml" in names
-    cells = dict(re.findall(r'<c r="([A-Z]+\d+)">.*?<v>([^<]*)</v></c>', sheet))
+    cells = dict(re.findall(r'<c r="([A-Z]+\d+)"(?: [a-z]+="[^"]*")*>(?:(?!</c>).)*?<v>([^<]*)</v></c>', sheet))
     for ref, key in (("B9", "low"), ("C9", "mid"), ("D9", "high")):
         assert float(cells[ref]) == comps["range"][key]
 
@@ -57,7 +57,7 @@ def test_formula_workbook_sensitivity_and_ledger(run_dir):
     with zipfile.ZipFile(run_dir / "valuation" / "comps_formula_workbook.xlsx") as z:
         sens = z.read("xl/worksheets/sheet6.xml").decode("utf-8")
         ledger = z.read("xl/worksheets/sheet7.xml").decode("utf-8")
-    cells = dict(re.findall(r'<c r="([A-Z]+\d+)">.*?<v>([^<]*)</v></c>', sens))
+    cells = dict(re.findall(r'<c r="([A-Z]+\d+)"(?: [a-z]+="[^"]*")*>(?:(?!</c>).)*?<v>([^<]*)</v></c>', sens))
     implied = {r["multiple"]: r for r in comps["implied"]}
     for first_row, name in ((4, "EV/EBITDA"), (11, "P/E（LTM）")):
         for off, lvl in enumerate(("p25", "median", "p75")):
