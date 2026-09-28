@@ -69,11 +69,13 @@ _Q = [
 
 def parse_period(cell: str, fiscal_year: int | None = None) -> str | None:
     """表头单元格 → 期间标识：'2024' / '2024H1' / '2024Q3' / '2024Q1-3'；变动列返回 'chg'。"""
-    s = (cell or "").replace(" ", "")
+    s = re.sub(r"\s", "", cell or "")  # 表头常被 PDF 折行（“增\n减”）
     if not s:
         return None
     if any(k in s for k in ("增减", "变动", "同比", "变化")):
         return "chg"
+    if any(k in s for k in ("比例", "比重", "占")):  # “本期期末数占总资产的比例”等结构比列，不是期间数值
+        return None
     if "调整前" in s:
         return "skip"
     m = re.search(r"(20\d{2})", s)
@@ -102,12 +104,24 @@ def _header(rows: list[list[str]], fiscal_year: int | None) -> tuple[int, list[s
 
 
 # ------------------------------------------------------------------ rule channel
+# 规则通道只从这些表取数：主要会计数据、分季度数据、非经常性损益、三大报表及补充资料。
+# 真实年报附注里大量明细表（受限资产、费用明细、关联方往来等）行名与报表科目同名但口径不同，混入会造成冲突。
+SOURCE_CAPTIONS = ("主要会计数据", "主要财务指标", "分季度", "非经常性损益", "资产负债表", "利润表",
+                   "现金流量表", "补充资料")
+
+
+def _is_source_table(ch: Chunk) -> bool:
+    if "母公司" in ch.caption:  # 只取合并报表；母公司报表科目同名，混入会造成错取
+        return False
+    if any("关联方" in c for c in ch.rows[0]):  # 关联方往来表：行名是科目，列是关联方
+        return False
+    return not ch.caption or any(k in ch.caption for k in SOURCE_CAPTIONS)
+
+
 def extract_rule(doc: Document, fiscal_year: int | None = None) -> tuple[list[Fact], list[Issue]]:
     facts: list[Fact] = []
     issues: list[Issue] = []
     for ch in doc.tables():
-        if "母公司" in ch.caption:  # 只取合并报表；母公司报表科目同名，混入会造成错取
-            continue
         hdr = _header(ch.rows, fiscal_year)
         if hdr is None:
             continue
@@ -116,12 +130,20 @@ def extract_rule(doc: Document, fiscal_year: int | None = None) -> tuple[list[Fa
             issues.append(Issue("medium", "追溯调整",
                                 "表格同时列示“调整前/调整后”数据，存在会计政策变更或追溯重述，同比口径需使用调整后数据。",
                                 [_loc(ch)]))
+        if not _is_source_table(ch):
+            continue
         unit = ch.unit_hint or "元"
+        # 同表既有“营业总收入”又有“营业收入”时（含金融子公司利息收入等），营业收入口径取后者
+        has_op_rev = any(row and "营业收入" in row[0] and "营业总收入" not in row[0] for row in ch.rows)
         for r, row in enumerate(ch.rows[hidx + 1 :], hidx + 1):
             if not row:
                 continue
             metric_id = match_label(row[0], ch.caption)
             if not metric_id:
+                continue
+            if metric_id == "revenue" and has_op_rev and "营业总收入" in row[0]:
+                continue
+            if "收益以" in row[0]:  # 现金流量表补充资料的调节项（“财务费用（收益以“－”号填列）”），不是报表科目本身
                 continue
             metric = BY_ID[metric_id]
             for c, period in enumerate(periods):

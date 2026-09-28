@@ -15,9 +15,11 @@ from pathlib import Path
 from typing import Any
 
 SCALE = {"亿元": 1e8, "亿": 1e8, "万元": 1e4, "万": 1e4}
-NUM_UNIT_RE = re.compile(r"(-?\d[\d,]*(?:\.\d+)?)\s*(亿元|万元|亿|万|元/股|元|%|个百分点|倍|x|X)?")
+NUM_UNIT_RE = re.compile(r"(-?\d[\d,]*(?:\.\d+)?)\s*(万元/吨|元/吨|亿元|万元|亿|万|元/股|元|%|个百分点|倍|x|X)?")
 TRUTH_FILES = ("financials/analysis.json", "financials/earnings.json", "financials/facts.json",
-               "valuation/valuation.json", "valuation/comps.json")
+               "financials/extras.json", "valuation/valuation.json", "valuation/comps.json",
+               "valuation/non_operating_assets.json", "valuation/forecast_summary.json",
+               "valuation/segment_forecast.json")
 
 
 def _numbers(obj: Any, out: list[float]) -> None:
@@ -89,5 +91,68 @@ def check_binding(text: str, run: Path, source: str = "commentary.md") -> list[d
     doc = Document(source, "", _parse_markdown(text, source))
     claims = extract_claims(doc, default_year=year, llm=None)
     findings = verify_claims(claims, analysis["truth_table"])["findings"]
+    segment = _segment_values(run)
     return [{"quote": f["quote"], "verdict": f["verdict"], "truth": f["truth_display"], "explanation": f["explanation"]}
-            for f in findings if f["verdict"] not in ("正确", "无法核实")]
+            for f in findings
+            if f["verdict"] not in ("正确", "无法核实") and not _is_segment_claim(_context(text, f["quote"]), segment)
+            and not _is_forecast(_sentence(text, f["quote"]), year)]
+
+
+def _sentence(text: str, quote: str) -> str:
+    """断言所在的整句（到上一个句号或换行为止；分号连接的分句共享“预计”等上下文）。"""
+    i = text.find(quote)
+    if i < 0:
+        return quote
+    start = max(text.rfind(ch, 0, i) for ch in "。\n") + 1
+    return text[start:i + len(quote)]
+
+
+def _is_forecast(sentence: str, year: int) -> bool:
+    """预测表述（“预计”“预测”或出现晚于报告期的年份）：数字只核对出处（check_text），不与历史真值表比对。"""
+    if any(k in sentence for k in ("预计", "预测")):
+        return True
+    return any(int(y) > year for y in re.findall(r"(20\d{2})", sentence))
+
+
+def _context(text: str, quote: str, before: int = 24) -> str:
+    """断言所在的上下文：向前取若干字（分部名称常在指标之前），向后补全单位（如“万元/吨”）。"""
+    i = text.find(quote)
+    if i < 0:
+        return quote
+    j = i + len(quote)
+    tail = re.match(r"\s*(?:/吨|/股)?", text[j:])
+    return text[max(0, i - before):j + (tail.end() if tail else 0)]
+
+
+def _segment_values(run: Path) -> dict[str, list[float]]:
+    """补充表格（financials/extras.json）：行名 → 该行全部已核对数值（含程序算出的比率，按比率标签归属到行名）。"""
+    p = run / "financials" / "extras.json"
+    if not p.exists():
+        return {}
+    ex = json.loads(p.read_text(encoding="utf-8"))
+    out: dict[str, list[float]] = {}
+    for t in ex.get("tables", []):
+        for r in t["rows"]:
+            out.setdefault(r["label"], []).extend(v for v in r["values"] if v is not None)
+    for r in ex.get("ratios", []):
+        out.setdefault(r["label"], []).append(r["value"])
+    return out
+
+
+def _is_segment_claim(quote: str, segment: dict[str, list[float]]) -> bool:
+    """“茅台酒毛利率 93.53%”这类分部表述：句中点名了补充表格的行（茅台酒、系列酒、直销……），
+    且数字按展示精度等于该行某个已核对的值，则按分部数据核对通过，不再与公司整体指标比较。"""
+    m = list(NUM_UNIT_RE.finditer(quote))
+    if not m or not segment:
+        return False
+    raw, unit = m[-1].group(1), m[-1].group(2) or ""
+    x = abs(float(raw.replace(",", "")))
+    tol = 0.5 * 10 ** -_decimals(raw) * (1 + 1e-9) + 1e-12
+    scale = SCALE.get(unit, 1.0)
+    head = quote[:m[-1].start()]
+    for label, vals in segment.items():
+        key = re.sub(r"^其他|（上期）$", "", label)  # “其他系列酒”在正文里常写作“系列酒”
+        hit = key in head or (key.endswith("吨价") and key[:-2] in head)
+        if key and hit and any(abs(abs(v) / scale - x) <= tol for v in vals):
+            return True
+    return False

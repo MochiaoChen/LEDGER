@@ -9,7 +9,10 @@ from __future__ import annotations
 
 from typing import Any
 
+from ...core.numbers import UNIT_FACTORS, parse_number
+from ...parsing.document import Document
 from ..financials.analyze import FactTable
+from ..financials.external import find_evidence
 
 MM = 1e6
 # 经营性 EBIT = 利润总额 + 财务费用 − 投资收益 − 公允价值变动收益（三表模型历史基数用同一口径）
@@ -25,6 +28,28 @@ DRIVER_FIELDS = ["revenue_growth", "ebit_margin", "tax_rate", "da_percent_revenu
 def _v(t: FactTable, metric: str, period: str) -> float | None:
     x = t.v(metric, period)
     return None if x is None else x / MM
+
+
+def resolve_non_operating_items(items: list[dict[str, Any]], doc: Document | None) -> dict[str, Any]:
+    """假设文件的 non_operating_assets 可写成明细列表：[{label, raw_value, unit, page, sign}]。
+    每项按原文逐字核对（与 Skill 抽取同一规则），由程序换算、加总为百万元；sign=-1 表示类负债项（如吸收存款）。
+    找不到原文的条目直接报错，不静默跳过。"""
+    rows, total = [], 0.0
+    for it in items:
+        raw = str(it.get("raw_value", ""))
+        v = parse_number(raw)
+        unit = it.get("unit", "元")
+        if v is None or unit not in UNIT_FACTORS:
+            raise ValueError(f"non_operating_assets 条目无法解析：{it}")
+        ch = find_evidence(doc, int(it.get("page", 0)), raw) if doc is not None else None
+        if doc is not None and ch is None:
+            raise ValueError(f"non_operating_assets 条目未在原文第 {it.get('page')} 页找到：{it.get('label')} {raw}")
+        sign = -1.0 if it.get("sign", 1) in (-1, "-1", "-") else 1.0
+        value = sign * v * UNIT_FACTORS[unit] / MM
+        total += value
+        rows.append({"label": it.get("label", ""), "raw": raw, "unit": unit, "sign": int(sign), "value_mm": value,
+                     "source": {"source": ch.source, "page": ch.page, "chunk_id": ch.chunk_id} if ch else None})
+    return {"total_mm": total, "items": rows}
 
 
 def build_plan(facts: list[dict[str, Any]], assumptions: dict[str, Any], *, company: str,
@@ -47,6 +72,10 @@ def build_plan(facts: list[dict[str, Any]], assumptions: dict[str, Any], *, comp
     ebit = sum(sign * need(m) for m, sign in EBIT_PARTS)
     notes.append({"type": "inference", "item": "EBIT", "detail": EBIT_NOTE})
     non_op = (_v(t, "investment_income", period) or 0.0) + (_v(t, "fair_value_change", period) or 0.0)
+    for it in assumptions.get("non_operating_items", []):
+        notes.append({"type": "assumption", "item": "非经营性资产加回",
+                      "detail": f"{'减' if it['sign'] < 0 else '加'}：{it['label']} {it['raw']} {it['unit']}"
+                                f"（第{(it.get('source') or {}).get('page', '?')}页）= {it['value_mm']:,.1f} 百万元"})
     if non_op and not assumptions.get("non_operating_assets"):
         notes.append({"type": "inference", "item": "非经营性资产",
                       "detail": f"EBIT 已剔除投资收益与公允价值变动（本期合计 {non_op:,.1f} 百万元），但假设文件未设置 "

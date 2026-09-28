@@ -1,0 +1,388 @@
+{
+  "status": "草稿（Claude 起草，待用户确认）：以下全部为观点/假设，不是财报事实",
+  "ticker": "600519.SH",
+  "industry": "白酒（高端酱香）",
+  "valuation_date": "2026-09-24",
+  "as_of_date": "2025-12-31",
+  "current_price": 1237.0,
+  "price_source": "Investing.com 历史行情，2026-09-24 收盘价（外部数据，不在本次年报中）",
+  "rationale": {
+    "forecast": "收入按分部量价推演（segment_forecast）：茅台酒 2025 年新增 1,800 吨基酒设计产能于 2026 年释放，基准情景销量年增 3%；批价承压下 2026 年吨价持平，直销占比提升与产品结构优化支撑此后吨价年增 1%～2%。系列酒延续结构调整，2026 年吨价下降 6%、销量增 3%，此后以量补价；毛利率随价格下移先降后稳。销售费用率维持 4.3%～4.5% 的投放强度；税金及附加率、管理费用率、研发费用率与营运资本周转、折旧率、税率取 2025 年实际值。悲观情景：批价继续下行、系列酒去库存延长；乐观情景：需求企稳、直销提价。",
+    "wacc": "公司无有息借款，按全股权融资：无风险利率 1.8%（10 年期国债收益率假设），β 0.90（消费龙头低于市场），股权风险溢价 6.5%，无规模溢价；税率 25%。",
+    "terminal_value": "永续增长率 2.5%，不高于名义 GDP 长期增速假设；退出 EV/EBITDA 18 倍作交叉验证。",
+    "non_operating": "控股子公司贵州茅台集团财务有限公司持有大量拆出资金、买入返售、存单及债权投资，与货币资金性质相近，按合并资产负债表期末余额逐项加回；财务公司吸收的集团成员单位存款作为类负债项扣减。注意：财务公司利息收入仍包含在营业总收入与 EBIT 中，存在少量重复计算（口径简化，报告中披露）。",
+    "dividend": "三表模型现金分红取当年净利润的 79%（2025 年度现金分红率 79.00%），分红不影响 FCFF 估值，影响资产负债表现金与留存收益。",
+    "revenue_growth": "scenarios.*.revenue_growth 由 segment_forecast 程序计算后覆盖，文件中的数值仅为占位"
+  },
+  "wacc": {
+    "risk_free_rate": 0.018,
+    "beta": 0.9,
+    "equity_risk_premium": 0.065,
+    "size_premium": 0.0,
+    "company_specific_premium": 0.0,
+    "country_risk_premium": 0.0,
+    "pre_tax_cost_of_debt": 0.03,
+    "marginal_tax_rate": 0.25,
+    "target_debt_pct": 0.0,
+    "target_equity_pct": 1.0,
+    "preferred_pct": 0.0,
+    "pre_tax_cost_of_preferred": 0.0
+  },
+  "terminal_value": {
+    "method": "perpetual_growth",
+    "perpetual_growth_rate": 0.025,
+    "exit_ebitda_multiple": 18.0
+  },
+  "non_operating_assets": [
+    {
+      "label": "拆出资金",
+      "raw_value": "99,096,188,059.75",
+      "unit": "元",
+      "page": 56,
+      "sign": 1
+    },
+    {
+      "label": "买入返售金融资产",
+      "raw_value": "8,879,708,146.97",
+      "unit": "元",
+      "page": 57,
+      "sign": 1
+    },
+    {
+      "label": "一年内到期的非流动资产",
+      "raw_value": "26,871,114,612.71",
+      "unit": "元",
+      "page": 57,
+      "sign": 1
+    },
+    {
+      "label": "发放贷款和垫款",
+      "raw_value": "1,553,536,744.78",
+      "unit": "元",
+      "page": 57,
+      "sign": 1
+    },
+    {
+      "label": "债权投资",
+      "raw_value": "1,113,032,405.66",
+      "unit": "元",
+      "page": 57,
+      "sign": 1
+    },
+    {
+      "label": "其他债权投资",
+      "raw_value": "3,496,539,016.41",
+      "unit": "元",
+      "page": 57,
+      "sign": 1
+    },
+    {
+      "label": "长期股权投资",
+      "raw_value": "147,181,873.67",
+      "unit": "元",
+      "page": 57,
+      "sign": 1
+    },
+    {
+      "label": "其他非流动金融资产",
+      "raw_value": "4,105,141,593.22",
+      "unit": "元",
+      "page": 57,
+      "sign": 1
+    },
+    {
+      "label": "吸收存款及同业存放",
+      "raw_value": "18,038,383,776.30",
+      "unit": "元",
+      "page": 58,
+      "sign": -1
+    }
+  ],
+  "scenarios": {
+    "base": {
+      "description": "行业去库存 2026 年见底，收入持平后温和恢复，利润率维持 2025 年水平。",
+      "revenue_growth": [
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "capex_percent_revenue": [
+        0.02,
+        0.02,
+        0.02,
+        0.02,
+        0.02
+      ],
+      "terminal_growth_rate": 0.025,
+      "wacc_adjustment": 0.0
+    },
+    "downside": {
+      "description": "批价继续下行、渠道去库存延长，收入两年负增长，毛利率承压。",
+      "revenue_growth": [
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "capex_percent_revenue": [
+        0.025,
+        0.025,
+        0.02,
+        0.02,
+        0.02
+      ],
+      "terminal_growth_rate": 0.02,
+      "wacc_adjustment": 0.005
+    },
+    "upside": {
+      "description": "需求企稳回升，直销渠道占比提升带动均价与利润率改善。",
+      "revenue_growth": [
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "capex_percent_revenue": [
+        0.02,
+        0.02,
+        0.02,
+        0.02,
+        0.02
+      ],
+      "terminal_growth_rate": 0.03,
+      "wacc_adjustment": -0.0025
+    }
+  },
+  "three_statement": {
+    "ar_days_shift": {
+      "downside": 0,
+      "upside": 0
+    },
+    "dividend_payout": 0.79
+  },
+  "sensitivities": {
+    "wacc_delta": [
+      -0.01,
+      -0.005,
+      0.0,
+      0.005,
+      0.01
+    ],
+    "terminal_growth_delta": [
+      -0.01,
+      -0.005,
+      0.0,
+      0.005,
+      0.01
+    ],
+    "exit_multiple_delta": [
+      -4.0,
+      -2.0,
+      0.0,
+      2.0,
+      4.0
+    ],
+    "revenue_growth_delta": [
+      -0.02,
+      -0.01,
+      0.0,
+      0.01,
+      0.02
+    ],
+    "ebit_margin_delta": [
+      -0.03,
+      -0.015,
+      0.0,
+      0.015,
+      0.03
+    ]
+  },
+  "segment_forecast": {
+    "note": "分部驱动（观点/假设，待确认）：收入 = 销量 × 吨价，毛利率按分部加权；程序计算后覆盖 scenarios.*.revenue_growth 与三表毛利率、经营费用率",
+    "segments": [
+      {
+        "id": "moutai",
+        "name": "茅台酒",
+        "product_row": "茅台酒",
+        "volume_row": "茅台酒",
+        "scenarios": {
+          "base": {
+            "volume_growth": [
+              0.03,
+              0.03,
+              0.03,
+              0.03,
+              0.03
+            ],
+            "price_growth": [
+              0.0,
+              0.01,
+              0.02,
+              0.02,
+              0.02
+            ],
+            "gm_change_pp": [
+              0,
+              0,
+              0,
+              0,
+              0
+            ]
+          },
+          "downside": {
+            "volume_growth": [
+              0.0,
+              0.01,
+              0.02,
+              0.02,
+              0.02
+            ],
+            "price_growth": [
+              -0.05,
+              -0.02,
+              0.0,
+              0.01,
+              0.01
+            ],
+            "gm_change_pp": [
+              -0.5,
+              0,
+              0,
+              0,
+              0
+            ]
+          },
+          "upside": {
+            "volume_growth": [
+              0.04,
+              0.04,
+              0.03,
+              0.03,
+              0.03
+            ],
+            "price_growth": [
+              0.02,
+              0.03,
+              0.03,
+              0.02,
+              0.02
+            ],
+            "gm_change_pp": [
+              0.2,
+              0,
+              0,
+              0,
+              0
+            ]
+          }
+        }
+      },
+      {
+        "id": "series",
+        "name": "系列酒",
+        "product_row": "其他系列酒",
+        "volume_row": "其他系列酒",
+        "scenarios": {
+          "base": {
+            "volume_growth": [
+              0.03,
+              0.05,
+              0.05,
+              0.05,
+              0.05
+            ],
+            "price_growth": [
+              -0.06,
+              -0.02,
+              0.01,
+              0.01,
+              0.01
+            ],
+            "gm_change_pp": [
+              -1.0,
+              0,
+              0.3,
+              0.3,
+              0
+            ]
+          },
+          "downside": {
+            "volume_growth": [
+              0.0,
+              0.02,
+              0.03,
+              0.03,
+              0.03
+            ],
+            "price_growth": [
+              -0.1,
+              -0.05,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "gm_change_pp": [
+              -2.0,
+              -1.0,
+              0,
+              0,
+              0
+            ]
+          },
+          "upside": {
+            "volume_growth": [
+              0.05,
+              0.08,
+              0.08,
+              0.06,
+              0.05
+            ],
+            "price_growth": [
+              -0.03,
+              0.0,
+              0.02,
+              0.02,
+              0.02
+            ],
+            "gm_change_pp": [
+              0,
+              0.5,
+              0.5,
+              0,
+              0
+            ]
+          }
+        }
+      }
+    ],
+    "expense_ratios": {
+      "selling": {
+        "base": [
+          0.045,
+          0.045,
+          0.044,
+          0.043,
+          0.043
+        ],
+        "downside": [
+          0.048,
+          0.048,
+          0.047,
+          0.047,
+          0.047
+        ],
+        "upside": [
+          0.043,
+          0.042,
+          0.041,
+          0.04,
+          0.04
+        ]
+      }
+    }
+  }
+}

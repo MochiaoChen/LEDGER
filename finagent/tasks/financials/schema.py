@@ -23,6 +23,7 @@ METRICS: list[Metric] = [
     Metric("revenue", "营业收入", "income", aliases=("营业收入", "营业总收入", "一、营业总收入"),
            claim_aliases=("营业收入", "营业总收入", "营收", "收入")),
     Metric("operating_cost", "营业成本", "income", aliases=("营业成本",), claim_aliases=("营业成本",)),
+    Metric("tax_surcharge", "税金及附加", "income", aliases=("税金及附加",), claim_aliases=("税金及附加",)),
     Metric("selling_expense", "销售费用", "income", aliases=("销售费用",), claim_aliases=("销售费用",)),
     Metric("admin_expense", "管理费用", "income", aliases=("管理费用",), claim_aliases=("管理费用",)),
     Metric("rd_expense", "研发费用", "income", aliases=("研发费用",), claim_aliases=("研发费用", "研发投入")),
@@ -62,6 +63,7 @@ METRICS: list[Metric] = [
     Metric("fixed_assets", "固定资产", "balance", aliases=("固定资产",), claim_aliases=("固定资产",)),
     Metric("construction_in_progress", "在建工程", "balance", aliases=("在建工程",), claim_aliases=("在建工程",)),
     Metric("accounts_payable", "应付账款", "balance", aliases=("应付账款",), claim_aliases=("应付账款",)),
+    Metric("contract_liab", "合同负债", "balance", aliases=("合同负债",), claim_aliases=("合同负债", "预收款")),
     Metric("short_debt", "短期借款", "balance", aliases=("短期借款",)),
     Metric("current_ltd", "一年内到期的非流动负债", "balance", aliases=("一年内到期的非流动负债",)),
     Metric("long_debt", "长期借款", "balance", aliases=("长期借款",)),
@@ -89,6 +91,8 @@ METRICS: list[Metric] = [
     Metric("net_margin", "净利率", "derived", kind="pct", claim_aliases=("净利率", "销售净利率")),
     Metric("debt_ratio", "资产负债率", "derived", kind="pct", claim_aliases=("资产负债率",)),
     Metric("rd_ratio", "研发费用率", "derived", kind="pct", claim_aliases=("研发费用率",)),
+    Metric("selling_ratio", "销售费用率", "derived", kind="pct", claim_aliases=("销售费用率",)),
+    Metric("admin_ratio", "管理费用率", "derived", kind="pct", claim_aliases=("管理费用率",)),
     Metric("ocf_to_np", "经营现金流/归母净利润", "derived", kind="ratio", claim_aliases=("净现比",)),
 ]
 

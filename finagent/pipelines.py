@@ -28,10 +28,13 @@ from .tasks.financials import earnings as earnings_mod
 from .tasks.financials.analyze import analyze
 from .tasks.financials.external import ingest
 from .tasks.financials.extract import extract_financials
+from .tasks.financials.extras import verify_extras
 from .tasks.report_check.claims import extract_claims, ingest_claims
 from .tasks.report_check.verify import verify_claims
-from .tasks.valuation.build_plan import build_plan
+from .tasks.valuation.build_plan import build_plan, resolve_non_operating_items
 from .tasks.valuation import comps as comps_mod
+from .tasks.valuation import forecast_summary as forecast_mod
+from .tasks.valuation import segment_forecast as segment_mod
 from .tasks.valuation import scenarios as scenarios_mod
 from .tasks.valuation import three_statement as ts_mod
 from .tasks.valuation.run import run_dcf
@@ -117,6 +120,19 @@ def _p_analyze(ctx: dict[str, Any]):
     return out
 
 
+@financials_pipeline.step("extras", "extras")
+def _p_extras(ctx: dict[str, Any]):
+    """Skill 版本补充表格：逐格核对原文，拒收即停止（与抽取校验同一标准）。"""
+    if not ctx.get("extras_file"):
+        return None
+    payload = json.loads(tracing.read_file(ctx["extras_file"]).decode("utf-8"))
+    out = verify_extras(ctx["doc"], payload, ctx["analysis"]["truth_table"])
+    if out["rejected"]:
+        raise ValueError(f"补充表格有 {len(out['rejected'])} 个数字未通过原文核对，请先运行 verify-extra")
+    _write(ctx, "financials/extras.json", out)
+    return out
+
+
 @financials_pipeline.step("earnings", "earnings")
 def _p_earnings(ctx: dict[str, Any]):
     a = ctx["analysis"]
@@ -147,12 +163,30 @@ valuation_pipeline = Pipeline("valuation")
 def _v_three_statement(ctx: dict[str, Any]):
     raw = tracing.read_file(ctx["assumptions"])
     ctx["assumptions_data"] = json.loads(raw.decode("utf-8"))
+    spec = ctx["assumptions_data"].get("segment_forecast")
+    if spec:  # 分部驱动：产品量价 → 收入增速、毛利率、经营费用率（覆盖假设文件中的对应向量）
+        if not ctx.get("extras"):
+            raise ValueError("假设文件含 segment_forecast，需要 --extras 提供分部经营数据")
+        n = len(ctx["assumptions_data"]["scenarios"]["base"]["revenue_growth"])
+        seg = segment_mod.build(spec, ctx["extras"], ctx["analysis"]["truth_table"], ctx["analysis"]["period"], n)
+        segment_mod.apply(ctx["assumptions_data"], seg)
+        ctx["segment_forecast"] = seg
+        _write(ctx, "valuation/segment_forecast.json", seg)
+    non_op = ctx["assumptions_data"].get("non_operating_assets")
+    if isinstance(non_op, list):  # 明细写法：逐项核对原文后由程序加总（百万元）
+        resolved = resolve_non_operating_items(non_op, ctx.get("doc"))
+        ctx["assumptions_data"]["non_operating_assets"] = resolved["total_mm"]
+        ctx["assumptions_data"]["non_operating_items"] = resolved["items"]
+        _write(ctx, "valuation/non_operating_assets.json", resolved)
     plan, notes = ts_mod.build_plan(ctx["analysis"]["truth_table"], ctx["assumptions_data"], company=ctx["company"],
                                     period=ctx["analysis"]["period"])
     ctx["three_statement_notes"] = notes
+    ctx["three_statement_plan"] = plan
     _write(ctx, "valuation/three_statement_plan.json", plan)
     out = ts_mod.run(plan)
     _write(ctx, "valuation/three_statement.json", out)
+    ctx["three_statement_detail"] = ts_mod.detail(plan)
+    _write(ctx, "valuation/three_statement_detail.json", ctx["three_statement_detail"])
     return out
 
 
@@ -181,6 +215,14 @@ def _v_scenarios(ctx: dict[str, Any]):
                                           ctx["plan"], ctx["assumptions_data"], ctx["analysis"]["signals"])
     out = scenarios_mod.run(payload)
     _write(ctx, "valuation/scenarios.json", out)
+    return out
+
+
+@valuation_pipeline.step("forecast_summary", "forecast_summary")
+def _v_forecast_summary(ctx: dict[str, Any]):
+    out = forecast_mod.build(ctx["analysis"]["truth_table"], ctx["analysis"]["period"], ctx.get("three_statement"),
+                             ctx["assumptions_data"], ctx.get("valuation"))
+    _write(ctx, "valuation/forecast_summary.json", out)
     return out
 
 
@@ -213,7 +255,12 @@ def _v_report(ctx: dict[str, Any]):
         md += R.render_comps(ctx["comps"])
     _write(ctx, "valuation/report.md", md)
     if res.get("status") == "ok" and tracing.current() is not None:
-        sheets = model_sheets(ctx["company"], ctx["plan"], res, ctx.get("three_statement"), ctx.get("comps"))
+        sheets = model_sheets(ctx["company"], ctx["plan"], res, ctx.get("three_statement"), ctx.get("comps"),
+                              analysis=ctx.get("analysis"), three_statement_plan=ctx.get("three_statement_plan"),
+                              non_operating_items=ctx["assumptions_data"].get("non_operating_items"),
+                              forecast_summary=ctx.get("forecast_summary"), extras=ctx.get("extras"),
+                              three_statement_detail=ctx.get("three_statement_detail"),
+                              segment_forecast=ctx.get("segment_forecast"))
         path = tracing.current().dir / "valuation" / "model.xlsx"
         write_xlsx(path, sheets)
         tracing.current().register_artifact(path)

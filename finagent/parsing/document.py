@@ -161,13 +161,17 @@ def _parse_pdf(path: Path) -> list[Chunk]:
             text = page.extract_text() or ""
             units = UNIT_RE.findall(text)
             page_unit = units[0] if units else unit
+            bottom = 0.0
             for table in page.find_tables():
                 rows = [[(c or "").strip() for c in r] for r in table.extract() if any(r)]
                 if not rows:
                     continue
-                caption = _caption_above(page, table.bbox[1]) or caption
+                caption = _caption_above(page, table.bbox[1], bottom) or caption
+                bottom = table.bbox[3]
                 chunks.append(Chunk(f"c{len(chunks) + 1:04d}", str(path), pno, "table",
                                     rows_to_markdown(rows), rows=rows, unit_hint=page_unit, caption=caption))
+            # 页末标题（表格在下一页开始）：下一页表格上方没有标题时沿用它，而不是沿用更早的表格标题
+            caption = _caption_above(page, page.height, bottom) or caption
             for para in re.split(r"\n\s*\n", text):
                 if para.strip():
                     chunks.append(Chunk(f"c{len(chunks) + 1:04d}", str(path), pno, "text",
@@ -177,17 +181,23 @@ def _parse_pdf(path: Path) -> list[Chunk]:
     return chunks
 
 
-TITLE_RE = re.compile(r"表|^[一二三四五六七八九十]+、|^（[一二三四五六七八九十]+）|^\d+[、.]")
+TITLE_RE = re.compile(r"表|^[一二三四五六七八九十]+、|^（[一二三四五六七八九十]+）|^\d+[、.]|^[（(]\d+[)）]")
+# 标题与表格之间常见的非标题行：报表日期、编制单位、适用勾选、币种等，跳过后继续向上找标题
+SKIP_RE = re.compile(r"^编制单位|^\d{4}\s*年.{0,12}(日|月)$|^[√□]\s*适用|币种|^项目\s|^贵州|年度报告$")
 
 
-def _caption_above(page: Any, top: float) -> str:
-    """表格上方最近的标题行（含“表”字或为编号标题），跳过“单位：”行与页眉等普通文字；找不到返回空。"""
-    if top <= 1:
+def _caption_above(page: Any, top: float, floor: float = 0.0) -> str:
+    """表格上方最近的标题行（含“表”字或为编号标题），跳过“单位：”、报表日期、编制单位等行；
+    只在 floor（上一张表格底部）以下查找，最多向上看 6 行；找不到返回空。"""
+    if top - floor <= 1:
         return ""
-    above = page.crop((0, 0, page.width, top)).extract_text() or ""
+    above = page.crop((0, floor, page.width, top)).extract_text() or ""
     lines = [ln.strip() for ln in above.splitlines() if ln.strip()]
-    for ln in reversed(lines):
-        if UNIT_RE.search(ln):
+    for ln in list(reversed(lines))[:6]:
+        if UNIT_RE.search(ln) or SKIP_RE.search(ln):
             continue
-        return ln if len(ln) <= 40 and TITLE_RE.search(ln) else ""
+        if len(ln) <= 40 and TITLE_RE.search(ln):
+            return ln
+        if len(ln) > 40:
+            return ""
     return ""

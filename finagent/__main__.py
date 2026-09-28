@@ -34,7 +34,7 @@ from . import pipelines
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(prog="finagent", description="金融投研智能体")
     ap.add_argument("task", choices=["financials", "valuation", "check", "all", "ask",
-                                     "locate", "schema", "verify-facts", "guard"])
+                                     "locate", "schema", "verify-facts", "verify-extra", "guard"])
     ap.add_argument("instruction", nargs="?", help="ask 模式的自然语言指令")
     ap.add_argument("--input", help="财报文件（PDF / MD）")
     ap.add_argument("--year", type=int, help="主报告期年份，如 2024")
@@ -50,6 +50,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--runs-dir")
     ap.add_argument("--facts", help="Skill 版本：外部模型抽取的财务数据 JSON")
     ap.add_argument("--claims", help="Skill 版本：外部模型拆出的研报断言 JSON")
+    ap.add_argument("--extras", help="Skill 版本：补充表格 JSON（分产品/分渠道等经营数据，逐字核对后供研报引用）")
     ap.add_argument("--supplement", action="append", default=[],
                     help="Skill 版本：补充报告（一季报/半年报/三季报等），抽取条目用 source_file 指向它；可多次指定")
     ap.add_argument("--out", help="verify-facts 校验结果输出路径")
@@ -87,6 +88,7 @@ def main(argv: list[str] | None = None) -> int:
                    "assumptions": args.assumptions, "report": args.report, "llm": llm,
                    "peers": args.peers, "estimates": args.estimates, "guidance": args.guidance,
                    "llm_extract": args.llm_extract, "facts_file": args.facts, "claims_file": args.claims,
+                   "extras_file": args.extras,
                    "supplements": args.supplement}
             pipelines.run(args.task, ctx)
             summary = {"run_dir": str(tr.dir), "financials": ctx["analysis"]["summary"]}
@@ -179,7 +181,20 @@ def cmd_guard(args: argparse.Namespace, ap: argparse.ArgumentParser) -> int:
     return 0 if result["ok"] else 1
 
 
-HELPERS = {"locate": cmd_locate, "schema": cmd_schema, "verify-facts": cmd_verify_facts, "guard": cmd_guard}
+def cmd_verify_extra(args: argparse.Namespace, ap: argparse.ArgumentParser) -> int:
+    """预检：补充表格逐格核对原文；有拒收项时返回 1。"""
+    from .parsing.document import load_document
+    from .tasks.financials.extras import verify_extras
+
+    _need(ap, args, "input", "extras")
+    res = verify_extras(load_document(args.input), json.loads(Path(args.extras).read_text(encoding="utf-8")))
+    n = sum(1 for t in res["tables"] for r in t["rows"] for v in r["values"] if v is not None)
+    _print({"ok": not res["rejected"], "tables": len(res["tables"]), "verified_cells": n, "rejected": res["rejected"]})
+    return 0 if not res["rejected"] else 1
+
+
+HELPERS = {"locate": cmd_locate, "schema": cmd_schema, "verify-facts": cmd_verify_facts,
+           "verify-extra": cmd_verify_extra, "guard": cmd_guard}
 
 
 if __name__ == "__main__":
