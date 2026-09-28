@@ -142,6 +142,28 @@ def test_wrong_row_number_caught_as_conflict(doc, extraction):
     assert {"同一指标多处取值不一致", "规则与LLM抽取不一致"} <= types
 
 
+def test_skill_pipeline_stops_before_valuation_on_conflict(tmp_path, extraction):
+    payload = _mutate(extraction, "revenue", "2024", raw_value="1.23")
+    facts_path = tmp_path / "conflicted.json"
+    facts_path.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
+    c = {"input": str(REPORT), "fiscal_year": 2024, "company": "星河智造",
+         "assumptions": str(SAMPLES / "valuation_assumptions.json"), "llm": None,
+         "facts_file": str(facts_path)}
+    with RunTracer("conflict", tmp_path), pytest.raises(ValueError, match="Skill 抽取未通过校验"):
+        pipelines.run("valuation", c)
+    assert "valuation" not in c
+
+
+def test_valuation_reads_analysis_truth_table(tmp_path):
+    c = {"input": str(REPORT), "fiscal_year": 2024, "company": "星河智造",
+         "assumptions": str(SAMPLES / "valuation_assumptions.json"), "llm": None}
+    with RunTracer("truth", tmp_path):
+        pipelines.financials_pipeline.run(c)
+        c["extract"]["facts"] = []  # 下游不能绕过分析阶段的真值表
+        pipelines.valuation_pipeline.run(c)
+    assert c["valuation"]["status"] == "ok"
+
+
 def test_parent_company_scope_rejected(doc, extraction):
     res = ingest(doc, _mutate(extraction, "cash", "2024", scope="parent"), fiscal_year=2024)
     assert "只接受合并报表口径" in _reasons(res)
