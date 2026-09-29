@@ -17,7 +17,7 @@ from typing import Callable
 
 from . import charts as C
 from . import tables as T
-from .core import Run, dec, inline, load_sections, md, mm, neg, num, pct
+from .core import THEMES, Run, apply_theme, dec, inline, load_sections, md, mm, neg, num, pct
 
 KIT = Path(__file__).resolve().parent
 CHROME_CANDIDATES = [
@@ -58,6 +58,7 @@ class Config:
     method_note: str = ""             # 附录“估值方法说明”追加的公司口径说明
     rating_note: str = "（首次）"
     output_name: str = ""             # PDF 另存名（如“贵州茅台0929.pdf”），留空只输出 report.pdf
+    theme: str = "navy"               # 配色主题（core.THEMES）；命令行 --theme 可覆盖
 
 
 # ------------------------------------------------------------------ 图表编号与目录
@@ -69,6 +70,7 @@ class Doc:
         self.n = 0
         self.figs: list[tuple[int, str]] = []
         self.secs: list[tuple[str, str]] = []
+        self.nonop_shown = False  # 正文已展示非经营性资产明细时，附录不再重复
 
     def fig(self, title: str, body: str, note: str = "", cls: str = "") -> str:
         """图表外框：编号、标题、来源行。note 追加在来源之后（口径说明、“基准情景”等）；cls 可取 half / split。"""
@@ -130,6 +132,16 @@ def locate_pages(pdf: Path, doc: Doc) -> dict[str, int]:
         key = _norm(f"图表{n}{t}")[:len(str(n)) + 8]
         out[f"f{n}"] = next((i + 1 for i in range(start, len(texts)) if key in texts[i]), "")
     return out
+
+
+def equity_bridge(doc: Doc) -> str:
+    """股权价值桥表 + 非经营性资产净额明细（有明细时并排），读者可逐项对回企业价值到每股价值。"""
+    run = doc.run
+    table_ = doc.fig("股权价值桥（亿元）", T.equity_bridge(run))
+    if not run.non_op.get("items"):
+        return f'<div class="two">{table_}<div></div></div>'
+    doc.nonop_shown = True
+    return two(table_, doc.fig("非经营性资产净额明细（亿元）", T.nonop(run), "类负债项目以负数列示，已在合计中扣减"))
 
 
 def valuation_ranges(doc: Doc) -> str:
@@ -312,7 +324,8 @@ def appendix(doc: Doc, cfg: Config, forecast_secs: str = "盈利预测与估值�
   {doc.h2("附", "财务报表预测")}
   {appendix_statements(run)}
   <div class="src">资料来源：公司公告，FinAgent 预测（基准情景）。经营费用为轧差项，含税金及附加；{run.period}A 净利润为报表值。</div>
-  {doc.fig("股权桥中加回的非经营性资产（亿元）", T.nonop(run), cls="half") if run.non_op.get("items") else ""}
+  {doc.fig("股权价值桥中的非经营性资产净额（亿元）", T.nonop(run), "类负债项目以负数列示，已在合计中扣减", cls="half")
+   if run.non_op.get("items") and not doc.nonop_shown else ""}
   {appendix_notes(run, cfg, forecast_secs)}
 </section>
 <section class="disclaimer-page">
@@ -323,8 +336,9 @@ def appendix(doc: Doc, cfg: Config, forecast_secs: str = "盈利预测与估值�
 
 # ------------------------------------------------------------------ 渲染
 def css(cfg: Config, run: Run) -> str:
+    from .core import THEMES
     name = cfg.report_name or f"{run.period} 年报深度点评"
-    return ((KIT / "report.css").read_text(encoding="utf-8")
+    return (((KIT / "report.css").read_text(encoding="utf-8") + THEMES[cfg.theme]["css"])
             .replace("__HEADER__", f"{cfg.company}（{cfg.ticker}）{name}")
             .replace("__KIND__", f"公司研究｜{cfg.kind}"))
 
@@ -392,10 +406,14 @@ def main(cfg: Config, body: Callable[[Doc, dict], str], argv: list[str] | None =
     ap.add_argument("--run-dir", required=True)
     ap.add_argument("--narrative", default=str(cfg.narrative))
     ap.add_argument("--no-pdf", action="store_true")
+    ap.add_argument("--theme", default=None, help="配色主题：" + "、".join(THEMES))
     args = ap.parse_args(argv)
+    if args.theme:
+        cfg.theme = args.theme
+    apply_theme(cfg.theme, body.__globals__)  # 公司脚本里导入的颜色常量一并切换
     run = Run(Path(args.run_dir))
     S = load_sections(Path(args.narrative))
-    out = run.dir / "report"
+    out = run.dir / ("report" if cfg.theme == "navy" else f"report_{cfg.theme}")  # 非默认主题另存，不覆盖
     html_path, doc = build(run, cfg, S, body, out)
     print("HTML：", html_path)
     if args.no_pdf:
@@ -408,7 +426,8 @@ def main(cfg: Config, body: Callable[[Doc, dict], str], argv: list[str] | None =
     pdf = to_pdf(html_path)  # 第二遍：回填目录页码
     shots = preview(pdf)
     if cfg.output_name:
-        named = pdf.with_name(cfg.output_name)
+        stem, suffix = Path(cfg.output_name).stem, Path(cfg.output_name).suffix or ".pdf"
+        named = pdf.with_name(stem + ("" if cfg.theme == "navy" else f"_{cfg.theme}") + suffix)
         named.write_bytes(pdf.read_bytes())
         print("另存：", named)
     print("PDF：", pdf, f"（{len(shots)} 页，图表 {doc.n} 个，预览与缩略图 {shots[0].parent}）")

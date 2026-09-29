@@ -19,7 +19,7 @@ sys.path.insert(0, str(ROOT / ".claude" / "skills" / "finagent-report"))
 from reportkit import charts as C  # noqa: E402
 from reportkit import tables as T  # noqa: E402
 from reportkit.core import NAVY, SLATE, Run, md, md_parts, num, pct  # noqa: E402,F401
-from reportkit.layout import Config, Doc, appendix, main, two, valuation_ranges  # noqa: E402
+from reportkit.layout import Config, Doc, appendix, equity_bridge, main, two, valuation_ranges  # noqa: E402
 from reportkit.tables import table, td, tr  # noqa: E402,F401
 
 
@@ -108,6 +108,7 @@ def body(doc: Doc, S: dict[str, str]) -> str:
    else fig("折现参数", T.wacc(run), "参数为分析师假设", cls="half")}
   {fig("FCFF 预测与折现（基准情景）", T.fcff(run))}
   {fig("从企业价值到每股价值", img(C.ev_bridge, 172))}
+  {equity_bridge(doc)}
   {val[1]}
   {fig("三情景关键驱动与估值", T.scenario_table(run)) if has_seg else ""}
   {valuation_ranges(doc)}

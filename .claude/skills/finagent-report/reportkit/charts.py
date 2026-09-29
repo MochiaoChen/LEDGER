@@ -391,8 +391,8 @@ def ev_bridge(run: Run, out: Path) -> str:
     """从企业价值到股权价值（valuation.pv_base / bridge_base，百万元 → 亿元）。"""
     pv, br = run.valuation["pv_base"], run.valuation["bridge_base"]
     steps = [("预测期\nFCFF 现值", pv["pv_fcf"], "add"), ("终值现值", pv["pv_terminal_value"], "add"),
-             ("企业价值", pv["total_pv"], "total"), ("加：非经营\n性资产", br["add_backs"], "add"),
-             ("减：债务及\n类负债项目", -br["deductions"], "add"), ("股权价值", br["equity_value"], "total")]
+             ("企业价值", pv["total_pv"], "total"), ("加：现金及\n非经营性资产", br["add_backs"], "add"),
+             ("减：债务及少数\n股东权益等", -br["deductions"], "add"), ("股权价值", br["equity_value"], "total")]
     fig, ax = fig_size(FULL, 54)
     level = 0.0
     for i, (lab, v, kind) in enumerate(steps):
