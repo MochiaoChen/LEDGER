@@ -245,7 +245,8 @@ def sensitivity(run: Run, idx: int) -> str:
 
     def shade(v):  # 相对参考股价着色，仅用于配色
         r = max(-1.0, min(1.0, (v / price - 1) / 0.6))
-        rgb = (27, 54, 93) if r >= 0 else (181, 72, 47)
+        from . import core
+        rgb = core.HEAT_POS if r >= 0 else core.HEAT_NEG
         a = 0.08 + 0.5 * abs(r)
         return f"background: rgba({rgb[0]},{rgb[1]},{rgb[2]},{a:.2f});" + ("color:#fff;" if a > 0.4 else "")
 
@@ -271,12 +272,34 @@ def sensitivity(run: Run, idx: int) -> str:
     return f'<table class="heat"><thead><tr><th class="corner">{corner}</th>{head}</tr></thead><tbody>{"".join(trs)}</tbody></table>'
 
 
+BRIDGE_ITEMS = [("cash", "加：货币资金", 1), ("non_operating_assets", "加：非经营性资产净额（明细见附录）", 1),
+                ("associates", "加：联营合营企业投资", 1), ("debt", "减：有息负债", -1), ("leases", "减：租赁负债", -1),
+                ("minorities", "减：少数股东权益", -1), ("pensions", "减：设定受益计划净负债", -1),
+                ("preferred_stock", "减：优先股", -1), ("options", "减：期权", -1),
+                ("other_debt_like_items", "减：其他类负债项目", -1)]  # 与 finagent/tasks/valuation/dcf.py 的 BRIDGE_ADD/SUB 一致
+
+
+def equity_bridge(run: Run) -> str:
+    """股权价值桥（基准情景）：企业价值 → 逐项加减（plan.json ev_to_equity_bridge，百万元）→ 股权价值 → 每股价值。
+    为零的项目不列。"""
+    b, base = run.plan["ev_to_equity_bridge"], run.scen["base"]
+    rows = [tr(["企业价值", num(base["enterprise_value_mm"] / 100)], "sub")]
+    for key, label, sign in BRIDGE_ITEMS:
+        v = b.get(key) or 0.0
+        if v:
+            rows.append(tr([label, td(num(sign * v / 100), sign * v)]))
+    rows.append(tr(["股权价值", num(base["equity_value_mm"] / 100)], "sub"))
+    rows.append(tr(["总股本（亿股）", num(b["diluted_shares"] / 100)]))
+    rows.append(tr(["每股价值（元）", f"<b>{num(base['value_per_share'])}</b>"], "sub"))
+    return table(["股权价值桥（基准情景）", "亿元"], rows)
+
+
 def nonop(run: Run) -> str:
     """股权桥中加回的非经营性资产明细（non_operating_assets.json）。"""
     trs = "".join(f"<tr><td>{'减：' if it['sign'] < 0 else ''}{it['label']}</td>"
                   f"<td{neg(it['value_mm'])}>{it['value_mm'] / 100:,.2f}</td></tr>" for it in run.non_op["items"])
     trs += f"<tr class='total'><td>合计</td><td>{run.non_op['total_mm'] / 100:,.2f}</td></tr>"
-    return (f'<table class="data slim"><thead><tr><th>非经营性资产（{run.period} 年末）</th><th>亿元</th></tr></thead>'
+    return (f'<table class="data slim"><thead><tr><th>非经营性资产净额（{run.period} 年末）</th><th>亿元</th></tr></thead>'
             f'<tbody>{trs}</tbody></table>')
 
 

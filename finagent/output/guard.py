@@ -81,6 +81,7 @@ def truth_values(run: Path) -> list[float]:
     if plan.exists():  # 估值输入假设（WACC 各参数、终值参数）也是出处
         pl = json.loads(plan.read_text(encoding="utf-8"))
         _numbers({k: pl.get(k) for k in ("wacc", "terminal_value")}, vals)
+        _mm_numbers({"bridge_mm": pl.get("ev_to_equity_bridge")}, vals)  # 股权价值桥各项（百万元）
     findings = run / "check" / "findings.json"
     if findings.exists():
         for f in json.loads(findings.read_text(encoding="utf-8"))["findings"]:

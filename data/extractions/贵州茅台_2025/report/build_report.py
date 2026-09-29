@@ -17,7 +17,7 @@ sys.path.insert(0, str(HERE.parents[3] / ".claude" / "skills" / "finagent-report
 from reportkit import charts as C  # noqa: E402
 from reportkit import tables as T  # noqa: E402
 from reportkit.core import GOLD, LIGHT, NAVY, NAVY2, SLATE, Run, md, md_parts, mm, num, pct, pp, yi  # noqa: E402
-from reportkit.layout import Config, Doc, appendix, main, two, valuation_ranges  # noqa: E402
+from reportkit.layout import Config, Doc, appendix, equity_bridge, main, two, valuation_ranges  # noqa: E402
 from reportkit.tables import grp, table, td, tr  # noqa: E402
 
 PRODUCTS = [("茅台酒", "茅台酒"), ("系列酒", "其他系列酒")]  # (正文名, extras 行名)
@@ -464,7 +464,8 @@ def body(doc: Doc, S: dict[str, str]) -> str:
   {val[0]}
   {two(fig("折现参数", T.wacc(run), "参数为分析师假设"), fig("三情景营业收入", img(C.scenarios)))}
   {fig("FCFF 预测与折现（基准情景）", T.fcff(run))}
-  {fig("从企业价值到每股价值", img(C.ev_bridge, 172), "非经营性资产明细见附录")}
+  {fig("从企业价值到每股价值", img(C.ev_bridge, 172))}
+  {equity_bridge(doc)}
   {val[1]}
   {fig("三情景关键驱动与估值", T.scenario_table(run, price_label="吨价"))}
   {valuation_ranges(doc)}

@@ -33,7 +33,7 @@ def sample_run(tmp_path_factory):
     return next(runs.iterdir())
 
 
-def _build_template(run_dir, tmp_path):
+def _build_template(run_dir, tmp_path, *extra, out="report"):
     """把模板复制到仓库内的临时目录（模板按 .claude/skills 所在目录定位 reportkit），只生成 HTML。"""
     work = ROOT / "data" / "extractions" / f"_kit_test_{tmp_path.name}" / "report"
     work.mkdir(parents=True)
@@ -41,7 +41,7 @@ def _build_template(run_dir, tmp_path):
         for f in TEMPLATE.iterdir():
             shutil.copy(f, work / f.name)
         argv = sys.argv
-        sys.argv = ["build_report.py", "--run-dir", str(run_dir), "--no-pdf"]
+        sys.argv = ["build_report.py", "--run-dir", str(run_dir), "--no-pdf", *extra]
         try:
             with pytest.raises(SystemExit) as e:
                 runpy.run_path(str(work / "build_report.py"), run_name="__main__")
@@ -50,7 +50,7 @@ def _build_template(run_dir, tmp_path):
             sys.argv = argv
     finally:
         shutil.rmtree(work.parent)
-    return (run_dir / "report" / "report.html").read_text(encoding="utf-8")
+    return (run_dir / out / "report.html").read_text(encoding="utf-8")
 
 
 def _figs(html):
@@ -63,6 +63,7 @@ def test_template_on_another_company(sample_run, tmp_path):
     assert figs == [str(i) for i in range(1, len(figs) + 1)] and len(figs) >= 18  # 连续编号
     assert "可比公司估值倍数与利润率" in html and "免责声明" in html
     assert "&lt;公司&gt;" in html  # 首页占位符被转义显示，而不是被浏览器当成标签
+    assert "__HEADER__" not in html and "__KIND__" not in html  # 页眉占位符已替换
     # 低价股：敏感性矩阵保留两位小数
     heat = re.search(r'<table class="heat">.*?</table>', html, re.S).group(0)
     assert re.search(r">\d+\.\d{2}</td>", heat)
@@ -109,4 +110,29 @@ def test_moutai_script_builds(tmp_path):
     finally:
         sys.argv = argv
     html = (run / "report" / "report.html").read_text(encoding="utf-8")
-    assert len(_figs(html)) == 56
+    assert len(_figs(html)) == 57 and "__HEADER__" not in html  # 含股权价值桥表
+
+
+def test_theme_switch_and_restore(sample_run, tmp_path):
+    """非默认主题：CSS 与图表换色、输出到 report_<主题>，不覆盖默认版；再切回默认主题时颜色恢复。"""
+    from reportkit import core
+    red = _build_template(sample_run, tmp_path, "--theme", "warm_red", out="report_warm_red")
+    assert "#C6342C" in red and "__HEADER__" not in red
+    assert core.NAVY == core.THEMES["warm_red"]["NAVY"]
+    svg = (sample_run / "report_warm_red" / "charts" / "history.svg").read_text(encoding="utf-8")
+    assert "#a21316" in svg.lower()
+    navy = _build_template(sample_run, tmp_path)
+    assert "#C6342C" not in navy and core.NAVY == "#1B365D"
+
+
+def test_equity_bridge_reconciles(sample_run):
+    """股权价值桥表逐项加总 = 股权价值；与估值结果、非经营性资产合计口径一致（正文描述汇总数构成前的对账依据）。"""
+    from reportkit import tables as T
+    from reportkit.core import Run
+    run = Run(sample_run)
+    html = T.equity_bridge(run)
+    vals = [float(x.replace(",", "")) for x in re.findall(r"<td(?: class=\"neg\")?>(-?[\d,]+\.\d{2})</td>", html)]
+    ev, *items, equity, shares = vals  # 每股价值加粗，不在匹配结果里
+    assert ev + sum(items) == pytest.approx(equity, abs=0.02)
+    br = run.valuation["bridge_base"]
+    assert equity == pytest.approx(br["equity_value"] / 100, abs=0.01)
