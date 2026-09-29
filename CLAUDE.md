@@ -49,12 +49,15 @@
 - model.xlsx：分部预测 → 三表-假设（情景开关 B5）→ 三表全公式联动与勾稽检查 → DCF；历史财务、分季度、经营数据页。
 - 卖方体例研报（HTML → PDF）：规范见 skill 的 `references/html-report.md` 与 `references/writing.md`，
   茅台样例脚本 `data/extractions/贵州茅台_2025/report/build_report.py`。
-- 83 个测试通过。
+- 茅台研报扩为约 20 页深度报告（目录两遍生成页码、56 个图表）；extras 比率支持 growth/diff 与别名，guard 识别百万元估值产物、WACC 假设与利润归因项。
+- 研报生成抽成独立 Skill `.claude/skills/finagent-report/`：共用代码 reportkit（读产物、标准图表与原语、目录、附录、免责声明、打印）、编排与文稿模板、行业框架；茅台脚本只保留专属部分。
+- 84 个测试通过。
 
 **按优先级待做**：
 1. **真实 A 股年报联调**（两个版本都要测）：茅台已跑通 Skill 版本；规则通道仍取不到跨页表格续页（续页无表头），
    宁德时代、招商轮船未测；Agent 版本未测。扫描页目前直接拒收，不做 OCR。
    研报写作待用户提供优秀研报样例（`references/exemplars/`）后提炼分析逻辑，再改写正文。
+   宁德时代、招商轮船的深度报告按 finagent-report skill 生成。
 2. **导师风格改写**（已和用户讨论过，放在 `tasks/report_check/` 下）：喂导师点评 → 提炼风格档案 → 代码做格式合规检查 → LLM 一键改写 → **数字锁**（改写前后断言必须完全一致，否则拒绝输出）。
 3. 扩充评测集：10～20 份真实财报 + 人工埋错研报。
 4. Streamlit Web 界面 + 运行日志回放。

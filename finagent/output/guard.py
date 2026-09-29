@@ -42,12 +42,45 @@ def _numbers(obj: Any, out: list[float]) -> None:
             _numbers(v, out)
 
 
+MM_BLOCKS = {"forecast_base", "pv_base", "bridge_base"}  # valuation.json 中以百万元计的块
+
+
+def _mm_numbers(obj: Any, out: list[float], inside: bool = False) -> None:
+    """估值产物以百万元计：MM_BLOCKS 内与键名以 _mm 结尾的数值另按 ×1e6 换算为元，供“17,483.72 亿元”这类表述核对。"""
+    if isinstance(obj, dict):
+        for k, v in obj.items():
+            if inside or k in MM_BLOCKS or str(k).endswith("_mm"):
+                vs: list[float] = []
+                _numbers(v, vs)
+                out.extend(x * 1e6 for x in vs)
+            else:
+                _mm_numbers(v, out)
+    elif isinstance(obj, list):
+        for v in obj:
+            _mm_numbers(v, out, inside)
+
+
 def truth_values(run: Path) -> list[float]:
     vals: list[float] = []
     for rel in TRUTH_FILES:
         p = run / rel
         if p.exists():
-            _numbers(json.loads(p.read_text(encoding="utf-8")), vals)
+            data = json.loads(p.read_text(encoding="utf-8"))
+            _numbers(data, vals)
+            if rel.startswith("valuation/"):
+                _mm_numbers(data, vals)
+    seg = run / "valuation" / "segment_forecast.json"
+    if seg.exists():  # 分部预测金额以百万元计
+        sf = json.loads(seg.read_text(encoding="utf-8"))
+        for block in [sf.get("base_year", {})] + list(sf.get("scenarios", {}).values()):
+            for key in ("revenue", "cogs"):
+                _mm_numbers({"x_mm": block.get(key)}, vals)
+            for sg in block.get("segments", []):
+                _mm_numbers({"x_mm": [sg.get("revenue"), sg.get("cogs")]}, vals)
+    plan = run / "valuation" / "plan.json"
+    if plan.exists():  # 估值输入假设（WACC 各参数、终值参数）也是出处
+        pl = json.loads(plan.read_text(encoding="utf-8"))
+        _numbers({k: pl.get(k) for k in ("wacc", "terminal_value")}, vals)
     findings = run / "check" / "findings.json"
     if findings.exists():
         for f in json.loads(findings.read_text(encoding="utf-8"))["findings"]:
@@ -114,18 +147,22 @@ def _is_forecast(sentence: str, year: int) -> bool:
     return any(int(y) > year for y in re.findall(r"(20\d{2})", sentence))
 
 
-def _context(text: str, quote: str, before: int = 24) -> str:
-    """断言所在的上下文：向前取若干字（分部名称常在指标之前），向后补全单位（如“万元/吨”）。"""
+def _context(text: str, quote: str, before: int = 24, limit: int = 80) -> str:
+    """断言所在的上下文：向前取到本句（或分句）开头，至少若干字、至多 limit 字（分部名称常在句首），
+    向后补全单位（如“万元/吨”）。"""
     i = text.find(quote)
     if i < 0:
         return quote
     j = i + len(quote)
     tail = re.match(r"\s*(?:/吨|/股)?", text[j:])
-    return text[max(0, i - before):j + (tail.end() if tail else 0)]
+    start = max(text.rfind(ch, 0, i) for ch in "。；\n") + 1
+    start = max(min(start, i - before), i - limit, 0)
+    return text[start:j + (tail.end() if tail else 0)]
 
 
 def _segment_values(run: Path) -> dict[str, list[float]]:
-    """补充表格（financials/extras.json）：行名 → 该行全部已核对数值（含程序算出的比率，按比率标签归属到行名）。"""
+    """补充表格（financials/extras.json）：行名（及别名 alias）→ 该行全部已核对数值（含程序算出的比率，按比率标签归属到行名）；
+    另含利润变动归因桥各项。"""
     p = run / "financials" / "extras.json"
     if not p.exists():
         return {}
@@ -133,9 +170,16 @@ def _segment_values(run: Path) -> dict[str, list[float]]:
     out: dict[str, list[float]] = {}
     for t in ex.get("tables", []):
         for r in t["rows"]:
-            out.setdefault(r["label"], []).extend(v for v in r["values"] if v is not None)
+            for name in [r["label"], *r.get("alias", [])]:
+                out.setdefault(name, []).extend(v for v in r["values"] if v is not None)
     for r in ex.get("ratios", []):
-        out.setdefault(r["label"], []).append(r["value"])
+        for name in [r["label"], *r.get("alias", [])]:
+            out.setdefault(name, []).append(r["value"])
+    ep = run / "financials" / "earnings.json"
+    if ep.exists():  # 利润变动归因桥：“销售费用增加拖累 16.14 亿元”按归因项核对
+        bridge = json.loads(ep.read_text(encoding="utf-8")).get("profit_bridge") or {}
+        for it in bridge.get("items", []):
+            out.setdefault(it["item"], []).append(it["value"])
     return out
 
 
