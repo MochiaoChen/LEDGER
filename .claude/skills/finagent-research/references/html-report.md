@@ -129,14 +129,9 @@ thead { display: table-header-group; }          /* 跨页表格重复表头 */
 
 ## 转 PDF
 
-```bash
-"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --headless=new --no-pdf-header-footer \
-  --print-to-pdf=runs/<run_id>/report/report.pdf --virtual-time-budget=10000 \
-  "file://$PWD/runs/<run_id>/report/report.html"
-```
-
-Windows / Linux 用 Edge 或 Chromium 的同名参数。页眉页码用上面的 CSS `@page` 边距盒（Chrome 131 及以上支持），
-不要用 Chrome 自带的页眉页脚。
+用 `finagent-report` 的构建脚本生成 PDF；`reportkit.layout.chrome()` 会在 macOS、Windows 和 Linux 的常见安装路径及
+`PATH` 中查找 Chrome / Chromium / Edge。非默认安装位置用 `FINAGENT_CHROME` 指向可执行文件。页眉页码用上面的
+CSS `@page` 边距盒（Chrome 131 及以上支持），不要用 Chrome 自带的页眉页脚。
 
 ## 自检（交付前必须做）
 

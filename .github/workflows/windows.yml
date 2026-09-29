@@ -1,0 +1,26 @@
+name: Windows compatibility
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  test-windows:
+    runs-on: windows-latest
+    env:
+      # GitHub 的 Windows Runner 可能把重定向输出设为 cp1252；
+      # 估值评测会输出中文，统一启用 UTF-8，避免仅日志编码失败。
+      PYTHONUTF8: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install dependencies
+        run: python -m pip install -r requirements.txt
+      - name: Run tests
+        run: python -m pytest -q tests
+      - name: Run evaluation
+        run: python eval/run_eval.py
