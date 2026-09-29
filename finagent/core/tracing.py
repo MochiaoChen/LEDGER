@@ -104,7 +104,10 @@ class RunTracer:
     def register_artifact(self, path: str | Path) -> Path:
         p = Path(path)
         digest = sha256_file(p)
-        rel = str(p.relative_to(self.dir)) if p.is_relative_to(self.dir) else str(p)
+        # Manifest paths are a portable interchange format, not native shell
+        # paths.  Keep repository-relative artifact keys stable across
+        # Windows (which otherwise emits backslashes) and POSIX hosts.
+        rel = p.relative_to(self.dir).as_posix() if p.is_relative_to(self.dir) else p.as_posix()
         self.artifacts[rel] = digest
         self.event("artifact", path=rel, sha256=digest, bytes=p.stat().st_size)
         return p
