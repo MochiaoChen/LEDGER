@@ -23,6 +23,38 @@ TOKEN = re.compile(r"«(S|A|IS|BS|CF)\.(\w+)\.(\$?[A-Z]+)»")
 SCEN_CN = (("downside", "悲观"), ("base", "基准"), ("upside", "乐观"))
 NOTE = "单位：百万元；蓝色为输入（报表值、驱动假设），黑色为公式，绿色为跨表引用"
 
+ROW_NOTES = {
+    ("A", "g"): "实际期由历史收入反算；预测期按情景开关选用悲观、基准或乐观假设。",
+    ("A", "gm"): "实际期由收入与营业成本反算；预测期按情景开关选用。",
+    ("A", "opex"): "经营费用率不含折旧摊销，含税金及附加；预测期按收入比例计算。",
+    ("A", "tax"): "所得税率 = 所得税费用 / 利润总额；预测期用于计算账面税与现金税。",
+    ("A", "ar_days"): "应收账款周转天数 = 应收账款 / 营业收入 × 365。",
+    ("A", "inv_days"): "存货周转天数 = 存货 / 营业成本 × 365。",
+    ("A", "ap_days"): "应付账款周转天数 = 应付账款 / 营业成本 × 365。",
+    ("A", "capex_pct"): "资本开支率 = 资本开支 / 营业收入。",
+    ("A", "nwc"): "经营营运资本 = 应收账款 + 存货 − 应付账款。",
+    ("A", "ppe_end"): "期末 PP&E = 期初 PP&E + 资本开支 − 折旧摊销。",
+    ("A", "debt_end"): "期末有息负债 = 期初有息负债 − 计划偿还。",
+    ("IS", "rev"): "实际期取合并利润表；预测期 = 上年收入 × (1 + 收入增速)。",
+    ("IS", "cogs"): "营业成本 = 营业收入 × (1 − 毛利率)。",
+    ("IS", "gp"): "毛利 = 营业收入 − 营业成本。",
+    ("IS", "ebit"): "经营 EBIT = 毛利 − 经营费用 − 折旧摊销；不含投资收益与公允价值变动收益。",
+    ("IS", "tp"): "利润总额 = 经营 EBIT − 利息费用 + 投资收益及公允价值变动收益。",
+    ("IS", "ni"): "净利润 = 利润总额 − 所得税费用。",
+    ("BS", "cash"): "预测期货币资金引用现金流量表期末现金。",
+    ("BS", "ar"): "应收账款 = 营业收入 × 应收账款周转天数 / 365。",
+    ("BS", "inv"): "存货 = 营业成本 × 存货周转天数 / 365。",
+    ("BS", "ap"): "应付账款 = 营业成本 × 应付账款周转天数 / 365。",
+    ("BS", "ppe"): "固定资产及在建工程引用固定资产滚动辅助计算。",
+    ("BS", "ta"): "资产总计 = 各项资产合计。",
+    ("BS", "tle"): "负债和权益总计 = 各项负债与权益合计。",
+    ("BS", "chk_bs"): "模型检查 = 资产总计 − 负债和权益总计；容差内应为 0.00。",
+    ("BS", "chk_all"): "汇总资产负债、现金、留存收益、PP&E 与有息负债滚动检查。",
+    ("CF", "cfo"): "经营活动现金流 = 净利润 + 折旧摊销 − 营运资本增加 + 其他经营项目。",
+    ("CF", "capex"): "资本开支为现金流出，取负号列示。",
+    ("CF", "end"): "期末现金 = 期初现金 + 经营、投资与筹资活动现金流。",
+}
+
 
 def _t(sheet: str, key: str, col: str) -> str:
     """跨表引用占位符，所有表建完后替换为 '表名'!列行。"""
@@ -119,6 +151,8 @@ def linked_three_statement(detail: dict[str, Any], ts_plan: dict[str, Any], anal
     head = lambda title: [title] + [f"{y}A" for y in hy] + [f"{p}E" for p in periods]  # noqa: E731
 
     def add(g: _Grid, sid: str, key: str | None, cells: list[Any], **kw: Any) -> int:
+        if key and (sid, key) in ROW_NOTES:
+            kw.setdefault("note", ROW_NOTES[(sid, key)])
         r = g.add(cells, **kw)
         if key:
             rows[(sid, key)] = r
@@ -350,7 +384,10 @@ def linked_three_statement(detail: dict[str, Any], ts_plan: dict[str, Any], anal
     r_c5 = add(gB, "BS", "chk_debt", ["有息负债滚动（期初 − 偿还 − 期末）", None, None]
                + [Formula(f"ROUND({_t('A', 'debt_beg', c)}-{_t('A', 'repay', c)}-{_t('A', 'debt_end', c)},6)", 0.0)
                   for c in F], fmt="num2")
-    add(gB, "BS", "chk_all", ["勾稽结论", Formula(f'IF(SUMPRODUCT(ABS(B{r_c1}:{F[-1]}{r_c5}))<0.001,"全部平衡","不平衡，请检查")',
+    # 不用 SUMPRODUCT(ABS(二维区域))：Excel 支持该数组写法，但部分轻量重算引擎会返回 #VALUE!。
+    # 逐单元格 ABS 后求和数学等价，也能在 Windows Excel、LibreOffice 与验证引擎中稳定重算。
+    check_sum = ",".join(f"ABS({c}{r})" for r in range(r_c1, r_c5 + 1) for c in cols)
+    add(gB, "BS", "chk_all", ["勾稽结论", Formula(f'IF(SUM({check_sum})<0.001,"全部平衡","不平衡，请检查")',
                                                 "全部平衡", role="key")])
 
     # ================================================ 三表-现金流量表

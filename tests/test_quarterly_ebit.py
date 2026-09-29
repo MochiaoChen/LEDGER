@@ -218,6 +218,10 @@ def test_model_workbook_layout_and_formulas(run):
         dcf = z.read(f"xl/worksheets/sheet{names.index('DCF') + 1}.xml").decode("utf-8")
     assert names[:5] == ["估值汇总", "盈利预测", "DCF", "WACC", "敏感性"]
     assert 'name val="Arial"' in styles and "FF1F3864" in styles and "FF0000FF" in styles
+    assert '<sz val="12"/>' in styles and '<sz val="9"/>' in styles  # 正文 12 号；来源口径 9 号斜体
+    assert '来源及计算口径' in dcf and '公允价值变动收益' in dcf
+    assert 'italic' not in dcf  # 斜体属性写在 styles.xml，不应污染单元格正文
+    assert ' ht="20" customHeight="1"' in dcf and "FFDCE6F1" in styles
     # 中西文字体配对：文字单元格按字符分段，中文段楷体、西文段 Arial（数值单元格为 Arial）
     assert re.search(r'<rFont val="Arial"/>.{0,80}<t xml:space="preserve">DCF ?</t>.*?<rFont val="KaiTi"/>', dcf)
     assert 'showGridLines="0"' in dcf and 'state="frozen"' in dcf and 'orientation="landscape"' in dcf

@@ -101,18 +101,19 @@
 ## 常用命令
 
 ```bash
-.venv/bin/python -m finagent all --input data/samples/annual_report_2024.md --year 2024 --company 星河智造 --assumptions data/samples/valuation_assumptions.json --report data/samples/research_draft.md --peers data/samples/peers.csv --estimates data/samples/estimates.csv --guidance data/samples/guidance.csv --llm off
+python -m finagent all --input data/samples/annual_report_2024.md --year 2024 --company 星河智造 --assumptions data/samples/valuation_assumptions.json --report data/samples/research_draft.md --peers data/samples/peers.csv --estimates data/samples/estimates.csv --guidance data/samples/guidance.csv --llm off
 ```
 
 ```bash
-.venv/bin/python -m pytest -q tests
+python -m pytest -q tests
 ```
 
 ```bash
-.venv/bin/python eval/run_eval.py
+python eval/run_eval.py
 ```
 
-- 环境：`uv venv .venv && uv pip install --python .venv/bin/python -r requirements.txt`（Python 3.12；`.venv/` 不入库）。
+- 环境：Python 3.12；`.venv/` 不入库。macOS / Linux 解释器为 `.venv/bin/python`，Windows 为
+  `.venv\\Scripts\\python.exe`；也可激活虚拟环境后统一使用 `python`。
 - 改完代码必须跑测试和评测。样例评测指标下降视为回归。
 - 改样例年报要改 `data/samples/build_samples.py` 再重新生成（同时生成样例三季报），并同步更新 `eval/gold_financials.json`、
   `eval/labels.json`、样例 PDF（`build_pdf.py`）和 `data/extractions/` 下的抽取文件。

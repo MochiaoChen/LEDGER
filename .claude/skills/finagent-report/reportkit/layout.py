@@ -25,6 +25,8 @@ CHROME_CANDIDATES = [
     "/Applications/Chromium.app/Contents/MacOS/Chromium",
     "/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge",
     r"C:\Program Files\Google\Chrome\Application\chrome.exe",
+    r"C:\Program Files\Microsoft\Edge\Application\msedge.exe",
+    r"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe",
     r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe",
 ]
 
@@ -35,11 +37,18 @@ def chrome() -> str:
     import shutil
     env = os.environ.get("FINAGENT_CHROME")
     if env:
-        return env
-    for c in CHROME_CANDIDATES:
+        path = Path(env).expanduser()
+        if path.is_file():
+            return str(path)
+        raise SystemExit(f"FINAGENT_CHROME 指向的浏览器不存在：{path}")
+    local = os.environ.get("LOCALAPPDATA")
+    local_candidates = ([str(Path(local) / "Google/Chrome/Application/chrome.exe"),
+                         str(Path(local) / "Microsoft/Edge/Application/msedge.exe")] if local else [])
+    for c in [*local_candidates, *CHROME_CANDIDATES]:
         if Path(c).exists():
             return c
-    for name in ("google-chrome", "google-chrome-stable", "chromium", "chromium-browser", "msedge"):
+    for name in ("chrome", "chrome.exe", "google-chrome", "google-chrome-stable", "chromium", "chromium-browser",
+                 "msedge", "msedge.exe"):
         if shutil.which(name):
             return shutil.which(name)
     raise SystemExit("找不到 Chrome / Chromium / Edge：请安装，或设置环境变量 FINAGENT_CHROME 指向浏览器可执行文件")

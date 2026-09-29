@@ -5,7 +5,8 @@ Formula 写为公式单元格（附缓存值，打开即显示；含公式的工
   - 字体中西文配对：Arial 配楷体（默认），Times New Roman 配宋体。xlsx 单元格字体只有一个名字，
     所以文字单元格写成富文本：中文字符一段用中文字体，字母数字一段用西文字体；数值单元格用西文字体。
     （不用工作簿主题的 ea 字体：中文界面的 Excel for Mac 会把它当正文字体，连数字都变成楷体。）
-  - 全表 10 号字；表头深蓝底白字加粗；正文浅灰细线分隔；合计行加粗、上边框；关闭网格线、冻结表头、自动列宽；
+  - 正文与表头 12 号字，来源及计算口径 9 号灰色斜体；表头深蓝底白字加粗；正文浅灰细线分隔；
+    合计行加粗、上边框；关闭网格线、冻结表头、自动列宽；
     打印横向、按页宽缩放。
   - 数字格式：金额千分位一位小数，负数加括号，零显示“-”；比率 0.0%；倍数 0.0x；变动量带正负号。
   - 颜色：硬编码输入蓝色，公式黑色，纯跨表引用绿色；关键输出浅黄底。
@@ -41,6 +42,7 @@ FONT = "Arial"
 # 西文字体 → 中文字体（Office 自带 KaiTi / SimSun，Windows 与 Mac 版 Excel 都能找到）
 FONT_PAIRS = {"Arial": "KaiTi", "Times New Roman": "SimSun"}
 CJK_FONT = FONT_PAIRS[FONT]
+BODY_FONT_SIZE, NOTE_FONT_SIZE, TITLE_FONT_SIZE = 12, 9, 14
 NAVY, SECTION_FILL, KEY_FILL, RULE, GREY_TEXT = "1F3864", "DCE6F1", "FFF2CC", "BFBFBF", "595959"
 INPUT_BLUE, LINK_GREEN = "0000FF", "008000"
 NUMBER_FORMATS = {
@@ -129,6 +131,9 @@ class Sheet:
     wrap_cols: tuple[int, ...] = ()
     tab_color: str | None = None
     charts: list[Chart] = field(default_factory=list)
+    notes: dict[int, str] = field(default_factory=dict)
+    notes_header: str = "来源及计算口径"
+    notes_width: float = 60.0
 
 
 # ------------------------------------------------------------------ 样式表
@@ -136,7 +141,7 @@ class _StyleBook:
     """把 (行样式, 数字格式, 字色, 换行, 对齐) 组合成 cellXfs，按需去重编号。"""
 
     def __init__(self) -> None:
-        self.fonts: list[str] = [f'<font><sz val="10"/><name val="{FONT}"/><family val="2"/></font>']
+        self.fonts: list[str] = [f'<font><sz val="{BODY_FONT_SIZE}"/><name val="{FONT}"/><family val="2"/></font>']
         self.fills: list[str] = ['<fill><patternFill patternType="none"/></fill>',
                                  '<fill><patternFill patternType="gray125"/></fill>']
         self.borders: list[str] = ["<border><left/><right/><top/><bottom/><diagonal/></border>"]
@@ -227,7 +232,8 @@ def font_spec(role: str, color: str | None) -> tuple[bool, bool, str | None, int
     """行样式 → (加粗, 斜体, 字色, 字号)；单元格样式与富文本各段共用，保证观感一致。"""
     bold = role in ("header", "section", "total", "title", "axis")
     color = "FFFFFF" if role == "header" else (GREY_TEXT if role == "note" else NAVY if role == "title" else color)
-    return bold, role == "note", color, 14 if role == "title" else 10
+    size = TITLE_FONT_SIZE if role == "title" else NOTE_FONT_SIZE if role == "note" else BODY_FONT_SIZE
+    return bold, role == "note", color, size
 
 
 def _font_props(spec: tuple[bool, bool, str | None, int], name: str, tag: str) -> str:
@@ -299,11 +305,21 @@ def _auto_widths(sh: Sheet) -> dict[int, float]:
 
 
 def _sheet_xml(sh: Sheet, book: _StyleBook, has_drawing: bool = False) -> str:
-    ncols = max((len(r) for r in sh.rows), default=0)
+    base_ncols = max((len(r) for r in sh.rows), default=0)
+    ncols = base_ncols + 2 if sh.notes else base_ncols
     col_w = _auto_widths(sh)
+    if sh.notes:
+        col_w[base_ncols] = 2.5
+        col_w[base_ncols + 1] = sh.notes_width
     body = []
     for r, row in enumerate(sh.rows):
         role_r = _row_role(sh, r)
+        row = list(row)
+        if sh.notes:
+            if role_r == "header":
+                row += [Cell(None, role="note"), Cell(sh.notes_header, role="header")]
+            elif r in sh.notes:
+                row += [Cell(None, role="note"), Cell(sh.notes[r], role="note")]
         cells = []
         # 小节标题条铺满全表宽；表头、合计、关键行只覆盖本表的列
         span = ncols if role_r == "section" and row else len(row)
@@ -359,14 +375,16 @@ def _row_height(sh: Sheet, r: int, role: str, col_w: dict[int, float]) -> str:
     row = sh.rows[r]
     texts = [(c, (x.value if isinstance(x, Cell) else x)) for c, x in enumerate(row)]
     if role == "title":
-        return ' ht="22" customHeight="1"'
+        return ' ht="24" customHeight="1"'
+    if role == "note":
+        return ' ht="16" customHeight="1"'
     if role == "header":
         wraps = any(v not in (None, "") and not isinstance(v, Formula) and _text_width(v) > col_w.get(c, 10) - 1
                     for c, v in texts)
-        return f' ht="{30 if wraps else 20}" customHeight="1"'
+        return f' ht="{36 if wraps else 24}" customHeight="1"'
     if any(c in sh.wrap_cols and v not in (None, "") for c, v in texts):
         return ""
-    return ' ht="16" customHeight="1"'
+    return ' ht="20" customHeight="1"'
 
 
 def _safe_name(name: str, used: set[str]) -> str:

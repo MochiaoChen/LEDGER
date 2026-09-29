@@ -22,8 +22,9 @@ description: A 股上市公司投研（Skill 版本）：直接读年报/季报 
 
 ## 准备
 
-在仓库根目录执行命令。Python 用 `.venv/bin/python`（不存在时用 `python3`，并先
-`pip install -r requirements.txt`）。下文写作 `PY`。
+在仓库根目录执行命令。macOS / Linux 用 `.venv/bin/python`，Windows PowerShell 用
+`.\\.venv\\Scripts\\python.exe`；也可激活虚拟环境后统一使用 `python`。先安装
+`python -m pip install -r requirements.txt`。下文写作 `PY`，实际执行时替换为当前平台的解释器命令。
 
 每家公司建一个工作目录 `data/extractions/<公司>_<年度>/`，抽取文件放这里并随代码提交，
 评审无需模型即可从这些文件复现全部结果。

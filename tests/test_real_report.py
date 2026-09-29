@@ -157,7 +157,7 @@ def test_linked_three_statement_formulas(moutai_run):
     assert "CHOOSE($B$5," in a
     assert "&apos;三表-假设&apos;!" in is_ or "'三表-假设'!" in is_
     assert re.search(r"(&apos;|')三表-现金流量表(&apos;|')!D\d+", bs)
-    assert "ROUND(" in bs and "SUMPRODUCT(ABS(" in bs and "全部平衡" in bs
+    assert "ROUND(" in bs and "SUM(ABS(" in bs and "全部平衡" in bs
     assert re.search(r"(&apos;|')三表-利润表(&apos;|')!D\d+", cf)
     assert re.search(r"(&apos;|')三表-利润表(&apos;|')!D\d+", dcf)
     detail = json.loads((moutai_run / "valuation" / "three_statement_detail.json").read_text(encoding="utf-8"))

@@ -24,15 +24,19 @@ class _Grid:
         self.rows: list[list[Any]] = [[title], [note], []]
         self.roles: dict[int, str] = {0: "title", 1: "note"}
         self.row_formats: dict[int, str] = {}
+        self.notes: dict[int, str] = {}
         self.at: dict[str, int] = {}
 
-    def add(self, row: list[Any], *, key: str | None = None, role: str | None = None, fmt: str | None = None) -> int:
+    def add(self, row: list[Any], *, key: str | None = None, role: str | None = None, fmt: str | None = None,
+            note: str | None = None) -> int:
         self.rows.append(row)
         i = len(self.rows) - 1
         if role:
             self.roles[i] = role
         if fmt:
             self.row_formats[i] = fmt
+        if note:
+            self.notes[i] = note
         if key:
             self.at[key] = i + 1
         return i + 1
@@ -40,6 +44,7 @@ class _Grid:
     def sheet(self, **kw: Any) -> Sheet:
         header = next((i for i, r in self.roles.items() if r == "header"), 3)
         kw.setdefault("freeze", (header + 1, 1))
+        kw.setdefault("notes", self.notes)
         return Sheet(self.rows, roles=self.roles, row_formats=self.row_formats, header_rows=0, **kw)
 
 
@@ -121,37 +126,47 @@ def _dcf(plan: dict[str, Any], res: dict[str, Any], wacc_ref: str, non_op_ref: s
               UNIT_NOTE + ("；预测期经营数据引用三表联动页" if ts else ""))
     g.add(["项目（百万元）", f"FY{h['latest_year']}A"] + [f"FY{r['period']}E" for r in fr], role="header")
 
-    def inputs(label: str, key: str, hist_v: float | None, fc_key: str, link: str | None = None, **kw: Any) -> int:
+    def inputs(label: str, key: str, hist_v: float | None, fc_key: str, link: str | None = None,
+               note: str | None = None, **kw: Any) -> int:
         if ts and link:  # 预测期引用三表联动页（绿色跨表引用）
-            return g.add([label, hist_v] + [Formula(ref, r[fc_key]) for ref, r in zip(ts[link], fr)], key=key, fmt="num1", **kw)
-        return g.add([label, hist_v] + [r[fc_key] for r in fr], key=key, fmt="num1", **kw)
+            return g.add([label, hist_v] + [Formula(ref, r[fc_key]) for ref, r in zip(ts[link], fr)],
+                         key=key, fmt="num1", note=note, **kw)
+        return g.add([label, hist_v] + [r[fc_key] for r in fr], key=key, fmt="num1", note=note, **kw)
 
-    inputs("营业收入", "rev", h["revenue"], "revenue", "rev")
+    inputs("营业收入", "rev", h["revenue"], "revenue", "rev",
+           note="历史期取合并报表真值表；预测期引用三表-利润表。")
     a = g.at
     g.add(["收入增速", None] + [Formula(f"{c}{a['rev']}/{p}{a['rev']}-1", r["revenue_growth"])
                                 for p, c, r in zip([hist_col] + cols, cols, fr)], key="g", fmt="pct1")
-    inputs("EBIT（剔除投资收益与公允价值变动）", "ebit", h["ebit"], "ebit", "ebit")
+    inputs("EBIT（剔除投资收益与公允价值变动）", "ebit", h["ebit"], "ebit", "ebit",
+           note="经营 EBIT = 利润总额 + 财务费用 − 投资收益 − 公允价值变动收益；预测期引用三表-利润表。")
     g.add(["EBIT 利润率"] + [Formula(f"{c}{a['ebit']}/{c}{a['rev']}", e / r) for c, e, r in
                             zip([hist_col] + cols, [h["ebit"]] + [x["ebit"] for x in fr],
                                 [h["revenue"]] + [x["revenue"] for x in fr])], key="m", fmt="pct1")
     if ts:
         g.add(["减：现金税（EBIT × 税率）", h["cash_taxes"]]
-              + [Formula(f"{c}{a['ebit']}*{t}", r["cash_taxes"]) for c, t, r in zip(cols, ts["tax"], fr)], key="tax", fmt="num1")
+              + [Formula(f"{c}{a['ebit']}*{t}", r["cash_taxes"]) for c, t, r in zip(cols, ts["tax"], fr)],
+              key="tax", fmt="num1", note="现金税 = 经营 EBIT × 所得税率；税率引用三表-假设。")
     else:
-        inputs("减：现金税（EBIT × 税率）", "tax", h["cash_taxes"], "cash_taxes")
+        inputs("减：现金税（EBIT × 税率）", "tax", h["cash_taxes"], "cash_taxes",
+               note="现金税 = 经营 EBIT × 所得税率。")
     g.add(["NOPAT"] + [Formula(f"{c}{a['ebit']}-{c}{a['tax']}", e - t) for c, e, t in
                        zip([hist_col] + cols, [h["ebit"]] + [x["ebit"] for x in fr],
-                           [h["cash_taxes"]] + [x["cash_taxes"] for x in fr])], key="nopat", fmt="num1", role="total")
-    inputs("加：折旧摊销", "da", h["da"], "da", "da")
-    inputs("减：资本开支", "capex", h["capex"], "capex", "capex")
-    inputs("减：营运资本增加", "dnwc", h["change_nwc"], "change_nwc", "dnwc")
+                       [h["cash_taxes"]] + [x["cash_taxes"] for x in fr])], key="nopat", fmt="num1", role="total",
+          note="NOPAT = 经营 EBIT − 现金税。")
+    inputs("加：折旧摊销", "da", h["da"], "da", "da", note="预测期引用三表-现金流量表。")
+    inputs("减：资本开支", "capex", h["capex"], "capex", "capex", note="预测期引用三表-现金流量表。")
+    inputs("减：营运资本增加", "dnwc", h["change_nwc"], "change_nwc", "dnwc",
+           note="经营营运资本 = 应收账款 + 存货 − 应付账款；预测期引用三表-假设的辅助计算。")
     fcf = [h["unlevered_fcf"]] + [x["unlevered_fcf"] for x in fr]
     g.add(["无杠杆自由现金流（FCFF）"] + [Formula(f"{c}{a['nopat']}+{c}{a['da']}-{c}{a['capex']}-{c}{a['dnwc']}", v)
-                                    for c, v in zip([hist_col] + cols, fcf)], key="fcf", fmt="num1", role="total")
+                                    for c, v in zip([hist_col] + cols, fcf)], key="fcf", fmt="num1", role="total",
+          note="FCFF = NOPAT + 折旧摊销 − 资本开支 − 营运资本增加。")
     g.add([])
     g.add(["折现期（年，年中折现）", None] + [x["discount_period"] for x in pv], key="t", fmt="num1")
     g.add(["折现系数", None] + [Formula(f"1/(1+__WACC__)^{c}{a['t']}", x["pv_cash_flow"] / x["cash_flow"]
-                                        if x["cash_flow"] else None) for c, x in zip(cols, pv)], key="df", fmt="factor")
+                                        if x["cash_flow"] else None) for c, x in zip(cols, pv)], key="df", fmt="factor",
+          note="年中折现：1 / (1 + WACC) ^ 折现期。")
     g.add(["FCFF 现值", None] + [Formula(f"{c}{a['fcf']}*{c}{a['df']}", x["pv_cash_flow"]) for c, x in zip(cols, pv)],
           key="pv", fmt="num1", role="total")
     g.add([])
@@ -173,14 +188,16 @@ def _dcf(plan: dict[str, Any], res: dict[str, Any], wacc_ref: str, non_op_ref: s
     g.add(["预测期 FCFF 现值合计", Formula(f"SUM(C{a['pv']}:{last}{a['pv']})", pv_fcf)], key="sum_pv")
     tv = pv_tv * (1 + rate) ** n
     if plan["terminal_value"]["method"] == "perpetual_growth":
-        g.add(["终值（永续增长法）", Formula(f"{last}{a['fcf']}*(1+B{a['tg']})/(B{a['wacc']}-B{a['tg']})", tv)], key="tv")
+        g.add(["终值（永续增长法）", Formula(f"{last}{a['fcf']}*(1+B{a['tg']})/(B{a['wacc']}-B{a['tg']})", tv)],
+              key="tv", note="Gordon 增长模型：末年 FCFF × (1 + g) / (WACC − g)。")
     else:
         g.add(["退出 EV/EBITDA 倍数", Cell(float(plan["terminal_value"]["exit_ebitda_multiple"]), fmt="mult", input=True)],
               key="mult")
         g.add(["终值（退出倍数法）", Formula(f"({last}{a['ebit']}+{last}{a['da']})*B{a['mult']}", tv)], key="tv")
     g.add(["终值现值", Formula(f"B{a['tv']}/(1+B{a['wacc']})^COUNT(C{a['t']}:{last}{a['t']})", pv_tv)], key="pv_tv")
     ev = base["enterprise_value_mm"]
-    g.add(["企业价值（EV）", Formula(f"B{a['sum_pv']}+B{a['pv_tv']}", ev)], key="ev", role="total")
+    g.add(["企业价值（EV）", Formula(f"B{a['sum_pv']}+B{a['pv_tv']}", ev)], key="ev", role="total",
+          note="企业价值 = 预测期 FCFF 现值合计 + 终值现值。")
     g.add(["终值占 EV", Formula(f"B{a['pv_tv']}/B{a['ev']}", pv_tv / ev, fmt="pct1")], key="tvp")
     b = plan["ev_to_equity_bridge"]
     bridge = [("cash", "加：货币资金", 1), ("non_operating_assets", "加：非经营性资产", 1), ("associates", "加：联营投资", 1),
@@ -193,9 +210,11 @@ def _dcf(plan: dict[str, Any], res: dict[str, Any], wacc_ref: str, non_op_ref: s
         terms.append(("+" if sign > 0 else "-") + f"B{a[k]}")
     g.add(["减：养老金、优先股、期权及其他类债务", Cell(other, input=True)], key="other")
     terms.append(f"-B{a['other']}")
-    g.add(["股权价值", Formula("".join(terms), base["equity_value_mm"])], key="eq", role="total")
+    g.add(["股权价值", Formula("".join(terms), base["equity_value_mm"])], key="eq", role="total",
+          note="股权价值 = 企业价值 + 货币资金 + 非经营性资产 + 联营投资 − 有息负债 − 租赁负债 − 少数股东权益等。")
     g.add(["摊薄股本（百万股）", Cell(float(b["diluted_shares"]), input=True)], key="sh")
-    g.add(["每股价值（元）", Formula(f"B{a['eq']}/B{a['sh']}", base["value_per_share"], fmt="num2")], key="vps", role="key")
+    g.add(["每股价值（元）", Formula(f"B{a['eq']}/B{a['sh']}", base["value_per_share"], fmt="num2")],
+          key="vps", role="key", note="每股价值 = 股权价值（百万元）/ 摊薄股本（百万股）。")
     if res.get("current_price"):
         g.add(["参考股价（元）", Cell(res["current_price"], fmt="num2", input=True)], key="px")
         g.add(["较现价空间", Formula(f"B{a['vps']}/B{a['px']}-1", base["upside_vs_price"], fmt="pct1")])

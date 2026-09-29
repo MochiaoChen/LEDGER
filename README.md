@@ -116,6 +116,26 @@ tests/           pytest；golden/ 为原插件引擎产出的快照（见 THIRD_
 pip install -r requirements.txt
 ```
 
+推荐使用 Python 3.12 虚拟环境。macOS / Linux：
+
+```bash
+python3 -m venv .venv
+.venv/bin/python -m pip install -r requirements.txt
+```
+
+Windows PowerShell：
+
+```powershell
+py -3.12 -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt
+.\.venv\Scripts\python.exe -m pytest -q tests
+.\.venv\Scripts\python.exe eval\run_eval.py
+```
+
+项目代码使用 `pathlib` 处理路径，不要求把路径改成正斜杠。研报打印会自动查找 Chrome / Edge；若安装位置非默认，
+在 PowerShell 中设置 `$env:FINAGENT_CHROME = "C:\路径\chrome.exe"`。开发用样例 PDF 若找不到中文字体，可设置
+`$env:FINAGENT_CJK_FONT = "C:\Windows\Fonts\simkai.ttf"`。
+
 ```bash
 python -m finagent all --input data/samples/annual_report_2024.md --year 2024 --company 星河智造 --assumptions data/samples/valuation_assumptions.json --report data/samples/research_draft.md --peers data/samples/peers.csv --estimates data/samples/estimates.csv --guidance data/samples/guidance.csv --llm off
 ```
