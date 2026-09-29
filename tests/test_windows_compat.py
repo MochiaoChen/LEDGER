@@ -42,3 +42,4 @@ def test_documented_windows_virtualenv_path():
     workflow = (ROOT / ".github" / "workflows" / "windows.yml").read_text(encoding="utf-8")
     assert r".\.venv\Scripts\python.exe" in readme
     assert "runs-on: windows-latest" in workflow and 'python-version: "3.12"' in workflow
+    assert 'PYTHONUTF8: "1"' in workflow
