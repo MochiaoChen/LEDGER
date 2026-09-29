@@ -1,8 +1,8 @@
 :root {
   --serif: "Times New Roman", "Times", "Kaiti SC", "STKaiti", "KaiTi", "楷体", "KaiTi_GB2312", serif;
-  --sans: "Helvetica Neue", "Arial", "PingFang SC", "Source Han Sans SC", "Noto Sans CJK SC",
-          "Microsoft YaHei", sans-serif;
-  --mono: "SF Mono", "Menlo", "Consolas", monospace;
+  /* 表格、图注、侧栏：数字与西文用 Helvetica / Arial，汉字回退到楷体 */
+  --sans: "Helvetica Neue", "Helvetica", "Arial", "Kaiti SC", "STKaiti", "KaiTi", "楷体", "KaiTi_GB2312", serif;
+  --mono: "SF Mono", "Menlo", "Consolas", "Kaiti SC", "STKaiti", "KaiTi", monospace;
   --ink: #1F2937; --muted: #6B7280; --rule: #D1D5DB; --light: #F3F5F8;
   --navy: #1B365D; --slate: #8A9BB0; --brick: #B5482F; --teal: #2F6F6A;
 }
@@ -10,8 +10,8 @@
 @page {
   size: A4;
   margin: 17mm 15mm 15mm 15mm;
-  @top-left { content: "贵州茅台（600519.SH）2025 年报点评"; font: 7.3pt var(--sans); color: #6B7280; }
-  @top-right { content: "公司研究｜年报点评"; font: 7.3pt var(--sans); color: #6B7280; }
+  @top-left { content: "__HEADER__"; font: 7.3pt var(--sans); color: #6B7280; }
+  @top-right { content: "__KIND__"; font: 7.3pt var(--sans); color: #6B7280; }
   @bottom-left { content: "请阅读最后一页的免责声明"; font: 6.8pt var(--sans); color: #9CA3AF; }
   @bottom-right { content: counter(page) " / " counter(pages); font: 7.3pt var(--sans); color: #6B7280; }
 }
@@ -146,3 +146,32 @@ li { margin-bottom: 1.3mm; }
   font-size: 7.2pt; line-height: 1.6; color: #4B5563; font-family: var(--sans);
 }
 .appendix .small { font-family: var(--sans); font-size: 7.6pt; line-height: 1.6; color: #4B5563; text-align: justify; }
+
+/* ---------- 目录 ---------- */
+.toc { break-after: page; font-family: var(--sans); }
+.toc-h { font-family: var(--title); font-size: 15pt; font-weight: 700; color: var(--navy); padding-bottom: 1.5mm;
+  border-bottom: 1.6pt solid var(--navy); margin: 0 0 2.5mm; text-align: left; }
+.toc-h.small-gap { font-size: 12pt; margin-top: 6mm; border-bottom-width: 0.8pt; }
+.toc-row { display: flex; align-items: baseline; font-size: 9.6pt; line-height: 1.75; text-align: left; }
+.toc-n { width: 8mm; color: var(--navy); font-weight: 600; }
+.toc-t { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.toc-dots { flex: 1; border-bottom: 0.5pt dotted #9CA3AF; margin: 0 1.5mm; transform: translateY(-1mm); min-width: 4mm; }
+.toc-p { width: 7mm; text-align: right; font-variant-numeric: tabular-nums; }
+.toc-figs { column-count: 2; column-gap: 7mm; }
+.toc-row.fig { font-size: 7.3pt; line-height: 1.55; break-inside: avoid; }
+.toc-row.fig .toc-t { max-width: 72mm; }
+
+figure.half { width: 50%; }
+.appendix figure.half { width: 60%; }
+table.assume td.basis { white-space: normal; text-align: left; color: #374151; }
+table.assume td:nth-child(2) { color: var(--navy); }
+figure.split { break-inside: auto; }
+figure.split figcaption { break-after: avoid; }
+
+/* ---------- 免责声明（末页） ---------- */
+.disclaimer-page { break-before: page; font-family: var(--serif); font-size: 8.6pt; line-height: 1.62; color: #374151; }
+.disc-h { font-family: var(--title); font-size: 15pt; font-weight: 700; color: var(--navy); padding-bottom: 1.5mm;
+  border-bottom: 1.6pt solid var(--navy); margin-bottom: 3mm; text-align: left; }
+.disclaimer-page h3 { font-size: 9.6pt; margin: 2.6mm 0 0.8mm; }
+.disclaimer-page p { margin: 0 0 1mm; }
+.toc-end { font-size: 1pt; color: #fff; line-height: 0; }

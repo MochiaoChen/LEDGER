@@ -135,6 +135,8 @@ PY -m finagent guard --run-dir runs/<run_id> --text <解读.md>
 
 ### 7. 研报（HTML → PDF，用户要报告/PDF 时）
 
+做深度报告（约 20 页）按 **finagent-report** skill 执行，排版代码共用 reportkit；下面是报告的基本要求。
+
 交付物是**卖方研报级别**的年报点评 / 深度报告，不是程序运行报告：首页有标题观点、投资要点、基本数据、估值区间和
 盈利预测表；正文按业绩回顾 → 分产品与渠道（量价） → 盈利能力 → 现金流与分红 → 盈利预测与估值 → 风险提示组织；
 附录是财务报表预测。你写文字、用 Python（matplotlib）画图、排版生成 HTML，再用无头 Chrome 打印成 PDF。

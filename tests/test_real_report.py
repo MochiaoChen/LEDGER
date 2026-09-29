@@ -92,6 +92,21 @@ def test_extras_verified_and_ratios_computed(doc):
     ratios = {r["id"]: r["value"] for r in res["ratios"]}
     assert ratios["price_moutai"] == pytest.approx(146499906480.49 / 46750.66 / 1e4)
     assert "payout" not in ratios
+    # growth / diff / 引用比率
+    assert ratios["sell_ad_g"] == pytest.approx((1828728796.18 / 1335427201.68 - 1) * 100)
+    assert ratios["price_direct_g"] == pytest.approx((ratios["price_direct"] / ratios["price_direct_prev"] - 1) * 100)
+    assert ratios["cost_material_chg"] == pytest.approx(51.38 - 50.59)
+    assert ratios["sell_inc"] == pytest.approx(7253499600.68 - 5639300059.49)
+    assert "mix_direct_chg" not in ratios  # 依赖引用真值表的比率，预检时一并跳过
+    # 任意计量单位原值保存；外币金额拒收；自定义单位的比率用 scale
+    from finagent.tasks.financials.extras import _ratios, _unit_ok
+    assert _unit_ok("载重吨") and _unit_ok("元/吨") and _unit_ok("万元") and not _unit_ok("美元")
+    tbl = [{"id": "t", "columns": [{"name": "收入"}, {"name": "销量"}],
+            "rows": [{"label": "A", "values": [2e8, 4e4]}]}]
+    out, bad = _ratios([{"id": "p", "label": "单价", "num": ["t", "A", "收入"], "den": ["t", "A", "销量"],
+                         "unit": "元/件", "scale": 1.0}], tbl, None)
+    assert not bad and out[0]["value"] == pytest.approx(5000.0)
+    assert _ratios([{"id": "q", "num": ["t", "A", "收入"], "den": ["t", "A", "销量"], "unit": "元/件"}], tbl, None)[1]
     bad = json.loads(json.dumps(payload))
     bad["tables"][0]["rows"][0]["values"][0] = "146,499,906,480.94"  # 抄错两位
     assert verify_extras(doc, bad)["rejected"][0]["reason"].startswith("未在所写页码")
@@ -190,3 +205,18 @@ def test_guard_skips_forecast_sentences_but_checks_history(moutai_run, tmp_path)
     bad = tmp_path / "h.md"
     bad.write_text("2025 年公司实现营业收入 1,725.25 亿元。", encoding="utf-8")  # 把预测数写成历史数
     assert main(["guard", "--run-dir", str(moutai_run), "--text", str(bad)]) == 1
+
+
+def test_guard_valuation_mm_aliases_and_bridge(moutai_run, tmp_path):
+    """估值产物以百万元计也能作出处；别名（i茅台）与利润归因项按分部核对；编造的数字仍被拦下。"""
+    ok = tmp_path / "v.md"
+    ok.write_text("企业价值 17,483.72 亿元，股权价值 19,177.31 亿元；无风险利率 1.80%、股权风险溢价 6.50%。"
+                  "i茅台平台收入 130.31 亿元，同比下降 34.92%。销售费用增加拖累 16.14 亿元，毛利率效应拖累 12.69 亿元。",
+                  encoding="utf-8")
+    assert main(["guard", "--run-dir", str(moutai_run), "--text", str(ok)]) == 0
+    bad = tmp_path / "vb.md"
+    bad.write_text("企业价值 17,583.72 亿元。", encoding="utf-8")
+    assert main(["guard", "--run-dir", str(moutai_run), "--text", str(bad)]) == 1
+    wrong = tmp_path / "vw.md"
+    wrong.write_text("2025 年公司营业收入 130.31 亿元。", encoding="utf-8")  # i茅台收入冒充公司营业收入
+    assert main(["guard", "--run-dir", str(moutai_run), "--text", str(wrong)]) == 1
