@@ -25,6 +25,7 @@ description: 为 A 股公司生成卖方体例的深度研报 PDF（约 20 页�
 4. **评级取程序结果**（`forecast_summary.rating`），不自己定。“不构成投资建议”只出现在免责声明里。
 5. **字体与免责声明共用**：正文 Times New Roman + 楷体；表格、图表的数字用 Helvetica，汉字用楷体。
    免责声明用 `reportkit/disclaimer.md`，不要逐份改写。交付前确认 PDF 里没有意外嵌入其他中文字体。
+   配色统一用红色主题（`core.py` 颜色常量 + `report.css`），不再提供主题切换；公司脚本画图取 `core` 的颜色常量，不写死色值。
 
 ## 二、交给你判断的部分
 

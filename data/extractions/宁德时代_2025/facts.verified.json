@@ -1,0 +1,2150 @@
+{
+  "facts": [
+    {
+      "metric_id": "accounts_payable",
+      "period": "2024",
+      "value": 130977408000.0,
+      "raw": "130,977,408",
+      "unit": "千元",
+      "source": {
+        "source": "report/resources/宁德时代/300750_宁德时代_2025_年度报告.pdf",
+        "page": 112,
+        "chunk_id": "c0448",
+        "caption": "1、合并资产负债表",
+        "table": "合并资产负债表",
+        "extractor": "claude-code-skill"
+      },
+      "label": "应付账款",
+      "method": "llm",
+      "confidence": "medium",
+      "corroborated_by": [],
+      "metric_name": "应付账款"
+    },
+    {
+      "metric_id": "accounts_payable",
+      "period": "2025",
+      "value": 160328962000.0,
+      "raw": "160,328,962",
+      "unit": "千元",
+      "source": {
+        "source": "report/resources/宁德时代/300750_宁德时代_2025_年度报告.pdf",
+        "page": 112,
+        "chunk_id": "c0448",
+        "caption": "1、合并资产负债表",
+        "table": "合并资产负债表",
+        "extractor": "claude-code-skill"
+      },
+      "label": "应付账款",
+      "method": "llm",
+      "confidence": "medium",
+      "corroborated_by": [],
+      "metric_name": "应付账款"
+    },
+    {
+      "metric_id": "accounts_receivable",
+      "period": "2024",
+      "value": 64135510000.0,
+      "raw": "64,135,510",
+      "unit": "千元",
+      "source": {
+        "source": "report/resources/宁德时代/300750_宁德时代_2025_年度报告.pdf",
+        "page": 111,
+        "chunk_id": "c0446",
+        "caption": "1、合并资产负债表",
+        "table": "合并资产负债表",
+        "extractor": "claude-code-skill"
+      },
+      "label": "应收账款",
+      "method": "llm",
+      "confidence": "medium",
+      "corroborated_by": [],
+      "metric_name": "应收账款"
+    },
+    {
+      "metric_id": "accounts_receivable",
+      "period": "2025",
+      "value": 76403264000.0,
+      "raw": "76,403,264",
+      "unit": "千元",
+      "source": {
+        "source": "report/resources/宁德时代/300750_宁德时代_2025_年度报告.pdf",
+        "page": 111,
+        "chunk_id": "c0446",
+        "caption": "1、合并资产负债表",
+        "table": "合并资产负债表",
+        "extractor": "claude-code-skill"
+      },
+      "label": "应收账款",
+      "method": "llm",
+      "confidence": "medium",
+      "corroborated_by": [],
+      "metric_name": "应收账款"
+    },
+    {
+      "metric_id": "admin_expense",
+      "period": "2024",
+      "value": 9689839000.0,
+      "raw": "9,689,839",
+      "unit": "千元",
+      "source": {
+        "source": "report/resources/宁德时代/300750_宁德时代_2025_年度报告.pdf",
+        "page": 116,
+        "chunk_id": "c0458",
+        "caption": "3、合并利润表",
+        "table": "合并利润表",
+        "extractor": "claude-code-skill"
+      },
+      "label": "管理费用",
+      "method": "llm",
+      "confidence": "medium",
+      "corroborated_by": [],
+      "metric_name": "管理费用"
+    },
+    {
+      "metric_id": "admin_expense",
+      "period": "2025",
+      "value": 11666741000.0,
+      "raw": "11,666,741",
+      "unit": "千元",
+      "source": {
+        "source": "report/resources/宁德时代/300750_宁德时代_2025_年度报告.pdf",
+        "page": 116,
+        "chunk_id": "c0458",
+        "caption": "3、合并利润表",
+        "table": "合并利润表",
+        "extractor": "claude-code-skill"
+      },
+      "label": "管理费用",
+      "method": "llm",
+      "confidence": "medium",
+      "corroborated_by": [],
+      "metric_name": "管理费用"
+    },
+    {
+      "metric_id": "amortization",
+      "period": "2024",
+      "value": 470401000.0,
+      "raw": "470,401",
+      "unit": "千元",
+      "source": {
+        "source": "report/resources/宁德时代/300750_宁德时代_2025_年度报告.pdf",
+        "page": 201,
+        "chunk_id": "c0767",
+        "caption": "（1）现金流量表补充资料",
+        "table": "现金流量表补充资料",
+        "extractor": "claude-code-skill"
+      },
+      "label": "无形资产摊销",
+      "method": "llm",
+      "confidence": "medium",
+      "corroborated_by": [],
+      "metric_name": "无形资产摊销"
+    },
+    {
+      "metric_id": "amortization",
+      "period": "2025",
+      "value": 512000000.0,
+      "raw": "512,000",
+      "unit": "千元",
+      "source": {
+        "source": "report/resources/宁德时代/300750_宁德时代_2025_年度报告.pdf",
+        "page": 201,
+        "chunk_id": "c0767",
+        "caption": "（1）现金流量表补充资料",
+        "table": "现金流量表补充资料",
+        "extractor": "claude-code-skill"
+      },
+      "label": "无形资产摊销",
+      "method": "llm",
+      "confidence": "medium",
+      "corroborated_by": [],
+      "metric_name": "无形资产摊销"
+    },
+    {
+      "metric_id": "bonds_payable",
+      "period": "2024",
+      "value": 11922623000.0,
+      "raw": "11,922,623",
+      "unit": "千元",
+      "source": {
+        "source": "report/resources/宁德时代/300750_宁德时代_2025_年度报告.pdf",
+        "page": 113,
+        "chunk_id": "c0450",
+        "caption": "1、合并资产负债表",
+        "table": "合并资产负债表",
+        "extractor": "claude-code-skill"
+      },
+      "label": "应付债券",
+      "method": "llm",
+      "confidence": "medium",
+      "corroborated_by": [],
+      "metric_name": "应付债券"
+    },
+    {
+      "metric_id": "bonds_payable",
+      "period": "2025",
+      "value": 3443434000.0,
+      "raw": "3,443,434",
+      "unit": "千元",
+      "source": {
+        "source": "report/resources/宁德时代/300750_宁德时代_2025_年度报告.pdf",
+        "page": 113,
+        "chunk_id": "c0450",
+        "caption": "1、合并资产负债表",
+        "table": "合并资产负债表",
+        "extractor": "claude-code-skill"
+      },
+      "label": "应付债券",
+      "method": "llm",
+      "confidence": "medium",
+      "corroborated_by": [],
+      "metric_name": "应付债券"
+    },
+    {
+      "metric_id": "capex",
+      "period": "2024",
+      "value": 31179943000.0,
+      "raw": "31,179,943",
+      "unit": "千元",
+      "source": {
+        "source": "report/resources/宁德时代/300750_宁德时代_2025_年度报告.pdf",
+        "page": 120,
+        "chunk_id": "c0468",
+        "caption": "5、合并现金流量表",
+        "table": "合并现金流量表",
+        "extractor": "claude-code-skill"
+      },
+      "label": "购建固定资产、无形资产和其他长期资产支付的现金",
+      "method": "llm",
+      "confidence": "medium",
+      "corroborated_by": [],
+      "metric_name": "购建固定资产、无形资产和其他长期资产支付的现金"
+    },
+    {
+      "metric_id": "capex",
+      "period": "2025",
+      "value": 42344558000.0,
+      "raw": "42,344,558",
+      "unit": "千元",
+      "source": {
+        "source": "report/resources/宁德时代/300750_宁德时代_2025_年度报告.pdf",
+        "page": 120,
+        "chunk_id": "c0468",
+        "caption": "5、合并现金流量表",
+        "table": "合并现金流量表",
+        "extractor": "claude-code-skill"
+      },
+      "label": "购建固定资产、无形资产和其他长期资产支付的现金",
+      "method": "llm",
+      "confidence": "medium",
+      "corroborated_by": [],
+      "metric_name": "购建固定资产、无形资产和其他长期资产支付的现金"
+    },
+    {
+      "metric_id": "cash",
+      "period": "2024",
+      "value": 303511993000.0,
+      "raw": "303,511,993",
+      "unit": "千元",
+      "source": {
+        "source": "report/resources/宁德时代/300750_宁德时代_2025_年度报告.pdf",
+        "page": 111,
+        "chunk_id": "c0446",
+        "caption": "1、合并资产负债表",
+        "table": "合并资产负债表",
+        "extractor": "claude-code-skill"
+      },
+      "label": "货币资金",
+      "method": "llm",
+      "confidence": "medium",
+      "corroborated_by": [],
+      "metric_name": "货币资金"
+    },
+    {
+      "metric_id": "cash",
+      "period": "2025",
+      "value": 333512927000.0,
+      "raw": "333,512,927",
+      "unit": "千元",
+      "source": {
+        "source": "report/resources/宁德时代/300750_宁德时代_2025_年度报告.pdf",
+        "page": 111,
+        "chunk_id": "c0446",
+        "caption": "1、合并资产负债表",
+        "table": "合并资产负债表",
+        "extractor": "claude-code-skill"
+      },
+      "label": "货币资金",
+      "method": "llm",
+      "confidence": "medium",
+      "corroborated_by": [],
+      "metric_name": "货币资金"
+    },
+    {
+      "metric_id": "construction_in_progress",
+      "period": "2024",
+      "value": 29754703000.0,
+      "raw": "29,754,703",
+      "unit": "千元",
+      "source": {
+        "source": "report/resources/宁德时代/300750_宁德时代_2025_年度报告.pdf",
+        "page": 112,
+        "chunk_id": "c0448",
+        "caption": "1、合并资产负债表",
+        "table": "合并资产负债表",
+        "extractor": "claude-code-skill"
+      },
+      "label": "在建工程",
+      "method": "llm",
+      "confidence": "medium",
+      "corroborated_by": [],
+      "metric_name": "在建工程"
+    },
+    {
+      "metric_id": "construction_in_progress",
+      "period": "2025",
+      "value": 29733108000.0,
+      "raw": "29,733,108",
+      "unit": "千元",
+      "source": {
+        "source": "report/resources/宁德时代/300750_宁德时代_2025_年度报告.pdf",
+        "page": 112,
+        "chunk_id": "c0448",
+        "caption": "1、合并资产负债表",
+        "table": "合并资产负债表",
+        "extractor": "claude-code-skill"
+      },
+      "label": "在建工程",
+      "method": "llm",
+      "confidence": "medium",
+      "corroborated_by": [],
+      "metric_name": "在建工程"
+    },
+    {
+      "metric_id": "contract_liab",
+      "period": "2024",
+      "value": 27834446000.0,
+      "raw": "27,834,446",
+      "unit": "千元",
+      "source": {
+        "source": "report/resources/宁德时代/300750_宁德时代_2025_年度报告.pdf",
+        "page": 112,
+        "chunk_id": "c0448",
+        "caption": "1、合并资产负债表",
+        "table": "合并资产负债表",
+        "extractor": "claude-code-skill"
+      },
+      "label": "合同负债",
+      "method": "llm",
+      "confidence": "medium",
+      "corroborated_by": [],
+      "metric_name": "合同负债"
+    },
+    {
+      "metric_id": "contract_liab",
+      "period": "2025",
+      "value": 49233377000.0,
+      "raw": "49,233,377",
+      "unit": "千元",
+      "source": {
+        "source": "report/resources/宁德时代/300750_宁德时代_2025_年度报告.pdf",
+        "page": 112,
+        "chunk_id": "c0448",
+        "caption": "1、合并资产负债表",
+        "table": "合并资产负债表",
+        "extractor": "claude-code-skill"
+      },
+      "label": "合同负债",
+      "method": "llm",
+      "confidence": "medium",
+      "corroborated_by": [],
+      "metric_name": "合同负债"
+    },
+    {
+      "metric_id": "current_ltd",
+      "period": "2024",
+      "value": 22881417000.0,
+      "raw": "22,881,417",
+      "unit": "千元",
+      "source": {
+        "source": "report/resources/宁德时代/300750_宁德时代_2025_年度报告.pdf",
+        "page": 112,
+        "chunk_id": "c0448",
+        "caption": "1、合并资产负债表",
+        "table": "合并资产负债表",
+        "extractor": "claude-code-skill"
+      },
+      "label": "一年内到期的非流动负债",
+      "method": "llm",
+      "confidence": "medium",
+      "corroborated_by": [],
+      "metric_name": "一年内到期的非流动负债"
+    },
+    {
+      "metric_id": "current_ltd",
+      "period": "2025",
+      "value": 22237540000.0,
+      "raw": "22,237,540",
+      "unit": "千元",
+      "source": {
+        "source": "report/resources/宁德时代/300750_宁德时代_2025_年度报告.pdf",
+        "page": 112,
+        "chunk_id": "c0448",
+        "caption": "1、合并资产负债表",
+        "table": "合并资产负债表",
+        "extractor": "claude-code-skill"
+      },
+      "label": "一年内到期的非流动负债",
+      "method": "llm",
+      "confidence": "medium",
+      "corroborated_by": [],
+      "metric_name": "一年内到期的非流动负债"
+    },
+    {
+      "metric_id": "depreciation",
+      "period": "2024",
+      "value": 22437872000.0,
+      "raw": "22,437,872",
+      "unit": "千元",
+      "source": {
+        "source": "report/resources/宁德时代/300750_宁德时代_2025_年度报告.pdf",
+        "page": 201,
+        "chunk_id": "c0767",
+        "caption": "（1）现金流量表补充资料",
+        "table": "现金流量表补充资料",
+        "extractor": "claude-code-skill"
+      },
+      "label": "固定资产折旧、油气资产折耗、生产性生物资产折旧",
+      "method": "llm",
+      "confidence": "medium",
+      "corroborated_by": [],
+      "metric_name": "固定资产折旧、油气资产折耗、生产性生物资产折旧"
+    },
+    {
+      "metric_id": "depreciation",
+      "period": "2025",
+      "value": 24322780000.0,
+      "raw": "24,322,780",
+      "unit": "千元",
+      "source": {
+        "source": "report/resources/宁德时代/300750_宁德时代_2025_年度报告.pdf",
+        "page": 201,
+        "chunk_id": "c0767",
+        "caption": "（1）现金流量表补充资料",
+        "table": "现金流量表补充资料",
+        "extractor": "claude-code-skill"
+      },
+      "label": "固定资产折旧、油气资产折耗、生产性生物资产折旧",
+      "method": "llm",
+      "confidence": "medium",
+      "corroborated_by": [],
+      "metric_name": "固定资产折旧、油气资产折耗、生产性生物资产折旧"
+    },
+    {
+      "metric_id": "eps_basic",
+      "period": "2023",
+      "value": 10.06,
+      "raw": "10.06",
+      "unit": "元/股",
+      "source": {
+        "source": "report/resources/宁德时代/300750_宁德时代_2025_年度报告.pdf",
+        "page": 11,
+        "chunk_id": "c0016",
+        "caption": "五、主要会计数据和财务指标",
+        "table": "主要会计数据和财务指标",
+        "extractor": "claude-code-skill"
+      },
+      "label": "基本每股收益（元/股）",
+      "method": "llm",
+      "confidence": "medium",
+      "corroborated_by": [],
+      "metric_name": "基本每股收益"
+    },
+    {
+      "metric_id": "eps_basic",
+      "period": "2024",
+      "value": 11.58,
+      "raw": "11.58",
+      "unit": "元/股",
+      "source": {
+        "source": "report/resources/宁德时代/300750_宁德时代_2025_年度报告.pdf",
+        "page": 11,
+        "chunk_id": "c0016",
+        "caption": "五、主要会计数据和财务指标",
+        "table": "主要会计数据和财务指标",
+        "extractor": "claude-code-skill"
+      },
+      "label": "基本每股收益（元/股）",
+      "method": "llm",
+      "confidence": "medium",
+      "corroborated_by": [],
+      "metric_name": "基本每股收益"
+    },
+    {
+      "metric_id": "eps_basic",
+      "period": "2025",
+      "value": 16.14,
+      "raw": "16.14",
+      "unit": "元/股",
+      "source": {
+        "source": "report/resources/宁德时代/300750_宁德时代_2025_年度报告.pdf",
+        "page": 11,
+        "chunk_id": "c0016",
+        "caption": "五、主要会计数据和财务指标",
+        "table": "主要会计数据和财务指标",
+        "extractor": "claude-code-skill"
+      },
+      "label": "基本每股收益（元/股）",
+      "method": "llm",
+      "confidence": "medium",
+      "corroborated_by": [],
+      "metric_name": "基本每股收益"
+    },
+    {
+      "metric_id": "equity_parent",
+      "period": "2023",
+      "value": 197708052000.0,
+      "raw": "197,708,052",
+      "unit": "千元",
+      "source": {
+        "source": "report/resources/宁德时代/300750_宁德时代_2025_年度报告.pdf",
+        "page": 11,
+        "chunk_id": "c0016",
+        "caption": "五、主要会计数据和财务指标",
+        "table": "主要会计数据和财务指标",
+        "extractor": "claude-code-skill"
+      },
+      "label": "归属于上市公司股东的净资产",
+      "method": "llm",
+      "confidence": "medium",
+      "corroborated_by": [],
+      "metric_name": "归属于母公司所有者权益合计"
+    },
+    {
+      "metric_id": "equity_parent",
+      "period": "2024",
+      "value": 246930033000.0,
+      "raw": "246,930,033",
+      "unit": "千元",
+      "source": {
+        "source": "report/resources/宁德时代/300750_宁德时代_2025_年度报告.pdf",
+        "page": 113,
+        "chunk_id": "c0450",
+        "caption": "1、合并资产负债表",
+        "table": "合并资产负债表",
+        "extractor": "claude-code-skill"
+      },
+      "label": "归属于母公司所有者权益合计",
+      "method": "llm",
+      "confidence": "medium",
+      "corroborated_by": [],
+      "metric_name": "归属于母公司所有者权益合计"
+    },
+    {
+      "metric_id": "equity_parent",
+      "period": "2025",
+      "value": 337107747000.0,
+      "raw": "337,107,747",
+      "unit": "千元",
+      "source": {
+        "source": "report/resources/宁德时代/300750_宁德时代_2025_年度报告.pdf",
+        "page": 113,
+        "chunk_id": "c0450",
+        "caption": "1、合并资产负债表",
+        "table": "合并资产负债表",
+        "extractor": "claude-code-skill"
+      },
+      "label": "归属于母公司所有者权益合计",
+      "method": "llm",
+      "confidence": "medium",
+      "corroborated_by": [],
+      "metric_name": "归属于母公司所有者权益合计"
+    },
+    {
+      "metric_id": "fair_value_change",
+      "period": "2024",
+      "value": 664223000.0,
+      "raw": "664,223",
+      "unit": "千元",
+      "source": {
+        "source": "report/resources/宁德时代/300750_宁德时代_2025_年度报告.pdf",
+        "page": 116,
+        "chunk_id": "c0458",
+        "caption": "3、合并利润表",
+        "table": "合并利润表",
+        "extractor": "claude-code-skill"
+      },
+      "label": "公允价值变动收益",
+      "method": "llm",
+      "confidence": "medium",
+      "corroborated_by": [],
+      "metric_name": "公允价值变动收益"
+    },
+    {
+      "metric_id": "fair_value_change",
+      "period": "2025",
+      "value": 974079000.0,
+      "raw": "974,079",
+      "unit": "千元",
+      "source": {
+        "source": "report/resources/宁德时代/300750_宁德时代_2025_年度报告.pdf",
+        "page": 116,
+        "chunk_id": "c0458",
+        "caption": "3、合并利润表",
+        "table": "合并利润表",
+        "extractor": "claude-code-skill"
+      },
+      "label": "公允价值变动收益",
+      "method": "llm",
+      "confidence": "medium",
+      "corroborated_by": [],
+      "metric_name": "公允价值变动收益"
+    },
+    {
+      "metric_id": "finance_expense",
+      "period": "2024",
+      "value": -4131918000.0,
+      "raw": "-4,131,918",
+      "unit": "千元",
+      "source": {
+        "source": "report/resources/宁德时代/300750_宁德时代_2025_年度报告.pdf",
+        "page": 116,
+        "chunk_id": "c0458",
+        "caption": "3、合并利润表",
+        "table": "合并利润表",
+        "extractor": "claude-code-skill"
+      },
+      "label": "财务费用",
+      "method": "llm",
+      "confidence": "medium",
+      "corroborated_by": [],
+      "metric_name": "财务费用"
+    },
+    {
+      "metric_id": "finance_expense",
+      "period": "2025",
+      "value": -7939863000.0,
+      "raw": "-7,939,863",
+      "unit": "千元",
+      "source": {
+        "source": "report/resources/宁德时代/300750_宁德时代_2025_年度报告.pdf",
+        "page": 116,
+        "chunk_id": "c0458",
+        "caption": "3、合并利润表",
+        "table": "合并利润表",
+        "extractor": "claude-code-skill"
+      },
+      "label": "财务费用",
+      "method": "llm",
+      "confidence": "medium",
+      "corroborated_by": [],
+      "metric_name": "财务费用"
+    },
+    {
+      "metric_id": "fixed_assets",
+      "period": "2024",
+      "value": 112589053000.0,
+      "raw": "112,589,053",
+      "unit": "千元",
+      "source": {
+        "source": "report/resources/宁德时代/300750_宁德时代_2025_年度报告.pdf",
+        "page": 112,
+        "chunk_id": "c0448",
+        "caption": "1、合并资产负债表",
+        "table": "合并资产负债表",
+        "extractor": "claude-code-skill"
+      },
+      "label": "固定资产",
+      "method": "llm",
+      "confidence": "medium",
+      "corroborated_by": [],
+      "metric_name": "固定资产"
+    },
+    {
+      "metric_id": "fixed_assets",
+      "period": "2025",
+      "value": 146400592000.0,
+      "raw": "146,400,592",
+      "unit": "千元",
+      "source": {
+        "source": "report/resources/宁德时代/300750_宁德时代_2025_年度报告.pdf",
+        "page": 112,
+        "chunk_id": "c0448",
+        "caption": "1、合并资产负债表",
+        "table": "合并资产负债表",
+        "extractor": "claude-code-skill"
+      },
+      "label": "固定资产",
+      "method": "llm",
+      "confidence": "medium",
+      "corroborated_by": [],
+      "metric_name": "固定资产"
+    },
+    {
+      "metric_id": "income_tax",
+      "period": "2024",
+      "value": 9175245000.0,
+      "raw": "9,175,245",
+      "unit": "千元",
+      "source": {
+        "source": "report/resources/宁德时代/300750_宁德时代_2025_年度报告.pdf",
+        "page": 117,
+        "chunk_id": "c0460",
+        "caption": "3、合并利润表",
+        "table": "合并利润表",
+        "extractor": "claude-code-skill"
+      },
+      "label": "减：所得税费用",
+      "method": "llm",
+      "confidence": "medium",
+      "corroborated_by": [],
+      "metric_name": "所得税费用"
+    },
+    {
+      "metric_id": "income_tax",
+      "period": "2025",
+      "value": 12740236000.0,
+      "raw": "12,740,236",
+      "unit": "千元",
+      "source": {
+        "source": "report/resources/宁德时代/300750_宁德时代_2025_年度报告.pdf",
+        "page": 117,
+        "chunk_id": "c0460",
+        "caption": "3、合并利润表",
+        "table": "合并利润表",
+        "extractor": "claude-code-skill"
+      },
+      "label": "减：所得税费用",
+      "method": "llm",
+      "confidence": "medium",
+      "corroborated_by": [],
+      "metric_name": "所得税费用"
+    },
+    {
+      "metric_id": "inventory",
+      "period": "2024",
+      "value": 59835533000.0,
+      "raw": "59,835,533",
+      "unit": "千元",
+      "source": {
+        "source": "report/resources/宁德时代/300750_宁德时代_2025_年度报告.pdf",
+        "page": 111,
+        "chunk_id": "c0446",
+        "caption": "1、合并资产负债表",
+        "table": "合并资产负债表",
+        "extractor": "claude-code-skill"
+      },
+      "label": "存货",
+      "method": "llm",
+      "confidence": "medium",
+      "corroborated_by": [],
+      "metric_name": "存货"
+    },
+    {
+      "metric_id": "inventory",
+      "period": "2025",
+      "value": 94526239000.0,
+      "raw": "94,526,239",
+      "unit": "千元",
+      "source": {
+        "source": "report/resources/宁德时代/300750_宁德时代_2025_年度报告.pdf",
+        "page": 111,
+        "chunk_id": "c0446",
+        "caption": "1、合并资产负债表",
+        "table": "合并资产负债表",
+        "extractor": "claude-code-skill"
+      },
+      "label": "存货",
+      "method": "llm",
+      "confidence": "medium",
+      "corroborated_by": [],
+      "metric_name": "存货"
+    },
+    {
+      "metric_id": "investment_income",
+      "period": "2024",
+      "value": 3987823000.0,
+      "raw": "3,987,823",
+      "unit": "千元",
+      "source": {
+        "source": "report/resources/宁德时代/300750_宁德时代_2025_年度报告.pdf",
+        "page": 116,
+        "chunk_id": "c0458",
+        "caption": "3、合并利润表",
+        "table": "合并利润表",
+        "extractor": "claude-code-skill"
+      },
+      "label": "投资收益",
+      "method": "llm",
+      "confidence": "medium",
+      "corroborated_by": [],
+      "metric_name": "投资收益"
+    },
+    {
+      "metric_id": "investment_income",
+      "period": "2025",
+      "value": 7970552000.0,
+      "raw": "7,970,552",
+      "unit": "千元",
+      "source": {
+        "source": "report/resources/宁德时代/300750_宁德时代_2025_年度报告.pdf",
+        "page": 116,
+        "chunk_id": "c0458",
+        "caption": "3、合并利润表",
+        "table": "合并利润表",
+        "extractor": "claude-code-skill"
+      },
+      "label": "投资收益",
+      "method": "llm",
+      "confidence": "medium",
+      "corroborated_by": [],
+      "metric_name": "投资收益"
+    },
+    {
+      "metric_id": "lease_liab",
+      "period": "2024",
+      "value": 662814000.0,
+      "raw": "662,814",
+      "unit": "千元",
+      "source": {
+        "source": "report/resources/宁德时代/300750_宁德时代_2025_年度报告.pdf",
+        "page": 113,
+        "chunk_id": "c0450",
+        "caption": "1、合并资产负债表",
+        "table": "合并资产负债表",
+        "extractor": "claude-code-skill"
+      },
+      "label": "租赁负债",
+      "method": "llm",
+      "confidence": "medium",
+      "corroborated_by": [],
+      "metric_name": "租赁负债"
+    },
+    {
+      "metric_id": "lease_liab",
+      "period": "2025",
+      "value": 2805081000.0,
+      "raw": "2,805,081",
+      "unit": "千元",
+      "source": {
+        "source": "report/resources/宁德时代/300750_宁德时代_2025_年度报告.pdf",
+        "page": 113,
+        "chunk_id": "c0450",
+        "caption": "1、合并资产负债表",
+        "table": "合并资产负债表",
+        "extractor": "claude-code-skill"
+      },
+      "label": "租赁负债",
+      "method": "llm",
+      "confidence": "medium",
+      "corroborated_by": [],
+      "metric_name": "租赁负债"
+    },
+    {
+      "metric_id": "long_debt",
+      "period": "2024",
+      "value": 81238456000.0,
+      "raw": "81,238,456",
+      "unit": "千元",
+      "source": {
+        "source": "report/resources/宁德时代/300750_宁德时代_2025_年度报告.pdf",
+        "page": 113,
+        "chunk_id": "c0450",
+        "caption": "1、合并资产负债表",
+        "table": "合并资产负债表",
+        "extractor": "claude-code-skill"
+      },
+      "label": "长期借款",
+      "method": "llm",
+      "confidence": "medium",
+      "corroborated_by": [],
+      "metric_name": "长期借款"
+    },
+    {
+      "metric_id": "long_debt",
+      "period": "2025",
+      "value": 78234935000.0,
+      "raw": "78,234,935",
+      "unit": "千元",
+      "source": {
+        "source": "report/resources/宁德时代/300750_宁德时代_2025_年度报告.pdf",
+        "page": 113,
+        "chunk_id": "c0450",
+        "caption": "1、合并资产负债表",
+        "table": "合并资产负债表",
+        "extractor": "claude-code-skill"
+      },
+      "label": "长期借款",
+      "method": "llm",
+      "confidence": "medium",
+      "corroborated_by": [],
+      "metric_name": "长期借款"
+    },
+    {
+      "metric_id": "minority_equity",
+      "period": "2024",
+      "value": 26526141000.0,
+      "raw": "26,526,141",
+      "unit": "千元",
+      "source": {
+        "source": "report/resources/宁德时代/300750_宁德时代_2025_年度报告.pdf",
+        "page": 113,
+        "chunk_id": "c0450",
+        "caption": "1、合并资产负债表",
+        "table": "合并资产负债表",
+        "extractor": "claude-code-skill"
+      },
+      "label": "少数股东权益",
+      "method": "llm",
+      "confidence": "medium",
+      "corroborated_by": [],
+      "metric_name": "少数股东权益"
+    },
+    {
+      "metric_id": "minority_equity",
+      "period": "2025",
+      "value": 33918577000.0,
+      "raw": "33,918,577",
+      "unit": "千元",
+      "source": {
+        "source": "report/resources/宁德时代/300750_宁德时代_2025_年度报告.pdf",
+        "page": 113,
+        "chunk_id": "c0450",
+        "caption": "1、合并资产负债表",
+        "table": "合并资产负债表",
+        "extractor": "claude-code-skill"
+      },
+      "label": "少数股东权益",
+      "method": "llm",
+      "confidence": "medium",
+      "corroborated_by": [],
+      "metric_name": "少数股东权益"
+    },
+    {
+      "metric_id": "net_profit",
+      "period": "2024",
+      "value": 54006794000.0,
+      "raw": "54,006,794",
+      "unit": "千元",
+      "source": {
+        "source": "report/resources/宁德时代/300750_宁德时代_2025_年度报告.pdf",
+        "page": 117,
+        "chunk_id": "c0460",
+        "caption": "3、合并利润表",
+        "table": "合并利润表",
+        "extractor": "claude-code-skill"
+      },
+      "label": "五、净利润",
+      "method": "llm",
+      "confidence": "medium",
+      "corroborated_by": [],
+      "metric_name": "净利润"
+    },
+    {
+      "metric_id": "net_profit",
+      "period": "2025",
+      "value": 76786309000.0,
+      "raw": "76,786,309",
+      "unit": "千元",
+      "source": {
+        "source": "report/resources/宁德时代/300750_宁德时代_2025_年度报告.pdf",
+        "page": 117,
+        "chunk_id": "c0460",
+        "caption": "3、合并利润表",
+        "table": "合并利润表",
+        "extractor": "claude-code-skill"
+      },
+      "label": "五、净利润",
+      "method": "llm",
+      "confidence": "medium",
+      "corroborated_by": [],
+      "metric_name": "净利润"
+    },
+    {
+      "metric_id": "non_recurring",
+      "period": "2024",
+      "value": 5751762000.0,
+      "raw": "5,751,762",
+      "unit": "千元",
+      "source": {
+        "source": "report/resources/宁德时代/300750_宁德时代_2025_年度报告.pdf",
+        "page": 12,
+        "chunk_id": "c0020",
+        "caption": "八、非经常性损益项目及金额",
+        "table": "非经常性损益项目及金额",
+        "extractor": "claude-code-skill"
+      },
+      "label": "合计",
+      "method": "llm",
+      "confidence": "medium",
+      "corroborated_by": [],
+      "metric_name": "非经常性损益合计"
+    },
+    {
+      "metric_id": "non_recurring",
+      "period": "2025",
+      "value": 7693417000.0,
+      "raw": "7,693,417",
+      "unit": "千元",
+      "source": {
+        "source": "report/resources/宁德时代/300750_宁德时代_2025_年度报告.pdf",
+        "page": 12,
+        "chunk_id": "c0020",
+        "caption": "八、非经常性损益项目及金额",
+        "table": "非经常性损益项目及金额",
+        "extractor": "claude-code-skill"
+      },
+      "label": "合计",
+      "method": "llm",
+      "confidence": "medium",
+      "corroborated_by": [],
+      "metric_name": "非经常性损益合计"
+    },
+    {
+      "metric_id": "np_parent",
+      "period": "2023",
+      "value": 44121248000.0,
+      "raw": "44,121,248",
+      "unit": "千元",
+      "source": {
+        "source": "report/resources/宁德时代/300750_宁德时代_2025_年度报告.pdf",
+        "page": 11,
+        "chunk_id": "c0016",
+        "caption": "五、主要会计数据和财务指标",
+        "table": "主要会计数据和财务指标",
+        "extractor": "claude-code-skill"
+      },
+      "label": "归属于上市公司股东的净利润",
+      "method": "llm",
+      "confidence": "medium",
+      "corroborated_by": [],
+      "metric_name": "归属于上市公司股东的净利润"
+    },
+    {
+      "metric_id": "np_parent",
+      "period": "2024",
+      "value": 50744682000.0,
+      "raw": "50,744,682",
+      "unit": "千元",
+      "source": {
+        "source": "report/resources/宁德时代/300750_宁德时代_2025_年度报告.pdf",
+        "page": 11,
+        "chunk_id": "c0016",
+        "caption": "五、主要会计数据和财务指标",
+        "table": "主要会计数据和财务指标",
+        "extractor": "claude-code-skill"
+      },
+      "label": "归属于上市公司股东的净利润",
+      "method": "llm",
+      "confidence": "medium",
+      "corroborated_by": [],
+      "metric_name": "归属于上市公司股东的净利润"
+    },
+    {
+      "metric_id": "np_parent",
+      "period": "2025",
+      "value": 72201282000.0,
+      "raw": "72,201,282",
+      "unit": "千元",
+      "source": {
+        "source": "report/resources/宁德时代/300750_宁德时代_2025_年度报告.pdf",
+        "page": 11,
+        "chunk_id": "c0016",
+        "caption": "五、主要会计数据和财务指标",
+        "table": "主要会计数据和财务指标",
+        "extractor": "claude-code-skill"
+      },
+      "label": "归属于上市公司股东的净利润",
+      "method": "llm",
+      "confidence": "medium",
+      "corroborated_by": [],
+      "metric_name": "归属于上市公司股东的净利润"
+    },
+    {
+      "metric_id": "np_parent",
+      "period": "2025Q1",
+      "value": 13962558000.0,
+      "raw": "13,962,558",
+      "unit": "千元",
+      "source": {
+        "source": "report/resources/宁德时代/300750_宁德时代_2025_年度报告.pdf",
+        "page": 12,
+        "chunk_id": "c0019",
+        "caption": "六、分季度主要财务指标",
+        "table": "2025年分季度主要财务指标",
+        "extractor": "claude-code-skill"
+      },
+      "label": "归属于上市公司股东的净利润",
+      "method": "llm",
+      "confidence": "medium",
+      "corroborated_by": [],
+      "metric_name": "归属于上市公司股东的净利润"
+    },
+    {
+      "metric_id": "np_parent",
+      "period": "2025Q2",
+      "value": 16522581000.0,
+      "raw": "16,522,581",
+      "unit": "千元",
+      "source": {
+        "source": "report/resources/宁德时代/300750_宁德时代_2025_年度报告.pdf",
+        "page": 12,
+        "chunk_id": "c0019",
+        "caption": "六、分季度主要财务指标",
+        "table": "2025年分季度主要财务指标",
+        "extractor": "claude-code-skill"
+      },
+      "label": "归属于上市公司股东的净利润",
+      "method": "llm",
+      "confidence": "medium",
+      "corroborated_by": [],
+      "metric_name": "归属于上市公司股东的净利润"
+    },
+    {
+      "metric_id": "np_parent",
+      "period": "2025Q3",
+      "value": 18548970000.0,
+      "raw": "18,548,970",
+      "unit": "千元",
+      "source": {
+        "source": "report/resources/宁德时代/300750_宁德时代_2025_年度报告.pdf",
+        "page": 12,
+        "chunk_id": "c0019",
+        "caption": "六、分季度主要财务指标",
+        "table": "2025年分季度主要财务指标",
+        "extractor": "claude-code-skill"
+      },
+      "label": "归属于上市公司股东的净利润",
+      "method": "llm",
+      "confidence": "medium",
+      "corroborated_by": [],
+      "metric_name": "归属于上市公司股东的净利润"
+    },
+    {
+      "metric_id": "np_parent",
+      "period": "2025Q4",
+      "value": 23167173000.0,
+      "raw": "23,167,173",
+      "unit": "千元",
+      "source": {
+        "source": "report/resources/宁德时代/300750_宁德时代_2025_年度报告.pdf",
+        "page": 12,
+        "chunk_id": "c0019",
+        "caption": "六、分季度主要财务指标",
+        "table": "2025年分季度主要财务指标",
+        "extractor": "claude-code-skill"
+      },
+      "label": "归属于上市公司股东的净利润",
+      "method": "llm",
+      "confidence": "medium",
+      "corroborated_by": [],
+      "metric_name": "归属于上市公司股东的净利润"
+    },
+    {
+      "metric_id": "np_parent_deducted",
+      "period": "2023",
+      "value": 40091674000.0,
+      "raw": "40,091,674",
+      "unit": "千元",
+      "source": {
+        "source": "report/resources/宁德时代/300750_宁德时代_2025_年度报告.pdf",
+        "page": 11,
+        "chunk_id": "c0016",
+        "caption": "五、主要会计数据和财务指标",
+        "table": "主要会计数据和财务指标",
+        "extractor": "claude-code-skill"
+      },
+      "label": "归属于上市公司股东的扣除非经常性损益的净利润",
+      "method": "llm",
+      "confidence": "medium",
+      "corroborated_by": [],
+      "metric_name": "归属于上市公司股东的扣除非经常性损益的净利润"
+    },
+    {
+      "metric_id": "np_parent_deducted",
+      "period": "2024",
+      "value": 44992919000.0,
+      "raw": "44,992,919",
+      "unit": "千元",
+      "source": {
+        "source": "report/resources/宁德时代/300750_宁德时代_2025_年度报告.pdf",
+        "page": 11,
+        "chunk_id": "c0016",
+        "caption": "五、主要会计数据和财务指标",
+        "table": "主要会计数据和财务指标",
+        "extractor": "claude-code-skill"
+      },
+      "label": "归属于上市公司股东的扣除非经常性损益的净利润",
+      "method": "llm",
+      "confidence": "medium",
+      "corroborated_by": [],
+      "metric_name": "归属于上市公司股东的扣除非经常性损益的净利润"
+    },
+    {
+      "metric_id": "np_parent_deducted",
+      "period": "2025",
+      "value": 64507864000.0,
+      "raw": "64,507,864",
+      "unit": "千元",
+      "source": {
+        "source": "report/resources/宁德时代/300750_宁德时代_2025_年度报告.pdf",
+        "page": 11,
+        "chunk_id": "c0016",
+        "caption": "五、主要会计数据和财务指标",
+        "table": "主要会计数据和财务指标",
+        "extractor": "claude-code-skill"
+      },
+      "label": "归属于上市公司股东的扣除非经常性损益的净利润",
+      "method": "llm",
+      "confidence": "medium",
+      "corroborated_by": [],
+      "metric_name": "归属于上市公司股东的扣除非经常性损益的净利润"
+    },
+    {
+      "metric_id": "np_parent_deducted",
+      "period": "2025Q1",
+      "value": 11829172000.0,
+      "raw": "11,829,172",
+      "unit": "千元",
+      "source": {
+        "source": "report/resources/宁德时代/300750_宁德时代_2025_年度报告.pdf",
+        "page": 12,
+        "chunk_id": "c0019",
+        "caption": "六、分季度主要财务指标",
+        "table": "2025年分季度主要财务指标",
+        "extractor": "claude-code-skill"
+      },
+      "label": "归属于上市公司股东的扣除非经常性损益的净利润",
+      "method": "llm",
+      "confidence": "medium",
+      "corroborated_by": [],
+      "metric_name": "归属于上市公司股东的扣除非经常性损益的净利润"
+    },
+    {
+      "metric_id": "np_parent_deducted",
+      "period": "2025Q2",
+      "value": 15368296000.0,
+      "raw": "15,368,296",
+      "unit": "千元",
+      "source": {
+        "source": "report/resources/宁德时代/300750_宁德时代_2025_年度报告.pdf",
+        "page": 12,
+        "chunk_id": "c0019",
+        "caption": "六、分季度主要财务指标",
+        "table": "2025年分季度主要财务指标",
+        "extractor": "claude-code-skill"
+      },
+      "label": "归属于上市公司股东的扣除非经常性损益的净利润",
+      "method": "llm",
+      "confidence": "medium",
+      "corroborated_by": [],
+      "metric_name": "归属于上市公司股东的扣除非经常性损益的净利润"
+    },
+    {
+      "metric_id": "np_parent_deducted",
+      "period": "2025Q3",
+      "value": 16421757000.0,
+      "raw": "16,421,757",
+      "unit": "千元",
+      "source": {
+        "source": "report/resources/宁德时代/300750_宁德时代_2025_年度报告.pdf",
+        "page": 12,
+        "chunk_id": "c0019",
+        "caption": "六、分季度主要财务指标",
+        "table": "2025年分季度主要财务指标",
+        "extractor": "claude-code-skill"
+      },
+      "label": "归属于上市公司股东的扣除非经常性损益的净利润",
+      "method": "llm",
+      "confidence": "medium",
+      "corroborated_by": [],
+      "metric_name": "归属于上市公司股东的扣除非经常性损益的净利润"
+    },
+    {
+      "metric_id": "np_parent_deducted",
+      "period": "2025Q4",
+      "value": 20888640000.0,
+      "raw": "20,888,640",
+      "unit": "千元",
+      "source": {
+        "source": "report/resources/宁德时代/300750_宁德时代_2025_年度报告.pdf",
+        "page": 12,
+        "chunk_id": "c0019",
+        "caption": "六、分季度主要财务指标",
+        "table": "2025年分季度主要财务指标",
+        "extractor": "claude-code-skill"
+      },
+      "label": "归属于上市公司股东的扣除非经常性损益的净利润",
+      "method": "llm",
+      "confidence": "medium",
+      "corroborated_by": [],
+      "metric_name": "归属于上市公司股东的扣除非经常性损益的净利润"
+    },
+    {
+      "metric_id": "ocf",
+      "period": "2023",
+      "value": 92826124000.0,
+      "raw": "92,826,124",
+      "unit": "千元",
+      "source": {
+        "source": "report/resources/宁德时代/300750_宁德时代_2025_年度报告.pdf",
+        "page": 11,
+        "chunk_id": "c0016",
+        "caption": "五、主要会计数据和财务指标",
+        "table": "主要会计数据和财务指标",
+        "extractor": "claude-code-skill"
+      },
+      "label": "经营活动产生的现金流量净额",
+      "method": "llm",
+      "confidence": "medium",
+      "corroborated_by": [],
+      "metric_name": "经营活动产生的现金流量净额"
+    },
+    {
+      "metric_id": "ocf",
+      "period": "2024",
+      "value": 96990345000.0,
+      "raw": "96,990,345",
+      "unit": "千元",
+      "source": {
+        "source": "report/resources/宁德时代/300750_宁德时代_2025_年度报告.pdf",
+        "page": 120,
+        "chunk_id": "c0468",
+        "caption": "5、合并现金流量表",
+        "table": "合并现金流量表",
+        "extractor": "claude-code-skill"
+      },
+      "label": "经营活动产生的现金流量净额",
+      "method": "llm",
+      "confidence": "medium",
+      "corroborated_by": [],
+      "metric_name": "经营活动产生的现金流量净额"
+    },
+    {
+      "metric_id": "ocf",
+      "period": "2025",
+      "value": 133219982000.0,
+      "raw": "133,219,982",
+      "unit": "千元",
+      "source": {
+        "source": "report/resources/宁德时代/300750_宁德时代_2025_年度报告.pdf",
+        "page": 120,
+        "chunk_id": "c0468",
+        "caption": "5、合并现金流量表",
+        "table": "合并现金流量表",
+        "extractor": "claude-code-skill"
+      },
+      "label": "经营活动产生的现金流量净额",
+      "method": "llm",
+      "confidence": "medium",
+      "corroborated_by": [],
+      "metric_name": "经营活动产生的现金流量净额"
+    },
+    {
+      "metric_id": "ocf",
+      "period": "2025Q1",
+      "value": 32868257000.0,
+      "raw": "32,868,257",
+      "unit": "千元",
+      "source": {
+        "source": "report/resources/宁德时代/300750_宁德时代_2025_年度报告.pdf",
+        "page": 12,
+        "chunk_id": "c0019",
+        "caption": "六、分季度主要财务指标",
+        "table": "2025年分季度主要财务指标",
+        "extractor": "claude-code-skill"
+      },
+      "label": "经营活动产生的现金流量净额",
+      "method": "llm",
+      "confidence": "medium",
+      "corroborated_by": [],
+      "metric_name": "经营活动产生的现金流量净额"
+    },
+    {
+      "metric_id": "ocf",
+      "period": "2025Q2",
+      "value": 25818809000.0,
+      "raw": "25,818,809",
+      "unit": "千元",
+      "source": {
+        "source": "report/resources/宁德时代/300750_宁德时代_2025_年度报告.pdf",
+        "page": 12,
+        "chunk_id": "c0019",
+        "caption": "六、分季度主要财务指标",
+        "table": "2025年分季度主要财务指标",
+        "extractor": "claude-code-skill"
+      },
+      "label": "经营活动产生的现金流量净额",
+      "method": "llm",
+      "confidence": "medium",
+      "corroborated_by": [],
+      "metric_name": "经营活动产生的现金流量净额"
+    },
+    {
+      "metric_id": "ocf",
+      "period": "2025Q3",
+      "value": 21973364000.0,
+      "raw": "21,973,364",
+      "unit": "千元",
+      "source": {
+        "source": "report/resources/宁德时代/300750_宁德时代_2025_年度报告.pdf",
+        "page": 12,
+        "chunk_id": "c0019",
+        "caption": "六、分季度主要财务指标",
+        "table": "2025年分季度主要财务指标",
+        "extractor": "claude-code-skill"
+      },
+      "label": "经营活动产生的现金流量净额",
+      "method": "llm",
+      "confidence": "medium",
+      "corroborated_by": [],
+      "metric_name": "经营活动产生的现金流量净额"
+    },
+    {
+      "metric_id": "ocf",
+      "period": "2025Q4",
+      "value": 52559552000.0,
+      "raw": "52,559,552",
+      "unit": "千元",
+      "source": {
+        "source": "report/resources/宁德时代/300750_宁德时代_2025_年度报告.pdf",
+        "page": 12,
+        "chunk_id": "c0019",
+        "caption": "六、分季度主要财务指标",
+        "table": "2025年分季度主要财务指标",
+        "extractor": "claude-code-skill"
+      },
+      "label": "经营活动产生的现金流量净额",
+      "method": "llm",
+      "confidence": "medium",
+      "corroborated_by": [],
+      "metric_name": "经营活动产生的现金流量净额"
+    },
+    {
+      "metric_id": "operating_cost",
+      "period": "2024",
+      "value": 273518959000.0,
+      "raw": "273,518,959",
+      "unit": "千元",
+      "source": {
+        "source": "report/resources/宁德时代/300750_宁德时代_2025_年度报告.pdf",
+        "page": 116,
+        "chunk_id": "c0458",
+        "caption": "3、合并利润表",
+        "table": "合并利润表",
+        "extractor": "claude-code-skill"
+      },
+      "label": "其中：营业成本",
+      "method": "llm",
+      "confidence": "medium",
+      "corroborated_by": [],
+      "metric_name": "营业成本"
+    },
+    {
+      "metric_id": "operating_cost",
+      "period": "2025",
+      "value": 312383297000.0,
+      "raw": "312,383,297",
+      "unit": "千元",
+      "source": {
+        "source": "report/resources/宁德时代/300750_宁德时代_2025_年度报告.pdf",
+        "page": 116,
+        "chunk_id": "c0458",
+        "caption": "3、合并利润表",
+        "table": "合并利润表",
+        "extractor": "claude-code-skill"
+      },
+      "label": "其中：营业成本",
+      "method": "llm",
+      "confidence": "medium",
+      "corroborated_by": [],
+      "metric_name": "营业成本"
+    },
+    {
+      "metric_id": "operating_profit",
+      "period": "2024",
+      "value": 64051799000.0,
+      "raw": "64,051,799",
+      "unit": "千元",
+      "source": {
+        "source": "report/resources/宁德时代/300750_宁德时代_2025_年度报告.pdf",
+        "page": 117,
+        "chunk_id": "c0460",
+        "caption": "3、合并利润表",
+        "table": "合并利润表",
+        "extractor": "claude-code-skill"
+      },
+      "label": "三、营业利润",
+      "method": "llm",
+      "confidence": "medium",
+      "corroborated_by": [],
+      "metric_name": "营业利润"
+    },
+    {
+      "metric_id": "operating_profit",
+      "period": "2025",
+      "value": 89518636000.0,
+      "raw": "89,518,636",
+      "unit": "千元",
+      "source": {
+        "source": "report/resources/宁德时代/300750_宁德时代_2025_年度报告.pdf",
+        "page": 117,
+        "chunk_id": "c0460",
+        "caption": "3、合并利润表",
+        "table": "合并利润表",
+        "extractor": "claude-code-skill"
+      },
+      "label": "三、营业利润",
+      "method": "llm",
+      "confidence": "medium",
+      "corroborated_by": [],
+      "metric_name": "营业利润"
+    },
+    {
+      "metric_id": "rd_expense",
+      "period": "2024",
+      "value": 18606756000.0,
+      "raw": "18,606,756",
+      "unit": "千元",
+      "source": {
+        "source": "report/resources/宁德时代/300750_宁德时代_2025_年度报告.pdf",
+        "page": 116,
+        "chunk_id": "c0458",
+        "caption": "3、合并利润表",
+        "table": "合并利润表",
+        "extractor": "claude-code-skill"
+      },
+      "label": "研发费用",
+      "method": "llm",
+      "confidence": "medium",
+      "corroborated_by": [],
+      "metric_name": "研发费用"
+    },
+    {
+      "metric_id": "rd_expense",
+      "period": "2025",
+      "value": 22146581000.0,
+      "raw": "22,146,581",
+      "unit": "千元",
+      "source": {
+        "source": "report/resources/宁德时代/300750_宁德时代_2025_年度报告.pdf",
+        "page": 116,
+        "chunk_id": "c0458",
+        "caption": "3、合并利润表",
+        "table": "合并利润表",
+        "extractor": "claude-code-skill"
+      },
+      "label": "研发费用",
+      "method": "llm",
+      "confidence": "medium",
+      "corroborated_by": [],
+      "metric_name": "研发费用"
+    },
+    {
+      "metric_id": "revenue",
+      "period": "2023",
+      "value": 400917045000.0,
+      "raw": "400,917,045",
+      "unit": "千元",
+      "source": {
+        "source": "report/resources/宁德时代/300750_宁德时代_2025_年度报告.pdf",
+        "page": 11,
+        "chunk_id": "c0016",
+        "caption": "五、主要会计数据和财务指标",
+        "table": "主要会计数据和财务指标",
+        "extractor": "claude-code-skill"
+      },
+      "label": "营业收入",
+      "method": "llm",
+      "confidence": "medium",
+      "corroborated_by": [],
+      "metric_name": "营业收入"
+    },
+    {
+      "metric_id": "revenue",
+      "period": "2024",
+      "value": 362012554000.0,
+      "raw": "362,012,554",
+      "unit": "千元",
+      "source": {
+        "source": "report/resources/宁德时代/300750_宁德时代_2025_年度报告.pdf",
+        "page": 116,
+        "chunk_id": "c0458",
+        "caption": "3、合并利润表",
+        "table": "合并利润表",
+        "extractor": "claude-code-skill"
+      },
+      "label": "其中：营业收入",
+      "method": "llm",
+      "confidence": "medium",
+      "corroborated_by": [],
+      "metric_name": "营业收入"
+    },
+    {
+      "metric_id": "revenue",
+      "period": "2025",
+      "value": 423701834000.0,
+      "raw": "423,701,834",
+      "unit": "千元",
+      "source": {
+        "source": "report/resources/宁德时代/300750_宁德时代_2025_年度报告.pdf",
+        "page": 116,
+        "chunk_id": "c0458",
+        "caption": "3、合并利润表",
+        "table": "合并利润表",
+        "extractor": "claude-code-skill"
+      },
+      "label": "其中：营业收入",
+      "method": "llm",
+      "confidence": "medium",
+      "corroborated_by": [],
+      "metric_name": "营业收入"
+    },
+    {
+      "metric_id": "revenue",
+      "period": "2025Q1",
+      "value": 84704589000.0,
+      "raw": "84,704,589",
+      "unit": "千元",
+      "source": {
+        "source": "report/resources/宁德时代/300750_宁德时代_2025_年度报告.pdf",
+        "page": 12,
+        "chunk_id": "c0019",
+        "caption": "六、分季度主要财务指标",
+        "table": "2025年分季度主要财务指标",
+        "extractor": "claude-code-skill"
+      },
+      "label": "营业收入",
+      "method": "llm",
+      "confidence": "medium",
+      "corroborated_by": [],
+      "metric_name": "营业收入"
+    },
+    {
+      "metric_id": "revenue",
+      "period": "2025Q2",
+      "value": 94181664000.0,
+      "raw": "94,181,664",
+      "unit": "千元",
+      "source": {
+        "source": "report/resources/宁德时代/300750_宁德时代_2025_年度报告.pdf",
+        "page": 12,
+        "chunk_id": "c0019",
+        "caption": "六、分季度主要财务指标",
+        "table": "2025年分季度主要财务指标",
+        "extractor": "claude-code-skill"
+      },
+      "label": "营业收入",
+      "method": "llm",
+      "confidence": "medium",
+      "corroborated_by": [],
+      "metric_name": "营业收入"
+    },
+    {
+      "metric_id": "revenue",
+      "period": "2025Q3",
+      "value": 104185734000.0,
+      "raw": "104,185,734",
+      "unit": "千元",
+      "source": {
+        "source": "report/resources/宁德时代/300750_宁德时代_2025_年度报告.pdf",
+        "page": 12,
+        "chunk_id": "c0019",
+        "caption": "六、分季度主要财务指标",
+        "table": "2025年分季度主要财务指标",
+        "extractor": "claude-code-skill"
+      },
+      "label": "营业收入",
+      "method": "llm",
+      "confidence": "medium",
+      "corroborated_by": [],
+      "metric_name": "营业收入"
+    },
+    {
+      "metric_id": "revenue",
+      "period": "2025Q4",
+      "value": 140629847000.0,
+      "raw": "140,629,847",
+      "unit": "千元",
+      "source": {
+        "source": "report/resources/宁德时代/300750_宁德时代_2025_年度报告.pdf",
+        "page": 12,
+        "chunk_id": "c0019",
+        "caption": "六、分季度主要财务指标",
+        "table": "2025年分季度主要财务指标",
+        "extractor": "claude-code-skill"
+      },
+      "label": "营业收入",
+      "method": "llm",
+      "confidence": "medium",
+      "corroborated_by": [],
+      "metric_name": "营业收入"
+    },
+    {
+      "metric_id": "roe_weighted",
+      "period": "2023",
+      "value": 24.04,
+      "raw": "24.04",
+      "unit": "%",
+      "source": {
+        "source": "report/resources/宁德时代/300750_宁德时代_2025_年度报告.pdf",
+        "page": 11,
+        "chunk_id": "c0016",
+        "caption": "五、主要会计数据和财务指标",
+        "table": "主要会计数据和财务指标",
+        "extractor": "claude-code-skill"
+      },
+      "label": "加权平均净资产收益率",
+      "method": "llm",
+      "confidence": "medium",
+      "corroborated_by": [],
+      "metric_name": "加权平均净资产收益率"
+    },
+    {
+      "metric_id": "roe_weighted",
+      "period": "2024",
+      "value": 24.13,
+      "raw": "24.13",
+      "unit": "%",
+      "source": {
+        "source": "report/resources/宁德时代/300750_宁德时代_2025_年度报告.pdf",
+        "page": 11,
+        "chunk_id": "c0016",
+        "caption": "五、主要会计数据和财务指标",
+        "table": "主要会计数据和财务指标",
+        "extractor": "claude-code-skill"
+      },
+      "label": "加权平均净资产收益率",
+      "method": "llm",
+      "confidence": "medium",
+      "corroborated_by": [],
+      "metric_name": "加权平均净资产收益率"
+    },
+    {
+      "metric_id": "roe_weighted",
+      "period": "2025",
+      "value": 24.91,
+      "raw": "24.91",
+      "unit": "%",
+      "source": {
+        "source": "report/resources/宁德时代/300750_宁德时代_2025_年度报告.pdf",
+        "page": 11,
+        "chunk_id": "c0016",
+        "caption": "五、主要会计数据和财务指标",
+        "table": "主要会计数据和财务指标",
+        "extractor": "claude-code-skill"
+      },
+      "label": "加权平均净资产收益率",
+      "method": "llm",
+      "confidence": "medium",
+      "corroborated_by": [],
+      "metric_name": "加权平均净资产收益率"
+    },
+    {
+      "metric_id": "selling_expense",
+      "period": "2024",
+      "value": 3562797000.0,
+      "raw": "3,562,797",
+      "unit": "千元",
+      "source": {
+        "source": "report/resources/宁德时代/300750_宁德时代_2025_年度报告.pdf",
+        "page": 116,
+        "chunk_id": "c0458",
+        "caption": "3、合并利润表",
+        "table": "合并利润表",
+        "extractor": "claude-code-skill"
+      },
+      "label": "销售费用",
+      "method": "llm",
+      "confidence": "medium",
+      "corroborated_by": [],
+      "metric_name": "销售费用"
+    },
+    {
+      "metric_id": "selling_expense",
+      "period": "2025",
+      "value": 3735118000.0,
+      "raw": "3,735,118",
+      "unit": "千元",
+      "source": {
+        "source": "report/resources/宁德时代/300750_宁德时代_2025_年度报告.pdf",
+        "page": 116,
+        "chunk_id": "c0458",
+        "caption": "3、合并利润表",
+        "table": "合并利润表",
+        "extractor": "claude-code-skill"
+      },
+      "label": "销售费用",
+      "method": "llm",
+      "confidence": "medium",
+      "corroborated_by": [],
+      "metric_name": "销售费用"
+    },
+    {
+      "metric_id": "short_debt",
+      "period": "2024",
+      "value": 19696282000.0,
+      "raw": "19,696,282",
+      "unit": "千元",
+      "source": {
+        "source": "report/resources/宁德时代/300750_宁德时代_2025_年度报告.pdf",
+        "page": 112,
+        "chunk_id": "c0448",
+        "caption": "1、合并资产负债表",
+        "table": "合并资产负债表",
+        "extractor": "claude-code-skill"
+      },
+      "label": "短期借款",
+      "method": "llm",
+      "confidence": "medium",
+      "corroborated_by": [],
+      "metric_name": "短期借款"
+    },
+    {
+      "metric_id": "short_debt",
+      "period": "2025",
+      "value": 12935498000.0,
+      "raw": "12,935,498",
+      "unit": "千元",
+      "source": {
+        "source": "report/resources/宁德时代/300750_宁德时代_2025_年度报告.pdf",
+        "page": 112,
+        "chunk_id": "c0448",
+        "caption": "1、合并资产负债表",
+        "table": "合并资产负债表",
+        "extractor": "claude-code-skill"
+      },
+      "label": "短期借款",
+      "method": "llm",
+      "confidence": "medium",
+      "corroborated_by": [],
+      "metric_name": "短期借款"
+    },
+    {
+      "metric_id": "tax_surcharge",
+      "period": "2024",
+      "value": 2057466000.0,
+      "raw": "2,057,466",
+      "unit": "千元",
+      "source": {
+        "source": "report/resources/宁德时代/300750_宁德时代_2025_年度报告.pdf",
+        "page": 116,
+        "chunk_id": "c0458",
+        "caption": "3、合并利润表",
+        "table": "合并利润表",
+        "extractor": "claude-code-skill"
+      },
+      "label": "税金及附加",
+      "method": "llm",
+      "confidence": "medium",
+      "corroborated_by": [],
+      "metric_name": "税金及附加"
+    },
+    {
+      "metric_id": "tax_surcharge",
+      "period": "2025",
+      "value": 2832322000.0,
+      "raw": "2,832,322",
+      "unit": "千元",
+      "source": {
+        "source": "report/resources/宁德时代/300750_宁德时代_2025_年度报告.pdf",
+        "page": 116,
+        "chunk_id": "c0458",
+        "caption": "3、合并利润表",
+        "table": "合并利润表",
+        "extractor": "claude-code-skill"
+      },
+      "label": "税金及附加",
+      "method": "llm",
+      "confidence": "medium",
+      "corroborated_by": [],
+      "metric_name": "税金及附加"
+    },
+    {
+      "metric_id": "total_assets",
+      "period": "2023",
+      "value": 717168041000.0,
+      "raw": "717,168,041",
+      "unit": "千元",
+      "source": {
+        "source": "report/resources/宁德时代/300750_宁德时代_2025_年度报告.pdf",
+        "page": 11,
+        "chunk_id": "c0016",
+        "caption": "五、主要会计数据和财务指标",
+        "table": "主要会计数据和财务指标",
+        "extractor": "claude-code-skill"
+      },
+      "label": "资产总额",
+      "method": "llm",
+      "confidence": "medium",
+      "corroborated_by": [],
+      "metric_name": "资产总计"
+    },
+    {
+      "metric_id": "total_assets",
+      "period": "2024",
+      "value": 786658123000.0,
+      "raw": "786,658,123",
+      "unit": "千元",
+      "source": {
+        "source": "report/resources/宁德时代/300750_宁德时代_2025_年度报告.pdf",
+        "page": 112,
+        "chunk_id": "c0448",
+        "caption": "1、合并资产负债表",
+        "table": "合并资产负债表",
+        "extractor": "claude-code-skill"
+      },
+      "label": "资产总计",
+      "method": "llm",
+      "confidence": "medium",
+      "corroborated_by": [],
+      "metric_name": "资产总计"
+    },
+    {
+      "metric_id": "total_assets",
+      "period": "2025",
+      "value": 974827544000.0,
+      "raw": "974,827,544",
+      "unit": "千元",
+      "source": {
+        "source": "report/resources/宁德时代/300750_宁德时代_2025_年度报告.pdf",
+        "page": 112,
+        "chunk_id": "c0448",
+        "caption": "1、合并资产负债表",
+        "table": "合并资产负债表",
+        "extractor": "claude-code-skill"
+      },
+      "label": "资产总计",
+      "method": "llm",
+      "confidence": "medium",
+      "corroborated_by": [],
+      "metric_name": "资产总计"
+    },
+    {
+      "metric_id": "total_equity",
+      "period": "2024",
+      "value": 273456174000.0,
+      "raw": "273,456,174",
+      "unit": "千元",
+      "source": {
+        "source": "report/resources/宁德时代/300750_宁德时代_2025_年度报告.pdf",
+        "page": 113,
+        "chunk_id": "c0450",
+        "caption": "1、合并资产负债表",
+        "table": "合并资产负债表",
+        "extractor": "claude-code-skill"
+      },
+      "label": "所有者权益合计",
+      "method": "llm",
+      "confidence": "medium",
+      "corroborated_by": [],
+      "metric_name": "所有者权益合计"
+    },
+    {
+      "metric_id": "total_equity",
+      "period": "2025",
+      "value": 371026324000.0,
+      "raw": "371,026,324",
+      "unit": "千元",
+      "source": {
+        "source": "report/resources/宁德时代/300750_宁德时代_2025_年度报告.pdf",
+        "page": 113,
+        "chunk_id": "c0450",
+        "caption": "1、合并资产负债表",
+        "table": "合并资产负债表",
+        "extractor": "claude-code-skill"
+      },
+      "label": "所有者权益合计",
+      "method": "llm",
+      "confidence": "medium",
+      "corroborated_by": [],
+      "metric_name": "所有者权益合计"
+    },
+    {
+      "metric_id": "total_liab_equity",
+      "period": "2024",
+      "value": 786658123000.0,
+      "raw": "786,658,123",
+      "unit": "千元",
+      "source": {
+        "source": "report/resources/宁德时代/300750_宁德时代_2025_年度报告.pdf",
+        "page": 113,
+        "chunk_id": "c0450",
+        "caption": "1、合并资产负债表",
+        "table": "合并资产负债表",
+        "extractor": "claude-code-skill"
+      },
+      "label": "负债和所有者权益总计",
+      "method": "llm",
+      "confidence": "medium",
+      "corroborated_by": [],
+      "metric_name": "负债和所有者权益总计"
+    },
+    {
+      "metric_id": "total_liab_equity",
+      "period": "2025",
+      "value": 974827544000.0,
+      "raw": "974,827,544",
+      "unit": "千元",
+      "source": {
+        "source": "report/resources/宁德时代/300750_宁德时代_2025_年度报告.pdf",
+        "page": 113,
+        "chunk_id": "c0450",
+        "caption": "1、合并资产负债表",
+        "table": "合并资产负债表",
+        "extractor": "claude-code-skill"
+      },
+      "label": "负债和所有者权益总计",
+      "method": "llm",
+      "confidence": "medium",
+      "corroborated_by": [],
+      "metric_name": "负债和所有者权益总计"
+    },
+    {
+      "metric_id": "total_liabilities",
+      "period": "2024",
+      "value": 513201949000.0,
+      "raw": "513,201,949",
+      "unit": "千元",
+      "source": {
+        "source": "report/resources/宁德时代/300750_宁德时代_2025_年度报告.pdf",
+        "page": 113,
+        "chunk_id": "c0450",
+        "caption": "1、合并资产负债表",
+        "table": "合并资产负债表",
+        "extractor": "claude-code-skill"
+      },
+      "label": "负债合计",
+      "method": "llm",
+      "confidence": "medium",
+      "corroborated_by": [],
+      "metric_name": "负债合计"
+    },
+    {
+      "metric_id": "total_liabilities",
+      "period": "2025",
+      "value": 603801220000.0,
+      "raw": "603,801,220",
+      "unit": "千元",
+      "source": {
+        "source": "report/resources/宁德时代/300750_宁德时代_2025_年度报告.pdf",
+        "page": 113,
+        "chunk_id": "c0450",
+        "caption": "1、合并资产负债表",
+        "table": "合并资产负债表",
+        "extractor": "claude-code-skill"
+      },
+      "label": "负债合计",
+      "method": "llm",
+      "confidence": "medium",
+      "corroborated_by": [],
+      "metric_name": "负债合计"
+    },
+    {
+      "metric_id": "total_profit",
+      "period": "2024",
+      "value": 63182039000.0,
+      "raw": "63,182,039",
+      "unit": "千元",
+      "source": {
+        "source": "report/resources/宁德时代/300750_宁德时代_2025_年度报告.pdf",
+        "page": 117,
+        "chunk_id": "c0460",
+        "caption": "3、合并利润表",
+        "table": "合并利润表",
+        "extractor": "claude-code-skill"
+      },
+      "label": "四、利润总额",
+      "method": "llm",
+      "confidence": "medium",
+      "corroborated_by": [],
+      "metric_name": "利润总额"
+    },
+    {
+      "metric_id": "total_profit",
+      "period": "2025",
+      "value": 89526545000.0,
+      "raw": "89,526,545",
+      "unit": "千元",
+      "source": {
+        "source": "report/resources/宁德时代/300750_宁德时代_2025_年度报告.pdf",
+        "page": 117,
+        "chunk_id": "c0460",
+        "caption": "3、合并利润表",
+        "table": "合并利润表",
+        "extractor": "claude-code-skill"
+      },
+      "label": "四、利润总额",
+      "method": "llm",
+      "confidence": "medium",
+      "corroborated_by": [],
+      "metric_name": "利润总额"
+    },
+    {
+      "metric_id": "total_shares",
+      "period": "2024",
+      "value": 4403466458.0,
+      "raw": "4,403,466,458",
+      "unit": "股",
+      "source": {
+        "source": "report/resources/宁德时代/300750_宁德时代_2025_年度报告.pdf",
+        "page": 93,
+        "chunk_id": "c0375",
+        "caption": "1、股份变动情况",
+        "table": "股份变动情况表",
+        "extractor": "claude-code-skill"
+      },
+      "label": "三、股份总数",
+      "method": "llm",
+      "confidence": "medium",
+      "corroborated_by": [],
+      "metric_name": "总股本"
+    },
+    {
+      "metric_id": "total_shares",
+      "period": "2025",
+      "value": 4563803488.0,
+      "raw": "4,563,803,488",
+      "unit": "股",
+      "source": {
+        "source": "report/resources/宁德时代/300750_宁德时代_2025_年度报告.pdf",
+        "page": 93,
+        "chunk_id": "c0375",
+        "caption": "1、股份变动情况",
+        "table": "股份变动情况表",
+        "extractor": "claude-code-skill"
+      },
+      "label": "三、股份总数",
+      "method": "llm",
+      "confidence": "medium",
+      "corroborated_by": [],
+      "metric_name": "总股本"
+    }
+  ],
+  "issues": [],
+  "stats": {
+    "rule_facts": 0,
+    "llm_facts": 106,
+    "merged": 106,
+    "rejected": 0,
+    "extractor": "claude-code-skill",
+    "supplements": []
+  },
+  "rejected": [],
+  "missing": [],
+  "check": {
+    "ok": true,
+    "stats": {
+      "rule_facts": 0,
+      "llm_facts": 106,
+      "merged": 106,
+      "rejected": 0,
+      "extractor": "claude-code-skill",
+      "supplements": []
+    },
+    "rejected": [],
+    "conflicts": [],
+    "tieout_failures": [],
+    "missing": []
+  }
+}

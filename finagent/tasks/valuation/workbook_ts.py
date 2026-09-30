@@ -66,9 +66,12 @@ def _prev(col: str) -> str:
 
 
 def _segment_sheet(seg: dict[str, Any], F: list[str], n: int, add: Any, head: Any) -> _Grid:
-    """分部预测页：各情景 产品销量 × 吨价 → 收入、毛利率；费用率分项 → 经营费用率。基期列 C 为报表值。"""
+    """分部预测页：各情景 产品销量 × 吨价 → 收入、毛利率；费用率分项 → 经营费用率。基期列 C 为报表值。
+    销量单位与单价名称取 seg 的 volume_unit / price_label / price_unit（假设文件 segment_forecast 可选字段），缺省为吨价口径。"""
+    vu, pl = seg.get("volume_unit", "吨"), seg.get("price_label", "吨价")
+    pu = seg.get("price_unit", f"万元/{vu}")
     g = _Grid("分部预测：产品量价、毛利率与费用率（驱动三表）",
-              NOTE + "；吨价单位万元/吨；收入增速、综合毛利率、经营费用率由“三表-假设”按情景开关引用")
+              NOTE + f"；{pl}单位{pu}；收入增速、综合毛利率、经营费用率由“三表-假设”按情景开关引用")
     add(g, "S", None, head("分部预测（百万元）"), role="header")
     by = seg["base_year"]
     for k, cn in (("base", "基准"), ("downside", "悲观"), ("upside", "乐观")):  # 阅读顺序：基准在前
@@ -79,12 +82,12 @@ def _segment_sheet(seg: dict[str, Any], F: list[str], n: int, add: Any, head: An
             nm, key = b["name"], f"{k}_{b['id']}"
             r_vg = add(g, "S", None, [f"{nm}：销量增速", None, None] + [Cell(x, fmt="pct1", input=True) for x in sg["volume_growth"]])
             r_v = len(g.rows) + 1
-            add(g, "S", None, [f"{nm}：销量（吨）", None, Cell(b["volume"], fmt="num0", input=True)]
+            add(g, "S", None, [f"{nm}：销量（{vu}）", None, Cell(b["volume"], fmt="num0", input=True)]
                 + [Formula(f"{_prev(c)}{r_v}*(1+{c}{r_vg})", x, fmt="num0") for c, x in zip(F, sg["volume"])])
-            r_pg = add(g, "S", None, [f"{nm}：吨价增速", None, None] + [Cell(x, fmt="pct1", input=True) for x in sg["price_growth"]])
+            r_pg = add(g, "S", None, [f"{nm}：{pl}增速", None, None] + [Cell(x, fmt="pct1", input=True) for x in sg["price_growth"]])
             r_p = len(g.rows) + 1
             r_r = r_p + 1
-            add(g, "S", None, [f"{nm}：吨价（万元/吨）", None, Formula(f"C{r_r}*100/C{r_v}", b["price"], fmt="num2")]
+            add(g, "S", None, [f"{nm}：{pl}（{pu}）", None, Formula(f"C{r_r}*100/C{r_v}", b["price"], fmt="num2")]
                 + [Formula(f"{_prev(c)}{r_p}*(1+{c}{r_pg})", x, fmt="num2") for c, x in zip(F, sg["price"])])
             add(g, "S", f"{key}_rev", [f"{nm}：收入", None, Cell(b["revenue"], input=True)]
                 + [Formula(f"{c}{r_v}*{c}{r_p}/100", x) for c, x in zip(F, sg["revenue"])], role="total")

@@ -113,16 +113,14 @@ def test_moutai_script_builds(tmp_path):
     assert len(_figs(html)) == 57 and "__HEADER__" not in html  # 含股权价值桥表
 
 
-def test_theme_switch_and_restore(sample_run, tmp_path):
-    """非默认主题：CSS 与图表换色、输出到 report_<主题>，不覆盖默认版；再切回默认主题时颜色恢复。"""
+def test_red_palette(sample_run, tmp_path):
+    """红色配色是唯一配色：CSS 与图表都用红色，不再提供 --theme 切换，报告固定输出到 report/。"""
     from reportkit import core
-    red = _build_template(sample_run, tmp_path, "--theme", "warm_red", out="report_warm_red")
-    assert "#C6342C" in red and "__HEADER__" not in red
-    assert core.NAVY == core.THEMES["warm_red"]["NAVY"]
-    svg = (sample_run / "report_warm_red" / "charts" / "history.svg").read_text(encoding="utf-8")
+    html = _build_template(sample_run, tmp_path)
+    assert "#C6342C" in html and "#1B365D" not in html and "__HEADER__" not in html
+    assert core.NAVY == "#A21316" and not hasattr(core, "THEMES")
+    svg = (sample_run / "report" / "charts" / "history.svg").read_text(encoding="utf-8")
     assert "#a21316" in svg.lower()
-    navy = _build_template(sample_run, tmp_path)
-    assert "#C6342C" not in navy and core.NAVY == "#1B365D"
 
 
 def test_equity_bridge_reconciles(sample_run):

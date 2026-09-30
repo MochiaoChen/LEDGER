@@ -17,7 +17,7 @@ from typing import Callable
 
 from . import charts as C
 from . import tables as T
-from .core import THEMES, Run, apply_theme, dec, inline, load_sections, md, mm, neg, num, pct
+from .core import Run, dec, inline, load_sections, md, mm, neg, num, pct
 
 KIT = Path(__file__).resolve().parent
 CHROME_CANDIDATES = [
@@ -67,7 +67,6 @@ class Config:
     method_note: str = ""             # 附录“估值方法说明”追加的公司口径说明
     rating_note: str = "（首次）"
     output_name: str = ""             # PDF 另存名（如“贵州茅台0929.pdf”），留空只输出 report.pdf
-    theme: str = "navy"               # 配色主题（core.THEMES）；命令行 --theme 可覆盖
 
 
 # ------------------------------------------------------------------ 图表编号与目录
@@ -345,9 +344,8 @@ def appendix(doc: Doc, cfg: Config, forecast_secs: str = "盈利预测与估值�
 
 # ------------------------------------------------------------------ 渲染
 def css(cfg: Config, run: Run) -> str:
-    from .core import THEMES
     name = cfg.report_name or f"{run.period} 年报深度点评"
-    return (((KIT / "report.css").read_text(encoding="utf-8") + THEMES[cfg.theme]["css"])
+    return ((KIT / "report.css").read_text(encoding="utf-8")
             .replace("__HEADER__", f"{cfg.company}（{cfg.ticker}）{name}")
             .replace("__KIND__", f"公司研究｜{cfg.kind}"))
 
@@ -415,14 +413,10 @@ def main(cfg: Config, body: Callable[[Doc, dict], str], argv: list[str] | None =
     ap.add_argument("--run-dir", required=True)
     ap.add_argument("--narrative", default=str(cfg.narrative))
     ap.add_argument("--no-pdf", action="store_true")
-    ap.add_argument("--theme", default=None, help="配色主题：" + "、".join(THEMES))
     args = ap.parse_args(argv)
-    if args.theme:
-        cfg.theme = args.theme
-    apply_theme(cfg.theme, body.__globals__)  # 公司脚本里导入的颜色常量一并切换
     run = Run(Path(args.run_dir))
     S = load_sections(Path(args.narrative))
-    out = run.dir / ("report" if cfg.theme == "navy" else f"report_{cfg.theme}")  # 非默认主题另存，不覆盖
+    out = run.dir / "report"
     html_path, doc = build(run, cfg, S, body, out)
     print("HTML：", html_path)
     if args.no_pdf:
@@ -436,7 +430,7 @@ def main(cfg: Config, body: Callable[[Doc, dict], str], argv: list[str] | None =
     shots = preview(pdf)
     if cfg.output_name:
         stem, suffix = Path(cfg.output_name).stem, Path(cfg.output_name).suffix or ".pdf"
-        named = pdf.with_name(stem + ("" if cfg.theme == "navy" else f"_{cfg.theme}") + suffix)
+        named = pdf.with_name(stem + suffix)
         named.write_bytes(pdf.read_bytes())
         print("另存：", named)
     print("PDF：", pdf, f"（{len(shots)} 页，图表 {doc.n} 个，预览与缩略图 {shots[0].parent}）")

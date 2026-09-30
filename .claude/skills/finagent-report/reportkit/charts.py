@@ -318,7 +318,7 @@ def bridge(run: Run, out: Path, span: float | None = None) -> str:
     ax.set_ylim(lo, high + (high - lo) * 0.08)
     hgrid(ax)
     ax.legend(handles=[Patch(color=NAVY, label="正向贡献"), Patch(color=BRICK, label="负向贡献")], frameon=False,
-              loc="upper right", ncol=2, handlelength=1)
+              loc="lower right", bbox_to_anchor=(1, 1.0), ncol=2, handlelength=1)  # 放在绘图区上方，避免压住高位的柱
     subtitle(ax, "单位：亿元" + ("（纵轴截断）" if lo > 0 else ""))
     return save(fig, out / "bridge.svg")
 
