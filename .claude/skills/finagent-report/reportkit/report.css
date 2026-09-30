@@ -3,8 +3,8 @@
   /* 表格、图注、侧栏：数字与西文用 Helvetica / Arial，汉字回退到楷体 */
   --sans: "Helvetica Neue", "Helvetica", "Arial", "Kaiti SC", "STKaiti", "KaiTi", "楷体", "KaiTi_GB2312", serif;
   --mono: "SF Mono", "Menlo", "Consolas", "Kaiti SC", "STKaiti", "KaiTi", monospace;
-  --ink: #1F2937; --muted: #6B7280; --rule: #D1D5DB; --light: #F3F5F8;
-  --navy: #1B365D; --slate: #8A9BB0; --brick: #B5482F; --teal: #2F6F6A;
+  --ink: #222222; --muted: #6F6A62; --rule: #D8D8D5; --light: #F8F5EE;
+  --navy: #C6342C; --slate: #235D96; --brick: #235D96; --teal: #2F6F6A;  /* 红色配色；变量名沿用角色名 */
 }
 
 @page {
@@ -175,3 +175,26 @@ figure.split figcaption { break-after: avoid; }
 .disclaimer-page h3 { font-size: 9.6pt; margin: 2.6mm 0 0.8mm; }
 .disclaimer-page p { margin: 0 0 1mm; }
 .toc-end { font-size: 1pt; color: #fff; line-height: 0; }
+
+/* ---------- 红色配色细节（元素级覆盖） ---------- */
+body { color: #222222; }
+h1 { color: #222222; }
+h2, h3, .kicker, .point-h, .toc-h, .disc-h { color: #CC2931; }
+h2 { border-bottom-color: #C6342C; }
+.subline { color: #222222; border-bottom-color: #C6342C; }
+p strong, li strong { color: #CC2931; }
+.cover::before { content: ""; display: block; height: 3.2mm; background: #C6342C; margin-bottom: 4mm; }
+.mast .brand { color: #C6342C; }
+.rating { border-top-color: #C6342C; border-bottom-color: #C6342C; }
+.rating b { color: #CC2931; }
+.kv.strong b, .fno, .toc-n { color: #A21316; }
+.side { background: #F8F5EE; padding: 2mm 2.6mm 3mm; }
+.side-h { color: #C6342C; border-bottom-color: #C6342C; }
+table.data tr.base td { background: #FBF0DC; }
+table.forecast th.est, table.forecast td.est { background: #FAF6EE; }
+table.fin { border-top-color: #C6342C; border-bottom-color: #C6342C; }
+table.fin th { background: #C6342C; }
+table.fin th.est { background: #A21316; }
+table.data tr.grp td { color: #A21316; background: #F8F5EE; }
+.kv, table.data td, table.fin td { border-bottom-color: #E8E6E1; }
+.disclaimer-page h3 { color: #CC2931; }
