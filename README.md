@@ -331,7 +331,7 @@ tests/           pytest；golden/ 为原插件引擎的产出快照（见 THIRD_
 
 | 手段 | 内容 | 当前结果 |
 |---|---|---|
-| 单元与集成测试 | `pytest -q tests`：流水线、Skill 与 Agent 一致性、季报拆分、三表、reportkit 在茅台 / 样例 / 亏损公司三种情形下渲染 | 94 个测试通过 |
+| 单元与集成测试 | `pytest -q tests`：流水线、Skill 与 Agent 一致性、季报拆分、三表、reportkit 在茅台 / 样例 / 亏损公司三种情形下渲染 | 93 个通过，5 个跳过（含 DeepSeek harness 测试） |
 | 评测 | `eval/run_eval.py`：字段抽取准确率，纠错召回率、准确率、误报数、错误类型准确率 | 样例上抽取 100%（35/35），纠错召回率与准确率均 100%，误报 0 |
 | 引擎一致性 | `test_golden.py` 对比原插件引擎快照，必须完全相等；`test_parity_reference.py` 随机输入逐项对照 | 通过 |
 | 真实年报 | 三家 2025 年报：facts 与 extras 校验 `ok: true`，文稿 guard `ok: true` | 见下表 |
@@ -347,6 +347,8 @@ tests/           pytest；golden/ 为原插件引擎的产出快照（见 THIRD_
 | 招商轮船 601872 | 19 页 · 48 个图表 | 7.51 元 | 20.15 元 | 卖出 | 油轮贡献主要利润；运价周期见顶假设；在手订单与杠杆上升 |
 
 估值参数均为起草的假设，股价为外部数据，结论高度依赖假设，不构成投资建议。
+宁德时代和招商轮船的 Opus 正式版 PDF 与模型保存在 `report/交付/`；它们使用统一的红色研报主题。
+`report/benchmarks/deepseek-v41-flash/` 另存 DeepSeek Flash 的原始试跑稿，仅用于模型对照，不经过真值表、数字护栏、估值建模和红色 PDF 排版流程，不能替代上述正式版。
 
 ---
 
@@ -418,6 +420,12 @@ python -m finagent ask "分析 data/samples/annual_report_2024.md（2024年报�
 ```
 
 评审复现：`--llm replay` 只读 `.cache/llm/` 缓存，不访问网络，缺缓存直接报错。
+
+### DeepSeek Flash 双公司对照测试（非正式研报）
+
+先运行 `python -m finagent.deepseek_harness prepare`，从仓库内宁德时代、招商轮船年报抽取带 PDF 物理页码的证据包，并核对文件 SHA-256 和页数。要真实调用 DeepSeek 官方 API，在被 Git 忽略的 `.env` 中填写 `DEEPSEEK_API_KEY`，再运行 `python -m finagent.deepseek_harness run`。程序固定使用 `deepseek-flash`，启用 thinking / high reasoning effort；不会改动 Agent 版本的默认模型。
+
+输出保存在 `runs/deepseek-v41-flash/`，包括证据包、分析框架、Markdown 初稿、基本引用检查及运行元数据。本次试跑的两份原始稿和具体人工复核问题在 `report/benchmarks/deepseek-v41-flash/`。自动检查只覆盖页码范围、数字段落引用和明显编辑占位符；它不能证明事实正确，也不生成红色主题 PDF。原始稿保留模型缺陷以便与 Opus 版对照，发布前必须回到真值表和年报逐项复核。
 
 ### 测试与评测
 

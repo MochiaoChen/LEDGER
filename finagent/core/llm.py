@@ -29,6 +29,7 @@ class LLMClient:
         self.s = settings or get_settings()
         self.cache_dir = Path(self.s.cache_dir)
         self.cache_dir.mkdir(parents=True, exist_ok=True)
+        self.last_call: dict[str, Any] = {}
 
     @property
     def enabled(self) -> bool:
@@ -42,14 +43,20 @@ class LLMClient:
         tools: list[dict[str, Any]] | None = None,
         json_mode: bool = False,
         purpose: str = "",
+        reasoning_effort: str | None = None,
     ) -> dict[str, Any]:
         """返回 OpenAI 格式的 message 对象（含 content / tool_calls）。"""
-        body: dict[str, Any] = {
-            "model": self.s.llm_model,
-            "messages": messages,
-            "temperature": self.s.llm_temperature,
-            "seed": self.s.llm_seed,
-        }
+        body: dict[str, Any] = {"model": self.s.llm_model, "messages": messages}
+        if self.s.llm_model == "deepseek-flash":
+            # V4.1 Flash defaults to thinking. Its API ignores temperature in
+            # thinking mode; an explicit effort makes benchmark runs comparable.
+            body["thinking"] = {"type": "enabled"}
+            body["reasoning_effort"] = reasoning_effort or "high"
+        else:
+            body["temperature"] = self.s.llm_temperature
+            body["seed"] = self.s.llm_seed
+            if reasoning_effort:
+                body["reasoning_effort"] = reasoning_effort
         if tools:
             body["tools"] = tools
         if json_mode:
@@ -74,6 +81,13 @@ class LLMClient:
             cache_hit = False
 
         message = resp["choices"][0]["message"]
+        self.last_call = {
+            "model": resp.get("model", self.s.llm_model),
+            "request_sha256": key,
+            "cache_hit": cache_hit,
+            "usage": resp.get("usage"),
+            "elapsed_ms": round((time.time() - t0) * 1000, 1),
+        }
         tracing.log(
             "llm_call",
             purpose=purpose,
