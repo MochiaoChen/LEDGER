@@ -1,0 +1,114 @@
+{
+  "company": "宁德时代",
+  "ticker": "300750",
+  "fiscal_year": 2025,
+  "source_pdf": "report/resources/宁德时代/300750_宁德时代_2025_年度报告.pdf",
+  "source_sha256": "c15272977147dee7e6935a38ea0e4fd6855370aabb106f54cfe20f7cf6048ec9",
+  "source_url": "https://disc.static.szse.cn/download/disc/disk03/finalpage/2026-03-10/f019f96b-b960-410b-b88f-08838a36d81b.PDF",
+  "selected_pages": [
+    7,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    19,
+    20,
+    21,
+    22,
+    23,
+    24,
+    25,
+    26,
+    27,
+    28,
+    29,
+    30,
+    31,
+    32,
+    33,
+    34,
+    35,
+    36,
+    37,
+    38,
+    39,
+    40,
+    93,
+    95,
+    96,
+    106,
+    111,
+    112,
+    113,
+    116,
+    117,
+    118,
+    119,
+    120,
+    121,
+    122,
+    123,
+    135,
+    136,
+    137,
+    200,
+    201,
+    202,
+    231
+  ],
+  "source_chars": 54653,
+  "model": "deepseek-flash",
+  "status": "draft_ready_for_review",
+  "created_at_utc": "2026-09-30T16:18:29.772728+00:00",
+  "framework_call": {
+    "model": "deepseek-flash",
+    "request_sha256": "0627384d5596521934bbc453c9a61988fc10c23168e34509b1955b16ce3b2cb9",
+    "cache_hit": false,
+    "usage": {
+      "prompt_tokens": 31853,
+      "completion_tokens": 6961,
+      "total_tokens": 38814,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      },
+      "completion_tokens_details": {
+        "reasoning_tokens": 3238
+      },
+      "prompt_cache_hit_tokens": 0,
+      "prompt_cache_miss_tokens": 31853
+    },
+    "elapsed_ms": 26336.6
+  },
+  "report_call": {
+    "model": "deepseek-flash",
+    "request_sha256": "201e740a6ed01d11303fac19d44c870c3fa92b9e87679c4b4c80fd22d25e5143",
+    "cache_hit": false,
+    "usage": {
+      "prompt_tokens": 35530,
+      "completion_tokens": 14361,
+      "total_tokens": 49891,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      },
+      "completion_tokens_details": {
+        "reasoning_tokens": 9932
+      },
+      "prompt_cache_hit_tokens": 0,
+      "prompt_cache_miss_tokens": 35530
+    },
+    "elapsed_ms": 67071.8
+  },
+  "quality_check": {
+    "citation_count": 80,
+    "invalid_citation_pages": [],
+    "numeric_paragraphs_without_citation": [],
+    "editorial_placeholders": [],
+    "requires_human_review": true,
+    "status": "draft_ready_for_review"
+  }
+}

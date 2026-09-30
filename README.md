@@ -172,6 +172,31 @@ Agent 模式（由 LLM 自主规划调用工具）：
 python -m finagent ask "分析 data/samples/annual_report_2024.md（2024年报），再用 data/samples/valuation_assumptions.json 估值"
 ```
 
+### DeepSeek-V4.1-Flash 双公司报告测试
+
+负责人要求的宁德时代、招商轮船两份年报已在 `report/resources/`。报告测试工具会校验年报哈希，
+抽取管理层讨论与财务报表关键页，保存带 PDF 物理页码的证据包，再调用官方 API 的
+`deepseek-flash`（V4.1-Flash，thinking effort 为 high）生成分析框架和两份 Markdown 初稿。
+生成结果是待人工审核的模型对照稿，不含没有输入依据的股价、目标价或评级。
+
+先离线检查输入，无需 Key：
+
+```bash
+python -m finagent.deepseek_harness prepare
+```
+
+真实调用时，在仓库根目录的 `.env` 中填入 `DEEPSEEK_API_KEY=sk-...`（`.env` 已被 Git 忽略），然后运行：
+
+```bash
+python -m finagent.deepseek_harness run
+```
+
+每家公司会在 `runs/deepseek-v41-flash/<股票代码>_<公司>/` 下得到
+`source_pack.md`、`framework.json`、`report_draft.md`、`qa.json` 与 `manifest.json`。
+`manifest.json` 保存模型、年报哈希、选用页码、请求哈希、耗时和 token 用量；`qa.json` 标出缺失或无效的页码引用。
+本次双公司试跑的原始对照稿和复核说明另存于 `report/benchmarks/deepseek-v41-flash/`。
+自动检查还会标出明显编辑占位符；报告交付前仍须逐条核对年报原文、财务口径和推论。
+
 ### 复现（评审用）
 
 ```bash
