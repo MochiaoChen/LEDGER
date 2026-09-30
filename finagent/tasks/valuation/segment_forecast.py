@@ -59,6 +59,9 @@ def build(spec: dict[str, Any], extras: dict[str, Any], truth_table: list[dict[s
                                          "gross_margin": 1 - cogs / rev, "opex_pct": opex / rev,
                                          "expense_ratios": hist_ratio},
                            "scenarios": {}}
+    for key in ("volume_unit", "price_label", "price_unit"):  # 可选：销量单位与单价名称（缺省为吨 / 吨价 / 万元/吨），只影响工作簿表头
+        if spec.get(key):
+            out[key] = spec[key]
     for k in SCENARIOS:
         segs = []
         tot_rev = [other_rev] * n

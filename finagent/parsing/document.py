@@ -161,6 +161,8 @@ def _parse_pdf(path: Path) -> list[Chunk]:
             text = page.extract_text() or ""
             units = UNIT_RE.findall(text)
             page_unit = units[0] if units else unit
+            # 同一页有多个“单位：”声明时（如上表亿元、下表元），每张表取其上方最近的声明
+            marks = _unit_marks(page) if len(set(units)) > 1 else []
             bottom = 0.0
             for table in page.find_tables():
                 rows = [[(c or "").strip() for c in r] for r in table.extract() if any(r)]
@@ -168,8 +170,10 @@ def _parse_pdf(path: Path) -> list[Chunk]:
                     continue
                 caption = _caption_above(page, table.bbox[1], bottom) or caption
                 bottom = table.bbox[3]
+                above = [u for top, u in marks if top < table.bbox[1]]
+                t_unit = above[-1] if above else (unit if marks else page_unit) or page_unit
                 chunks.append(Chunk(f"c{len(chunks) + 1:04d}", str(path), pno, "table",
-                                    rows_to_markdown(rows), rows=rows, unit_hint=page_unit, caption=caption))
+                                    rows_to_markdown(rows), rows=rows, unit_hint=t_unit, caption=caption))
             # 页末标题（表格在下一页开始）：下一页表格上方没有标题时沿用它，而不是沿用更早的表格标题
             caption = _caption_above(page, page.height, bottom) or caption
             for para in re.split(r"\n\s*\n", text):
@@ -179,6 +183,20 @@ def _parse_pdf(path: Path) -> list[Chunk]:
             if units:
                 unit = units[-1]
     return chunks
+
+
+def _unit_marks(page: Any) -> list[tuple[float, str]]:
+    """页内各“单位：”声明的纵向位置与单位，按从上到下排序。"""
+    try:
+        found = page.search(UNIT_RE.pattern)
+    except Exception:  # noqa: BLE001  旧版 pdfplumber 无 search 时退回整页单位
+        return []
+    out = []
+    for m in found:
+        um = UNIT_RE.search(m.get("text", ""))
+        if um:
+            out.append((float(m["top"]), um.group(1)))
+    return sorted(out)
 
 
 TITLE_RE = re.compile(r"表|^[一二三四五六七八九十]+、|^（[一二三四五六七八九十]+）|^\d+[、.]|^[（(]\d+[)）]")
