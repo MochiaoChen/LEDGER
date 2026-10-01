@@ -1,0 +1,38 @@
+{
+  "company": "宁德时代",
+  "fiscal_year": 2025,
+  "currency": "CNY",
+  "note": "本文件为分析师起草的估值假设（观点/假设，非公司披露），需用户确认后方可用于估值。",
+  "scenarios": {
+    "bear": {
+      "revenue_growth": [0.05, 0.05, 0.05],
+      "capex_percent_revenue": 0.10,
+      "terminal_growth_rate": 0.020,
+      "wacc_adjustment": 0.010
+    },
+    "base": {
+      "revenue_growth": [0.15, 0.13, 0.12],
+      "capex_percent_revenue": 0.09,
+      "terminal_growth_rate": 0.025,
+      "wacc_adjustment": 0.000
+    },
+    "bull": {
+      "revenue_growth": [0.25, 0.22, 0.20],
+      "capex_percent_revenue": 0.08,
+      "terminal_growth_rate": 0.030,
+      "wacc_adjustment": -0.010
+    }
+  },
+  "three_statement": {
+    "dividend_payout": 0.50,
+    "gross_margin_shift": {"bear": -0.010, "base": 0.000, "bull": 0.010},
+    "ar_days_shift": {"bear": 5.0, "base": 0.0, "bull": -5.0}
+  },
+  "non_operating_assets": [
+    {"label": "货币资金", "raw_value": "333,512,927", "unit": "千元", "page": 111, "sign": 1},
+    {"label": "交易性金融资产", "raw_value": "58,993,528", "unit": "千元", "page": 111, "sign": 1},
+    {"label": "长期股权投资", "raw_value": "64,884,321", "unit": "千元", "page": 111, "sign": 1},
+    {"label": "其他权益工具投资", "raw_value": "16,296,853", "unit": "千元", "page": 111, "sign": 1},
+    {"label": "其他非流动金融资产", "raw_value": "2,882,264", "unit": "千元", "page": 112, "sign": 1}
+  ]
+}

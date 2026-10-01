@@ -18,6 +18,7 @@ NAVY, SLATE, LIGHT, BRICK, NEUTRAL, GRID, INK, MUTED, GOLD, NAVY2, LIGHT2 = (
     "#A21316", "#235D96", "#F2DAB3", "#235D96", "#9A958C", "#D8D8D5", "#222222", "#6F6A62", "#E0B97A",
     "#C6342C", "#F8F0E0")
 PALETTE = [NAVY, SLATE, GOLD, NAVY2, LIGHT, BRICK]  # 多系列时按序取色
+PALE_BLUE = "#A9C4D9"  # 首页预测期归母净利润；与浅金色预测收入明确区分
 HEAT_POS, HEAT_NEG = (162, 19, 22), (35, 93, 150)  # 敏感性热力表：高于 / 低于参考股价
 MM = 1 / 25.4
 FULL, HALF = 172, 83  # 通栏、半栏宽度（mm）

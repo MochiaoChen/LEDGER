@@ -1,0 +1,56 @@
+{
+  "run_id": "20261001-235938-financials",
+  "task": "financials",
+  "status": "ok",
+  "started_at": "2026-10-01T23:59:38",
+  "elapsed_sec": 7.273,
+  "python": "3.12.14",
+  "platform": "macOS-26.6.2-arm64-arm-64bit",
+  "config": {
+    "llm_base_url": "https://api.deepseek.com/v1",
+    "llm_model": "deepseek-flash",
+    "llm_api_key": "",
+    "llm_mode": "off",
+    "llm_temperature": 0.0,
+    "llm_seed": 42,
+    "llm_timeout": 120.0,
+    "cache_dir": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/.cache/llm",
+    "runs_dir": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/results/招商轮船/runs",
+    "task": "financials",
+    "llm_extract": "fallback",
+    "extraction": "skill",
+    "argv": [
+      "financials",
+      "--input",
+      "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+      "--year",
+      "2025",
+      "--facts",
+      "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/results/招商轮船/facts.json",
+      "--company",
+      "招商轮船",
+      "--llm",
+      "off",
+      "--runs-dir",
+      "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/results/招商轮船/runs",
+      "--extras",
+      "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/results/招商轮船/extras.json"
+    ]
+  },
+  "inputs": {
+    "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf": "3fe6f99980f9f0c2ac241e2f826660141d118af2fe53eafab49e146ef9464a18",
+    "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/results/招商轮船/facts.json": "eb7432974ed3643f28c96aacd886c3628dc66aad1908bd3b9ac7520fd5f248b7",
+    "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/results/招商轮船/extras.json": "604e42d36b9f48cc89dd9e897178b3246d6411a8e8b6bed87ca490af6624eb78"
+  },
+  "artifacts": {
+    "financials/skill_extraction.json": "a4b7a48ce1039af2baefb765fcd4971143249b084c6440a1614349a47fb510d7",
+    "financials/facts.json": "56e78de3685ac3b40f3eb0958a0e76b546483abdb5b270983e2e72f30cab84a9",
+    "financials/facts.csv": "e8578d00d0582c9c235b2ba08d9b69df42b728a4637769d7e3e319a5ab226a85",
+    "financials/analysis.json": "88c5157a56d957401fc3dd7137cd942f0fb2114c847ae537558e1c2f765ee82f",
+    "financials/extras.json": "6ddd6013d8e02675abf462d66e7c0d15ea7f2b1ec23fabcb369d60c07d475938",
+    "financials/earnings.json": "9e9a7a387989f1c258595130b3a4144b574d48a9d0b06e8348f146b864e80d80",
+    "financials/report.md": "f20ba04baf0b24f1aa2344af495961d4fadd9a5c9bb70343070a84c1f68b62d1",
+    "summary.json": "5ba50859effa9cc2a9f4f9a1ef01102ef26d594b20fd210e666fe3ad6989170f"
+  },
+  "event_count": 29
+}
