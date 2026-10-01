@@ -35,12 +35,44 @@ def test_workspace_contains_only_skills_engine_and_one_company(ws):
 def test_workspace_guide_and_permissions(ws):
     meta = json.loads((ws / "sample.json").read_text(encoding="utf-8"))
     assert meta["verified_source"] and meta["inputs"]["market"]["current_price"] == 1500.0
-    guide = (ws / "CLAUDE.md").read_text(encoding="utf-8")
+    # 说明写在 AGENTS.md，Claude Code 通过 CLAUDE.md 引用同一份；skill 在 .agents/skills 有指向全文的入口
+    assert (ws / "CLAUDE.md").read_text(encoding="utf-8") == "@AGENTS.md\n"
+    guide = (ws / "AGENTS.md").read_text(encoding="utf-8")
+    for name in rp.SKILLS:
+        stub = (ws / ".agents/skills" / name / "SKILL.md").read_text(encoding="utf-8")
+        assert f"name: {name}" in stub and f".claude/skills/{name}/SKILL.md" in stub
+    assert not (ws / ".agents/skills/finagent-pipeline").exists()
     assert "贵州茅台 2025" in guide and "1500.0" in guide and "测试行情" in guide
     assert "report_pipeline status" in guide and "读取边界" in guide
     perms = json.loads((ws / ".claude/settings.json").read_text(encoding="utf-8"))["permissions"]
     assert f"Read(/{ROOT.parent.as_posix()}/**)" in perms["deny"]
     assert "Edit(./finagent/**)" in perms["deny"] and "Write(./.claude/**)" in perms["deny"]
+    assert "Edit(./AGENTS.md)" in perms["deny"]
+    assert "MPLCONFIGDIR" in (ws / "py").read_text(encoding="utf-8")
+
+
+def test_repo_agent_skill_stubs_in_sync():
+    names = sorted(p.name for p in (ROOT / ".claude/skills").iterdir() if (p / "SKILL.md").is_file())
+    assert sorted(p.name for p in (ROOT / ".agents/skills").iterdir()) == names
+    for name in names:
+        assert (ROOT / ".agents/skills" / name / "SKILL.md").read_text(encoding="utf-8") == rp.skill_stub(name, ROOT), \
+            "运行 python -m finagent.report_pipeline sync-skills"
+
+
+def test_agent_commands_and_usage(tmp_path):
+    claude = rp.agent_command("claude", "opus")
+    assert claude[:2] == ["claude", "-p"] and "stream-json" in claude and claude[-2:] == ["--model", "opus"]
+    codex = rp.agent_command("codex")
+    assert codex[:2] == ["codex", "exec"] and "--skip-git-repo-check" in codex and codex[-1] == rp.TASK_PROMPT
+    log = tmp_path / "c.jsonl"
+    log.write_text("\n".join(json.dumps(e) for e in [
+        {"type": "assistant", "message": {"content": [{"type": "text", "text": "开始"}]}},
+        {"type": "result", "num_turns": 12, "total_cost_usd": 3.5,
+         "usage": {"input_tokens": 10, "cache_read_input_tokens": 90, "output_tokens": 7}}]), encoding="utf-8")
+    assert rp._usage(log, "claude") == {"turns": 12, "cost_usd": 3.5, "input_tokens": 100, "output_tokens": 7}
+    log.write_text("\n".join(json.dumps({"type": "turn.completed", "usage": {"input_tokens": 5, "output_tokens": 2}})
+                             for _ in range(2)) + "\nnot json", encoding="utf-8")
+    assert rp._usage(log, "codex") == {"input_tokens": 10, "output_tokens": 4}
 
 
 def test_build_guards(tmp_path):
@@ -53,6 +85,8 @@ def test_build_guards(tmp_path):
     rp.build("贵州茅台", 2025, tmp_path)
     with pytest.raises(SystemExit, match="已存在"):
         rp.build("贵州茅台", 2025, tmp_path)
+    tagged = rp.build("贵州茅台", 2025, tmp_path, tag="codex")
+    assert tagged.name == "贵州茅台_2025_codex" and (tagged / "data/extractions/贵州茅台_2025").is_dir()
 
 
 def test_status_gates_and_collect(ws, tmp_path):
@@ -79,3 +113,9 @@ def test_status_gates_and_collect(ws, tmp_path):
     assert (root / out["extractions"] / "report/framework.md").is_file()
     with pytest.raises(SystemExit, match="overwrite"):
         rp.collect(ws, root=root, force=True)
+    assert "extractions" not in rp.collect(ws, root=root, force=True, delivery_only=True)
+
+    row = rp.scorecard(ws)
+    assert row["stages_passed"] == 0 and not row["done"] and row["valuation_runs"] == 0
+    table = rp.scorecard_markdown([row])
+    assert "闸门/8" in table and "未完成" in table and "不代表研报质量" in table

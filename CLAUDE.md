@@ -53,8 +53,9 @@
 - 研报生成抽成独立 Skill `.claude/skills/finagent-report/`：共用代码 reportkit（读产物、标准图表与原语、目录、附录、免责声明、打印）、编排与文稿模板、行业框架；茅台脚本只保留专属部分。
 - 研报流水线 `finagent/report_pipeline.py`：`build` 为单家公司搭隔离工作区（两个 skill + 引擎 + 该公司年报 + 外部输入，
   建在仓库目录树之外），工作区 CLAUDE.md 按阶段规定读什么、闸门是什么；`status` 逐阶段核对（含过期检测）；
-  `run` 无头启动 Claude Code；`collect` 把产物收回仓库。新公司出研报走这条流水线。
-- 102 个测试通过。
+  `run --agent claude|codex` 无头执行；`collect` 把产物收回仓库；`scorecard` 多工作区对比测评。
+  入口 skill `finagent-pipeline`；`.agents/skills/` 是 Codex 用的入口（`sync-skills` 生成）。新公司出研报走这条流水线。
+- 104 个测试通过。
 
 **按优先级待做**：
 1. **真实 A 股年报联调**（两个版本都要测）：茅台已跑通 Skill 版本；规则通道仍取不到跨页表格续页（续页无表头），

@@ -411,7 +411,7 @@ python -m finagent.report_pipeline build --company 恒瑞医药 --year 2025 --al
 ```
 
 ```bash
-python -m finagent.report_pipeline run --workspace ~/finagent-samples/恒瑞医药_2025
+python -m finagent.report_pipeline run --workspace ~/finagent-samples/恒瑞医药_2025 --agent claude
 ```
 
 ```bash
@@ -421,15 +421,26 @@ python -m finagent.report_pipeline collect --workspace ~/finagent-samples/恒瑞
 - `build`：工作区默认建在 `~/finagent-samples/`（`--dest` 或 `FINAGENT_SAMPLES_DIR` 可改），必须在仓库目录树之外，
   避免 Claude Code 沿父目录加载仓库的 CLAUDE.md 和上级目录的原插件代码。目录结构与仓库一致，skill 里的路径照常可用。
   不在 `manifest.json` 已核验清单里的年报需要 `--allow-unverified`。股价、可比公司是外部数据，由人给出并注明来源。
-- 工作区的 `CLAUDE.md` 是流水线说明：8 个阶段（财务抽取 → 分析框架 → 经营数据 → 估值假设 → 估值运行 → 文稿 →
+- 工作区说明写在 `AGENTS.md`（Codex 直接读，`CLAUDE.md` 只有一行 `@AGENTS.md` 引用它），是流水线说明：8 个阶段（财务抽取 → 分析框架 → 经营数据 → 估值假设 → 估值运行 → 文稿 →
   排版 → 交付说明），每个阶段写明这时才读哪份 skill 文档、闸门是什么；明确不读引擎源码、运行产物全文和工作区外的内容。
   `.claude/settings.json` 禁止读仓库及上级目录、禁止改引擎和 skill。
 - `status`（工作区内 `./py -m finagent.report_pipeline status`）逐阶段核对闸门：verify-facts / verify-extra 通过、
   估值运行晚于输入文件、guard 核对的是当前文稿、PDF 晚于文稿与脚本。改了前面的文件，后面的阶段自动标为过期。
   上下文被压缩后模型先跑它，不必重读已完成阶段。
-- `run` 在工作区里无头启动 `claude -p`；也可以在 Claude Code 里直接打开工作区目录，把 `TASK.md` 作为第一条消息。
+- `run --agent claude|codex [--model ...]` 在工作区里无头执行（`claude -p` / `codex exec`），事件流存 `.pipeline/agents/`，
+  耗时、token、费用记在 `.pipeline/agent_runs.json`；也可以在 Claude Code 或 Codex 里直接打开工作区，把 `TASK.md` 作为第一条消息。
+  Claude Code 在未信任目录里会忽略 settings 的 allow，`run` 用 `--allowedTools` 传入同一份清单；deny 照常生效。
 - `collect` 在闸门全部通过后把抽取与文稿收回 `data/extractions/<公司>_<年度>/`、运行目录收回 `runs/`、
   PDF 与估值模型放到 `report/交付/<MMDD> <公司> <label>/`。
+- **测评**：同一公司、相同输入，`build --tag opus` / `--tag codex` 各搭一个工作区，分别 `run`，再
+  `scorecard --workspace A --workspace B --out 对比.md` 出对比表（闸门、抽取规模、估值迭代次数、guard、字数、页数、图表、
+  评级、DCF、耗时、token、费用）。这些是客观计数，不代表研报质量，分析深度要人读 PDF 判断。`collect --delivery-only`
+  只收交付物，不覆盖抽取文件。
+- **Skill 入口**：`finagent-pipeline`（`.claude/skills/`）把上面的流程写成 skill，Claude Code 和 Codex 都能调用；
+  `.agents/skills/` 是给 Codex 等工具的入口（正文指向 `.claude/skills/`，改了 skill 描述后跑 `sync-skills`）。
+  仓库根目录 `AGENTS.md` 指向 CLAUDE.md。
+- 已知限制：Codex 路径未实测（本机无 Codex CLI）；Codex 沙箱只允许写工作区，无头 Chrome 打印 PDF 需要写用户目录，
+  可能在排版阶段失败，届时在沙箱外补跑 `build_report.py`。
 
 ### Agent 版本（国产大模型）
 
