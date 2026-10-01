@@ -401,6 +401,36 @@ python data/extractions/宁德时代_2025/report/build_report.py --run-dir runs/
 辅助命令：`locate`（关键页定位）、`schema`（指标清单）、`verify-facts`、`verify-extra`、`guard`。
 季报用 `--supplement 季报.pdf`（可多次），抽取条目写 `source_file`。
 
+### 研报流水线（新公司出深度研报）
+
+为新公司出研报时，不要在仓库里直接让模型开工：仓库里有其他公司的抽取、文稿和交付物，模型容易读进来浪费上下文、
+照抄别家的框架。改用流水线搭一个**隔离工作区**，里面只有两个 skill、计算引擎、这一家公司的年报和外部输入：
+
+```bash
+python -m finagent.report_pipeline build --company 恒瑞医药 --year 2025 --allow-unverified --price <股价> --price-source "<来源>"
+```
+
+```bash
+python -m finagent.report_pipeline run --workspace ~/finagent-samples/恒瑞医药_2025
+```
+
+```bash
+python -m finagent.report_pipeline collect --workspace ~/finagent-samples/恒瑞医药_2025 --label Opus
+```
+
+- `build`：工作区默认建在 `~/finagent-samples/`（`--dest` 或 `FINAGENT_SAMPLES_DIR` 可改），必须在仓库目录树之外，
+  避免 Claude Code 沿父目录加载仓库的 CLAUDE.md 和上级目录的原插件代码。目录结构与仓库一致，skill 里的路径照常可用。
+  不在 `manifest.json` 已核验清单里的年报需要 `--allow-unverified`。股价、可比公司是外部数据，由人给出并注明来源。
+- 工作区的 `CLAUDE.md` 是流水线说明：8 个阶段（财务抽取 → 分析框架 → 经营数据 → 估值假设 → 估值运行 → 文稿 →
+  排版 → 交付说明），每个阶段写明这时才读哪份 skill 文档、闸门是什么；明确不读引擎源码、运行产物全文和工作区外的内容。
+  `.claude/settings.json` 禁止读仓库及上级目录、禁止改引擎和 skill。
+- `status`（工作区内 `./py -m finagent.report_pipeline status`）逐阶段核对闸门：verify-facts / verify-extra 通过、
+  估值运行晚于输入文件、guard 核对的是当前文稿、PDF 晚于文稿与脚本。改了前面的文件，后面的阶段自动标为过期。
+  上下文被压缩后模型先跑它，不必重读已完成阶段。
+- `run` 在工作区里无头启动 `claude -p`；也可以在 Claude Code 里直接打开工作区目录，把 `TASK.md` 作为第一条消息。
+- `collect` 在闸门全部通过后把抽取与文稿收回 `data/extractions/<公司>_<年度>/`、运行目录收回 `runs/`、
+  PDF 与估值模型放到 `report/交付/<MMDD> <公司> <label>/`。
+
 ### Agent 版本（国产大模型）
 
 ```bash
