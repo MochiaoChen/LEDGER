@@ -1,0 +1,6382 @@
+{
+  "tables": [
+    {
+      "id": "segment",
+      "title": "主营业务分行业情况",
+      "page": 21,
+      "columns": [
+        {
+          "name": "营业收入",
+          "unit": "元"
+        },
+        {
+          "name": "营业成本",
+          "unit": "元"
+        },
+        {
+          "name": "毛利率",
+          "unit": "%"
+        },
+        {
+          "name": "营业收入同比",
+          "unit": "%"
+        },
+        {
+          "name": "营业成本同比",
+          "unit": "%"
+        },
+        {
+          "name": "毛利率同比",
+          "unit": "pp"
+        }
+      ],
+      "rows": [
+        {
+          "label": "油轮运输",
+          "alias": [
+            "油轮",
+            "油轮板块",
+            "油轮分部"
+          ],
+          "raw": [
+            "10,289,276,515.57",
+            "6,183,185,067.42",
+            "39.91",
+            "11.77",
+            "3.29",
+            "4.94"
+          ],
+          "values": [
+            10289276515.57,
+            6183185067.42,
+            39.91,
+            11.77,
+            3.29,
+            4.94
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 21,
+              "chunk_id": "c0042"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 21,
+              "chunk_id": "c0042"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 21,
+              "chunk_id": "c0042"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 21,
+              "chunk_id": "c0042"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 21,
+              "chunk_id": "c0042"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 21,
+              "chunk_id": "c0042"
+            }
+          ]
+        },
+        {
+          "label": "散货船运输",
+          "alias": [
+            "散货",
+            "干散货",
+            "散货船",
+            "干散货板块",
+            "散货分部"
+          ],
+          "raw": [
+            "8,769,388,393.77",
+            "7,301,344,253.81",
+            "16.74",
+            "10.44",
+            "20.20",
+            "-6.76"
+          ],
+          "values": [
+            8769388393.77,
+            7301344253.81,
+            16.74,
+            10.44,
+            20.2,
+            -6.76
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 21,
+              "chunk_id": "c0042"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 21,
+              "chunk_id": "c0042"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 21,
+              "chunk_id": "c0042"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 21,
+              "chunk_id": "c0042"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 21,
+              "chunk_id": "c0042"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 21,
+              "chunk_id": "c0042"
+            }
+          ]
+        },
+        {
+          "label": "集装箱运输",
+          "alias": [
+            "集运",
+            "集装箱",
+            "集装箱板块",
+            "集运分部"
+          ],
+          "raw": [
+            "6,149,215,176.25",
+            "4,770,483,686.04",
+            "22.42",
+            "13.15",
+            "25.30",
+            "-7.52"
+          ],
+          "values": [
+            6149215176.25,
+            4770483686.04,
+            22.42,
+            13.15,
+            25.3,
+            -7.52
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 21,
+              "chunk_id": "c0042"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 21,
+              "chunk_id": "c0042"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 21,
+              "chunk_id": "c0042"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 21,
+              "chunk_id": "c0042"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 21,
+              "chunk_id": "c0042"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 21,
+              "chunk_id": "c0042"
+            }
+          ]
+        },
+        {
+          "label": "滚装船运输",
+          "alias": [
+            "滚装",
+            "滚装板块",
+            "滚装分部"
+          ],
+          "raw": [
+            "1,690,427,764.64",
+            "1,273,259,244.68",
+            "24.68",
+            "-7.97",
+            "-0.83",
+            "-5.42"
+          ],
+          "values": [
+            1690427764.64,
+            1273259244.68,
+            24.68,
+            -7.97,
+            -0.83,
+            -5.42
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 21,
+              "chunk_id": "c0042"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 21,
+              "chunk_id": "c0042"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 21,
+              "chunk_id": "c0042"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 21,
+              "chunk_id": "c0042"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 21,
+              "chunk_id": "c0042"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 21,
+              "chunk_id": "c0042"
+            }
+          ]
+        },
+        {
+          "label": "LNG运输",
+          "alias": [
+            "LNG"
+          ],
+          "raw": [
+            "54,949,095.27",
+            "39,085,391.28",
+            "28.87",
+            "83.16",
+            "144.28",
+            "-17.80"
+          ],
+          "values": [
+            54949095.27,
+            39085391.28,
+            28.87,
+            83.16,
+            144.28,
+            -17.8
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 21,
+              "chunk_id": "c0042"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 21,
+              "chunk_id": "c0042"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 21,
+              "chunk_id": "c0042"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 21,
+              "chunk_id": "c0042"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 21,
+              "chunk_id": "c0042"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 21,
+              "chunk_id": "c0042"
+            }
+          ]
+        }
+      ],
+      "note": "毛利率同比为原文“增加/减少 X 个百分点”，减少记为负数"
+    },
+    {
+      "id": "seg_brief",
+      "title": "主要业务板块收入、成本及利润（管理口径）",
+      "page": 20,
+      "columns": [
+        {
+          "name": "营业收入",
+          "unit": "元"
+        },
+        {
+          "name": "营业收入同比",
+          "unit": "%"
+        },
+        {
+          "name": "净利润",
+          "unit": "元"
+        },
+        {
+          "name": "净利润同比",
+          "unit": "%"
+        }
+      ],
+      "rows": [
+        {
+          "label": "油轮船队",
+          "alias": [
+            "油轮船队"
+          ],
+          "raw": [
+            "102.89",
+            "11.77",
+            "41.91",
+            "59.06"
+          ],
+          "values": [
+            10289000000.0,
+            11.77,
+            4190999999.9999995,
+            59.06
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 20,
+              "chunk_id": "c0039"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 20,
+              "chunk_id": "c0039"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 20,
+              "chunk_id": "c0039"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 20,
+              "chunk_id": "c0039"
+            }
+          ]
+        },
+        {
+          "label": "干散货船队",
+          "alias": [
+            "干散货船队"
+          ],
+          "raw": [
+            "87.69",
+            "10.45",
+            "11.35",
+            "-26.69"
+          ],
+          "values": [
+            8769000000.0,
+            10.45,
+            1135000000.0,
+            -26.69
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 20,
+              "chunk_id": "c0039"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 20,
+              "chunk_id": "c0039"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 20,
+              "chunk_id": "c0039"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 20,
+              "chunk_id": "c0039"
+            }
+          ]
+        },
+        {
+          "label": "集装箱船队",
+          "alias": [
+            "集装箱船队"
+          ],
+          "raw": [
+            "61.49",
+            "13.16",
+            "13.59",
+            "3.46"
+          ],
+          "values": [
+            6149000000.0,
+            13.16,
+            1359000000.0,
+            3.46
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 20,
+              "chunk_id": "c0039"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 20,
+              "chunk_id": "c0039"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 20,
+              "chunk_id": "c0039"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 20,
+              "chunk_id": "c0039"
+            }
+          ]
+        },
+        {
+          "label": "滚装船队",
+          "alias": [
+            "滚装船队"
+          ],
+          "raw": [
+            "16.90",
+            "-7.98",
+            "2.29",
+            "-31.91"
+          ],
+          "values": [
+            1689999999.9999998,
+            -7.98,
+            229000000.0,
+            -31.91
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 20,
+              "chunk_id": "c0039"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 20,
+              "chunk_id": "c0039"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 20,
+              "chunk_id": "c0039"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 20,
+              "chunk_id": "c0039"
+            }
+          ]
+        },
+        {
+          "label": "LNG船队",
+          "alias": [
+            "LNG船队"
+          ],
+          "raw": [
+            "0.55",
+            "83.16",
+            "6.71",
+            "11.08"
+          ],
+          "values": [
+            55000000.00000001,
+            83.16,
+            671000000.0,
+            11.08
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 20,
+              "chunk_id": "c0039"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 20,
+              "chunk_id": "c0039"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 20,
+              "chunk_id": "c0039"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 20,
+              "chunk_id": "c0039"
+            }
+          ]
+        }
+      ],
+      "note": ""
+    },
+    {
+      "id": "seg_pl",
+      "title": "报告分部的财务信息",
+      "page": 236,
+      "columns": [
+        {
+          "name": "对外交易收入",
+          "unit": "元"
+        },
+        {
+          "name": "营业成本及费用",
+          "unit": "元"
+        },
+        {
+          "name": "投资收益",
+          "unit": "元"
+        },
+        {
+          "name": "资产处置收益",
+          "unit": "元"
+        },
+        {
+          "name": "营业利润",
+          "unit": "元"
+        },
+        {
+          "name": "利润总额",
+          "unit": "元"
+        },
+        {
+          "name": "净利润",
+          "unit": "元"
+        },
+        {
+          "name": "资产总额",
+          "unit": "元"
+        },
+        {
+          "name": "负债总额",
+          "unit": "元"
+        },
+        {
+          "name": "折旧和摊销费用",
+          "unit": "元"
+        },
+        {
+          "name": "资本性支出",
+          "unit": "元"
+        }
+      ],
+      "rows": [
+        {
+          "label": "油轮运输",
+          "alias": [
+            "油轮",
+            "油轮板块",
+            "油轮分部"
+          ],
+          "raw": [
+            "10,289,276,515.57",
+            "6,754,774,149.29",
+            null,
+            "656,191,495.59",
+            "4,184,069,194.21",
+            "4,191,392,310.22",
+            "4,191,240,144.95",
+            "26,576,637,620.42",
+            "13,264,490,583.18",
+            "1,644,956,776.27",
+            "2,445,906,700.02"
+          ],
+          "values": [
+            10289276515.57,
+            6754774149.29,
+            null,
+            656191495.59,
+            4184069194.21,
+            4191392310.22,
+            4191240144.95,
+            26576637620.42,
+            13264490583.18,
+            1644956776.27,
+            2445906700.02
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 236,
+              "chunk_id": "c0548"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 236,
+              "chunk_id": "c0548"
+            },
+            null,
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 236,
+              "chunk_id": "c0548"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 236,
+              "chunk_id": "c0548"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 236,
+              "chunk_id": "c0548"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 236,
+              "chunk_id": "c0548"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 236,
+              "chunk_id": "c0548"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 236,
+              "chunk_id": "c0548"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 236,
+              "chunk_id": "c0548"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 236,
+              "chunk_id": "c0548"
+            }
+          ]
+        },
+        {
+          "label": "散货船运输",
+          "alias": [
+            "散货",
+            "干散货",
+            "散货船",
+            "干散货板块",
+            "散货分部"
+          ],
+          "raw": [
+            "8,769,388,393.77",
+            "7,774,234,244.45",
+            "32,479,534.01",
+            "27,323,837.38",
+            "1,063,832,800.35",
+            "1,137,077,698.67",
+            "1,134,800,725.14",
+            "23,996,950,421.89",
+            "7,827,323,583.58",
+            "1,423,033,157.63",
+            "3,346,133,144.44"
+          ],
+          "values": [
+            8769388393.77,
+            7774234244.45,
+            32479534.01,
+            27323837.38,
+            1063832800.35,
+            1137077698.67,
+            1134800725.14,
+            23996950421.89,
+            7827323583.58,
+            1423033157.63,
+            3346133144.44
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 236,
+              "chunk_id": "c0548"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 236,
+              "chunk_id": "c0548"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 236,
+              "chunk_id": "c0548"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 236,
+              "chunk_id": "c0548"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 236,
+              "chunk_id": "c0548"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 236,
+              "chunk_id": "c0548"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 236,
+              "chunk_id": "c0548"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 236,
+              "chunk_id": "c0548"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 236,
+              "chunk_id": "c0548"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 236,
+              "chunk_id": "c0548"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 236,
+              "chunk_id": "c0548"
+            }
+          ]
+        },
+        {
+          "label": "集装箱运输",
+          "alias": [
+            "集运",
+            "集装箱",
+            "集装箱板块",
+            "集运分部"
+          ],
+          "raw": [
+            "6,149,215,176.25",
+            "4,963,091,380.70",
+            "38,886,372.21",
+            "-18,189.02",
+            "1,408,300,192.57",
+            "1,408,251,917.90",
+            "1,359,467,588.44",
+            "6,562,797,695.52",
+            "2,843,349,996.38",
+            "546,636,733.47",
+            "816,001,383.17"
+          ],
+          "values": [
+            6149215176.25,
+            4963091380.7,
+            38886372.21,
+            -18189.02,
+            1408300192.57,
+            1408251917.9,
+            1359467588.44,
+            6562797695.52,
+            2843349996.38,
+            546636733.47,
+            816001383.17
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 236,
+              "chunk_id": "c0548"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 236,
+              "chunk_id": "c0548"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 236,
+              "chunk_id": "c0548"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 236,
+              "chunk_id": "c0548"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 236,
+              "chunk_id": "c0548"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 236,
+              "chunk_id": "c0548"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 236,
+              "chunk_id": "c0548"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 236,
+              "chunk_id": "c0548"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 236,
+              "chunk_id": "c0548"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 236,
+              "chunk_id": "c0548"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 236,
+              "chunk_id": "c0548"
+            }
+          ]
+        },
+        {
+          "label": "滚装船运输",
+          "alias": [
+            "滚装",
+            "滚装板块",
+            "滚装分部"
+          ],
+          "raw": [
+            "1,690,427,764.64",
+            "1,376,365,246.28",
+            "2,243,065.68",
+            "-5,859,948.77",
+            "278,047,588.28",
+            "277,828,951.21",
+            "229,470,423.46",
+            "4,277,186,657.68",
+            "2,696,209,301.56",
+            "113,541,880.07",
+            "1,205,661,407.84"
+          ],
+          "values": [
+            1690427764.64,
+            1376365246.28,
+            2243065.68,
+            -5859948.77,
+            278047588.28,
+            277828951.21,
+            229470423.46,
+            4277186657.68,
+            2696209301.56,
+            113541880.07,
+            1205661407.84
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 236,
+              "chunk_id": "c0548"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 236,
+              "chunk_id": "c0548"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 236,
+              "chunk_id": "c0548"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 236,
+              "chunk_id": "c0548"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 236,
+              "chunk_id": "c0548"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 236,
+              "chunk_id": "c0548"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 236,
+              "chunk_id": "c0548"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 236,
+              "chunk_id": "c0548"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 236,
+              "chunk_id": "c0548"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 236,
+              "chunk_id": "c0548"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 236,
+              "chunk_id": "c0548"
+            }
+          ]
+        },
+        {
+          "label": "天然气运输",
+          "alias": [
+            "天然气分部",
+            "LNG分部",
+            "LNG板块"
+          ],
+          "raw": [
+            "54,949,095.27",
+            "92,419,297.05",
+            "713,716,466.60",
+            "596,096.48",
+            "676,820,168.30",
+            "676,820,168.30",
+            "670,894,996.05",
+            "19,610,359,063.08",
+            "14,947,885,374.23",
+            "18,822,651.24",
+            "5,777,538,047.07"
+          ],
+          "values": [
+            54949095.27,
+            92419297.05,
+            713716466.6,
+            596096.48,
+            676820168.3,
+            676820168.3,
+            670894996.05,
+            19610359063.08,
+            14947885374.23,
+            18822651.24,
+            5777538047.07
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 236,
+              "chunk_id": "c0548"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 236,
+              "chunk_id": "c0548"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 236,
+              "chunk_id": "c0548"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 236,
+              "chunk_id": "c0548"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 236,
+              "chunk_id": "c0548"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 236,
+              "chunk_id": "c0548"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 236,
+              "chunk_id": "c0548"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 236,
+              "chunk_id": "c0548"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 236,
+              "chunk_id": "c0548"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 236,
+              "chunk_id": "c0548"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 236,
+              "chunk_id": "c0548"
+            }
+          ]
+        },
+        {
+          "label": "未分配项目",
+          "alias": [],
+          "raw": [
+            "1,223,954,186.45",
+            "5,006,864,346.97",
+            "3,932,453,371.14",
+            "-569,169.89",
+            "3,130,783,626.41",
+            "3,116,440,324.44",
+            "2,418,012,145.21",
+            "23,034,819,318.69",
+            "17,089,049,912.00",
+            "72,748,554.72",
+            "1,020,319,390.85"
+          ],
+          "values": [
+            1223954186.45,
+            5006864346.97,
+            3932453371.14,
+            -569169.89,
+            3130783626.41,
+            3116440324.44,
+            2418012145.21,
+            23034819318.69,
+            17089049912.0,
+            72748554.72,
+            1020319390.85
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 236,
+              "chunk_id": "c0548"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 236,
+              "chunk_id": "c0548"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 236,
+              "chunk_id": "c0548"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 236,
+              "chunk_id": "c0548"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 236,
+              "chunk_id": "c0548"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 236,
+              "chunk_id": "c0548"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 236,
+              "chunk_id": "c0548"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 236,
+              "chunk_id": "c0548"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 236,
+              "chunk_id": "c0548"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 236,
+              "chunk_id": "c0548"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 236,
+              "chunk_id": "c0548"
+            }
+          ]
+        },
+        {
+          "label": "合计",
+          "alias": [],
+          "raw": [
+            "28,177,211,131.95",
+            "23,036,132,376.97",
+            "789,467,609.64",
+            "677,664,121.77",
+            "6,808,680,613.68",
+            "6,874,638,414.30",
+            "6,070,713,066.81",
+            "82,054,880,078.89",
+            "38,300,086,642.94",
+            "3,819,739,753.40",
+            "14,611,560,073.39"
+          ],
+          "values": [
+            28177211131.95,
+            23036132376.97,
+            789467609.64,
+            677664121.77,
+            6808680613.68,
+            6874638414.3,
+            6070713066.81,
+            82054880078.89,
+            38300086642.94,
+            3819739753.4,
+            14611560073.39
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 236,
+              "chunk_id": "c0548"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 236,
+              "chunk_id": "c0548"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 236,
+              "chunk_id": "c0548"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 236,
+              "chunk_id": "c0548"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 236,
+              "chunk_id": "c0548"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 236,
+              "chunk_id": "c0548"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 236,
+              "chunk_id": "c0548"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 236,
+              "chunk_id": "c0548"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 236,
+              "chunk_id": "c0548"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 236,
+              "chunk_id": "c0548"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 236,
+              "chunk_id": "c0548"
+            }
+          ]
+        }
+      ],
+      "note": "未分配项目含件杂货运输等及对子公司的投资收益（合并时抵销）；合计已含分部间抵销"
+    },
+    {
+      "id": "cost_tanker",
+      "title": "油轮运输成本构成",
+      "page": 22,
+      "columns": [
+        {
+          "name": "本期金额",
+          "unit": "元"
+        },
+        {
+          "name": "本期占比",
+          "unit": "%"
+        },
+        {
+          "name": "上期金额",
+          "unit": "元"
+        },
+        {
+          "name": "同比",
+          "unit": "%"
+        }
+      ],
+      "rows": [
+        {
+          "label": "燃油费",
+          "alias": [],
+          "raw": [
+            "2,467,729,882.92",
+            "39.91",
+            "2,589,039,890.17",
+            "-4.69"
+          ],
+          "values": [
+            2467729882.92,
+            39.91,
+            2589039890.17,
+            -4.69
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 22,
+              "chunk_id": "c0044"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 22,
+              "chunk_id": "c0044"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 22,
+              "chunk_id": "c0044"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 22,
+              "chunk_id": "c0044"
+            }
+          ]
+        },
+        {
+          "label": "船舶折旧费",
+          "alias": [],
+          "raw": [
+            "1,281,630,728.78",
+            "20.73",
+            "1,239,315,725.14",
+            "3.41"
+          ],
+          "values": [
+            1281630728.78,
+            20.73,
+            1239315725.14,
+            3.41
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 22,
+              "chunk_id": "c0044"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 22,
+              "chunk_id": "c0044"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 22,
+              "chunk_id": "c0044"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 22,
+              "chunk_id": "c0044"
+            }
+          ]
+        },
+        {
+          "label": "船员费用",
+          "alias": [],
+          "raw": [
+            "789,531,648.78",
+            "12.77",
+            "759,287,569.20",
+            "3.98"
+          ],
+          "values": [
+            789531648.78,
+            12.77,
+            759287569.2,
+            3.98
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 22,
+              "chunk_id": "c0044"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 22,
+              "chunk_id": "c0044"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 22,
+              "chunk_id": "c0044"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 22,
+              "chunk_id": "c0044"
+            }
+          ]
+        },
+        {
+          "label": "港口费",
+          "alias": [],
+          "raw": [
+            "558,147,739.50",
+            "9.03",
+            "545,035,579.95",
+            "2.41"
+          ],
+          "values": [
+            558147739.5,
+            9.03,
+            545035579.95,
+            2.41
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 22,
+              "chunk_id": "c0044"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 22,
+              "chunk_id": "c0044"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 22,
+              "chunk_id": "c0044"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 22,
+              "chunk_id": "c0044"
+            }
+          ]
+        },
+        {
+          "label": "坞修、航修",
+          "alias": [],
+          "raw": [
+            "358,737,216.60",
+            "5.80",
+            "265,009,615.41",
+            "35.37"
+          ],
+          "values": [
+            358737216.6,
+            5.8,
+            265009615.41,
+            35.37
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 22,
+              "chunk_id": "c0044"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 22,
+              "chunk_id": "c0044"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 22,
+              "chunk_id": "c0044"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 22,
+              "chunk_id": "c0044"
+            }
+          ]
+        },
+        {
+          "label": "船舶租金",
+          "alias": [],
+          "raw": [
+            "72,426,582.55",
+            "1.17",
+            null,
+            null
+          ],
+          "values": [
+            72426582.55,
+            1.17,
+            null,
+            null
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 22,
+              "chunk_id": "c0044"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 22,
+              "chunk_id": "c0044"
+            },
+            null,
+            null
+          ]
+        }
+      ],
+      "note": ""
+    },
+    {
+      "id": "cost_bulk",
+      "title": "散货船运输成本构成",
+      "page": 22,
+      "columns": [
+        {
+          "name": "本期金额",
+          "unit": "元"
+        },
+        {
+          "name": "本期占比",
+          "unit": "%"
+        },
+        {
+          "name": "上期金额",
+          "unit": "元"
+        },
+        {
+          "name": "同比",
+          "unit": "%"
+        }
+      ],
+      "rows": [
+        {
+          "label": "燃油费",
+          "alias": [],
+          "raw": [
+            "1,826,100,392.05",
+            "25.01",
+            "1,711,200,283.99",
+            "6.71"
+          ],
+          "values": [
+            1826100392.05,
+            25.01,
+            1711200283.99,
+            6.71
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 22,
+              "chunk_id": "c0044"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 22,
+              "chunk_id": "c0044"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 22,
+              "chunk_id": "c0044"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 22,
+              "chunk_id": "c0044"
+            }
+          ]
+        },
+        {
+          "label": "船舶折旧费",
+          "alias": [],
+          "raw": [
+            "1,195,856,203.46",
+            "16.38",
+            "923,857,051.78",
+            "29.44"
+          ],
+          "values": [
+            1195856203.46,
+            16.38,
+            923857051.78,
+            29.44
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 22,
+              "chunk_id": "c0044"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 22,
+              "chunk_id": "c0044"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 22,
+              "chunk_id": "c0044"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 22,
+              "chunk_id": "c0044"
+            }
+          ]
+        },
+        {
+          "label": "船员费用",
+          "alias": [],
+          "raw": [
+            "864,816,031.99",
+            "11.84",
+            "834,179,301.88",
+            "3.67"
+          ],
+          "values": [
+            864816031.99,
+            11.84,
+            834179301.88,
+            3.67
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 22,
+              "chunk_id": "c0044"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 22,
+              "chunk_id": "c0044"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 22,
+              "chunk_id": "c0044"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 22,
+              "chunk_id": "c0044"
+            }
+          ]
+        },
+        {
+          "label": "船舶租金",
+          "alias": [],
+          "raw": [
+            "837,714,582.73",
+            "11.47",
+            "787,946,604.68",
+            "6.32"
+          ],
+          "values": [
+            837714582.73,
+            11.47,
+            787946604.68,
+            6.32
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 22,
+              "chunk_id": "c0044"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 22,
+              "chunk_id": "c0044"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 22,
+              "chunk_id": "c0044"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 22,
+              "chunk_id": "c0044"
+            }
+          ]
+        },
+        {
+          "label": "程租运费",
+          "alias": [],
+          "raw": [
+            "764,772,461.12",
+            "10.47",
+            "233,000,733.97",
+            "228.23"
+          ],
+          "values": [
+            764772461.12,
+            10.47,
+            233000733.97,
+            228.23
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 22,
+              "chunk_id": "c0044"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 22,
+              "chunk_id": "c0044"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 22,
+              "chunk_id": "c0044"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 22,
+              "chunk_id": "c0044"
+            }
+          ]
+        },
+        {
+          "label": "港口费",
+          "alias": [],
+          "raw": [
+            "412,356,682.93",
+            "5.65",
+            "287,215,295.69",
+            "43.57"
+          ],
+          "values": [
+            412356682.93,
+            5.65,
+            287215295.69,
+            43.57
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 22,
+              "chunk_id": "c0044"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 22,
+              "chunk_id": "c0044"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 22,
+              "chunk_id": "c0044"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 22,
+              "chunk_id": "c0044"
+            }
+          ]
+        }
+      ],
+      "note": ""
+    },
+    {
+      "id": "cost_box",
+      "title": "集装箱运输成本构成",
+      "page": 22,
+      "columns": [
+        {
+          "name": "本期金额",
+          "unit": "元"
+        },
+        {
+          "name": "本期占比",
+          "unit": "%"
+        },
+        {
+          "name": "上期金额",
+          "unit": "元"
+        },
+        {
+          "name": "同比",
+          "unit": "%"
+        }
+      ],
+      "rows": [
+        {
+          "label": "装卸费",
+          "alias": [],
+          "raw": [
+            "1,678,399,393.76",
+            "35.18",
+            "1,367,625,351.09",
+            "22.72"
+          ],
+          "values": [
+            1678399393.76,
+            35.18,
+            1367625351.09,
+            22.72
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 22,
+              "chunk_id": "c0044"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 22,
+              "chunk_id": "c0044"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 22,
+              "chunk_id": "c0044"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 22,
+              "chunk_id": "c0044"
+            }
+          ]
+        },
+        {
+          "label": "船舶租金",
+          "alias": [],
+          "raw": [
+            "1,002,366,830.07",
+            "21.01",
+            "583,600,020.12",
+            "71.76"
+          ],
+          "values": [
+            1002366830.07,
+            21.01,
+            583600020.12,
+            71.76
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 23,
+              "chunk_id": "c0046"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 23,
+              "chunk_id": "c0046"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 23,
+              "chunk_id": "c0046"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 23,
+              "chunk_id": "c0046"
+            }
+          ]
+        },
+        {
+          "label": "燃油费",
+          "alias": [],
+          "raw": [
+            "826,482,382.07",
+            "17.32",
+            "743,072,936.44",
+            "11.22"
+          ],
+          "values": [
+            826482382.07,
+            17.32,
+            743072936.44,
+            11.22
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 22,
+              "chunk_id": "c0044"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 22,
+              "chunk_id": "c0044"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 22,
+              "chunk_id": "c0044"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 22,
+              "chunk_id": "c0044"
+            }
+          ]
+        },
+        {
+          "label": "港口费",
+          "alias": [],
+          "raw": [
+            "256,767,212.27",
+            "5.38",
+            "215,534,174.82",
+            "19.13"
+          ],
+          "values": [
+            256767212.27,
+            5.38,
+            215534174.82,
+            19.13
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 22,
+              "chunk_id": "c0044"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 22,
+              "chunk_id": "c0044"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 22,
+              "chunk_id": "c0044"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 22,
+              "chunk_id": "c0044"
+            }
+          ]
+        },
+        {
+          "label": "其他",
+          "alias": [],
+          "raw": [
+            "287,184,101.48",
+            "6.02",
+            "99,056,795.66",
+            "189.92"
+          ],
+          "values": [
+            287184101.48,
+            6.02,
+            99056795.66,
+            189.92
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 23,
+              "chunk_id": "c0046"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 23,
+              "chunk_id": "c0046"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 23,
+              "chunk_id": "c0046"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 23,
+              "chunk_id": "c0046"
+            }
+          ]
+        }
+      ],
+      "note": ""
+    },
+    {
+      "id": "fleet",
+      "title": "报告期末船队概况",
+      "page": 15,
+      "columns": [
+        {
+          "name": "船舶艘数",
+          "unit": "艘"
+        },
+        {
+          "name": "总载重量",
+          "unit": "万吨"
+        },
+        {
+          "name": "平均船龄",
+          "unit": "年"
+        },
+        {
+          "name": "订单艘数",
+          "unit": "艘"
+        },
+        {
+          "name": "订单载重量",
+          "unit": "万吨"
+        }
+      ],
+      "rows": [
+        {
+          "label": "油轮小计",
+          "alias": [],
+          "raw": [
+            "58",
+            "1642.7",
+            "10.08",
+            "13",
+            "244.85"
+          ],
+          "values": [
+            58.0,
+            1642.7,
+            10.08,
+            13.0,
+            244.85
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 15,
+              "chunk_id": "c0033"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 15,
+              "chunk_id": "c0033"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 15,
+              "chunk_id": "c0033"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 15,
+              "chunk_id": "c0033"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 15,
+              "chunk_id": "c0033"
+            }
+          ]
+        },
+        {
+          "label": "VLCC",
+          "alias": [],
+          "raw": [
+            "51",
+            "1576.01",
+            "10.3",
+            "5",
+            "152.95"
+          ],
+          "values": [
+            51.0,
+            1576.01,
+            10.3,
+            5.0,
+            152.95
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 15,
+              "chunk_id": "c0033"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 15,
+              "chunk_id": "c0033"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 15,
+              "chunk_id": "c0033"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 15,
+              "chunk_id": "c0033"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 15,
+              "chunk_id": "c0033"
+            }
+          ]
+        },
+        {
+          "label": "气体船小计",
+          "alias": [],
+          "raw": [
+            "30",
+            "260.92",
+            "7.1",
+            "34",
+            "301.66"
+          ],
+          "values": [
+            30.0,
+            260.92,
+            7.1,
+            34.0,
+            301.66
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 15,
+              "chunk_id": "c0033"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 15,
+              "chunk_id": "c0033"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 15,
+              "chunk_id": "c0033"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 15,
+              "chunk_id": "c0033"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 15,
+              "chunk_id": "c0033"
+            }
+          ]
+        },
+        {
+          "label": "散货船小计",
+          "alias": [],
+          "raw": [
+            "98",
+            "1882.03",
+            "10.61",
+            "12",
+            "227.20"
+          ],
+          "values": [
+            98.0,
+            1882.03,
+            10.61,
+            12.0,
+            227.2
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 15,
+              "chunk_id": "c0033"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 15,
+              "chunk_id": "c0033"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 15,
+              "chunk_id": "c0033"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 15,
+              "chunk_id": "c0033"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 15,
+              "chunk_id": "c0033"
+            }
+          ]
+        },
+        {
+          "label": "VLOC",
+          "alias": [],
+          "raw": [
+            "34",
+            "1313.13",
+            "8.18",
+            null,
+            null
+          ],
+          "values": [
+            34.0,
+            1313.13,
+            8.18,
+            null,
+            null
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 15,
+              "chunk_id": "c0033"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 15,
+              "chunk_id": "c0033"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 15,
+              "chunk_id": "c0033"
+            },
+            null,
+            null
+          ]
+        },
+        {
+          "label": "件杂货船小计",
+          "alias": [],
+          "raw": [
+            "7",
+            "43.01",
+            "2.4",
+            "1",
+            "6.11"
+          ],
+          "values": [
+            7.0,
+            43.01,
+            2.4,
+            1.0,
+            6.11
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 15,
+              "chunk_id": "c0033"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 15,
+              "chunk_id": "c0033"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 15,
+              "chunk_id": "c0033"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 15,
+              "chunk_id": "c0033"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 15,
+              "chunk_id": "c0033"
+            }
+          ]
+        },
+        {
+          "label": "滚装船小计",
+          "alias": [],
+          "raw": [
+            "23",
+            "13.53",
+            "11.5",
+            "4",
+            "8.20"
+          ],
+          "values": [
+            23.0,
+            13.53,
+            11.5,
+            4.0,
+            8.2
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 15,
+              "chunk_id": "c0033"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 15,
+              "chunk_id": "c0033"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 15,
+              "chunk_id": "c0033"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 15,
+              "chunk_id": "c0033"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 15,
+              "chunk_id": "c0033"
+            }
+          ]
+        },
+        {
+          "label": "集装箱船小计",
+          "alias": [],
+          "raw": [
+            "19",
+            "42.40",
+            "11.5",
+            null,
+            null
+          ],
+          "values": [
+            19.0,
+            42.4,
+            11.5,
+            null,
+            null
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 15,
+              "chunk_id": "c0033"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 15,
+              "chunk_id": "c0033"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 15,
+              "chunk_id": "c0033"
+            },
+            null,
+            null
+          ]
+        },
+        {
+          "label": "自有船总计",
+          "alias": [],
+          "raw": [
+            "235",
+            "3884.59",
+            null,
+            "64",
+            "788.02"
+          ],
+          "values": [
+            235.0,
+            3884.59,
+            null,
+            64.0,
+            788.02
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 14,
+              "chunk_id": "c0032"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 14,
+              "chunk_id": "c0032"
+            },
+            null,
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 14,
+              "chunk_id": "c0032"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 14,
+              "chunk_id": "c0032"
+            }
+          ]
+        }
+      ],
+      "note": ""
+    },
+    {
+      "id": "volume",
+      "title": "各船队货运量",
+      "page": 15,
+      "columns": [
+        {
+          "name": "货运量",
+          "unit": "万吨"
+        }
+      ],
+      "rows": [
+        {
+          "label": "油轮船队",
+          "alias": [],
+          "raw": [
+            "8,162"
+          ],
+          "values": [
+            8162.0
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 15,
+              "chunk_id": "c0034"
+            }
+          ]
+        },
+        {
+          "label": "干散货船队",
+          "alias": [],
+          "raw": [
+            "11,419"
+          ],
+          "values": [
+            11419.0
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 15,
+              "chunk_id": "c0034"
+            }
+          ]
+        },
+        {
+          "label": "LNG船队",
+          "alias": [],
+          "raw": [
+            "2,467"
+          ],
+          "values": [
+            2467.0
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 15,
+              "chunk_id": "c0034"
+            }
+          ]
+        },
+        {
+          "label": "滚装船队",
+          "alias": [],
+          "raw": [
+            "664"
+          ],
+          "values": [
+            664.0
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 15,
+              "chunk_id": "c0034"
+            }
+          ]
+        }
+      ],
+      "note": ""
+    },
+    {
+      "id": "ops",
+      "title": "船队经营指标",
+      "page": 17,
+      "columns": [
+        {
+          "name": "数值",
+          "unit": "万"
+        },
+        {
+          "name": "同比",
+          "unit": "%"
+        }
+      ],
+      "rows": [
+        {
+          "label": "集装箱承运重箱（万TEU）",
+          "alias": [],
+          "raw": [
+            "122",
+            "18.4"
+          ],
+          "values": [
+            122.0,
+            18.4
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 17,
+              "chunk_id": "c0036"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 17,
+              "chunk_id": "c0036"
+            }
+          ]
+        },
+        {
+          "label": "滚装运量（万辆）",
+          "alias": [],
+          "raw": [
+            "68.71",
+            null
+          ],
+          "values": [
+            68.71,
+            null
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 17,
+              "chunk_id": "c0036"
+            },
+            null
+          ]
+        },
+        {
+          "label": "滚装外贸运量（万辆）",
+          "alias": [],
+          "raw": [
+            "15.67",
+            "47"
+          ],
+          "values": [
+            15.67,
+            47.0
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 17,
+              "chunk_id": "c0036"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 17,
+              "chunk_id": "c0036"
+            }
+          ]
+        },
+        {
+          "label": "滚装沿海运量（万辆）",
+          "alias": [],
+          "raw": [
+            "31.33",
+            "-19"
+          ],
+          "values": [
+            31.33,
+            -19.0
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 17,
+              "chunk_id": "c0036"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 17,
+              "chunk_id": "c0036"
+            }
+          ]
+        },
+        {
+          "label": "滚装长江运量（万辆）",
+          "alias": [],
+          "raw": [
+            "21.71",
+            "-25"
+          ],
+          "values": [
+            21.71,
+            -25.0
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 17,
+              "chunk_id": "c0036"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 17,
+              "chunk_id": "c0036"
+            }
+          ]
+        }
+      ],
+      "note": ""
+    },
+    {
+      "id": "deliveries",
+      "title": "船队更新",
+      "page": 14,
+      "columns": [
+        {
+          "name": "艘数",
+          "unit": "艘"
+        }
+      ],
+      "rows": [
+        {
+          "label": "报告期接收新船",
+          "alias": [],
+          "raw": [
+            "16"
+          ],
+          "values": [
+            16.0
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 14,
+              "chunk_id": "c0032"
+            }
+          ]
+        },
+        {
+          "label": "其中：LNG船",
+          "alias": [],
+          "raw": [
+            "8"
+          ],
+          "values": [
+            8.0
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 14,
+              "chunk_id": "c0032"
+            }
+          ]
+        },
+        {
+          "label": "完成处置老龄和非节能型船",
+          "alias": [],
+          "raw": [
+            "5"
+          ],
+          "values": [
+            5.0
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 14,
+              "chunk_id": "c0032"
+            }
+          ]
+        }
+      ],
+      "note": ""
+    },
+    {
+      "id": "deliveries_2026",
+      "title": "2026年预计新造船交付",
+      "page": 44,
+      "columns": [
+        {
+          "name": "艘数",
+          "unit": "艘"
+        }
+      ],
+      "rows": [
+        {
+          "label": "2026年预计新造船交付合计",
+          "alias": [],
+          "raw": [
+            "28"
+          ],
+          "values": [
+            28.0
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 44,
+              "chunk_id": "c0083"
+            }
+          ]
+        },
+        {
+          "label": "招商气运LNG船",
+          "alias": [],
+          "raw": [
+            "14"
+          ],
+          "values": [
+            14.0
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 44,
+              "chunk_id": "c0083"
+            }
+          ]
+        },
+        {
+          "label": "CLNG公司LNG船",
+          "alias": [],
+          "raw": [
+            "5"
+          ],
+          "values": [
+            5.0
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 44,
+              "chunk_id": "c0083"
+            }
+          ]
+        },
+        {
+          "label": "招商滚装滚装船",
+          "alias": [],
+          "raw": [
+            "4"
+          ],
+          "values": [
+            4.0
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 44,
+              "chunk_id": "c0083"
+            }
+          ]
+        }
+      ],
+      "note": ""
+    },
+    {
+      "id": "lng",
+      "title": "LNG船队投资",
+      "page": 16,
+      "columns": [
+        {
+          "name": "艘数",
+          "unit": "艘"
+        }
+      ],
+      "rows": [
+        {
+          "label": "已投资LNG船舶",
+          "alias": [],
+          "raw": [
+            "64"
+          ],
+          "values": [
+            64.0
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 16,
+              "chunk_id": "c0035"
+            }
+          ]
+        },
+        {
+          "label": "已锁定长约",
+          "alias": [],
+          "raw": [
+            "61"
+          ],
+          "values": [
+            61.0
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 16,
+              "chunk_id": "c0035"
+            }
+          ]
+        }
+      ],
+      "note": ""
+    },
+    {
+      "id": "projects",
+      "title": "重大的非股权投资（新造船项目）",
+      "page": 34,
+      "columns": [
+        {
+          "name": "累计投入",
+          "unit": "元"
+        },
+        {
+          "name": "本年投入",
+          "unit": "元"
+        },
+        {
+          "name": "项目进度",
+          "unit": "%"
+        }
+      ],
+      "rows": [
+        {
+          "label": "4艘17.5万方LNG船（一期）",
+          "alias": [],
+          "raw": [
+            "5,052,401,671.88",
+            "1,784,869,203.34",
+            "91.41"
+          ],
+          "values": [
+            5052401671.88,
+            1784869203.34,
+            91.41
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 34,
+              "chunk_id": "c0066"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 34,
+              "chunk_id": "c0066"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 34,
+              "chunk_id": "c0066"
+            }
+          ]
+        },
+        {
+          "label": "4艘17.5万方LNG船（二期）",
+          "alias": [],
+          "raw": [
+            "4,388,269,245.49",
+            "2,377,719,751.24",
+            "61.14"
+          ],
+          "values": [
+            4388269245.49,
+            2377719751.24,
+            61.14
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 34,
+              "chunk_id": "c0066"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 34,
+              "chunk_id": "c0066"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 34,
+              "chunk_id": "c0066"
+            }
+          ]
+        },
+        {
+          "label": "卡能项目LNG船",
+          "alias": [],
+          "raw": [
+            "3,338,664,790.43",
+            "1,394,202,590.43",
+            "18.46"
+          ],
+          "values": [
+            3338664790.43,
+            1394202590.43,
+            18.46
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 34,
+              "chunk_id": "c0066"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 34,
+              "chunk_id": "c0066"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 34,
+              "chunk_id": "c0066"
+            }
+          ]
+        },
+        {
+          "label": "滚装船（甲醇双燃料）",
+          "alias": [],
+          "raw": [
+            "2,044,692,491.48",
+            "1,177,464,577.38",
+            "48.17"
+          ],
+          "values": [
+            2044692491.48,
+            1177464577.38,
+            48.17
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 34,
+              "chunk_id": "c0066"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 34,
+              "chunk_id": "c0066"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 34,
+              "chunk_id": "c0066"
+            }
+          ]
+        },
+        {
+          "label": "4艘6.2万吨多用途船",
+          "alias": [],
+          "raw": [
+            "1,070,493,769.87",
+            "599,744,257.18",
+            "84.25"
+          ],
+          "values": [
+            1070493769.87,
+            599744257.18,
+            84.25
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 34,
+              "chunk_id": "c0066"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 34,
+              "chunk_id": "c0066"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 34,
+              "chunk_id": "c0066"
+            }
+          ]
+        },
+        {
+          "label": "4艘8.2万吨散货船",
+          "alias": [],
+          "raw": [
+            "938,028,305.96",
+            "609,718,450.24",
+            "88.43"
+          ],
+          "values": [
+            938028305.96,
+            609718450.24,
+            88.43
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 34,
+              "chunk_id": "c0066"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 34,
+              "chunk_id": "c0066"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 34,
+              "chunk_id": "c0066"
+            }
+          ]
+        },
+        {
+          "label": "5艘VLCC（2024年）",
+          "alias": [],
+          "raw": [
+            "843,456,000.00",
+            "412,152,000.00",
+            "20.000"
+          ],
+          "values": [
+            843456000.0,
+            412152000.0,
+            20.0
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 34,
+              "chunk_id": "c0066"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 34,
+              "chunk_id": "c0066"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 34,
+              "chunk_id": "c0066"
+            }
+          ]
+        },
+        {
+          "label": "10艘21万吨散货船",
+          "alias": [],
+          "raw": [
+            "820,632,272.60",
+            "157,929,076.80",
+            "15.00"
+          ],
+          "values": [
+            820632272.6,
+            157929076.8,
+            15.0
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 34,
+              "chunk_id": "c0066"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 34,
+              "chunk_id": "c0066"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 34,
+              "chunk_id": "c0066"
+            }
+          ]
+        },
+        {
+          "label": "合计",
+          "alias": [],
+          "raw": [
+            "20,539,883,706.05",
+            "10,038,437,946.95",
+            null
+          ],
+          "values": [
+            20539883706.05,
+            10038437946.95,
+            null
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 34,
+              "chunk_id": "c0066"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 34,
+              "chunk_id": "c0066"
+            },
+            null
+          ]
+        }
+      ],
+      "note": ""
+    },
+    {
+      "id": "commit",
+      "title": "已签约但未确认的资本性支出",
+      "page": 234,
+      "columns": [
+        {
+          "name": "年末数",
+          "unit": "元"
+        }
+      ],
+      "rows": [
+        {
+          "label": "购建资产",
+          "alias": [
+            "资本承诺",
+            "已签约未确认的资本性支出",
+            "已签约但未确认的资本性支出"
+          ],
+          "raw": [
+            "35,872,387,889.48"
+          ],
+          "values": [
+            35872387889.48
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 234,
+              "chunk_id": "c0543"
+            }
+          ]
+        }
+      ],
+      "note": ""
+    },
+    {
+      "id": "finliab",
+      "title": "筹资活动产生的各项负债",
+      "page": 193,
+      "columns": [
+        {
+          "name": "期初余额",
+          "unit": "元"
+        },
+        {
+          "name": "期末余额",
+          "unit": "元"
+        }
+      ],
+      "rows": [
+        {
+          "label": "短期借款",
+          "alias": [],
+          "raw": [
+            "8,804,982,458.17",
+            "10,403,563,880.40"
+          ],
+          "values": [
+            8804982458.17,
+            10403563880.4
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 193,
+              "chunk_id": "c0433"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 193,
+              "chunk_id": "c0433"
+            }
+          ]
+        },
+        {
+          "label": "长期借款（含一年内到期）",
+          "alias": [],
+          "raw": [
+            "14,674,014,963.61",
+            "16,098,840,214.09"
+          ],
+          "values": [
+            14674014963.61,
+            16098840214.09
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 193,
+              "chunk_id": "c0433"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 193,
+              "chunk_id": "c0433"
+            }
+          ]
+        },
+        {
+          "label": "长期应付款（含一年内到期）",
+          "alias": [],
+          "raw": [
+            "170,766,800.07",
+            "687,164,005.81"
+          ],
+          "values": [
+            170766800.07,
+            687164005.81
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 193,
+              "chunk_id": "c0433"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 193,
+              "chunk_id": "c0433"
+            }
+          ]
+        },
+        {
+          "label": "租赁负债（含一年内到期）",
+          "alias": [],
+          "raw": [
+            "680,628,645.08",
+            "1,885,726,295.58"
+          ],
+          "values": [
+            680628645.08,
+            1885726295.58
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 193,
+              "chunk_id": "c0433"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 193,
+              "chunk_id": "c0433"
+            }
+          ]
+        },
+        {
+          "label": "合计",
+          "alias": [],
+          "raw": [
+            "24,539,578,724.04",
+            "29,300,877,968.79"
+          ],
+          "values": [
+            24539578724.04,
+            29300877968.79
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 193,
+              "chunk_id": "c0433"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 193,
+              "chunk_id": "c0433"
+            }
+          ]
+        }
+      ],
+      "note": "合计含其他应付款中的筹资性负债"
+    },
+    {
+      "id": "amort",
+      "title": "折旧摊销明细（现金流量表补充资料）",
+      "page": 193,
+      "columns": [
+        {
+          "name": "本期",
+          "unit": "元"
+        },
+        {
+          "name": "上期",
+          "unit": "元"
+        }
+      ],
+      "rows": [
+        {
+          "label": "固定资产折旧",
+          "alias": [],
+          "raw": [
+            "2,375,027,311.93",
+            "2,263,046,020.29"
+          ],
+          "values": [
+            2375027311.93,
+            2263046020.29
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 193,
+              "chunk_id": "c0434"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 193,
+              "chunk_id": "c0434"
+            }
+          ]
+        },
+        {
+          "label": "使用权资产摊销",
+          "alias": [],
+          "raw": [
+            "781,248,918.27",
+            "390,070,123.97"
+          ],
+          "values": [
+            781248918.27,
+            390070123.97
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 193,
+              "chunk_id": "c0434"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 193,
+              "chunk_id": "c0434"
+            }
+          ]
+        },
+        {
+          "label": "长期待摊费用摊销",
+          "alias": [],
+          "raw": [
+            "642,028,663.61",
+            "509,244,834.38"
+          ],
+          "values": [
+            642028663.61,
+            509244834.38
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 194,
+              "chunk_id": "c0436"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 194,
+              "chunk_id": "c0436"
+            }
+          ]
+        },
+        {
+          "label": "无形资产摊销",
+          "alias": [],
+          "raw": [
+            "21,434,859.59",
+            "17,925,744.33"
+          ],
+          "values": [
+            21434859.59,
+            17925744.33
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 194,
+              "chunk_id": "c0436"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 194,
+              "chunk_id": "c0436"
+            }
+          ]
+        },
+        {
+          "label": "新增使用权资产",
+          "alias": [],
+          "raw": [
+            "2,071,322,582.62",
+            "723,621,051.62"
+          ],
+          "values": [
+            2071322582.62,
+            723621051.62
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 194,
+              "chunk_id": "c0436"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 194,
+              "chunk_id": "c0436"
+            }
+          ]
+        }
+      ],
+      "note": ""
+    },
+    {
+      "id": "nonrec",
+      "title": "非经常性损益主要项目",
+      "page": 11,
+      "columns": [
+        {
+          "name": "2025年",
+          "unit": "元"
+        },
+        {
+          "name": "2024年",
+          "unit": "元"
+        }
+      ],
+      "rows": [
+        {
+          "label": "非流动性资产处置损益",
+          "alias": [],
+          "raw": [
+            "677,351,901.46",
+            "2,854,189.94"
+          ],
+          "values": [
+            677351901.46,
+            2854189.94
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 11,
+              "chunk_id": "c0026"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 11,
+              "chunk_id": "c0026"
+            }
+          ]
+        },
+        {
+          "label": "金融资产公允价值变动损益",
+          "alias": [],
+          "raw": [
+            "165,379,501.34",
+            null
+          ],
+          "values": [
+            165379501.34,
+            null
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 11,
+              "chunk_id": "c0026"
+            },
+            null
+          ]
+        },
+        {
+          "label": "营业外收支净额",
+          "alias": [],
+          "raw": [
+            "66,284,922.30",
+            "-4,451,070.85"
+          ],
+          "values": [
+            66284922.3,
+            -4451070.85
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 11,
+              "chunk_id": "c0026"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 11,
+              "chunk_id": "c0026"
+            }
+          ]
+        },
+        {
+          "label": "政府补助",
+          "alias": [],
+          "raw": [
+            "48,893,900.17",
+            "72,112,042.86"
+          ],
+          "values": [
+            48893900.17,
+            72112042.86
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 11,
+              "chunk_id": "c0026"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 11,
+              "chunk_id": "c0026"
+            }
+          ]
+        },
+        {
+          "label": "非经常性损益合计",
+          "alias": [],
+          "raw": [
+            "988,085,131.07",
+            "92,443,266.75"
+          ],
+          "values": [
+            988085131.07,
+            92443266.75
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 12,
+              "chunk_id": "c0028"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 12,
+              "chunk_id": "c0028"
+            }
+          ]
+        }
+      ],
+      "note": ""
+    },
+    {
+      "id": "bs_items",
+      "title": "资产负债主要项目",
+      "page": 26,
+      "columns": [
+        {
+          "name": "期末数",
+          "unit": "元"
+        },
+        {
+          "name": "期末占总资产",
+          "unit": "%"
+        },
+        {
+          "name": "期初数",
+          "unit": "元"
+        },
+        {
+          "name": "期初占总资产",
+          "unit": "%"
+        },
+        {
+          "name": "变动",
+          "unit": "%"
+        }
+      ],
+      "rows": [
+        {
+          "label": "固定资产",
+          "alias": [],
+          "raw": [
+            "42,178,694,105.02",
+            "51.40",
+            "40,409,228,783.38",
+            "57.22",
+            "4.38"
+          ],
+          "values": [
+            42178694105.02,
+            51.4,
+            40409228783.38,
+            57.22,
+            4.38
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 26,
+              "chunk_id": "c0052"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 26,
+              "chunk_id": "c0052"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 26,
+              "chunk_id": "c0052"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 26,
+              "chunk_id": "c0052"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 26,
+              "chunk_id": "c0052"
+            }
+          ]
+        },
+        {
+          "label": "在建工程",
+          "alias": [],
+          "raw": [
+            "11,408,781,174.52",
+            "13.89",
+            "6,557,083,368.72",
+            "9.29",
+            "73.99"
+          ],
+          "values": [
+            11408781174.52,
+            13.89,
+            6557083368.72,
+            9.29,
+            73.99
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 26,
+              "chunk_id": "c0052"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 26,
+              "chunk_id": "c0052"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 26,
+              "chunk_id": "c0052"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 26,
+              "chunk_id": "c0052"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 26,
+              "chunk_id": "c0052"
+            }
+          ]
+        },
+        {
+          "label": "长期股权投资",
+          "alias": [],
+          "raw": [
+            "8,674,375,446.43",
+            "10.56",
+            "6,531,257,524.32",
+            "9.25",
+            "32.81"
+          ],
+          "values": [
+            8674375446.43,
+            10.56,
+            6531257524.32,
+            9.25,
+            32.81
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 26,
+              "chunk_id": "c0052"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 26,
+              "chunk_id": "c0052"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 26,
+              "chunk_id": "c0052"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 26,
+              "chunk_id": "c0052"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 26,
+              "chunk_id": "c0052"
+            }
+          ]
+        },
+        {
+          "label": "货币资金",
+          "alias": [],
+          "raw": [
+            "4,720,914,663.10",
+            "5.75",
+            "4,589,226,803.24",
+            "6.50",
+            "2.87"
+          ],
+          "values": [
+            4720914663.1,
+            5.75,
+            4589226803.24,
+            6.5,
+            2.87
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 26,
+              "chunk_id": "c0052"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 26,
+              "chunk_id": "c0052"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 26,
+              "chunk_id": "c0052"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 26,
+              "chunk_id": "c0052"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 26,
+              "chunk_id": "c0052"
+            }
+          ]
+        },
+        {
+          "label": "合同资产",
+          "alias": [],
+          "raw": [
+            "1,901,747,233.55",
+            "2.32",
+            "1,238,234,881.62",
+            "1.75",
+            "53.59"
+          ],
+          "values": [
+            1901747233.55,
+            2.32,
+            1238234881.62,
+            1.75,
+            53.59
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 26,
+              "chunk_id": "c0052"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 26,
+              "chunk_id": "c0052"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 26,
+              "chunk_id": "c0052"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 26,
+              "chunk_id": "c0052"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 26,
+              "chunk_id": "c0052"
+            }
+          ]
+        },
+        {
+          "label": "使用权资产",
+          "alias": [],
+          "raw": [
+            "1,849,404,924.24",
+            "2.25",
+            "634,059,245.81",
+            "0.90",
+            "191.68"
+          ],
+          "values": [
+            1849404924.24,
+            2.25,
+            634059245.81,
+            0.9,
+            191.68
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 26,
+              "chunk_id": "c0052"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 26,
+              "chunk_id": "c0052"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 26,
+              "chunk_id": "c0052"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 26,
+              "chunk_id": "c0052"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 26,
+              "chunk_id": "c0052"
+            }
+          ]
+        },
+        {
+          "label": "短期借款",
+          "alias": [],
+          "raw": [
+            "10,403,563,880.40",
+            "12.67",
+            "8,804,982,458.17",
+            "12.47",
+            "18.16"
+          ],
+          "values": [
+            10403563880.4,
+            12.67,
+            8804982458.17,
+            12.47,
+            18.16
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 26,
+              "chunk_id": "c0052"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 26,
+              "chunk_id": "c0052"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 26,
+              "chunk_id": "c0052"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 26,
+              "chunk_id": "c0052"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 26,
+              "chunk_id": "c0052"
+            }
+          ]
+        },
+        {
+          "label": "长期借款",
+          "alias": [],
+          "raw": [
+            "12,802,925,353.15",
+            "15.59",
+            "11,792,643,669.56",
+            "16.70",
+            "8.57"
+          ],
+          "values": [
+            12802925353.15,
+            15.59,
+            11792643669.56,
+            16.7,
+            8.57
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 26,
+              "chunk_id": "c0052"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 26,
+              "chunk_id": "c0052"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 26,
+              "chunk_id": "c0052"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 26,
+              "chunk_id": "c0052"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 26,
+              "chunk_id": "c0052"
+            }
+          ]
+        },
+        {
+          "label": "其他应付款",
+          "alias": [],
+          "raw": [
+            "5,484,092,536.98",
+            "6.68",
+            "2,159,454,183.86",
+            "3.06",
+            "153.96"
+          ],
+          "values": [
+            5484092536.98,
+            6.68,
+            2159454183.86,
+            3.06,
+            153.96
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 26,
+              "chunk_id": "c0052"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 26,
+              "chunk_id": "c0052"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 26,
+              "chunk_id": "c0052"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 26,
+              "chunk_id": "c0052"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 26,
+              "chunk_id": "c0052"
+            }
+          ]
+        },
+        {
+          "label": "租赁负债",
+          "alias": [],
+          "raw": [
+            "1,126,716,485.30",
+            "1.37",
+            "225,599,269.14",
+            "0.32",
+            "399.43"
+          ],
+          "values": [
+            1126716485.3,
+            1.37,
+            225599269.14,
+            0.32,
+            399.43
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 26,
+              "chunk_id": "c0052"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 26,
+              "chunk_id": "c0052"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 26,
+              "chunk_id": "c0052"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 26,
+              "chunk_id": "c0052"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 26,
+              "chunk_id": "c0052"
+            }
+          ]
+        }
+      ],
+      "note": ""
+    },
+    {
+      "id": "pledged",
+      "title": "主要资产受限情况",
+      "page": 29,
+      "columns": [
+        {
+          "name": "年末账面价值",
+          "unit": "元"
+        }
+      ],
+      "rows": [
+        {
+          "label": "固定资产（抵押贷款）",
+          "alias": [
+            "抵押受限资产"
+          ],
+          "raw": [
+            "19,793,112,005.01"
+          ],
+          "values": [
+            19793112005.01
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 29,
+              "chunk_id": "c0058"
+            }
+          ]
+        },
+        {
+          "label": "在建工程（抵押贷款）",
+          "alias": [],
+          "raw": [
+            "5,442,234,355.35"
+          ],
+          "values": [
+            5442234355.35
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 29,
+              "chunk_id": "c0058"
+            }
+          ]
+        }
+      ],
+      "note": ""
+    },
+    {
+      "id": "cashflow_total",
+      "title": "三类现金流量净额",
+      "page": 20,
+      "columns": [
+        {
+          "name": "本期",
+          "unit": "元"
+        },
+        {
+          "name": "上期",
+          "unit": "元"
+        }
+      ],
+      "rows": [
+        {
+          "label": "经营活动产生的现金流量净额",
+          "alias": [],
+          "raw": [
+            "9,054,927,611.30",
+            "8,476,220,586.11"
+          ],
+          "values": [
+            9054927611.3,
+            8476220586.11
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 20,
+              "chunk_id": "c0040"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 20,
+              "chunk_id": "c0040"
+            }
+          ]
+        },
+        {
+          "label": "投资活动产生的现金流量净额",
+          "alias": [],
+          "raw": [
+            "-7,958,495,588.37",
+            "-7,862,537,868.61"
+          ],
+          "values": [
+            -7958495588.37,
+            -7862537868.61
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 20,
+              "chunk_id": "c0040"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 20,
+              "chunk_id": "c0040"
+            }
+          ]
+        },
+        {
+          "label": "筹资活动产生的现金流量净额",
+          "alias": [],
+          "raw": [
+            "-889,812,817.18",
+            "-1,047,004,896.08"
+          ],
+          "values": [
+            -889812817.18,
+            -1047004896.08
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 20,
+              "chunk_id": "c0040"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 20,
+              "chunk_id": "c0040"
+            }
+          ]
+        }
+      ],
+      "note": ""
+    },
+    {
+      "id": "cf_items",
+      "title": "投资与筹资主要现金流",
+      "page": 108,
+      "columns": [
+        {
+          "name": "本期",
+          "unit": "元"
+        },
+        {
+          "name": "上期",
+          "unit": "元"
+        }
+      ],
+      "rows": [
+        {
+          "label": "处置长期资产收回的现金",
+          "alias": [],
+          "raw": [
+            "1,778,782,008.93",
+            "163,464,808.45"
+          ],
+          "values": [
+            1778782008.93,
+            163464808.45
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 108,
+              "chunk_id": "c0219"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 108,
+              "chunk_id": "c0219"
+            }
+          ]
+        },
+        {
+          "label": "购建长期资产支付的现金",
+          "alias": [
+            "购建长期资产"
+          ],
+          "raw": [
+            "7,796,879,055.42",
+            "7,550,235,457.35"
+          ],
+          "values": [
+            7796879055.42,
+            7550235457.35
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 108,
+              "chunk_id": "c0219"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 108,
+              "chunk_id": "c0219"
+            }
+          ]
+        },
+        {
+          "label": "投资支付的现金",
+          "alias": [],
+          "raw": [
+            "1,530,854,226.80",
+            "921,385,035.94"
+          ],
+          "values": [
+            1530854226.8,
+            921385035.94
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 108,
+              "chunk_id": "c0219"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 108,
+              "chunk_id": "c0219"
+            }
+          ]
+        },
+        {
+          "label": "取得借款收到的现金",
+          "alias": [],
+          "raw": [
+            "24,264,461,276.96",
+            "14,360,707,261.22"
+          ],
+          "values": [
+            24264461276.96,
+            14360707261.22
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 108,
+              "chunk_id": "c0219"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 108,
+              "chunk_id": "c0219"
+            }
+          ]
+        },
+        {
+          "label": "偿还债务支付的现金",
+          "alias": [],
+          "raw": [
+            "20,975,037,848.04",
+            "10,882,284,152.08"
+          ],
+          "values": [
+            20975037848.04,
+            10882284152.08
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 108,
+              "chunk_id": "c0219"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 108,
+              "chunk_id": "c0219"
+            }
+          ]
+        },
+        {
+          "label": "分配股利、利润或偿付利息支付的现金",
+          "alias": [],
+          "raw": [
+            "3,022,680,020.58",
+            "4,014,331,890.21"
+          ],
+          "values": [
+            3022680020.58,
+            4014331890.21
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 108,
+              "chunk_id": "c0219"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 108,
+              "chunk_id": "c0219"
+            }
+          ]
+        }
+      ],
+      "note": ""
+    },
+    {
+      "id": "fin_exp",
+      "title": "财务费用构成",
+      "page": 103,
+      "columns": [
+        {
+          "name": "本期",
+          "unit": "元"
+        },
+        {
+          "name": "上期",
+          "unit": "元"
+        }
+      ],
+      "rows": [
+        {
+          "label": "利息费用",
+          "alias": [],
+          "raw": [
+            "1,133,226,150.74",
+            "1,231,703,016.16"
+          ],
+          "values": [
+            1133226150.74,
+            1231703016.16
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 103,
+              "chunk_id": "c0209"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 103,
+              "chunk_id": "c0209"
+            }
+          ]
+        },
+        {
+          "label": "利息收入",
+          "alias": [],
+          "raw": [
+            "113,948,948.73",
+            "126,623,369.13"
+          ],
+          "values": [
+            113948948.73,
+            126623369.13
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 103,
+              "chunk_id": "c0209"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 103,
+              "chunk_id": "c0209"
+            }
+          ]
+        }
+      ],
+      "note": ""
+    },
+    {
+      "id": "dividend",
+      "title": "2025年度利润分配",
+      "page": 61,
+      "columns": [
+        {
+          "name": "金额",
+          "unit": "元"
+        }
+      ],
+      "rows": [
+        {
+          "label": "现金分红金额",
+          "alias": [],
+          "raw": [
+            "2,583,852,320.64"
+          ],
+          "values": [
+            2583852320.64
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 61,
+              "chunk_id": "c0122"
+            }
+          ]
+        },
+        {
+          "label": "归属于上市公司普通股股东的净利润",
+          "alias": [],
+          "raw": [
+            "6,012,096,267.97"
+          ],
+          "values": [
+            6012096267.97
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 61,
+              "chunk_id": "c0122"
+            }
+          ]
+        }
+      ],
+      "note": ""
+    },
+    {
+      "id": "dividend_detail",
+      "title": "分红与回购",
+      "page": 3,
+      "columns": [
+        {
+          "name": "金额",
+          "unit": "元"
+        }
+      ],
+      "rows": [
+        {
+          "label": "年度现金分红",
+          "alias": [],
+          "raw": [
+            "2,018,634,625.50"
+          ],
+          "values": [
+            2018634625.5
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 3,
+              "chunk_id": "c0003"
+            }
+          ]
+        },
+        {
+          "label": "中期现金分红",
+          "alias": [],
+          "raw": [
+            "565,217,695.14"
+          ],
+          "values": [
+            565217695.14
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 3,
+              "chunk_id": "c0003"
+            }
+          ]
+        },
+        {
+          "label": "已回购股份金额",
+          "alias": [],
+          "raw": [
+            "310,512,396.49"
+          ],
+          "values": [
+            310512396.49
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 3,
+              "chunk_id": "c0003"
+            }
+          ]
+        }
+      ],
+      "note": ""
+    },
+    {
+      "id": "payout_pct",
+      "title": "分红率",
+      "page": 3,
+      "columns": [
+        {
+          "name": "比例",
+          "unit": "%"
+        }
+      ],
+      "rows": [
+        {
+          "label": "现金分红占归母净利润",
+          "alias": [],
+          "raw": [
+            "42.98"
+          ],
+          "values": [
+            42.98
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 3,
+              "chunk_id": "c0003"
+            }
+          ]
+        },
+        {
+          "label": "分红和回购占归母净利润",
+          "alias": [],
+          "raw": [
+            "48.14"
+          ],
+          "values": [
+            48.14
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 3,
+              "chunk_id": "c0003"
+            }
+          ]
+        }
+      ],
+      "note": ""
+    },
+    {
+      "id": "dps10",
+      "title": "每10股派息",
+      "page": 61,
+      "columns": [
+        {
+          "name": "每10股派息",
+          "unit": "元"
+        }
+      ],
+      "rows": [
+        {
+          "label": "2025年度合计",
+          "alias": [],
+          "raw": [
+            "3.2"
+          ],
+          "values": [
+            3.2
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 61,
+              "chunk_id": "c0122"
+            }
+          ]
+        }
+      ],
+      "note": ""
+    },
+    {
+      "id": "dps10_detail",
+      "title": "每10股派息明细",
+      "page": 3,
+      "columns": [
+        {
+          "name": "每10股派息",
+          "unit": "元"
+        }
+      ],
+      "rows": [
+        {
+          "label": "年度",
+          "alias": [],
+          "raw": [
+            "2.5"
+          ],
+          "values": [
+            2.5
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 3,
+              "chunk_id": "c0003"
+            }
+          ]
+        },
+        {
+          "label": "中期",
+          "alias": [],
+          "raw": [
+            "0.7"
+          ],
+          "values": [
+            0.7
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 3,
+              "chunk_id": "c0003"
+            }
+          ]
+        }
+      ],
+      "note": ""
+    },
+    {
+      "id": "dividend_2024",
+      "title": "2024年度分红",
+      "page": 60,
+      "columns": [
+        {
+          "name": "金额",
+          "unit": "元"
+        },
+        {
+          "name": "分红率",
+          "unit": "%"
+        }
+      ],
+      "rows": [
+        {
+          "label": "2024年全年现金分红",
+          "alias": [],
+          "raw": [
+            "2,074,008,641.61",
+            "40.61"
+          ],
+          "values": [
+            2074008641.61,
+            40.61
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 60,
+              "chunk_id": "c0120"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 60,
+              "chunk_id": "c0120"
+            }
+          ]
+        }
+      ],
+      "note": ""
+    },
+    {
+      "id": "three_year",
+      "title": "最近三个会计年度分红",
+      "page": 62,
+      "columns": [
+        {
+          "name": "金额",
+          "unit": "元"
+        },
+        {
+          "name": "比例",
+          "unit": "%"
+        }
+      ],
+      "rows": [
+        {
+          "label": "累计现金分红",
+          "alias": [],
+          "raw": [
+            "6,596,086,874.26",
+            null
+          ],
+          "values": [
+            6596086874.26,
+            null
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 62,
+              "chunk_id": "c0124"
+            },
+            null
+          ]
+        },
+        {
+          "label": "累计回购并注销",
+          "alias": [],
+          "raw": [
+            "442,976,559.49",
+            null
+          ],
+          "values": [
+            442976559.49,
+            null
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 62,
+              "chunk_id": "c0124"
+            },
+            null
+          ]
+        },
+        {
+          "label": "年均净利润",
+          "alias": [],
+          "raw": [
+            "5,318,836,942.38",
+            null
+          ],
+          "values": [
+            5318836942.38,
+            null
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 62,
+              "chunk_id": "c0124"
+            },
+            null
+          ]
+        },
+        {
+          "label": "现金分红比例",
+          "alias": [],
+          "raw": [
+            null,
+            "132.34"
+          ],
+          "values": [
+            null,
+            132.34
+          ],
+          "sources": [
+            null,
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 62,
+              "chunk_id": "c0124"
+            }
+          ]
+        }
+      ],
+      "note": ""
+    },
+    {
+      "id": "buyback",
+      "title": "回购注销",
+      "page": 60,
+      "columns": [
+        {
+          "name": "数量",
+          "unit": "元"
+        }
+      ],
+      "rows": [
+        {
+          "label": "回购注销股份",
+          "alias": [],
+          "raw": [
+            "69,267,851"
+          ],
+          "values": [
+            69267851.0
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 60,
+              "chunk_id": "c0120"
+            }
+          ]
+        }
+      ],
+      "note": ""
+    },
+    {
+      "id": "holders",
+      "title": "前十名股东持股情况（节选）",
+      "page": 88,
+      "columns": [
+        {
+          "name": "持股数量",
+          "unit": "元"
+        },
+        {
+          "name": "持股比例",
+          "unit": "%"
+        }
+      ],
+      "rows": [
+        {
+          "label": "招商局轮船有限公司",
+          "alias": [],
+          "raw": [
+            "4,399,208,563",
+            "54.48"
+          ],
+          "values": [
+            4399208563.0,
+            54.48
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 88,
+              "chunk_id": "c0180"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 88,
+              "chunk_id": "c0180"
+            }
+          ]
+        },
+        {
+          "label": "中国石油化工集团有限公司",
+          "alias": [],
+          "raw": [
+            "1,095,463,711",
+            "13.57"
+          ],
+          "values": [
+            1095463711.0,
+            13.57
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 88,
+              "chunk_id": "c0180"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 88,
+              "chunk_id": "c0180"
+            }
+          ]
+        },
+        {
+          "label": "中国诚通控股集团有限公司",
+          "alias": [],
+          "raw": [
+            "170,948,064",
+            "2.12"
+          ],
+          "values": [
+            170948064.0,
+            2.12
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 88,
+              "chunk_id": "c0180"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 88,
+              "chunk_id": "c0180"
+            }
+          ]
+        },
+        {
+          "label": "香港中央结算有限公司",
+          "alias": [],
+          "raw": [
+            "158,879,670",
+            "1.97"
+          ],
+          "values": [
+            158879670.0,
+            1.97
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 88,
+              "chunk_id": "c0180"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 88,
+              "chunk_id": "c0180"
+            }
+          ]
+        }
+      ],
+      "note": ""
+    },
+    {
+      "id": "customers",
+      "title": "前五名客户与供应商",
+      "page": 24,
+      "columns": [
+        {
+          "name": "金额",
+          "unit": "元"
+        },
+        {
+          "name": "占比",
+          "unit": "%"
+        }
+      ],
+      "rows": [
+        {
+          "label": "前五名客户销售额",
+          "alias": [],
+          "raw": [
+            "865,845.67",
+            "30.73"
+          ],
+          "values": [
+            8658456700.0,
+            30.73
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 24,
+              "chunk_id": "c0048"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 24,
+              "chunk_id": "c0048"
+            }
+          ]
+        },
+        {
+          "label": "其中关联方销售额",
+          "alias": [],
+          "raw": [
+            "489,400.66",
+            "17.37"
+          ],
+          "values": [
+            4894006600.0,
+            17.37
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 24,
+              "chunk_id": "c0048"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 24,
+              "chunk_id": "c0048"
+            }
+          ]
+        },
+        {
+          "label": "前五名供应商采购额",
+          "alias": [],
+          "raw": [
+            "1,218,597.27",
+            "35.46"
+          ],
+          "values": [
+            12185972700.0,
+            35.46
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 24,
+              "chunk_id": "c0048"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 24,
+              "chunk_id": "c0048"
+            }
+          ]
+        }
+      ],
+      "note": ""
+    },
+    {
+      "id": "subsidiaries",
+      "title": "主要控股参股公司",
+      "page": 38,
+      "columns": [
+        {
+          "name": "总资产",
+          "unit": "元"
+        },
+        {
+          "name": "净资产",
+          "unit": "元"
+        },
+        {
+          "name": "营业收入",
+          "unit": "元"
+        },
+        {
+          "name": "净利润",
+          "unit": "元"
+        }
+      ],
+      "rows": [
+        {
+          "label": "油轮控股（CMES Tanker）",
+          "alias": [],
+          "raw": [
+            "265.77",
+            "133.12",
+            "102.89",
+            "41.91"
+          ],
+          "values": [
+            26577000000.0,
+            13312000000.0,
+            10289000000.0,
+            4190999999.9999995
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 38,
+              "chunk_id": "c0074"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 38,
+              "chunk_id": "c0074"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 38,
+              "chunk_id": "c0074"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 38,
+              "chunk_id": "c0074"
+            }
+          ]
+        },
+        {
+          "label": "散货控股（CMES Bulker）",
+          "alias": [],
+          "raw": [
+            "205",
+            "129.99",
+            "68.94",
+            "8.22"
+          ],
+          "values": [
+            20500000000.0,
+            12999000000.0,
+            6894000000.0,
+            822000000.0000001
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 38,
+              "chunk_id": "c0074"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 38,
+              "chunk_id": "c0074"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 38,
+              "chunk_id": "c0074"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 38,
+              "chunk_id": "c0074"
+            }
+          ]
+        },
+        {
+          "label": "LNG投资（CMES LNG）",
+          "alias": [],
+          "raw": [
+            "100.95",
+            "38.41",
+            "1.2",
+            "7.43"
+          ],
+          "values": [
+            10095000000.0,
+            3840999999.9999995,
+            120000000.0,
+            743000000.0
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 38,
+              "chunk_id": "c0074"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 38,
+              "chunk_id": "c0074"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 38,
+              "chunk_id": "c0074"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 38,
+              "chunk_id": "c0074"
+            }
+          ]
+        },
+        {
+          "label": "中外运集运",
+          "alias": [],
+          "raw": [
+            "65.63",
+            "37.19",
+            "61.49",
+            "13.59"
+          ],
+          "values": [
+            6563000000.0,
+            3719000000.0,
+            6149000000.0,
+            1359000000.0
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 38,
+              "chunk_id": "c0074"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 38,
+              "chunk_id": "c0074"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 38,
+              "chunk_id": "c0074"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 38,
+              "chunk_id": "c0074"
+            }
+          ]
+        },
+        {
+          "label": "广州招商滚装",
+          "alias": [],
+          "raw": [
+            "33.03",
+            "15.66",
+            "16.97",
+            "2.12"
+          ],
+          "values": [
+            3303000000.0,
+            1566000000.0,
+            1697000000.0,
+            212000000.0
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 38,
+              "chunk_id": "c0074"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 38,
+              "chunk_id": "c0074"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 38,
+              "chunk_id": "c0074"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 38,
+              "chunk_id": "c0074"
+            }
+          ]
+        },
+        {
+          "label": "上海明华（件杂货）",
+          "alias": [],
+          "raw": [
+            "35.8",
+            "31.61",
+            "19.86",
+            "2.91"
+          ],
+          "values": [
+            3579999999.9999995,
+            3161000000.0,
+            1986000000.0,
+            291000000.0
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 38,
+              "chunk_id": "c0074"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 38,
+              "chunk_id": "c0074"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 38,
+              "chunk_id": "c0074"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 38,
+              "chunk_id": "c0074"
+            }
+          ]
+        },
+        {
+          "label": "CLNG（参股50%）",
+          "alias": [],
+          "raw": [
+            "119.48",
+            "100.57",
+            "12.04",
+            "12.37"
+          ],
+          "values": [
+            11948000000.0,
+            10057000000.0,
+            1204000000.0,
+            1237000000.0
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 38,
+              "chunk_id": "c0074"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 38,
+              "chunk_id": "c0074"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 38,
+              "chunk_id": "c0074"
+            },
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 38,
+              "chunk_id": "c0074"
+            }
+          ]
+        }
+      ],
+      "note": ""
+    },
+    {
+      "id": "equity_inv",
+      "title": "对外股权投资",
+      "page": 33,
+      "columns": [
+        {
+          "name": "金额",
+          "unit": "元"
+        }
+      ],
+      "rows": [
+        {
+          "label": "投资成本合计",
+          "alias": [],
+          "raw": [
+            "490,257.93"
+          ],
+          "values": [
+            4902579300.0
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 33,
+              "chunk_id": "c0064"
+            }
+          ]
+        },
+        {
+          "label": "账面余额合计",
+          "alias": [],
+          "raw": [
+            "867,650.68"
+          ],
+          "values": [
+            8676506800.0
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 33,
+              "chunk_id": "c0064"
+            }
+          ]
+        }
+      ],
+      "note": ""
+    },
+    {
+      "id": "antong",
+      "title": "安通控股投资",
+      "page": 36,
+      "columns": [
+        {
+          "name": "股数",
+          "unit": "元"
+        }
+      ],
+      "rows": [
+        {
+          "label": "合计持有安通控股",
+          "alias": [],
+          "raw": [
+            "427,586,822"
+          ],
+          "values": [
+            427586822.0
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 36,
+              "chunk_id": "c0072"
+            }
+          ]
+        }
+      ],
+      "note": ""
+    },
+    {
+      "id": "rd",
+      "title": "研发投入",
+      "page": 25,
+      "columns": [
+        {
+          "name": "金额",
+          "unit": "元"
+        }
+      ],
+      "rows": [
+        {
+          "label": "研发投入合计",
+          "alias": [],
+          "raw": [
+            "81,661,478.32"
+          ],
+          "values": [
+            81661478.32
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 25,
+              "chunk_id": "c0049"
+            }
+          ]
+        }
+      ],
+      "note": ""
+    }
+  ],
+  "ratios": [
+    {
+      "id": "mix_tanker",
+      "label": "油轮运输收入占营业收入比例",
+      "alias": [],
+      "unit": "%",
+      "op": "div",
+      "value": 36.5163055612095,
+      "num": [
+        "segment",
+        "油轮运输",
+        "营业收入"
+      ],
+      "den": [
+        "truth",
+        "revenue",
+        "2025"
+      ]
+    },
+    {
+      "id": "mix_bulk",
+      "label": "散货船运输收入占营业收入比例",
+      "alias": [],
+      "unit": "%",
+      "op": "div",
+      "value": 31.122272366502713,
+      "num": [
+        "segment",
+        "散货船运输",
+        "营业收入"
+      ],
+      "den": [
+        "truth",
+        "revenue",
+        "2025"
+      ]
+    },
+    {
+      "id": "mix_box",
+      "label": "集装箱运输收入占营业收入比例",
+      "alias": [],
+      "unit": "%",
+      "op": "div",
+      "value": 21.823363382039734,
+      "num": [
+        "segment",
+        "集装箱运输",
+        "营业收入"
+      ],
+      "den": [
+        "truth",
+        "revenue",
+        "2025"
+      ]
+    },
+    {
+      "id": "mix_roro",
+      "label": "滚装船运输收入占营业收入比例",
+      "alias": [],
+      "unit": "%",
+      "op": "div",
+      "value": 5.9992728049769,
+      "num": [
+        "segment",
+        "滚装船运输",
+        "营业收入"
+      ],
+      "den": [
+        "truth",
+        "revenue",
+        "2025"
+      ]
+    },
+    {
+      "id": "mix_lng",
+      "label": "LNG运输收入占营业收入比例",
+      "alias": [],
+      "unit": "%",
+      "op": "div",
+      "value": 0.1950125404983515,
+      "num": [
+        "segment",
+        "LNG运输",
+        "营业收入"
+      ],
+      "den": [
+        "truth",
+        "revenue",
+        "2025"
+      ]
+    },
+    {
+      "id": "np_share_tanker",
+      "label": "油轮运输分部净利润占合并净利润比例",
+      "alias": [],
+      "unit": "%",
+      "op": "div",
+      "value": 69.04032687468765,
+      "num": [
+        "seg_pl",
+        "油轮运输",
+        "净利润"
+      ],
+      "den": [
+        "truth",
+        "net_profit",
+        "2025"
+      ]
+    },
+    {
+      "id": "np_share_bulk",
+      "label": "散货船运输分部净利润占合并净利润比例",
+      "alias": [],
+      "unit": "%",
+      "op": "div",
+      "value": 18.69303840671073,
+      "num": [
+        "seg_pl",
+        "散货船运输",
+        "净利润"
+      ],
+      "den": [
+        "truth",
+        "net_profit",
+        "2025"
+      ]
+    },
+    {
+      "id": "np_share_box",
+      "label": "集装箱运输分部净利润占合并净利润比例",
+      "alias": [],
+      "unit": "%",
+      "op": "div",
+      "value": 22.39386993716645,
+      "num": [
+        "seg_pl",
+        "集装箱运输",
+        "净利润"
+      ],
+      "den": [
+        "truth",
+        "net_profit",
+        "2025"
+      ]
+    },
+    {
+      "id": "np_share_roro",
+      "label": "滚装船运输分部净利润占合并净利润比例",
+      "alias": [],
+      "unit": "%",
+      "op": "div",
+      "value": 3.779958316833786,
+      "num": [
+        "seg_pl",
+        "滚装船运输",
+        "净利润"
+      ],
+      "den": [
+        "truth",
+        "net_profit",
+        "2025"
+      ]
+    },
+    {
+      "id": "np_share_lng",
+      "label": "天然气运输分部净利润占合并净利润比例",
+      "alias": [],
+      "unit": "%",
+      "op": "div",
+      "value": 11.051337605098466,
+      "num": [
+        "seg_pl",
+        "天然气运输",
+        "净利润"
+      ],
+      "den": [
+        "truth",
+        "net_profit",
+        "2025"
+      ]
+    },
+    {
+      "id": "npm_tanker",
+      "label": "油轮运输分部净利率",
+      "alias": [
+        "油轮分部净利率"
+      ],
+      "unit": "%",
+      "op": "div",
+      "value": 40.734060734082775,
+      "num": [
+        "seg_pl",
+        "油轮运输",
+        "净利润"
+      ],
+      "den": [
+        "seg_pl",
+        "油轮运输",
+        "对外交易收入"
+      ]
+    },
+    {
+      "id": "npm_bulk",
+      "label": "散货船运输分部净利率",
+      "alias": [
+        "散货分部净利率",
+        "散货船运输分部"
+      ],
+      "unit": "%",
+      "op": "div",
+      "value": 12.940477421962424,
+      "num": [
+        "seg_pl",
+        "散货船运输",
+        "净利润"
+      ],
+      "den": [
+        "seg_pl",
+        "散货船运输",
+        "对外交易收入"
+      ]
+    },
+    {
+      "id": "npm_box",
+      "label": "集装箱运输分部净利率",
+      "alias": [
+        "集装箱分部净利率",
+        "集运分部净利率"
+      ],
+      "unit": "%",
+      "op": "div",
+      "value": 22.107985319665616,
+      "num": [
+        "seg_pl",
+        "集装箱运输",
+        "净利润"
+      ],
+      "den": [
+        "seg_pl",
+        "集装箱运输",
+        "对外交易收入"
+      ]
+    },
+    {
+      "id": "npm_roro",
+      "label": "滚装船运输分部净利率",
+      "alias": [
+        "滚装分部净利率"
+      ],
+      "unit": "%",
+      "op": "div",
+      "value": 13.574695604273213,
+      "num": [
+        "seg_pl",
+        "滚装船运输",
+        "净利润"
+      ],
+      "den": [
+        "seg_pl",
+        "滚装船运输",
+        "对外交易收入"
+      ]
+    },
+    {
+      "id": "tanker_disposal_share",
+      "label": "油轮分部资产处置收益占其利润总额比例",
+      "alias": [],
+      "unit": "%",
+      "op": "div",
+      "value": 15.655692596228423,
+      "num": [
+        "seg_pl",
+        "油轮运输",
+        "资产处置收益"
+      ],
+      "den": [
+        "seg_pl",
+        "油轮运输",
+        "利润总额"
+      ]
+    },
+    {
+      "id": "tanker_np_ex_disposal",
+      "label": "油轮分部剔除资产处置收益后的利润总额",
+      "alias": [],
+      "unit": "元",
+      "op": "diff",
+      "value": 3535200814.6299996,
+      "num": [
+        "seg_pl",
+        "油轮运输",
+        "利润总额"
+      ],
+      "den": [
+        "seg_pl",
+        "油轮运输",
+        "资产处置收益"
+      ]
+    },
+    {
+      "id": "lng_inv_share",
+      "label": "天然气分部投资收益占其净利润比例",
+      "alias": [],
+      "unit": "%",
+      "op": "div",
+      "value": 106.38273810389379,
+      "num": [
+        "seg_pl",
+        "天然气运输",
+        "投资收益"
+      ],
+      "den": [
+        "seg_pl",
+        "天然气运输",
+        "净利润"
+      ]
+    },
+    {
+      "id": "disposal_to_np",
+      "label": "资产处置损益占归母净利润比例",
+      "alias": [],
+      "unit": "%",
+      "op": "div",
+      "value": 11.266484621489763,
+      "num": [
+        "nonrec",
+        "非流动性资产处置损益",
+        "2025年"
+      ],
+      "den": [
+        "truth",
+        "np_parent",
+        "2025"
+      ]
+    },
+    {
+      "id": "disposal_to_rev",
+      "label": "资产处置收益占营业收入比例",
+      "alias": [],
+      "unit": "%",
+      "op": "div",
+      "value": 2.4050077865995756,
+      "num": [
+        "seg_pl",
+        "合计",
+        "资产处置收益"
+      ],
+      "den": [
+        "truth",
+        "revenue",
+        "2025"
+      ]
+    },
+    {
+      "id": "nonrec_to_np",
+      "label": "非经常性损益占归母净利润比例",
+      "alias": [],
+      "unit": "%",
+      "op": "div",
+      "value": 16.434951920748762,
+      "num": [
+        "nonrec",
+        "非经常性损益合计",
+        "2025年"
+      ],
+      "den": [
+        "truth",
+        "np_parent",
+        "2025"
+      ]
+    },
+    {
+      "id": "tanker_fuel_g",
+      "label": "油轮燃油费同比",
+      "alias": [],
+      "unit": "%",
+      "op": "growth",
+      "value": -4.685520980599279,
+      "num": [
+        "cost_tanker",
+        "燃油费",
+        "本期金额"
+      ],
+      "den": [
+        "cost_tanker",
+        "燃油费",
+        "上期金额"
+      ]
+    },
+    {
+      "id": "rev_q4_share",
+      "label": "第四季度营业收入占全年比例",
+      "alias": [],
+      "unit": "%",
+      "op": "div",
+      "value": 31.46967365164624,
+      "num": [
+        "truth",
+        "revenue",
+        "2025Q4"
+      ],
+      "den": [
+        "truth",
+        "revenue",
+        "2025"
+      ]
+    },
+    {
+      "id": "np_q4_share",
+      "label": "第四季度归母净利润占全年比例",
+      "alias": [],
+      "unit": "%",
+      "op": "div",
+      "value": 45.1125215572402,
+      "num": [
+        "truth",
+        "np_parent",
+        "2025Q4"
+      ],
+      "den": [
+        "truth",
+        "np_parent",
+        "2025"
+      ]
+    },
+    {
+      "id": "np_q4_qoq",
+      "label": "第四季度归母净利润环比",
+      "alias": [],
+      "unit": "%",
+      "op": "growth",
+      "value": 130.76343359979333,
+      "num": [
+        "truth",
+        "np_parent",
+        "2025Q4"
+      ],
+      "den": [
+        "truth",
+        "np_parent",
+        "2025Q3"
+      ]
+    },
+    {
+      "id": "rev_q4_qoq",
+      "label": "第四季度营业收入环比",
+      "alias": [],
+      "unit": "%",
+      "op": "growth",
+      "value": 31.849466900130196,
+      "num": [
+        "truth",
+        "revenue",
+        "2025Q4"
+      ],
+      "den": [
+        "truth",
+        "revenue",
+        "2025Q3"
+      ]
+    },
+    {
+      "id": "rev_q2_qoq",
+      "label": "第二季度营业收入环比",
+      "alias": [],
+      "unit": "%",
+      "op": "growth",
+      "value": 24.91937545918632,
+      "num": [
+        "truth",
+        "revenue",
+        "2025Q2"
+      ],
+      "den": [
+        "truth",
+        "revenue",
+        "2025Q1"
+      ]
+    },
+    {
+      "id": "rev_q3_qoq",
+      "label": "第三季度营业收入环比",
+      "alias": [],
+      "unit": "%",
+      "op": "growth",
+      "value": -3.7793189875139577,
+      "num": [
+        "truth",
+        "revenue",
+        "2025Q3"
+      ],
+      "den": [
+        "truth",
+        "revenue",
+        "2025Q2"
+      ]
+    },
+    {
+      "id": "ded_q4_qoq",
+      "label": "第四季度扣非归母净利润环比",
+      "alias": [],
+      "unit": "%",
+      "op": "growth",
+      "value": 113.43993670439102,
+      "num": [
+        "truth",
+        "np_parent_deducted",
+        "2025Q4"
+      ],
+      "den": [
+        "truth",
+        "np_parent_deducted",
+        "2025Q3"
+      ]
+    },
+    {
+      "id": "gross_debt_g",
+      "label": "有息负债同比",
+      "alias": [
+        "有息负债"
+      ],
+      "unit": "%",
+      "op": "growth",
+      "value": 19.40253049285492,
+      "num": [
+        "finliab",
+        "合计",
+        "期末余额"
+      ],
+      "den": [
+        "finliab",
+        "合计",
+        "期初余额"
+      ]
+    },
+    {
+      "id": "gross_debt_chg",
+      "label": "有息负债增加额",
+      "alias": [
+        "有息负债"
+      ],
+      "unit": "元",
+      "op": "diff",
+      "value": 4761299244.75,
+      "num": [
+        "finliab",
+        "合计",
+        "期末余额"
+      ],
+      "den": [
+        "finliab",
+        "合计",
+        "期初余额"
+      ]
+    },
+    {
+      "id": "net_debt",
+      "label": "净有息负债（有息负债 − 货币资金）",
+      "alias": [
+        "净有息负债"
+      ],
+      "unit": "元",
+      "op": "diff",
+      "value": 24579963305.690002,
+      "num": [
+        "finliab",
+        "合计",
+        "期末余额"
+      ],
+      "den": [
+        "truth",
+        "cash",
+        "2025"
+      ]
+    },
+    {
+      "id": "net_debt_prev",
+      "label": "上年末净有息负债",
+      "alias": [
+        "净有息负债"
+      ],
+      "unit": "元",
+      "op": "diff",
+      "value": 19950351920.800003,
+      "num": [
+        "finliab",
+        "合计",
+        "期初余额"
+      ],
+      "den": [
+        "truth",
+        "cash",
+        "2024"
+      ]
+    },
+    {
+      "id": "net_debt_to_equity",
+      "label": "净有息负债 / 所有者权益",
+      "alias": [
+        "净有息负债"
+      ],
+      "unit": "%",
+      "op": "div",
+      "value": 56.17661832107864,
+      "num": [
+        "ratio",
+        "net_debt"
+      ],
+      "den": [
+        "truth",
+        "total_equity",
+        "2025"
+      ]
+    },
+    {
+      "id": "net_debt_to_equity_prev",
+      "label": "上年末净有息负债 / 所有者权益",
+      "alias": [
+        "净有息负债"
+      ],
+      "unit": "%",
+      "op": "div",
+      "value": 48.839044022077296,
+      "num": [
+        "ratio",
+        "net_debt_prev"
+      ],
+      "den": [
+        "truth",
+        "total_equity",
+        "2024"
+      ]
+    },
+    {
+      "id": "interest_cover",
+      "label": "利润总额 / 利息费用",
+      "alias": [],
+      "unit": "倍",
+      "op": "div",
+      "value": 6.066431144225573,
+      "num": [
+        "truth",
+        "total_profit",
+        "2025"
+      ],
+      "den": [
+        "fin_exp",
+        "利息费用",
+        "本期"
+      ]
+    },
+    {
+      "id": "commit_to_capex",
+      "label": "资本承诺 / 2025 年资本开支",
+      "alias": [
+        "资本承诺"
+      ],
+      "unit": "倍",
+      "op": "div",
+      "value": 4.600864991556245,
+      "num": [
+        "commit",
+        "购建资产",
+        "年末数"
+      ],
+      "den": [
+        "truth",
+        "capex",
+        "2025"
+      ]
+    },
+    {
+      "id": "commit_to_equity",
+      "label": "资本承诺 / 所有者权益",
+      "alias": [
+        "资本承诺"
+      ],
+      "unit": "%",
+      "op": "div",
+      "value": 81.98504683147786,
+      "num": [
+        "commit",
+        "购建资产",
+        "年末数"
+      ],
+      "den": [
+        "truth",
+        "total_equity",
+        "2025"
+      ]
+    },
+    {
+      "id": "cip_g",
+      "label": "在建工程同比",
+      "alias": [],
+      "unit": "%",
+      "op": "growth",
+      "value": 73.9917053509584,
+      "num": [
+        "truth",
+        "construction_in_progress",
+        "2025"
+      ],
+      "den": [
+        "truth",
+        "construction_in_progress",
+        "2024"
+      ]
+    },
+    {
+      "id": "rou_amort_g",
+      "label": "使用权资产摊销同比",
+      "alias": [],
+      "unit": "%",
+      "op": "growth",
+      "value": 100.28422333879772,
+      "num": [
+        "amort",
+        "使用权资产摊销",
+        "本期"
+      ],
+      "den": [
+        "amort",
+        "使用权资产摊销",
+        "上期"
+      ]
+    },
+    {
+      "id": "docking_to_rev",
+      "label": "长期待摊费用摊销占营业收入比例",
+      "alias": [],
+      "unit": "%",
+      "op": "div",
+      "value": 2.278538712023231,
+      "num": [
+        "amort",
+        "长期待摊费用摊销",
+        "本期"
+      ],
+      "den": [
+        "truth",
+        "revenue",
+        "2025"
+      ]
+    },
+    {
+      "id": "rou_to_rev",
+      "label": "使用权资产摊销占营业收入比例",
+      "alias": [],
+      "unit": "%",
+      "op": "div",
+      "value": 2.7726268388007558,
+      "num": [
+        "amort",
+        "使用权资产摊销",
+        "本期"
+      ],
+      "den": [
+        "truth",
+        "revenue",
+        "2025"
+      ]
+    },
+    {
+      "id": "dep_g",
+      "label": "固定资产折旧同比",
+      "alias": [],
+      "unit": "%",
+      "op": "growth",
+      "value": 4.948255167415905,
+      "num": [
+        "amort",
+        "固定资产折旧",
+        "本期"
+      ],
+      "den": [
+        "amort",
+        "固定资产折旧",
+        "上期"
+      ]
+    },
+    {
+      "id": "capex_to_rev",
+      "label": "资本开支占营业收入比例",
+      "alias": [],
+      "unit": "%",
+      "op": "div",
+      "value": 27.67086855724752,
+      "num": [
+        "truth",
+        "capex",
+        "2025"
+      ],
+      "den": [
+        "truth",
+        "revenue",
+        "2025"
+      ]
+    },
+    {
+      "id": "capex_to_ocf",
+      "label": "资本开支 / 经营现金流",
+      "alias": [],
+      "unit": "%",
+      "op": "div",
+      "value": 86.10647583410793,
+      "num": [
+        "truth",
+        "capex",
+        "2025"
+      ],
+      "den": [
+        "truth",
+        "ocf",
+        "2025"
+      ]
+    },
+    {
+      "id": "fcf_simple",
+      "label": "经营现金流 − 资本开支",
+      "alias": [
+        "简易自由现金流"
+      ],
+      "unit": "元",
+      "op": "diff",
+      "value": 1258048555.8799992,
+      "num": [
+        "truth",
+        "ocf",
+        "2025"
+      ],
+      "den": [
+        "truth",
+        "capex",
+        "2025"
+      ]
+    },
+    {
+      "id": "fcf_simple_prev",
+      "label": "上年经营现金流 − 资本开支",
+      "alias": [
+        "简易自由现金流"
+      ],
+      "unit": "元",
+      "op": "diff",
+      "value": 925985128.7599993,
+      "num": [
+        "truth",
+        "ocf",
+        "2024"
+      ],
+      "den": [
+        "truth",
+        "capex",
+        "2024"
+      ]
+    },
+    {
+      "id": "order_to_fleet",
+      "label": "订单载重量 / 自有船队载重量",
+      "alias": [],
+      "unit": "%",
+      "op": "div",
+      "value": 20.285795926983283,
+      "num": [
+        "fleet",
+        "自有船总计",
+        "订单载重量"
+      ],
+      "den": [
+        "fleet",
+        "自有船总计",
+        "总载重量"
+      ]
+    },
+    {
+      "id": "lng_order_to_fleet",
+      "label": "LNG订单 / 现有LNG运力（载重吨）",
+      "alias": [],
+      "unit": "%",
+      "op": "div",
+      "value": 115.61398129694926,
+      "num": [
+        "fleet",
+        "气体船小计",
+        "订单载重量"
+      ],
+      "den": [
+        "fleet",
+        "气体船小计",
+        "总载重量"
+      ]
+    },
+    {
+      "id": "tanker_order_to_fleet",
+      "label": "油轮订单 / 现有油轮运力",
+      "alias": [],
+      "unit": "%",
+      "op": "div",
+      "value": 14.905338771534668,
+      "num": [
+        "fleet",
+        "油轮小计",
+        "订单载重量"
+      ],
+      "den": [
+        "fleet",
+        "油轮小计",
+        "总载重量"
+      ]
+    },
+    {
+      "id": "vlcc_share",
+      "label": "VLCC 占油轮运力比例",
+      "alias": [],
+      "unit": "%",
+      "op": "div",
+      "value": 95.94022036890485,
+      "num": [
+        "fleet",
+        "VLCC",
+        "总载重量"
+      ],
+      "den": [
+        "fleet",
+        "油轮小计",
+        "总载重量"
+      ]
+    },
+    {
+      "id": "dps",
+      "label": "每股现金分红（元）",
+      "alias": [],
+      "unit": "元",
+      "op": "div",
+      "value": 0.32,
+      "num": [
+        "dividend",
+        "现金分红金额",
+        "金额"
+      ],
+      "den": [
+        "truth",
+        "total_shares",
+        "2025"
+      ]
+    },
+    {
+      "id": "div_g",
+      "label": "年度现金分红同比",
+      "alias": [],
+      "unit": "%",
+      "op": "growth",
+      "value": 24.58252433481769,
+      "num": [
+        "dividend",
+        "现金分红金额",
+        "金额"
+      ],
+      "den": [
+        "dividend_2024",
+        "2024年全年现金分红",
+        "金额"
+      ]
+    },
+    {
+      "id": "equity_inv_premium",
+      "label": "对外股权投资账面余额 / 投资成本",
+      "alias": [],
+      "unit": "倍",
+      "op": "div",
+      "value": 1.76978408080008,
+      "num": [
+        "equity_inv",
+        "账面余额合计",
+        "金额"
+      ],
+      "den": [
+        "equity_inv",
+        "投资成本合计",
+        "金额"
+      ]
+    },
+    {
+      "id": "ocf_g",
+      "label": "经营现金流同比",
+      "alias": [],
+      "unit": "%",
+      "op": "growth",
+      "value": 6.827418179021061,
+      "num": [
+        "truth",
+        "ocf",
+        "2025"
+      ],
+      "den": [
+        "truth",
+        "ocf",
+        "2024"
+      ]
+    }
+  ],
+  "rejected": [],
+  "notes": "招商轮船 2025 年报经营数据；页码为 PDF 页码"
+}
