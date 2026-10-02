@@ -5,6 +5,10 @@ description: 为 A 股公司生成卖方体例的深度研报 PDF（约 20 页�
 
 # FinAgent 研报生成（深度报告）
 
+**新公司建议走流水线**：在仓库里运行 `python -m finagent.report_pipeline build --company <公司> --year <年度>`
+搭隔离工作区（只含两个 skill、引擎和该公司年报），在工作区里按其 CLAUDE.md 分阶段执行，`status` 查闸门，完成后 `collect`
+收回仓库。你若已在工作区内（根目录有 `sample.json`），以工作区 CLAUDE.md 为准，下文提到的茅台样例不在工作区里。
+
 前置：已按 `finagent-research` 完成抽取、校验和估值，有一个运行目录 `runs/<run_id>/`（含 `valuation/`）。
 没有的话先跑那个 skill。数字规则、版式细节的完整规范见
 `.claude/skills/finagent-research/references/html-report.md` 与 `writing.md`，本 skill 讲怎么把一份报告做出来。
