@@ -361,16 +361,21 @@ def _has_arg(argv: list[str], rel: str) -> bool:
 
 
 def _extras_check(ws: Path, meta: dict, extras: Path) -> dict:
-    """verify-extra 结果按 extras 内容哈希缓存，避免每次 status 都重新解析整份 PDF。"""
+    """Cache evidence checks only while both inputs and verifier code are unchanged."""
+    import hashlib
+    from .parsing import document
+    from .tasks.financials import external, extras as extra_module
+
     cache = ws / STATE_DIR / "extras_check.json"
     digest = _sha256(extras)
-    if cache.is_file() and (c := _load(cache)).get("sha256") == digest:
+    code_hash = hashlib.sha256(b"".join(Path(p).read_bytes() for p in
+                                    (document.__file__, external.__file__, extra_module.__file__, __file__))).hexdigest()
+    if (cache.is_file() and (c := _load(cache)).get("sha256") == digest
+            and c.get("pdf_sha256") == meta["pdf_sha256"] and c.get("verifier_sha256") == code_hash):
         return c
-    from .parsing.document import load_document
-    from .tasks.financials.extras import verify_extras
-
-    res = verify_extras(load_document(str(ws / meta["pdf"])), _load(extras))
-    out = {"sha256": digest, "ok": not res["rejected"], "rejected": len(res["rejected"]),
+    res = extra_module.verify_extras(document.load_document(str(ws / meta["pdf"])), _load(extras))
+    out = {"sha256": digest, "pdf_sha256": meta["pdf_sha256"], "verifier_sha256": code_hash,
+           "ok": not res["rejected"], "rejected": len(res["rejected"]),
            "tables": len(res["tables"]),
            "cells": sum(1 for t in res["tables"] for row in t["rows"] for v in row["values"] if v is not None)}
     cache.parent.mkdir(exist_ok=True)

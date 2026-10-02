@@ -54,6 +54,23 @@ def test_tools_restrict_reads_and_writes(workspace):
     assert tools.read_file("data/extractions/贵州茅台_2025/report/narrative.md") == "新句，保留。"
 
 
+def test_market_fields_are_copied_from_trusted_input(workspace):
+    meta = json.loads((workspace / "sample.json").read_text(encoding="utf-8"))
+    tools = ds.WorkspaceTools(workspace, meta)
+    path = "data/extractions/贵州茅台_2025/valuation_assumptions.json"
+    tools.write_file(path, json.dumps({"current_price": 1, "price_source": "模型猜测", "valuation_date": "1900-01-01"}))
+    saved = json.loads((workspace / path).read_text(encoding="utf-8"))
+    market = json.loads((workspace / "inputs/market.json").read_text(encoding="utf-8"))
+    assert saved["current_price"] == market["current_price"]
+    assert saved["price_source"] == market["price_source"]
+    assert saved["valuation_date"] == market.get("price_date")
+    saved["price_source"] = "改写后的非原始来源"
+    (workspace / path).write_text(json.dumps(saved), encoding="utf-8")
+    assert tools.sync_market_fields()
+    assert json.loads((workspace / path).read_text(encoding="utf-8"))["price_source"] == market["price_source"]
+    assert not tools.sync_market_fields()
+
+
 def test_tool_actions_cannot_run_arbitrary_command(workspace):
     meta = json.loads((workspace / "sample.json").read_text(encoding="utf-8"))
     tools = ds.WorkspaceTools(workspace, meta)

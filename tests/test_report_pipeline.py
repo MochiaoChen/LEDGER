@@ -140,6 +140,23 @@ def test_status_rejects_missing_history_and_duplicate_facts(ws):
     assert "重复条目 1" in first["detail"]
 
 
+def test_extras_cache_without_verifier_fingerprint_is_rechecked(ws, monkeypatch):
+    from finagent.parsing import document
+    from finagent.tasks.financials import extras as extra_module
+
+    work = ws / "data/extractions/贵州茅台_2025"
+    extras = work / "extras.json"
+    extras.write_text('{"tables":[]}', encoding="utf-8")
+    cache = ws / ".pipeline/extras_check.json"
+    cache.parent.mkdir(exist_ok=True)
+    cache.write_text(json.dumps({"sha256": rp._sha256(extras), "ok": False, "rejected": 8,
+                                 "tables": 1, "cells": 0}), encoding="utf-8")
+    monkeypatch.setattr(document, "load_document", lambda *args: object())
+    monkeypatch.setattr(extra_module, "verify_extras", lambda *args: {"tables": [], "rejected": []})
+    checked = rp._extras_check(ws, json.loads((ws / "sample.json").read_text(encoding="utf-8")), extras)
+    assert checked["ok"] and checked["rejected"] == 0 and checked["verifier_sha256"]
+
+
 def test_narrative_quality_rejects_process_language_and_placeholders(tmp_path):
     draft = tmp_path / "narrative.md"
     draft.write_text("程序归因显示增长。模型状态为 screen-grade。\n"

@@ -176,12 +176,41 @@ class WorkspaceTools:
         if not isinstance(content, str) or len(content) > 250_000:
             raise ValueError("写入内容必须是 25 万字以内的文本")
         if file.suffix == ".json":
-            json.loads(content)  # 无效 JSON 不落盘。
+            data = json.loads(content)  # 无效 JSON 不落盘。
+            if file.relative_to(self.ws) == self.work / "valuation_assumptions.json":
+                # Market observations belong to the trusted input, not model prose.
+                market = json.loads((self.ws / "inputs/market.json").read_text(encoding="utf-8"))
+                if not isinstance(data, dict):
+                    raise ValueError("估值假设须为 JSON 对象")
+                data["current_price"] = market["current_price"]
+                data["price_source"] = market["price_source"]
+                data["valuation_date"] = market.get("price_date")
+                content = json.dumps(data, ensure_ascii=False, indent=2)
         file.parent.mkdir(parents=True, exist_ok=True)
         file.write_text(content, encoding="utf-8")
         if tracer := tracing.current():
             tracer.register_artifact(file)
         return f"已写入 {file.relative_to(self.ws).as_posix()}；SHA-256 {_sha256(file)}"
+
+    def sync_market_fields(self) -> bool:
+        """Repair legacy/model-authored market metadata without touching valid runs."""
+        relative = self.work / "valuation_assumptions.json"
+        path = self.ws / relative
+        if not path.is_file():
+            return False
+        market_path = self.ws / "inputs/market.json"
+        if not market_path.is_file():
+            return False
+        data = json.loads(path.read_text(encoding="utf-8"))
+        if not isinstance(data, dict):
+            raise ValueError("现有估值假设须为 JSON 对象")
+        market = json.loads(market_path.read_text(encoding="utf-8"))
+        desired = {"current_price": market["current_price"], "price_source": market["price_source"],
+                   "valuation_date": market.get("price_date")}
+        if all(data.get(k) == v for k, v in desired.items()):
+            return False
+        self.write_file(relative.as_posix(), json.dumps(data, ensure_ascii=False))
+        return True
 
     def replace_text(self, old: str, new: str) -> str:
         if not isinstance(old, str) or not old or len(old) > 3000 or not isinstance(new, str) or len(new) > 5000:
@@ -328,6 +357,8 @@ def run(ws: Path, model: str = MODEL) -> int:
         meta["require_review"] = True
         (ws / META).write_text(json.dumps(meta, ensure_ascii=False, indent=2), encoding="utf-8")
     tools = WorkspaceTools(ws, meta)
+    if tools.sync_market_fields():
+        emit("stage", stage="行情输入", detail="估值假设中的股价、来源和日期已与受信任的 market.json 同步")
     client = LLMClient(get_settings(llm_base_url="https://api.deepseek.com", llm_model=model,
                                     llm_api_key=os.environ["DEEPSEEK_API_KEY"], llm_mode="live",
                                     cache_dir=str(ws / ".pipeline/api_cache"), llm_timeout=180))

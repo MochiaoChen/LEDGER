@@ -1,7 +1,7 @@
 """DeepSeek 报告测试：双公司输入、模型参数、引用检查。"""
 
 import json
-from http.client import RemoteDisconnected
+from http.client import IncompleteRead, RemoteDisconnected
 
 from finagent.core.config import get_settings
 from finagent.core.llm import LLMClient
@@ -68,6 +68,34 @@ def test_deepseek_retries_dropped_connection(tmp_path, monkeypatch):
     monkeypatch.setattr("time.sleep", lambda *_: None)
     assert client._post({"model": "deepseek-flash", "messages": []})["choices"][0]["message"]["content"] == "ok"
     assert len(calls) == 3
+
+
+def test_deepseek_retries_incomplete_chunked_body(tmp_path, monkeypatch):
+    settings = get_settings(llm_model="deepseek-flash", llm_api_key="fake-test-key", llm_mode="live",
+                            cache_dir=str(tmp_path / "cache"))
+    client = LLMClient(settings)
+    calls = []
+
+    class Reply:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_):
+            return False
+
+        def read(self):
+            if len(calls) == 1:
+                raise IncompleteRead(b"")
+            return b'{"choices":[{"message":{"content":"ok"}}]}'
+
+    def fake_urlopen(_request, timeout):
+        calls.append(timeout)
+        return Reply()
+
+    monkeypatch.setattr("urllib.request.urlopen", fake_urlopen)
+    monkeypatch.setattr("time.sleep", lambda *_: None)
+    assert client._post({"model": "deepseek-flash", "messages": []})["choices"][0]["message"]["content"] == "ok"
+    assert len(calls) == 2
 
 
 def test_draft_is_flagged_when_numeric_claim_has_no_source():

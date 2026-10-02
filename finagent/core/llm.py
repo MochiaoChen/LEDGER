@@ -8,6 +8,7 @@
 from __future__ import annotations
 
 import hashlib
+import http.client
 import json
 import re
 import time
@@ -133,7 +134,7 @@ class LLMClient:
                 last = LLMError(f"HTTP {exc.code}: {detail}")
                 if exc.code < 500 and exc.code != 429:
                     break
-            except (urllib.error.URLError, TimeoutError, ConnectionError) as exc:
+            except (urllib.error.URLError, TimeoutError, ConnectionError, http.client.IncompleteRead) as exc:
                 last = exc
             time.sleep(2 ** attempt)
         raise LLMError(f"LLM 请求失败：{last}")

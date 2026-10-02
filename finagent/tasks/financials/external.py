@@ -47,7 +47,9 @@ def _num_pattern(raw: str) -> re.Pattern[str] | None:
 
 
 def _norm(text: str) -> str:
-    return text.replace(",", "").replace("，", "").replace(" ", "")
+    # Keep cell/word whitespace: deleting it can concatenate adjacent table
+    # numbers ("235 3884.59" -> "2353884.59") and falsely reject both.
+    return text.replace(",", "").replace("，", "")
 
 
 def find_evidence(doc: Document, page: int, raw: str) -> Chunk | None:
