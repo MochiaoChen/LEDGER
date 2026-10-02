@@ -1,0 +1,62 @@
+[
+  {
+    "group": "opening",
+    "model": "deepseek-flash",
+    "request_sha256": "333429af62efc289018f3699e8c2bc404e1db86f398410aa9dd79a53daaa4266",
+    "cache_hit": true,
+    "usage": {
+      "prompt_tokens": 11728,
+      "completion_tokens": 4507,
+      "total_tokens": 16235,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      },
+      "completion_tokens_details": {
+        "reasoning_tokens": 3245
+      },
+      "prompt_cache_hit_tokens": 0,
+      "prompt_cache_miss_tokens": 11728
+    },
+    "elapsed_ms": 0.1
+  },
+  {
+    "group": "analysis",
+    "model": "deepseek-flash",
+    "request_sha256": "19577c312f945c969f54b477a0007b1a7fb9cbb70b6694a221dcfdbb1bd12e48",
+    "cache_hit": true,
+    "usage": {
+      "prompt_tokens": 11729,
+      "completion_tokens": 10410,
+      "total_tokens": 22139,
+      "prompt_tokens_details": {
+        "cached_tokens": 128
+      },
+      "completion_tokens_details": {
+        "reasoning_tokens": 7649
+      },
+      "prompt_cache_hit_tokens": 128,
+      "prompt_cache_miss_tokens": 11601
+    },
+    "elapsed_ms": 0.1
+  },
+  {
+    "group": "valuation",
+    "model": "deepseek-flash",
+    "request_sha256": "e9311046b0539cae3e31f2dd291725cab76d75381da6e6a134d73694e0479137",
+    "cache_hit": false,
+    "usage": {
+      "prompt_tokens": 11727,
+      "completion_tokens": 11902,
+      "total_tokens": 23629,
+      "prompt_tokens_details": {
+        "cached_tokens": 128
+      },
+      "completion_tokens_details": {
+        "reasoning_tokens": 9308
+      },
+      "prompt_cache_hit_tokens": 128,
+      "prompt_cache_miss_tokens": 11599
+    },
+    "elapsed_ms": 43275.7
+  }
+]
