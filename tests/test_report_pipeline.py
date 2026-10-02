@@ -157,6 +157,16 @@ def test_extras_cache_without_verifier_fingerprint_is_rechecked(ws, monkeypatch)
     assert checked["ok"] and checked["rejected"] == 0 and checked["verifier_sha256"]
 
 
+def test_segment_forecast_shape_requires_evidenced_quantity_price_tables(tmp_path):
+    extras = tmp_path / "extras.json"
+    extras.write_text('{"tables":[{"id":"fleet_total"}]}', encoding="utf-8")
+    bad = {"segment_forecast": {"base": {"油轮": {"volume_growth": [0.1]}}}}
+    assert "segments 列表" in rp._assumption_shape_issues(bad, extras)[0]
+    bad["segment_forecast"] = {"segments": [{"id": "oil", "name": "油轮", "product_row": "油轮",
+                                             "scenarios": {"base": {}, "downside": {}, "upside": {}}}]}
+    assert "没有 ID 为 product 和 volume" in rp._assumption_shape_issues(bad, extras)[0]
+
+
 def test_narrative_quality_rejects_process_language_and_placeholders(tmp_path):
     draft = tmp_path / "narrative.md"
     draft.write_text("程序归因显示增长。模型状态为 screen-grade。\n"

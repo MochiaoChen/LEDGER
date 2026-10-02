@@ -87,3 +87,29 @@ def test_review_until_clear_stops_on_guard_failure(tmp_path, monkeypatch):
     monkeypatch.setattr(report_review, "review", lambda *a: pytest.fail("review should not run"))
     result = report_review.review_until_clear(tmp_path, run, narrative)
     assert not result["pass"] and result["reason"] == "数字护栏未通过"
+
+
+def test_review_until_clear_returns_upstream_blocker_without_prose_rewrite(tmp_path, monkeypatch):
+    narrative = tmp_path / "narrative.md"
+    narrative.write_text("正文", encoding="utf-8")
+    run = tmp_path / "run-1"
+    run.mkdir()
+    monkeypatch.setattr(report_review.subprocess, "run", lambda *a, **k: subprocess.CompletedProcess(a[0], 0, "", ""))
+    monkeypatch.setattr(report_review, "review", lambda *a: {
+        "narrative_sha256": hashlib.sha256(narrative.read_bytes()).hexdigest(), "run_id": run.name,
+        "issues": [{"severity": "blocker", "scope": "assumptions", "excerpt": "费用率",
+                    "reason": "无法核实可持续性", "fix": "修订估值假设并重跑"}], "pass": False,
+    })
+    monkeypatch.setattr(report_review, "revise", lambda *a: pytest.fail("must not patch prose"))
+    result = report_review.review_until_clear(tmp_path, run, narrative)
+    assert result["requires_upstream"] and not result["pass"]
+    assert narrative.read_text(encoding="utf-8") == "正文"
+
+
+def test_double_check_annex_keeps_upstream_issue_outside_report(tmp_path):
+    record = {"run_id": "run-1", "narrative_sha256": "abc", "issues": [
+        {"severity": "blocker", "scope": "assumptions", "excerpt": "估值结论", "reason": "终值依据不足", "fix": "复核 WACC"}]}
+    path = tmp_path / "double_check.md"
+    report_review.write_double_check(path, record)
+    text = path.read_text(encoding="utf-8")
+    assert "不属于投资者研报" in text and "估值假设/模型" in text and "复核 WACC" in text

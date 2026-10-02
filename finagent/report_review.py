@@ -11,11 +11,13 @@ import json
 import os
 import subprocess
 import sys
+from datetime import date
 from pathlib import Path
 from typing import Any
 
 from .core.config import get_settings
 from .core.llm import LLMClient
+from .report_evidence import annual_excerpts, compact_tables, compact_truth
 
 
 def _read(path: Path) -> Any:
@@ -33,6 +35,8 @@ def validate_review(raw: Any, narrative_hash: str, run_id: str) -> dict[str, Any
             raise ValueError("审读问题缺 severity")
         if not all(isinstance(issue.get(k), str) and issue[k].strip() for k in ("excerpt", "reason", "fix")):
             raise ValueError("审读问题须包含摘录、原因与修正建议")
+        if issue.get("scope", "narrative") not in {"narrative", "assumptions", "evidence"}:
+            raise ValueError("审读问题 scope 只能是 narrative/assumptions/evidence")
     escalate_material_issues(issues)
     if raw.get("pass") is not (not any(x["severity"] == "blocker" for x in issues)):
         raise ValueError("审读 pass 与 blocker 不一致")
@@ -62,18 +66,26 @@ def review(ws: Path, run: Path, narrative: Path, *, model: str = "deepseek-flash
     assumptions = _read(ws / "data/extractions" / _read(ws / "sample.json")["key"] / "valuation_assumptions.json")
     bridge_path = run / "valuation/non_operating_assets.json"
     evidence = {
-        "historical_facts": analysis.get("truth_table", []),
+        "review_date": date.today().isoformat(),
+        "historical_facts": compact_truth(analysis.get("truth_table", [])),
         "quarterly": analysis.get("quarterly", {}),
-        "verified_business_tables": extras.get("tables", []),
+        "verified_business_tables": compact_tables(extras.get("tables", [])),
         "forecast_summary": forecast,
         "analyst_assumptions": assumptions,
         "non_operating_assets_bridge": _read(bridge_path) if bridge_path.is_file() else {},
         "valuation": {"scenarios": valuation.get("scenarios"), "value_range": valuation.get("value_range"),
                       "sensitivities": valuation.get("sensitivities")},
     }
+    meta = _read(ws / "sample.json")
+    framework = (ws / "data/extractions" / meta["key"] / "report/framework.md").read_text(encoding="utf-8")
+    evidence["annual_report_original_pages"] = annual_excerpts(ws, meta, framework, extras.get("tables", []))
     system = (
         "你是独立审读者，不是研报作者。只返回 JSON 对象，字段 issues 数组。每项含 severity(blocker/warning)、"
-        "excerpt(原文短摘)、reason、fix。严格用提供的已核验事实和预测产物对照，不猜来源。"
+        "scope(narrative/assumptions/evidence)、excerpt(原文短摘)、reason、fix。"
+        "scope=narrative 表示改文字即可；scope=assumptions 表示必须修改估值假设、重跑三表/DCF；"
+        "scope=evidence 表示原 PDF 页仍不足、必须重查年报数据；原页已经列出事实但报告遗漏或写错时，"
+        "scope=narrative，不能把补写已给事实误判为上游证据问题。"
+        "行情日期按 evidence.review_date 判断，不能用模型内置日期。严格用提供的已核验事实和预测产物对照，不猜来源。"
         "出现以下情形列 blocker：核心结论没有两到三环关键数字支撑；把不同口径分母或收入/销量直接推成份额；"
         "历史事实与预测混淆；无依据的因果、确定性断言或估值下限；估值数字与产物不符；把内部流程、年报佐证、"
         "投资收益和公允价值变动收益从 EBIT 剔除却遗漏对应的非经营性资产股权桥处理，或无解释地删去原有已核验资产；"
@@ -81,6 +93,9 @@ def review(ws: Path, run: Path, narrative: Path, *, model: str = "deepseek-flash
         "无法核实且重要的论断也列 blocker，并建议删去或移至待核清单；不重要的不确定论断建议删去。"
         "警告 warning 只用于不影响事实、口径、结论的轻微文字问题；预案写成已实施、数字桥加总不平、"
         "交叉验证不成立、行情日期或价格称谓误导，均必须列 blocker。"
+        "原年报页文本可以证明公司披露和原始数字；framework.md 不是证据。"
+        "退出倍数法与永续增长法不重叠时，不要建议为使两者重叠而任意调整假设；"
+        "应说明分歧、检查假设经济依据，并把影响估值结论的实质缺口标为 scope=assumptions。"
         "如果证据中没有相关材料，不能武断认定事实错误，应明确证据不足。不要为了凑问题凭空指控。"
         "最多 20 项，优先重大问题。"
     )
@@ -92,6 +107,9 @@ def review(ws: Path, run: Path, narrative: Path, *, model: str = "deepseek-flash
     if not isinstance(raw, dict) or not isinstance(raw.get("issues"), list):
         raise ValueError("审读模型未返回规定 JSON")
     issues = raw["issues"]
+    for issue in issues:
+        if isinstance(issue, dict):
+            issue.setdefault("scope", "narrative")
     # Same-model reviewers sometimes label a material unsupported assertion as a warning.
     # Fail closed on evidence/caliber failures regardless of that subjective label.
     escalate_material_issues(issues)
@@ -101,7 +119,22 @@ def review(ws: Path, run: Path, narrative: Path, *, model: str = "deepseek-flash
     validate_review(result, sha, run.name)
     path = narrative.parent / "review.json"
     path.write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8")
+    write_double_check(narrative.parent / "double_check.md", result)
     return result
+
+
+def write_double_check(path: Path, review_result: dict[str, Any]) -> None:
+    """Keep material unresolved questions outside investor-facing report prose."""
+    blockers = [x for x in review_result["issues"] if x["severity"] == "blocker"]
+    lines = ["# 重大问题待复核清单", "", "此文件为测评工作底稿，不属于投资者研报；模型审读意见仍须查证。", "",
+             f"估值运行：`{review_result['run_id']}`", f"文稿 SHA-256：`{review_result['narrative_sha256']}`", ""]
+    if not blockers:
+        lines.append("当前独立审读无阻断项。")
+    for index, issue in enumerate(blockers, 1):
+        scope = {"narrative": "文稿", "assumptions": "估值假设/模型", "evidence": "原始证据"}[issue.get("scope", "narrative")]
+        lines += [f"## {index}. {scope}", "", f"涉及原文：{issue['excerpt']}", "",
+                  f"问题：{issue['reason']}", "", f"复核方向：{issue['fix']}", ""]
+    path.write_text("\n".join(lines), encoding="utf-8")
 
 
 def apply_replacements(text: str, replacements: Any) -> str:
@@ -199,6 +232,10 @@ def review_until_clear(ws: Path, run: Path, narrative: Path, *, max_reviews: int
                         "narrative_sha256": finding["narrative_sha256"]})
         if not blockers:
             return {"pass": True, "rounds": len(history), "reason": "数字护栏与独立审读均通过", "history": history}
+        upstream = [x for x in blockers if x.get("scope") in {"assumptions", "evidence"}]
+        if upstream:
+            return {"pass": False, "rounds": len(history), "reason": "须回到估值假设或年报证据并重跑下游",
+                    "requires_upstream": True, "blockers": upstream, "history": history}
         if index + 1 == max_reviews:
             return {"pass": False, "rounds": len(history), "reason": "审读上限内仍有 blocker",
                     "blockers": blockers, "history": history}

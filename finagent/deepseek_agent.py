@@ -77,7 +77,7 @@ TOOLS = [
     _tool("copy_template", "复制研报文稿模板到本公司目录；已有文件时拒绝覆盖。",
           {"name": {"type": "string", "enum": ["narrative"]}}, ["name"]),
     _tool("run_finagent", "执行白名单中的校验、估值、护栏或状态检查；参数由 harness 固定生成。",
-          {"action": {"type": "string", "enum": ["schema", "verify_facts", "verify_extra", "valuation", "guard", "review", "revise", "auto_review", "status"]}},
+          {"action": {"type": "string", "enum": ["schema", "verify_facts", "verify_extra", "valuation", "draft_report", "guard", "review", "revise", "auto_review", "status"]}},
           ["action"]),
     _tool("render_report", "用受信任的固定排版程序读取 layout.json 与文稿，生成 PDF 与逐页预览。",
           {}, []),
@@ -278,6 +278,16 @@ class WorkspaceTools:
             if self.meta["inputs"].get("peers"):
                 cmd += ["--peers", "inputs/peers.csv"]
             return self._run(cmd, timeout=600)
+        if action == "draft_report":
+            from .report_pipeline import _latest_run
+            from .report_writer import draft
+            run, _ = _latest_run(self.ws, work)
+            if run is None:
+                raise ValueError("还没有有效估值运行")
+            target = self.ws / self.work / "report/narrative.md"
+            if target.is_file() and "<公司>" not in target.read_text(encoding="utf-8"):
+                raise ValueError("已有非模板文稿；不会覆盖，使用 replace_text 修订")
+            return json.dumps(draft(self.ws, run, target), ensure_ascii=False)
         if action == "guard":
             from .report_pipeline import _latest_run
             run, _ = _latest_run(self.ws, work)
@@ -379,13 +389,27 @@ def run(ws: Path, model: str = MODEL) -> int:
             emit("error", detail="缺少有来源的当前股价；按工作区规范停在估值前")
             return 3
         emit("stage", stage=stage["stage"], detail=stage["next"])
+        if stage["stage"].startswith("6 "):
+            target = ws / tools.work / "report/narrative.md"
+            if not target.is_file() or "<公司>" in target.read_text(encoding="utf-8"):
+                try:
+                    result = tools.run_finagent("draft_report")
+                    emit("tool", stage=stage["stage"], tool="draft_report", ok=True)
+                    emit("stage", stage=stage["stage"], detail="已生成初稿，待数字护栏与独立审读")
+                except (ValueError, OSError, LLMError) as exc:
+                    emit("error", detail=f"DeepSeek 结构化初稿失败：{exc}")
+                    return 4
         messages: list[dict[str, Any]] = [
             {"role": "system", "content": (
                 "你是 FinAgent 工作区里的 DeepSeek 研报执行模型。只能通过所给工具读取本公司年报与两个原版 Skill，"
                 "不得访问工作区外、联网补公司数据、自己做算术或捏造数字。"
                 "只推进当前闸门，不跳阶段；模型结论不能代替程序校验。"
                 "估值假设可按工作区规则起草并标明分析师假设，不要求额外人工审批；缺有来源股价则停下。"
+                "只有经营表含已核验的 product 收入成本表与 volume 销量表时才写 segment_forecast；"
+                "航运等缺同口径量价数据时不要臆造分部销量，省略该字段并用合并三表情景假设。"
                 "文稿完成后优先调用 auto_review：它先跑数字护栏，再在最多五轮内用新上下文独立审读与局部修订；"
+                "若 auto_review 返回 requires_upstream，先按 blocker 的 scope 回到估值假设或年报证据，重跑估值，"
+                "再针对新运行修订文稿；不能仅通过改写措辞掩盖模型输入问题。"
                 "仍有 blocker 就停下，不得跳过。也可单独调用 guard/review/revise 排查具体问题。"
                 "小范围修订优先用 replace_text 精确替换原句，避免整篇重写与引入新错误。"
                 "排版只写 layout.json，不写 Python；标题须以固定的十个章节名开头，extra_tables 只选已核验表 ID。"

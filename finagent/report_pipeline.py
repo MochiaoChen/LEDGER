@@ -399,6 +399,33 @@ def _facts_quality(path: Path, year: int) -> dict[str, Any]:
     return {"ok": not (missing or duplicates), "missing": missing, "duplicates": duplicates}
 
 
+def _assumption_shape_issues(assumptions: dict[str, Any], extras: Path) -> list[str]:
+    """Reject segment forecasts the valuation engine cannot build or evidence-link."""
+    spec = assumptions.get("segment_forecast")
+    if spec is None:
+        return []
+    if not isinstance(spec, dict) or not isinstance(spec.get("segments"), list) or not spec["segments"]:
+        return ["segment_forecast 须含 segments 列表；若无同口径产品收入及销量表，应移除该字段，改用合并三表预测"]
+    ids = {t.get("id") for t in _load(extras).get("tables", [])} if extras.is_file() else set()
+    if not {"product", "volume"} <= ids:
+        return ["经营表没有 ID 为 product 和 volume 的可核验量价数据；移除 segment_forecast，按合并收入及利润率驱动三表"]
+    errors = []
+    for segment in spec["segments"]:
+        if not isinstance(segment, dict) or not all(isinstance(segment.get(k), str) and segment[k]
+                                                     for k in ("id", "name", "product_row")):
+            errors.append("segment_forecast.segments 每项须有 id/name/product_row")
+            continue
+        scenarios = segment.get("scenarios")
+        if not isinstance(scenarios, dict) or not {"base", "downside", "upside"} <= set(scenarios):
+            errors.append(f"{segment['id']} 缺 base/downside/upside 三情景")
+            continue
+        for key in ("base", "downside", "upside"):
+            setting = scenarios[key]
+            if not isinstance(setting, dict) or not all(k in setting for k in ("volume_growth", "price_growth")):
+                errors.append(f"{segment['id']}.{key} 缺 volume_growth/price_growth")
+    return errors[:8]
+
+
 def _narrative_quality(path: Path) -> dict[str, Any]:
     """机械拦截已知劣质写法；不代替事实与投资判断审核。"""
     body = path.read_text(encoding="utf-8")
@@ -541,10 +568,13 @@ def status(ws: Path) -> dict[str, Any]:
                 rationale_missing.append("status（分析师假设标识）")
             if not isinstance(a.get("non_operating_assets"), list):
                 rationale_missing.append("non_operating_assets（须显式列出或留空并解释）")
+            rationale_missing.extend(_assumption_shape_issues(a, extras))
         add("4 估值假设", not (miss or mismatch or rationale_missing or not market_data),
             "缺行情输入" if not market_data else "缺 " + "、".join(miss) if miss else
             "与 inputs/market.json 不一致：" + "、".join(mismatch) if mismatch else
             "关键假设依据缺失：" + "、".join(rationale_missing) if rationale_missing else "已核对行情来源、日期与关键假设依据",
+            "修正：" + "；".join((miss + mismatch + rationale_missing)[:5])
+            if (miss or mismatch or rationale_missing) else
             "股价取 inputs/market.json；预测、WACC、终值和非经营性资产处理均须说明依据")
     # 5 估值运行
     run, man = _latest_run(ws, work)
