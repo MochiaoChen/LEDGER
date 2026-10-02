@@ -32,7 +32,8 @@ jobs:
           Push-Location $workspace
           try {
             & .\py.cmd -m finagent.report_pipeline status
-            if ($LASTEXITCODE -ne 0) { throw "py.cmd status failed: $LASTEXITCODE" }
+            # A fresh workspace is intentionally incomplete: status returns 1 until all 8 gates pass.
+            if ($LASTEXITCODE -ne 1) { throw "py.cmd status expected incomplete exit 1, got: $LASTEXITCODE" }
             & .\py.cmd -m finagent.safe_report --help
             if ($LASTEXITCODE -ne 0) { throw "py.cmd renderer help failed: $LASTEXITCODE" }
           } finally {
