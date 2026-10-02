@@ -2,6 +2,7 @@
 
 import json
 import os
+import zipfile
 
 import pytest
 
@@ -64,6 +65,8 @@ def test_agent_commands_and_usage(tmp_path):
     assert claude[:2] == ["claude", "-p"] and "stream-json" in claude and claude[-2:] == ["--model", "opus"]
     codex = rp.agent_command("codex")
     assert codex[:2] == ["codex", "exec"] and "--skip-git-repo-check" in codex and codex[-1] == rp.TASK_PROMPT
+    assert rp.agent_command("deepseek", python="/test/env/python")[:3] == [
+        "/test/env/python", "-m", "finagent.deepseek_agent"]
     log = tmp_path / "c.jsonl"
     log.write_text("\n".join(json.dumps(e) for e in [
         {"type": "assistant", "message": {"content": [{"type": "text", "text": "开始"}]}},
@@ -93,7 +96,10 @@ def test_status_gates_and_collect(ws, tmp_path):
     res = rp.status(ws)
     assert not res["done"] and res["next"].startswith("1 财务抽取")
     work = ws / "data/extractions/贵州茅台_2025"
-    (work / "facts.json").write_text("{}", encoding="utf-8")
+    core = ("revenue", "np_parent", "ocf", "total_assets", "eps_basic")
+    sample_facts = {"facts": [{"metric_id": metric, "period": str(year)}
+                              for year in (2023, 2024, 2025) for metric in core]}
+    (work / "facts.json").write_text(json.dumps(sample_facts), encoding="utf-8")
     (work / "facts.verified.json").write_text(json.dumps({"check": {"ok": True}}), encoding="utf-8")
     (work / "report/framework.md").write_text("# 框架", encoding="utf-8")
     stages = {s["stage"]: s for s in rp.status(ws)["stages"]}
@@ -119,3 +125,51 @@ def test_status_gates_and_collect(ws, tmp_path):
     assert row["stages_passed"] == 0 and not row["done"] and row["valuation_runs"] == 0
     table = rp.scorecard_markdown([row])
     assert "闸门/8" in table and "未完成" in table and "不代表研报质量" in table
+
+
+def test_status_rejects_missing_history_and_duplicate_facts(ws):
+    work = ws / "data/extractions/贵州茅台_2025"
+    facts = {"facts": [{"metric_id": "revenue", "period": "2025"},
+                        {"metric_id": "revenue", "period": "2025"}]}
+    (work / "facts.json").write_text(json.dumps(facts), encoding="utf-8")
+    (work / "facts.verified.json").write_text(json.dumps({"check": {"ok": True}}), encoding="utf-8")
+    first = rp.status(ws)["stages"][0]
+    assert not first["ok"]
+    assert "三年核心缺项 14" in first["detail"]
+    assert "重复条目 1" in first["detail"]
+
+
+def test_narrative_quality_rejects_process_language_and_placeholders(tmp_path):
+    draft = tmp_path / "narrative.md"
+    draft.write_text("程序归因显示增长。模型状态为 screen-grade。\n"
+                     "这不是销量增长，而是估值的下限。TODO\n", encoding="utf-8")
+    result = rp._narrative_quality(draft)
+    assert not result["ok"]
+    assert {issue.split(" L")[0] for issue in result["issues"]} == {
+        "内部流程话术", "冗余否定句式", "未完成占位符", "无依据的保底表述"}
+    draft.write_text("2025 年收入增长 17%，经营现金流增长 19%。", encoding="utf-8")
+    assert rp._narrative_quality(draft)["ok"]
+
+
+def test_status_rejects_assumed_price_that_differs_from_market_input(ws):
+    work = ws / "data/extractions/贵州茅台_2025"
+    assumptions = work / "valuation_assumptions.json"
+    assumptions.write_text(json.dumps({"current_price": 1501, "price_source": "测试行情",
+                                       "valuation_date": None}), encoding="utf-8")
+    stage = rp.status(ws)["stages"][3]
+    assert not stage["ok"] and "current_price" in stage["detail"]
+    assumptions.write_text(json.dumps({"current_price": 1500, "price_source": "测试行情"}), encoding="utf-8")
+    assert "已核对行情来源" in rp.status(ws)["stages"][3]["detail"]
+
+
+def test_artifact_gates_reject_corrupt_excel_and_pdf(tmp_path):
+    xlsx = tmp_path / "model.xlsx"
+    xlsx.write_bytes(b"not an xlsx" * 200)
+    assert not rp._xlsx_valid(xlsx)
+    with zipfile.ZipFile(xlsx, "w") as out:
+        out.writestr("xl/workbook.xml", "<workbook/>")
+        out.writestr("padding", "x" * 1500)
+    assert rp._xlsx_valid(xlsx)
+    pdf = tmp_path / "report.pdf"
+    pdf.write_bytes(b"%PDF-1.4\n" + b"x" * 1500)
+    assert not rp._pdf_valid(pdf)
