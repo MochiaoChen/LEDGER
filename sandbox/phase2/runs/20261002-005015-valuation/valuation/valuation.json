@@ -1,0 +1,446 @@
+{
+  "status": "ok",
+  "model_status": "screen-grade",
+  "current_price": 20.15,
+  "value_range": {
+    "low": 2.6071748289965777,
+    "base": 7.505113349486028,
+    "high": 12.591690197302679
+  },
+  "scenarios": [
+    {
+      "scenario": "base",
+      "scenario_cn": "基准",
+      "description": "2026 年地缘冲突推高油轮运价、新船集中交付，收入大增；2027～2028 年运价回落，2029 年起回归周期中枢。",
+      "wacc": 0.08360000000000001,
+      "terminal_growth": 0.015,
+      "enterprise_value_mm": 77027.37130730912,
+      "equity_value_mm": 60600.32670229912,
+      "value_per_share": 7.505113349486028,
+      "tv_percent_ev": 0.7632271743920522,
+      "implied_exit_ebitda": 7.7559708604437745,
+      "upside_vs_price": -0.6275377990329514
+    },
+    {
+      "scenario": "downside",
+      "scenario_cn": "悲观",
+      "description": "地缘溢价快速消退、新船集中交付压低运价，收入增幅较小且回落更深，毛利率承压。",
+      "wacc": 0.08860000000000001,
+      "terminal_growth": 0.01,
+      "enterprise_value_mm": 37478.77814318813,
+      "equity_value_mm": 21051.733538178134,
+      "value_per_share": 2.6071748289965777,
+      "tv_percent_ev": 0.7791655390295154,
+      "implied_exit_ebitda": 5.806230321543123,
+      "upside_vs_price": -0.8706116710175396
+    },
+    {
+      "scenario": "upside",
+      "scenario_cn": "乐观",
+      "description": "油轮高景气延续至 2027 年，LNG 与干散货长约贡献增量，运价回落更缓。",
+      "wacc": 0.0811,
+      "terminal_growth": 0.02,
+      "enterprise_value_mm": 118099.13190838647,
+      "equity_value_mm": 101672.08730337647,
+      "value_per_share": 12.591690197302679,
+      "tv_percent_ev": 0.764653214276818,
+      "implied_exit_ebitda": 9.175151834781078,
+      "upside_vs_price": -0.3751022234589241
+    }
+  ],
+  "forecast_base": [
+    {
+      "period": "2026",
+      "revenue": 39448.09558473,
+      "revenue_growth": 0.3999999999999999,
+      "ebit": 16544.624920366907,
+      "ebit_margin": 0.4194023735526331,
+      "ebitda": 19329.566836517697,
+      "tax_rate": 0.11694074641333096,
+      "cash_taxes": 1934.7407873163024,
+      "nopat": 14609.884133050604,
+      "da": 2784.9419161507913,
+      "capex": 11045.4667637244,
+      "nwc": 1379.7794295201022,
+      "change_nwc": 519.339568810102,
+      "unlevered_fcf": 5830.019716666892
+    },
+    {
+      "period": "2027",
+      "revenue": 35503.286026257,
+      "revenue_growth": -0.09999999999999987,
+      "ebit": 11408.235722585468,
+      "ebit_margin": 0.3213290092119454,
+      "ebitda": 14556.347270765373,
+      "tax_rate": 0.11694074641333096,
+      "cash_taxes": 1334.0876006583708,
+      "nopat": 10074.148121927097,
+      "da": 3148.1115481799047,
+      "capex": 9940.920087351962,
+      "nwc": 1169.8400738073624,
+      "change_nwc": -209.93935571273983,
+      "unlevered_fcf": 3491.278938467779
+    },
+    {
+      "period": "2028",
+      "revenue": 32663.023144156443,
+      "revenue_growth": -0.07999999999999996,
+      "ebit": 8013.419857401806,
+      "ebit_margin": 0.24533613505507504,
+      "ebitda": 11432.058100454755,
+      "tax_rate": 0.11694074641333096,
+      "cash_taxes": 937.0952994479754,
+      "nopat": 7076.324557953831,
+      "da": 3418.638243052949,
+      "capex": 7839.125554597546,
+      "nwc": 1026.5994930978698,
+      "change_nwc": -143.24058070949263,
+      "unlevered_fcf": 2799.0778271187255
+    },
+    {
+      "period": "2029",
+      "revenue": 33316.28360703957,
+      "revenue_growth": 0.020000000000000018,
+      "ebit": 7410.863690129467,
+      "ebit_margin": 0.22243968677717663,
+      "ebitda": 10994.373590323059,
+      "tax_rate": 0.11694074641333096,
+      "cash_taxes": 866.6319314911921,
+      "nopat": 6544.231758638274,
+      "da": 3583.509900193592,
+      "capex": 5996.931049267123,
+      "nwc": 1030.2493355261604,
+      "change_nwc": 3.64984242829064,
+      "unlevered_fcf": 4127.160767136453
+    },
+    {
+      "period": "2030",
+      "revenue": 34315.77211525076,
+      "revenue_growth": 0.030000000000000027,
+      "ebit": 7663.169059424015,
+      "ebit_margin": 0.22331332174858212,
+      "ebitda": 11324.20479803275,
+      "tax_rate": 0.11694074641333096,
+      "cash_taxes": 896.1367097005877,
+      "nopat": 6767.032349723428,
+      "da": 3661.035738608734,
+      "capex": 4461.050374982598,
+      "nwc": 1061.156815591945,
+      "change_nwc": 30.90748006578451,
+      "unlevered_fcf": 5936.110233283779
+    }
+  ],
+  "pv_base": {
+    "pv_rows": [
+      {
+        "period": "2026",
+        "cash_flow": 5830.019716666892,
+        "discount_period": 0.5,
+        "pv_cash_flow": 5600.612499522593
+      },
+      {
+        "period": "2027",
+        "cash_flow": 3491.278938467779,
+        "discount_period": 1.5,
+        "pv_cash_flow": 3095.145388312786
+      },
+      {
+        "period": "2028",
+        "cash_flow": 2799.0778271187255,
+        "discount_period": 2.5,
+        "pv_cash_flow": 2290.0369147279666
+      },
+      {
+        "period": "2029",
+        "cash_flow": 4127.160767136453,
+        "discount_period": 3.5,
+        "pv_cash_flow": 3116.089329728975
+      },
+      {
+        "period": "2030",
+        "cash_flow": 5936.110233283779,
+        "discount_period": 4.5,
+        "pv_cash_flow": 4136.104221291818
+      }
+    ],
+    "pv_fcf": 18237.98835358414,
+    "pv_terminal_value": 58789.38295372498,
+    "total_pv": 77027.37130730912
+  },
+  "bridge_base": {
+    "add_backs": 12720.05622928,
+    "deductions": 29147.10083429,
+    "equity_value": 60600.32670229912
+  },
+  "wacc_base": {
+    "cost_of_equity": 0.096,
+    "after_tax_cost_of_debt": 0.034,
+    "base_wacc": 0.08360000000000001,
+    "scenario_wacc_adjustment": 0.0,
+    "wacc": 0.08360000000000001
+  },
+  "sensitivities": [
+    {
+      "name": "WACC × 永续增长率",
+      "x_axis": "wacc_delta",
+      "y_axis": "terminal_growth_delta",
+      "x_values": [
+        -0.01,
+        -0.005,
+        0.0,
+        0.005,
+        0.01
+      ],
+      "y_values": [
+        -0.01,
+        -0.005,
+        0.0,
+        0.005,
+        0.01
+      ],
+      "matrix": [
+        [
+          7.825231309556462,
+          8.459397389797424,
+          9.2017829376563,
+          10.082673251906757,
+          11.144816717237553
+        ],
+        [
+          7.12546813159789,
+          7.663379419514439,
+          8.285867953958748,
+          9.01458320076557,
+          9.879252784663214
+        ],
+        [
+          6.516192347430491,
+          6.977061781812352,
+          7.505113349486028,
+          8.116191893209024,
+          8.831550051901813
+        ],
+        [
+          5.981121528606792,
+          6.379459867855493,
+          6.831920264067334,
+          7.350336986257578,
+          7.950265771685279
+        ],
+        [
+          5.507650404561983,
+          5.854611073303235,
+          6.245714320764747,
+          6.689956596413967,
+          7.198957221283187
+        ]
+      ]
+    },
+    {
+      "name": "WACC × 退出 EV/EBITDA 倍数",
+      "x_axis": "wacc_delta",
+      "y_axis": "exit_multiple_delta",
+      "x_values": [
+        -0.01,
+        -0.005,
+        0.0,
+        0.005,
+        0.01
+      ],
+      "y_values": [
+        -2.0,
+        -1.0,
+        0.0,
+        1.0,
+        2.0
+      ],
+      "matrix": [
+        [
+          4.207193776054802,
+          5.190474422338565,
+          6.17375506862233,
+          7.157035714906092,
+          8.140316361189855
+        ],
+        [
+          4.091722333087707,
+          5.052422631227206,
+          6.013122929366706,
+          6.973823227506206,
+          7.934523525645707
+        ],
+        [
+          3.9792357015551305,
+          4.917975052561253,
+          5.856714403567376,
+          6.795453754573498,
+          7.734193105579622
+        ],
+        [
+          3.8696416398922677,
+          4.787019712554381,
+          5.704397785216495,
+          6.621775857878608,
+          7.539153930540721
+        ],
+        [
+          3.7628511860894647,
+          4.659448632125251,
+          5.556046078161041,
+          6.452643524196828,
+          7.349240970232615
+        ]
+      ]
+    },
+    {
+      "name": "收入增速 × EBIT 利润率",
+      "x_axis": "revenue_growth_delta",
+      "y_axis": "ebit_margin_delta",
+      "x_values": [
+        -0.02,
+        -0.01,
+        0.0,
+        0.01,
+        0.02
+      ],
+      "y_values": [
+        -0.03,
+        -0.015,
+        0.0,
+        0.015,
+        0.03
+      ],
+      "matrix": [
+        [
+          5.277159590065236,
+          6.00857214188467,
+          6.739984693704108,
+          7.471397245523541,
+          8.202809797342978
+        ],
+        [
+          5.589772181610159,
+          6.352712424716708,
+          7.115652667823259,
+          7.878592910929808,
+          8.64153315403636
+        ],
+        [
+          5.913839060462142,
+          6.709476204974085,
+          7.505113349486028,
+          8.300750493997969,
+          9.096387638509908
+        ],
+        [
+          6.2496768883463325,
+          7.079213366936631,
+          7.9087498455269225,
+          8.738286324117217,
+          9.567822802707509
+        ],
+        [
+          6.597608092947155,
+          7.4622801889570045,
+          8.326952284966854,
+          9.191624380976698,
+          10.056296476986548
+        ]
+      ]
+    }
+  ],
+  "sensitivity_directionality": {
+    "passed": true,
+    "details": [
+      {
+        "check": "WACC / Terminal Growth：沿 x_value 递减（y_value=-0.01）",
+        "passed": true
+      },
+      {
+        "check": "WACC / Terminal Growth：沿 x_value 递减（y_value=-0.005）",
+        "passed": true
+      },
+      {
+        "check": "WACC / Terminal Growth：沿 x_value 递减（y_value=0.0）",
+        "passed": true
+      },
+      {
+        "check": "WACC / Terminal Growth：沿 x_value 递减（y_value=0.005）",
+        "passed": true
+      },
+      {
+        "check": "WACC / Terminal Growth：沿 x_value 递减（y_value=0.01）",
+        "passed": true
+      },
+      {
+        "check": "WACC / Terminal Growth：沿 y_value 递增（x_value=-0.01）",
+        "passed": true
+      },
+      {
+        "check": "WACC / Terminal Growth：沿 y_value 递增（x_value=-0.005）",
+        "passed": true
+      },
+      {
+        "check": "WACC / Terminal Growth：沿 y_value 递增（x_value=0.0）",
+        "passed": true
+      },
+      {
+        "check": "WACC / Terminal Growth：沿 y_value 递增（x_value=0.005）",
+        "passed": true
+      },
+      {
+        "check": "WACC / Terminal Growth：沿 y_value 递增（x_value=0.01）",
+        "passed": true
+      },
+      {
+        "check": "Revenue Growth / EBIT Margin：沿 y_value 递增（x_value=-0.02）",
+        "passed": true
+      },
+      {
+        "check": "Revenue Growth / EBIT Margin：沿 y_value 递增（x_value=-0.01）",
+        "passed": true
+      },
+      {
+        "check": "Revenue Growth / EBIT Margin：沿 y_value 递增（x_value=0.0）",
+        "passed": true
+      },
+      {
+        "check": "Revenue Growth / EBIT Margin：沿 y_value 递增（x_value=0.01）",
+        "passed": true
+      },
+      {
+        "check": "Revenue Growth / EBIT Margin：沿 y_value 递增（x_value=0.02）",
+        "passed": true
+      }
+    ]
+  },
+  "checks": {
+    "hard_failures": [],
+    "warnings": [
+      "终值占企业价值 76.3%，结论高度依赖终值假设，需重点复核 WACC 与永续增长率",
+      "以下关键输入依赖分析师假设：forecast、terminal_value、wacc"
+    ],
+    "informational": [
+      "基准 WACC 8.36%，永续增长率 1.50%",
+      "DCF 预测与三表模型逐期核对（revenue、ebit、da、capex、nwc），最大偏差 1.82e-12 百万元"
+    ]
+  },
+  "three_statement_tie": {
+    "items": [
+      "revenue",
+      "ebit",
+      "da",
+      "capex",
+      "nwc"
+    ],
+    "max_abs_diff_mm": 1.8189894035458565e-12,
+    "status": "pass"
+  },
+  "historical_ratios": {
+    "ebit_margin": 0.2512492398810394,
+    "da_percent_revenue": 0.08504965804804804,
+    "capex_percent_revenue": 0.2767086855724752,
+    "nwc_percent_revenue": 0.030536729014119912,
+    "effective_tax_rate": 0.11694074641333096
+  }
+}
