@@ -41,6 +41,17 @@ def test_tools_restrict_reads_and_writes(workspace):
     assert not (workspace / "data/extractions/贵州茅台_2025/facts.json").exists()
     result = tools.write_file("data/extractions/贵州茅台_2025/facts.json", "{}")
     assert "SHA-256" in result
+    with pytest.raises(ValueError, match="只能写"):
+        tools.write_file("data/extractions/贵州茅台_2025/report/build_report.py", "raise SystemExit()")
+    with pytest.raises(ValueError, match="未知模板"):
+        tools.copy_template("build_report")
+    with pytest.raises(ValueError, match="程序生成"):
+        tools.write_file("data/extractions/贵州茅台_2025/report/review.json", "{}")
+    tools.write_file("data/extractions/贵州茅台_2025/report/narrative.md", "原句，保留。")
+    with pytest.raises(ValueError, match="恰好出现一次"):
+        tools.replace_text("不存在", "新句")
+    assert "SHA-256" in tools.replace_text("原句", "新句")
+    assert tools.read_file("data/extractions/贵州茅台_2025/report/narrative.md") == "新句，保留。"
 
 
 def test_tool_actions_cannot_run_arbitrary_command(workspace):
@@ -114,3 +125,19 @@ def test_usage_parser_deepseek(tmp_path):
     path.write_text("\n".join(json.dumps({"type": "deepseek.usage", "usage": {"prompt_tokens": 4,
                         "completion_tokens": 3}}) for _ in range(2)), encoding="utf-8")
     assert rp._usage(path, "deepseek") == {"input_tokens": 8, "output_tokens": 6}
+
+
+def test_context_compaction_preserves_last_reasoning_tool_pair(monkeypatch):
+    monkeypatch.setattr(ds, "MAX_CONTEXT_CHARS", 100)
+    messages = [
+        {"role": "system", "content": "rules"}, {"role": "user", "content": "stage"},
+        {"role": "assistant", "content": "old" * 100},
+        {"role": "assistant", "content": None, "reasoning_content": "latest reasoning",
+         "tool_calls": [{"id": "call-1"}]},
+        {"role": "tool", "tool_call_id": "call-1", "content": "latest result"},
+    ]
+    compact = ds._compact_messages(messages, "6 文稿", "rerun guard")
+    assert len(compact) == 5
+    assert compact[-2]["reasoning_content"] == "latest reasoning"
+    assert compact[-1]["tool_call_id"] == "call-1"
+    assert "old" not in str(compact)

@@ -124,7 +124,8 @@ def test_status_gates_and_collect(ws, tmp_path):
     row = rp.scorecard(ws)
     assert row["stages_passed"] == 0 and not row["done"] and row["valuation_runs"] == 0
     table = rp.scorecard_markdown([row])
-    assert "闸门/8" in table and "未完成" in table and "不代表研报质量" in table
+    assert "闸门/8" in table and "独立审读" in table and "阻断项" in table
+    assert "未完成" in table and "不代表研报质量" in table
 
 
 def test_status_rejects_missing_history_and_duplicate_facts(ws):
@@ -145,9 +146,16 @@ def test_narrative_quality_rejects_process_language_and_placeholders(tmp_path):
                      "这不是销量增长，而是估值的下限。TODO\n", encoding="utf-8")
     result = rp._narrative_quality(draft)
     assert not result["ok"]
-    assert {issue.split(" L")[0] for issue in result["issues"]} == {
+    assert {issue.split(" L")[0] for issue in result["issues"]} >= {
         "内部流程话术", "冗余否定句式", "未完成占位符", "无依据的保底表述"}
-    draft.write_text("2025 年收入增长 17%，经营现金流增长 19%。", encoding="utf-8")
+    sections = ("title", "subtitle", "summary", "thesis", "overview", "performance", "business",
+                "profitability", "balance", "cashflow", "forecast", "valuation", "recommendation", "risks")
+    draft.write_text("\n".join(f"<!-- section: {name} -->\n" +
+                               ("当前股价 10 元，DCF 12 元；收入 3 亿元，利润 2 亿元，现金流 4 亿元，"
+                                "每股收益 1 元。风险提示：竞争加剧。" if name == "summary" else "分析。")
+                               for name in sections), encoding="utf-8")
+    assert rp._narrative_quality(draft)["ok"]
+    draft.write_text(draft.read_text(encoding="utf-8").replace("当前股价", "参考股价"), encoding="utf-8")
     assert rp._narrative_quality(draft)["ok"]
 
 
@@ -162,6 +170,24 @@ def test_status_rejects_assumed_price_that_differs_from_market_input(ws):
     assert "已核对行情来源" in rp.status(ws)["stages"][3]["detail"]
 
 
+def test_deepseek_assumption_gate_requires_material_basis(ws):
+    sample = ws / "sample.json"
+    meta = json.loads(sample.read_text(encoding="utf-8"))
+    meta["require_review"] = True
+    sample.write_text(json.dumps(meta, ensure_ascii=False), encoding="utf-8")
+    market = ws / "inputs/market.json"
+    market_data = json.loads(market.read_text(encoding="utf-8"))
+    market_data["price_date"] = "2026-09-30"
+    market.write_text(json.dumps(market_data, ensure_ascii=False), encoding="utf-8")
+    path = ws / "data/extractions/贵州茅台_2025/valuation_assumptions.json"
+    path.write_text(json.dumps({"current_price": 1500, "price_source": "测试行情",
+                                "valuation_date": "2026-09-30", "status": "分析师假设",
+                                "rationale": {"forecast": "短"}}, ensure_ascii=False),
+                    encoding="utf-8")
+    gate = rp.status(ws)["stages"][3]
+    assert not gate["ok"] and "non_operating" in gate["detail"] and "wacc" in gate["detail"]
+
+
 def test_artifact_gates_reject_corrupt_excel_and_pdf(tmp_path):
     xlsx = tmp_path / "model.xlsx"
     xlsx.write_bytes(b"not an xlsx" * 200)
@@ -169,7 +195,17 @@ def test_artifact_gates_reject_corrupt_excel_and_pdf(tmp_path):
     with zipfile.ZipFile(xlsx, "w") as out:
         out.writestr("xl/workbook.xml", "<workbook/>")
         out.writestr("padding", "x" * 1500)
+    assert not rp._xlsx_valid(xlsx)
+    with zipfile.ZipFile(xlsx, "w") as out:
+        out.writestr("xl/workbook.xml", '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheets>'
+                     + ''.join(f'<sheet name="{name}"/>' for name in ("估值汇总", "DCF", "历史财务", "模型检查"))
+                     + '</sheets></workbook>')
+        for i in range(1, 5):
+            out.writestr(f"xl/worksheets/sheet{i}.xml",
+                         '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'
+                         '<sheetData><row><c r="A1"><f>1+1</f><v>2</v></c></row></sheetData></worksheet>')
+        out.writestr("padding", "x" * 1500)
     assert rp._xlsx_valid(xlsx)
     pdf = tmp_path / "report.pdf"
     pdf.write_bytes(b"%PDF-1.4\n" + b"x" * 1500)
-    assert not rp._pdf_valid(pdf)
+    assert not rp._pdf_valid(pdf)[0]

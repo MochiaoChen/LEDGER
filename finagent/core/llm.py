@@ -133,7 +133,7 @@ class LLMClient:
                 last = LLMError(f"HTTP {exc.code}: {detail}")
                 if exc.code < 500 and exc.code != 429:
                     break
-            except (urllib.error.URLError, TimeoutError) as exc:
+            except (urllib.error.URLError, TimeoutError, ConnectionError) as exc:
                 last = exc
             time.sleep(2 ** attempt)
         raise LLMError(f"LLM 请求失败：{last}")

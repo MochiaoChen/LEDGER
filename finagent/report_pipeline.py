@@ -291,7 +291,7 @@ def render_guide(meta: dict[str, Any]) -> str:
 
 skill 全文在 `.claude/skills/`（`.agents/skills/` 下只是指向它的入口），下文的 skill 文档路径都相对 `.claude/skills/`。
 
-你的全部产出写在 `{work}/`（抽取、假设、框架、文稿、编排脚本、交付说明），程序运行目录在 `runs/`。
+你的全部产出写在 `{work}/`（抽取、假设、框架、文稿、声明式排版配置、交付说明），程序运行目录在 `runs/`。
 
 ## 读取边界（防止上下文浪费和信息污染）
 
@@ -302,7 +302,7 @@ skill 全文在 `.claude/skills/`（`.agents/skills/` 下只是指向它的入�
   不在本工作区，不用找；`references/claims.md`、`commentary.md` 与本任务无关（不核查研报草稿，解读即研报正文）。
 - **PDF 按页读**，每次不超过 20 页，只读 `locate.json` 的 `suggested_reads`、管理层讨论与分析、framework 需要的附注页。
   已抄进 facts / extras 的页不要再读。
-- **不改** `finagent/`、`.claude/`、`report/`：引擎或 reportkit 不够用时，在公司编排脚本里绕开，并在交付说明里写明需要仓库改什么。
+- **不改** `finagent/`、`.claude/`、`report/`；也不编写可执行的报告脚本。排版引擎不够用时在交付说明列明，交由代码审查修复。
 
 ## 阶段
 
@@ -311,10 +311,10 @@ skill 全文在 `.claude/skills/`（`.agents/skills/` 下只是指向它的入�
 | 1 | 财务抽取 | 按 locate 读三大报表、最近三年主要会计数据、分季度、股本页，写 `{work}/facts.json`；同一指标/期间只留一条 | `finagent-research/SKILL.md` 第 1–3 步，`references/extraction.md` | `verify-facts` 为 `ok: true`，且最近三年收入、归母、经营现金流、总资产、基本 EPS 无缺项/重复 |
 | 2 | 分析框架 | 通读管理层讨论与分析，写 `{work}/report/framework.md`（投资主线、驱动清单、披露局限、章节结构） | `finagent-report/SKILL.md` 一～三，`references/analysis.md` | 文件存在且不是模板 |
 | 3 | 经营数据 | 按驱动清单逐格抄表到 `{work}/extras.json`，派生比率写 `ratios` | `references/extraction.md`“补充表格” | `PY -m finagent verify-extra --input {pdf} --extras {work}/extras.json` 为 `ok: true` |
-| 4 | 估值假设 | 起草 `{work}/valuation_assumptions.json`：`status` 写明“观点/假设”，股价取 `inputs/market.json`，每项假设写依据 | `finagent-research/SKILL.md` 第 5 步“估值口径”，`data/samples/valuation_assumptions.json`（格式） | 文件存在，有 `current_price` 与 `price_source` |
+| 4 | 估值假设 | 起草 `{work}/valuation_assumptions.json`：`status` 写明“观点/假设”，股价取 `inputs/market.json`；`rationale` 至少说明 `forecast`、`wacc`、`terminal_value`、`non_operating`，对剔除投资收益与公允价值变动的资产处理必须说明是否加回股权桥，不能默默删去 | `finagent-research/SKILL.md` 第 5 步“估值口径”，`data/samples/valuation_assumptions.json`（格式） | 股价/来源/日期与输入一致，关键假设有依据 |
 | 5 | 估值运行 | `PY -m finagent valuation --input {pdf} --year {y} --company {c} --assumptions {work}/valuation_assumptions.json --facts {work}/facts.json --extras {work}/extras.json --llm off`{" --peers inputs/peers.csv" if "peers" in meta["inputs"] else ""} | — | 最新运行目录成功，且晚于 facts / extras / 假设的修改 |
-| 6 | 文稿 | `cp .claude/skills/finagent-report/templates/narrative.md {work}/report/narrative.md`，写完全部分析；`PY -m finagent guard --run-dir runs/<run_id> --text {work}/report/narrative.md` | `references/sections.md`，`finagent-research/references/writing.md` | 最新运行目录的 guard 为 `ok: true`，核对的是当前文稿，且文稿检查无内部流程话术、占位符或冗余否定句式 |
-| 7 | 排版 | `cp .claude/skills/finagent-report/templates/build_report.py {work}/report/build_report.py`，`Config.output_name` 设为 `{c}{datetime.now():%m%d}.pdf`；`PY {work}/report/build_report.py --run-dir runs/<run_id>`，看 `preview/sheet*.png` 自检 | `finagent-research/references/html-report.md` | PDF 晚于文稿和编排脚本 |
+| 6 | 文稿 | `cp .claude/skills/finagent-report/templates/narrative.md {work}/report/narrative.md`，写完全部分析；DeepSeek 执行器调用 `run_finagent(auto_review)`，先过数字护栏，再在最多五轮内以全新上下文对照事实、经营表、估值假设与产物独立审读并作唯一匹配的局部修订。护栏有错或第五轮仍有 blocker 则停下，不得强制交付 | `references/sections.md`，`finagent-research/references/writing.md` | guard 对应当前文稿、机械文风检查通过；DeepSeek 独立审读无 blocker |
+| 7 | 排版 | 写 `{work}/report/layout.json`，只含 `sector`（行业）、`headings`（按投资逻辑、公司概况、业绩回顾、经营分析、盈利能力、资产负债与现金流、盈利预测、估值、投资建议、风险提示顺序的十条结论式标题）、`extra_tables`（从已核验 extras 选 1–8 个 ID）、`assumption_basis`（每一项分部销量增速/单价增速/毛利率、销售费用率、其他费用率和现金分红率的具体依据，键名与“关键假设与依据”表一致）、`method_note`（估值口径说明）。运行 `PY -m finagent.safe_report --run-dir runs/<run_id> --narrative {work}/report/narrative.md --layout {work}/report/layout.json`；看 `preview/sheet*.png` 逐页检查 | `finagent-research/references/html-report.md` | PDF 晚于文稿和配置、完整且有逐页预览 |
 | 8 | 交付说明 | 写 `{work}/report/delivery.md`：PDF 路径、页数与图表数、核心结论、评级（取程序结果）、哪些是假设或外部数据、未解决的校验问题 | — | 文件存在 |
 
 改了前面阶段的文件（如补抄 extras），status 会把后面的阶段标为过期：重跑估值、guard、排版。
@@ -402,12 +402,27 @@ def _narrative_quality(path: Path) -> dict[str, Any]:
         "冗余否定句式": r"不是[^。；\n]{0,60}而是|而非|而不是",
         "未完成占位符": r"(?i:TODO|TBD|FIXME)|待(?:核查|补充|确认|完善)",
         "无依据的保底表述": r"(?:估值|股价)(?:的)?下限|构成估值的下限",
+        "报告制作过程暴露": r"(?:年报佐证|程序预测|程序计算|模型未披露|无法(?:核验|验证)|口径边界必须强调|属分析师假设)[^。\n]{0,20}",
+        "口语化连接": r"(?:^|[，。；])(?:不过|具体来看|其实|值得注意的是)[，：]?",
     }
     issues: list[str] = []
     for label, pattern in checks.items():
         for match in list(re.finditer(pattern, body))[:5]:
             line = body.count("\n", 0, match.start()) + 1
             issues.append(f"{label} L{line}: {match.group(0)}")
+    from .safe_report import SECTIONS
+    # 首页结论须先有量化证据链，不能只堆定性判断。
+    parts = re.split(r"<!--\s*section:\s*(\w+)\s*-->", body)
+    sections = {parts[i]: re.sub(r"<!--.*?-->", "", parts[i + 1], flags=re.S).strip()
+                for i in range(1, len(parts), 2)}
+    missing = [key for key in ("title", "subtitle", "summary", *SECTIONS) if not sections.get(key, "").strip()]
+    if missing:
+        issues.append("缺少正文段落：" + ", ".join(missing))
+    summary = sections.get("summary", "")
+    if len(re.findall(r"\d[\d,.]*\s*(?:亿元|亿股|元|%|个百分点|GWh|倍)", summary)) < 6:
+        issues.append("首页投资要点缺少至少六项带单位的量化证据")
+    if not ("DCF" in summary and ("当前股价" in summary or "参考股价" in summary) and "风险提示" in summary):
+        issues.append("首页缺 DCF / 股价基准 / 风险提示中的至少一项")
     return {"ok": not issues, "issues": issues}
 
 
@@ -415,22 +430,50 @@ def _xlsx_valid(path: Path) -> bool:
     if not path.is_file() or path.stat().st_size < 1000:
         return False
     try:
+        import xml.etree.ElementTree as ET
+        ns = {"x": "http://schemas.openxmlformats.org/spreadsheetml/2006/main"}
         with zipfile.ZipFile(path) as package:
-            return "xl/workbook.xml" in package.namelist() and package.testzip() is None
-    except (OSError, zipfile.BadZipFile):
+            names = package.namelist()
+            if "xl/workbook.xml" not in names or package.testzip() is not None:
+                return False
+            book = ET.fromstring(package.read("xl/workbook.xml"))
+            sheets = {s.attrib.get("name") for s in book.findall(".//x:sheet", ns)}
+            if not {"估值汇总", "DCF", "历史财务", "模型检查"} <= sheets:
+                return False
+            worksheets = [n for n in names if re.fullmatch(r"xl/worksheets/sheet\d+\.xml", n)]
+            if len(worksheets) < 4:
+                return False
+            formulas = 0
+            for name in worksheets:
+                root = ET.fromstring(package.read(name))
+                for cell in root.findall(".//x:c", ns):
+                    if cell.attrib.get("t") == "e":
+                        return False
+                    f = cell.find("x:f", ns)
+                    if f is not None:
+                        formulas += 1
+                        if not f.text or "#REF!" in f.text:
+                            return False
+            return formulas > 0
+    except (OSError, zipfile.BadZipFile, ET.ParseError):
         return False
 
 
-def _pdf_valid(path: Path) -> bool:
+def _pdf_valid(path: Path) -> tuple[bool, int]:
     if not path.is_file() or path.stat().st_size < 1000:
-        return False
+        return False, 0
     try:
         import pdfplumber
         from pdfplumber.utils.exceptions import PdfminerException
         with pdfplumber.open(path) as doc:
-            return bool(doc.pages) and bool((doc.pages[0].extract_text() or "").strip())
+            texts = [(page.extract_text() or "") for page in doc.pages]
+            combined = "\n".join(texts)
+            valid = (bool(texts) and all(len(t.strip()) >= 20 for t in texts)
+                     and not any(bad in combined for bad in ("\ufffd", "\u25a1", "#NAME?", "TODO", "TBD"))
+                     and "免责声明" in combined)
+            return valid, len(texts)
     except (OSError, ValueError, TypeError, PdfminerException):
-        return False
+        return False, 0
 
 
 def status(ws: Path) -> dict[str, Any]:
@@ -439,7 +482,7 @@ def status(ws: Path) -> dict[str, Any]:
     w = ws / work
     facts, verified, extras = w / "facts.json", w / "facts.verified.json", w / "extras.json"
     assumptions, framework = w / "valuation_assumptions.json", w / "report" / "framework.md"
-    narrative, script, delivery = w / "report" / "narrative.md", w / "report" / "build_report.py", w / "report" / "delivery.md"
+    narrative, layout_file, delivery = w / "report" / "narrative.md", w / "report" / "layout.json", w / "report" / "delivery.md"
     stages: list[dict[str, Any]] = []
 
     def add(name: str, ok: bool, detail: str, todo: str) -> bool:
@@ -479,13 +522,25 @@ def status(ws: Path) -> dict[str, Any]:
         a = _load(assumptions)
         market_data = _load(market) if market.is_file() else {}
         miss = [k for k in ("current_price", "price_source") if a.get(k) in (None, "")]
+        if meta.get("require_review") and not market_data.get("price_date"):
+            miss.append("inputs/market.json.price_date")
         mismatch = [k for k in ("current_price", "price_source") if market_data and a.get(k) != market_data.get(k)]
         if market_data.get("price_date") and a.get("valuation_date") != market_data["price_date"]:
             mismatch.append("valuation_date")
-        add("4 估值假设", not (miss or mismatch or not market_data),
+        rationale_missing: list[str] = []
+        if meta.get("require_review"):
+            rationale = a.get("rationale") if isinstance(a.get("rationale"), dict) else {}
+            rationale_missing = [k for k in ("forecast", "wacc", "terminal_value", "non_operating")
+                                 if not isinstance(rationale.get(k), str) or len(rationale[k].strip()) < 30]
+            if not isinstance(a.get("status"), str) or "假设" not in a["status"]:
+                rationale_missing.append("status（分析师假设标识）")
+            if not isinstance(a.get("non_operating_assets"), list):
+                rationale_missing.append("non_operating_assets（须显式列出或留空并解释）")
+        add("4 估值假设", not (miss or mismatch or rationale_missing or not market_data),
             "缺行情输入" if not market_data else "缺 " + "、".join(miss) if miss else
-            "与 inputs/market.json 不一致：" + "、".join(mismatch) if mismatch else "已核对行情来源与日期",
-            "股价取 inputs/market.json；没有就停下并写进交付说明")
+            "与 inputs/market.json 不一致：" + "、".join(mismatch) if mismatch else
+            "关键假设依据缺失：" + "、".join(rationale_missing) if rationale_missing else "已核对行情来源、日期与关键假设依据",
+            "股价取 inputs/market.json；预测、WACC、终值和非经营性资产处理均须说明依据")
     # 5 估值运行
     run, man = _latest_run(ws, work)
     inputs_mtime = max(_mtime(facts), _mtime(extras), _mtime(assumptions))
@@ -509,23 +564,55 @@ def status(ws: Path) -> dict[str, Any]:
         g, cm = run / "commentary_guard.json", run / "commentary.md"
         same = cm.is_file() and cm.read_text(encoding="utf-8") == narrative.read_text(encoding="utf-8")
         quality = _narrative_quality(narrative)
-        ok = g.is_file() and _load(g).get("ok") and same and quality["ok"]
+        review_ok = True
+        if meta.get("require_review"):
+            import hashlib
+            from .report_review import validate_review
+            review_file = w / "report/review.json"
+            try:
+                digest = hashlib.sha256(narrative.read_bytes()).hexdigest()
+                review_data = validate_review(_load(review_file), digest, run.name)
+                review_ok = bool(review_data["pass"])
+                review_detail = "独立审读通过" if review_ok else f"独立审读有 {sum(x['severity'] == 'blocker' for x in review_data['issues'])} 个 blocker"
+            except (OSError, ValueError, KeyError, TypeError, json.JSONDecodeError):
+                review_ok, review_detail = False, "独立审读缺失、过期或格式无效"
+        else:
+            review_detail = ""
+        ok = g.is_file() and _load(g).get("ok") and same and quality["ok"] and review_ok
         detail = ("guard 与文稿检查通过" if ok else "文稿检查未通过：" + "；".join(quality["issues"][:8])
                   if g.is_file() and _load(g).get("ok") and same and not quality["ok"] else "guard 未通过" if g.is_file() and same
                   else f"当前文稿未对 runs/{run.name} 跑 guard")
-        add("6 文稿", bool(ok), detail, f"PY -m finagent guard --run-dir runs/{run.name} --text {work}/report/narrative.md")
+        if meta.get("require_review") and g.is_file() and _load(g).get("ok") and same and quality["ok"]:
+            detail = review_detail
+        add("6 文稿", bool(ok), detail, f"对 runs/{run.name} 先跑 guard 再跑独立 review；有 blocker 则修正文稿")
     # 7 排版
     pdf = run / "report" / "report.pdf" if run else None
     if pdf is None or not pdf.is_file():
-        add("7 排版", False, "PDF 不存在", "复制 templates/build_report.py，读 references/html-report.md，渲染后看 preview")
+        add("7 排版", False, "PDF 不存在", "写 layout.json，运行 finagent.safe_report 并逐页看 preview")
     else:
-        fresh = _mtime(pdf) >= max(_mtime(narrative), _mtime(script))
+        from .safe_report import required_basis_keys, validate_layout
+        try:
+            table_ids = {t["id"] for t in _load(run / "financials/extras.json").get("tables", [])}
+            seg_path, detail_path = run / "valuation/segment_forecast.json", run / "valuation/three_statement_detail.json"
+            validate_layout(_load(layout_file), table_ids,
+                            required_basis_keys(_load(seg_path) if seg_path.is_file() else {},
+                                                _load(detail_path) if detail_path.is_file() else {}))
+            layout_ok = True
+        except (OSError, ValueError, KeyError, TypeError, json.JSONDecodeError):
+            layout_ok = False
+        fresh = _mtime(pdf) >= max(_mtime(narrative), _mtime(layout_file))
         named = [p.name for p in pdf.parent.glob("*.pdf") if p.name != "report.pdf"]
-        readable = _pdf_valid(pdf)
-        add("7 排版", fresh and bool(named) and readable, f"runs/{run.name}/report/{named[0] if named else 'report.pdf'}"
-            + ("" if fresh else "（早于文稿或脚本修改）") + ("" if named else "（未设 output_name）")
-            + ("" if readable else "（PDF 损坏或首页无文本）"),
-            "重新渲染；Config.output_name 设为公司名+日期")
+        readable, pages = _pdf_valid(pdf)
+        previews = sorted((pdf.parent / "preview").glob("page*.png"))
+        same_named = bool(named) and all(_sha256(pdf.parent / name) == _sha256(pdf) for name in named)
+        add("7 排版", layout_ok and fresh and same_named and readable and len(previews) == pages,
+            f"runs/{run.name}/report/{named[0] if named else 'report.pdf'}"
+            + ("（layout.json 无效）" if not layout_ok else "")
+            + ("" if fresh else "（早于文稿或配置修改）")
+            + ("" if same_named else "（另存 PDF 缺失或与主文件不一致）")
+            + ("" if readable else "（PDF 损坏、缺字或含占位符）")
+            + ("" if len(previews) == pages else "（逐页预览与 PDF 页数不符）"),
+            "修正 layout.json 并重新渲染，逐页核对预览")
     # 8 交付说明
     add("8 交付说明", delivery.is_file(), "delivery.md " + ("已写" if delivery.is_file() else "不存在"),
         "写交付说明：结论、评级、假设与外部数据、未解决问题")
@@ -698,6 +785,18 @@ def scorecard(ws: Path) -> dict[str, Any]:
         run = ws / res["run_dir"]
         g = run / "commentary_guard.json"
         row["guard_ok"] = bool(g.is_file() and _load(g).get("ok"))
+        review_file = work / "report" / "review.json"
+        narrative_file = work / "report" / "narrative.md"
+        if meta.get("require_review"):
+            from .report_review import validate_review
+            try:
+                import hashlib
+                review_data = validate_review(_load(review_file), hashlib.sha256(narrative_file.read_bytes()).hexdigest(), run.name)
+                row["review_pass"] = bool(review_data["pass"])
+                row["review_blockers"] = sum(x["severity"] == "blocker" for x in review_data["issues"])
+                row["review_warnings"] = sum(x["severity"] == "warning" for x in review_data["issues"])
+            except (OSError, ValueError, KeyError, TypeError, json.JSONDecodeError):
+                row.update(review_pass=False, review_blockers=None, review_warnings=None)
         fs = run / "valuation" / "forecast_summary.json"
         if fs.is_file():
             row["rating"] = (_load(fs).get("rating") or {}).get("rating")
@@ -707,12 +806,16 @@ def scorecard(ws: Path) -> dict[str, Any]:
         if html_path.is_file():
             row["figures"] = len(re.findall(r'fno">图表 \d+', html_path.read_text(encoding="utf-8")))
             row["pages"] = len(list((run / "report" / "preview").glob("page*.png"))) or None
+        if (run / "report/report.pdf").is_file():
+            row["pdf_valid"], row["pdf_pages"] = _pdf_valid(run / "report/report.pdf")
     return row
 
 
 SCORE_COLUMNS = [("workspace", "工作区"), ("agent", "执行"), ("model", "模型"), ("stages_passed", "闸门/8"),
                  ("facts", "财务事实"), ("extras_cells", "经营数据格"), ("valuation_runs", "估值运行次数"),
-                 ("guard_ok", "guard"), ("narrative_chars", "正文字数"), ("pages", "页数"), ("figures", "图表"),
+                 ("guard_ok", "guard"), ("review_pass", "独立审读"), ("review_blockers", "阻断项"),
+                 ("review_warnings", "提醒项"), ("pdf_valid", "PDF 结构"),
+                 ("narrative_chars", "正文字数"), ("pages", "页数"), ("figures", "图表"),
                  ("rating", "评级"), ("dcf_base", "DCF 基准（元/股）"), ("elapsed_min", "耗时（分）"),
                  ("cost_usd", "费用（美元）"), ("input_tokens", "输入 token"), ("output_tokens", "输出 token")]
 

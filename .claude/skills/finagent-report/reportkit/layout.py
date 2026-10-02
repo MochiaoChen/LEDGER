@@ -95,7 +95,7 @@ class Doc:
 
     def h2(self, n: int | str, title: str) -> str:
         self.secs.append((str(n), title))
-        return f'<h2><span class="num">{n}</span>{title}</h2>'
+        return f'<h2><span class="num">{html.escape(str(n))}</span>{html.escape(title)}</h2>'
 
 
 def two(a: str, b: str) -> str:
@@ -226,7 +226,7 @@ def cover(doc: Doc, cfg: Config, S: dict[str, str]) -> str:
   </div>
   <figure class="cover-table"><figcaption>盈利预测与估值</figcaption>
     {T.forecast(doc.run, keys=T.COVER_ROWS)}
-    <div class="src">资料来源：公司公告，FinAgent 预测（基准情景）</div></figure>
+    <div class="src">资料来源：公司公告、分析师预测（基准情景）；A 为历史实际值，E 为预测值。</div></figure>
 </section>"""
 
 
@@ -300,9 +300,6 @@ def appendix_statements(run: Run, n: int = 5) -> str:
 
 def appendix_notes(run: Run, cfg: Config, forecast_secs: str) -> str:
     m = run.manifest
-    n_tie = len(run.analysis["tieouts"])
-    n_cells = sum(1 for t in run.extras.get("tables", []) for r in t["rows"] for v in r["values"] if v is not None)
-    n_facts = sum(1 for c in run.analysis["truth_table"] if c.get("method") != "derived" and "." not in c["metric_id"])
     rt = run.fs.get("rating") or {"basis": "", "rule": "未设置参考股价，未生成评级"}
     inputs = "".join(f"<tr><td><code>{html.escape(k)}</code></td><td><code>{v[:16]}…</code></td></tr>"
                      for k, v in m["inputs"].items())
@@ -313,16 +310,14 @@ def appendix_notes(run: Run, cfg: Config, forecast_secs: str) -> str:
 公允价值变动收益，剔除的投资类资产在股权桥中逐项加回。{html.escape(cfg.method_note)}{notes}。
 估值输入（无风险利率、β、股权风险溢价、永续增长率、分部量价与费用率）为分析师假设，参考股价为外部行情数据。</p>
 <h3>数据来源与方法</h3>
-<p class="small">财务与经营数据来自公司 {run.period} 年年度报告：财务数据 {n_facts} 项{f"、经营数据 {n_cells} 个数字" if n_cells else ""}由模型读取年报后，
-经 FinAgent 逐字核对原文并与规则通道交叉校验，{n_tie} 项勾稽全部通过；单价、占比、增速等比率与全部估值计算由确定性程序完成，
-正文数字经数字护栏核对出处。逐项页码见估值模型 model.xlsx“历史财务”“经营数据”页与 financials/extras.json。
+<p class="small">历史财务与经营数据取自公司 {run.period} 年年度报告。逐项页码见估值模型“历史财务”“经营数据”页；
+预测值依据第 7 节的分析师假设。表内单价、占比、增速按已披露数据计算。
 当前股价为外部行情数据（{run.fs.get("market", {}).get("price_date", "—")} 收盘）。</p>
 <table class="data slim mono"><thead><tr><th>输入文件（运行 {m['run_id']}）</th><th>SHA-256</th></tr></thead><tbody>{inputs}</tbody></table>
 <h3>内容说明</h3>
-<p class="small">本报告中直接引用的财务与经营数据为事实；以“主要系”“反映”等表述的归因为基于数据的推论；以“我们认为”“我们预计”
-表述的判断、盈利预测、估值与评级为观点，依赖{forecast_secs}所列假设。</p>
+<p class="small">经营归因、盈利预测、估值及评级依赖{forecast_secs}所列假设，请结合敏感性分析与风险提示使用。</p>
 <h3>投资评级说明</h3>
-<p class="small">评级依据{rt['basis']}：{rt['rule']}。评级由模型按上述规则生成。</p>"""
+<p class="small">评级依据{rt['basis']}：{rt['rule']}。</p>"""
 
 
 def appendix(doc: Doc, cfg: Config, forecast_secs: str = "盈利预测与估值章节") -> str:

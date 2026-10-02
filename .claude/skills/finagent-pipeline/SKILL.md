@@ -24,7 +24,7 @@ description: 研报生成流水线与模型测评入口：为一家 A 股公司�
 | 输入 | 必需 | 说明 |
 |---|---|---|
 | 公司、年度 | 是 | 年报默认取 `report/resources/<公司>/` 下的 PDF，也可 `--pdf` 指定 |
-| 当前股价与来源 | 估值需要 | 外部数据，`--price` 与 `--price-source` 必须同时给；没有就不给，执行模型会在估值阶段停下 |
+| 当前股价、来源与日期 | 估值需要 | 外部数据，DeepSeek 路径应同时给 `--price`、`--price-source`、`--price-date YYYY-MM-DD`；缺日期时不出正式报告 |
 | 可比公司 CSV | 否 | `--peers`，格式见 `data/samples/peers.csv` |
 | 未核验来源 | — | 年报不在 `report/resources/manifest.json` 里时，需用户同意后加 `--allow-unverified` |
 
@@ -47,6 +47,10 @@ PY -m finagent.report_pipeline run --workspace <工作区> --agent claude
 `--agent codex` 用 Codex CLI（需已安装登录）；`--agent deepseek` 使用受限 DeepSeek API 执行器，
 默认 `deepseek-flash`（当前 V4.1 Flash），从 `DEEPSEEK_API_KEY` 取密钥，不复制到工作区。
 DeepSeek 通过白名单工具按页读本公司年报和两个 skill，校验、估值仍由程序执行。`--model` 可覆盖模型名。
+DeepSeek 只能写事实、框架、文稿和声明式 `layout.json`；报告由固定的 `finagent.safe_report` 渲染，
+不运行模型生成的 Python。文稿先过数字护栏与机械文风检查，再由独立的新上下文对照核验产物审读；
+`auto_review` 最多做五轮“审读 → 唯一匹配的局部修订 → 重新护栏/审读”，护栏失败或仍有阻断项就停下；
+`review.json` 有 blocker 或与当前文稿哈希不符时，第 6 阶段不得通过。独立审读仍不能证明每条推论成立。
 一份研报通常要跑很久，放后台执行，不要频繁轮询。事件流在工作区 `.pipeline/agents/`，用量在
 `.pipeline/agent_runs.json`；DeepSeek 请求缓存只留在工作区 `.pipeline/api_cache/`。单次运行最多 80 次
 API 调用、输入 100 万 token、输出 15 万 token；到上限保留进度并停下。工作区是内容隔离，
@@ -62,6 +66,7 @@ PY -m finagent.report_pipeline status --workspace <工作区>
 ```
 
 8 个阶段：财务抽取 → 分析框架 → 经营数据 → 估值假设 → 估值运行 → 文稿（guard）→ 排版 → 交付说明。
+DeepSeek 的文稿阶段还包括独立审读；PDF 阶段检查全页文本、缺字/占位符、逐页预览数量与另存 PDF 一致性。
 财务抽取除 `verify-facts` 外，还要求最近三年 5 项核心指标无漏抄、同一指标/期间无重复；
 原文确实没有时停下说明，不能为了过闸门补造数字。
 未全部通过时，把 `下一步` 和工作区 `data/extractions/<公司>_<年度>/report/delivery.md`（如有）转告用户，
@@ -103,7 +108,7 @@ PY -m finagent.report_pipeline collect --workspace <工作区> [--label Opus]
 
 解读对比表时注意：
 
-- 这些都是客观计数，**不代表研报质量**。文稿闸门会拦截内部流程话术、占位符和部分冗余否定句式，仍无法证明每条投资推断成立；篇幅、图表多也不等于分析好，需审读证据链与 PDF 实际呈现。
+- 这些都是客观计数，**不代表研报质量**。文稿闸门、DeepSeek 独立审读会拦截一部分口径错配、内部流程话术及证据不足的推断，仍无法证明每条投资推断成立；篇幅、图表多也不等于分析好，需审读证据链与 PDF 实际呈现。
 - 输入（年报、股价、可比公司）必须相同，否则估值结论不可比。
 - 评级和 DCF 不同，通常来自执行模型起草的估值假设不同：对比两边的 `valuation_assumptions.json`，不要直接说谁对。
 - 未通过全部闸门的一方，其后续指标不可信，对比表里会列出卡在哪一步。

@@ -1,8 +1,8 @@
 """DeepSeek 研报执行器：在单公司工作区内用受限工具完成 report_pipeline 闸门。
 
 模型只读本工作区的 skill、年报指定页和产物；所有计算交给 FinAgent。
-此处是逻辑访问边界，不声称提供操作系统级沙箱。模型生成的报告脚本只在
-显式的 render_report 工具中运行，且不会继承 API Key。
+此处是逻辑访问边界，不声称提供操作系统级沙箱。模型只能编写声明式布局，
+报告由受信任的 safe_report 程序渲染，不能提交或运行模型生成的 Python。
 """
 
 from __future__ import annotations
@@ -31,6 +31,8 @@ MAX_PROMPT_TOKENS = 1_000_000
 MAX_COMPLETION_TOKENS = 150_000
 MAX_FILE_CHARS = 40_000
 MAX_TOOL_OUTPUT = 16_000
+MAX_CONTEXT_CHARS = 85_000
+MAX_TOOLS_PER_ROUND = 16
 
 
 def emit(kind: str, **data: Any) -> None:
@@ -44,6 +46,23 @@ def _tool(name: str, description: str, properties: dict[str, Any], required: lis
                            "additionalProperties": False}}}
 
 
+def _compact_messages(messages: list[dict[str, Any]], stage: str, next_step: str) -> list[dict[str, Any]]:
+    """Bound repeated tool-history cost while preserving the newest thinking/tool exchange.
+
+    DeepSeek needs reasoning_content + tool replies from the immediately preceding
+    assistant turn. Older exchanges have already produced on-disk artifacts and are
+    audited separately, so the model can re-read a needed source on demand.
+    """
+    if len(json.dumps(messages, ensure_ascii=False)) <= MAX_CONTEXT_CHARS or len(messages) <= 4:
+        return messages
+    last = next((i for i in range(len(messages) - 1, 1, -1) if messages[i]["role"] == "assistant"), 2)
+    recent = messages[last:]
+    summary = {"role": "user", "content":
+               f"较早的工具输出已压缩，已写文件和运行记录仍在工作区。当前阶段：{stage}。"
+               f"当前闸门提示：{next_step}。如需依据，请按需重读本公司文件；不要猜数。"}
+    return [*messages[:2], summary, *recent]
+
+
 STR = {"type": "string"}
 TOOLS = [
     _tool("read_file", "读取工作区内允许的文本文件。先按阶段读 skill，不读引擎源码。",
@@ -51,14 +70,16 @@ TOOLS = [
     _tool("list_files", "列出允许目录中的文件名，不递归。", {"path": STR}, ["path"]),
     _tool("read_pdf_pages", "读取本公司年报的 PDF 物理页码，一次最多 20 页；输出带页码。",
           {"pages": {"type": "array", "items": {"type": "integer"}, "maxItems": 20}}, ["pages"]),
-    _tool("write_file", "只写本公司的 data/extractions/<公司_年度>/ 下的 JSON、Markdown 或报告编排 Python 文件。",
+    _tool("write_file", "只写本公司的 data/extractions/<公司_年度>/ 下的 JSON 或 Markdown；不能写 Python/HTML。",
           {"path": STR, "content": STR}, ["path", "content"]),
-    _tool("copy_template", "复制研报文稿或编排脚本模板到本公司目录；已有文件时拒绝覆盖。",
-          {"name": {"type": "string", "enum": ["narrative", "build_report"]}}, ["name"]),
+    _tool("replace_text", "仅对本公司 narrative.md 作唯一匹配的原句替换；小范围改稿优先使用，避免整篇重写。",
+          {"old": STR, "new": STR}, ["old", "new"]),
+    _tool("copy_template", "复制研报文稿模板到本公司目录；已有文件时拒绝覆盖。",
+          {"name": {"type": "string", "enum": ["narrative"]}}, ["name"]),
     _tool("run_finagent", "执行白名单中的校验、估值、护栏或状态检查；参数由 harness 固定生成。",
-          {"action": {"type": "string", "enum": ["schema", "verify_facts", "verify_extra", "valuation", "guard", "status"]}},
+          {"action": {"type": "string", "enum": ["schema", "verify_facts", "verify_extra", "valuation", "guard", "review", "revise", "auto_review", "status"]}},
           ["action"]),
-    _tool("render_report", "运行本公司的报告编排脚本，生成 PDF 与逐页预览；脚本不继承 API Key。",
+    _tool("render_report", "用受信任的固定排版程序读取 layout.json 与文稿，生成 PDF 与逐页预览。",
           {}, []),
 ]
 
@@ -86,10 +107,14 @@ class WorkspaceTools:
             raise ValueError("路径越过工作区边界")
         rel_path = dest.relative_to(self.ws)
         if write:
-            if not rel_path.is_relative_to(self.work) or rel_path.suffix not in {".json", ".md", ".py"}:
+            if not rel_path.is_relative_to(self.work) or rel_path.suffix not in {".json", ".md"}:
                 raise ValueError("只能写本公司的抽取与研报文件")
-            if rel_path.suffix == ".py" and rel_path != self.work / "report" / "build_report.py":
-                raise ValueError("Python 文件只允许报告编排脚本")
+            allowed_outputs = {self.work / "facts.json", self.work / "extras.json",
+                               self.work / "valuation_assumptions.json", self.work / "report/framework.md",
+                               self.work / "report/narrative.md", self.work / "report/layout.json",
+                               self.work / "report/delivery.md"}
+            if rel_path not in allowed_outputs:
+                raise ValueError("该产物由程序生成或不属于模型可写的白名单")
         else:
             allowed = (rel_path in {Path("AGENTS.md"), Path("TASK.md")}
                        or rel_path.is_relative_to(Path(".claude/skills/finagent-research"))
@@ -158,10 +183,23 @@ class WorkspaceTools:
             tracer.register_artifact(file)
         return f"已写入 {file.relative_to(self.ws).as_posix()}；SHA-256 {_sha256(file)}"
 
+    def replace_text(self, old: str, new: str) -> str:
+        if not isinstance(old, str) or not old or len(old) > 3000 or not isinstance(new, str) or len(new) > 5000:
+            raise ValueError("替换文本长度无效")
+        file = self._path((self.work / "report/narrative.md").as_posix(), write=True)
+        original = file.read_text(encoding="utf-8")
+        count = original.count(old)
+        if count != 1:
+            raise ValueError(f"原句必须恰好出现一次，实际出现 {count} 次；请先读取最新文稿")
+        file.write_text(original.replace(old, new, 1), encoding="utf-8")
+        if tracer := tracing.current():
+            tracer.register_artifact(file)
+        return f"已替换唯一原句；文稿 SHA-256 {_sha256(file)}"
+
     def copy_template(self, name: str) -> str:
-        if name not in {"narrative", "build_report"}:
+        if name != "narrative":
             raise ValueError("未知模板")
-        src = self.ws / ".claude/skills/finagent-report/templates" / f"{name}.{'py' if name == 'build_report' else 'md'}"
+        src = self.ws / ".claude/skills/finagent-report/templates/narrative.md"
         dst = self.ws / self.work / "report" / src.name
         if dst.exists():
             raise ValueError("目标文件已存在；不会覆盖已有工作")
@@ -173,7 +211,7 @@ class WorkspaceTools:
         env["MPLCONFIGDIR"] = str(self.ws / ".pipeline/mpl")
         env["FINAGENT_EXTRACTOR"] = "deepseek-harness"
         if clean_env:
-            # 生成的报告脚本不应接触模型密钥或用户环境中的其他凭据。
+            # 浏览器与渲染进程不应接触模型密钥或用户环境中的其他凭据。
             keep = ("PATH", "SYSTEMROOT", "WINDIR", "TEMP", "TMP", "TMPDIR", "FINAGENT_CHROME")
             env = {k: v for k, v in env.items() if k in keep}
             env["HOME"] = str(self.ws / ".pipeline/home")
@@ -218,6 +256,34 @@ class WorkspaceTools:
                 raise ValueError("还没有有效估值运行")
             return self._run(base + ["guard", "--run-dir", f"runs/{run.name}",
                                      "--text", f"{work}/report/narrative.md"])
+        if action == "review":
+            from .report_review import review
+            from .report_pipeline import _latest_run
+            run, _ = _latest_run(self.ws, work)
+            if run is None:
+                raise ValueError("还没有有效估值运行")
+            narrative = self.ws / self.work / "report/narrative.md"
+            if not narrative.is_file():
+                raise ValueError("缺少文稿")
+            result = review(self.ws, run, narrative)
+            return json.dumps({"pass": result["pass"], "issues": result["issues"],
+                               "review": f"{work}/report/review.json"}, ensure_ascii=False)
+        if action == "revise":
+            from .report_review import revise
+            from .report_pipeline import _latest_run
+            run, _ = _latest_run(self.ws, work)
+            if run is None:
+                raise ValueError("还没有有效估值运行")
+            result = revise(self.ws, run, self.ws / self.work / "report/narrative.md")
+            return json.dumps(result, ensure_ascii=False)
+        if action == "auto_review":
+            from .report_review import review_until_clear
+            from .report_pipeline import _latest_run
+            run, _ = _latest_run(self.ws, work)
+            if run is None:
+                raise ValueError("还没有有效估值运行")
+            result = review_until_clear(self.ws, run, self.ws / self.work / "report/narrative.md")
+            return json.dumps(result, ensure_ascii=False)[:MAX_TOOL_OUTPUT]
         raise ValueError("操作不在白名单中")
 
     def render_report(self) -> str:
@@ -225,10 +291,19 @@ class WorkspaceTools:
         run, _ = _latest_run(self.ws, self.work.as_posix())
         if run is None:
             raise ValueError("还没有有效估值运行")
-        script = self.ws / self.work / "report/build_report.py"
-        if not script.is_file():
-            raise ValueError("报告编排脚本不存在")
-        return self._run([sys.executable, str(script.relative_to(self.ws)), "--run-dir", f"runs/{run.name}"],
+        layout = self.ws / self.work / "report/layout.json"
+        if not layout.is_file():
+            raise ValueError("声明式 layout.json 不存在")
+        from .safe_report import required_basis_keys, validate_layout
+        from .report_pipeline import _load
+        extras = _load(run / "financials/extras.json")
+        seg_path, detail_path = run / "valuation/segment_forecast.json", run / "valuation/three_statement_detail.json"
+        validate_layout(_load(layout), {t["id"] for t in extras.get("tables", [])},
+                        required_basis_keys(_load(seg_path) if seg_path.is_file() else {},
+                                            _load(detail_path) if detail_path.is_file() else {}))
+        return self._run([sys.executable, "-m", "finagent.safe_report", "--run-dir", f"runs/{run.name}",
+                          "--narrative", f"{self.work.as_posix()}/report/narrative.md",
+                          "--layout", f"{self.work.as_posix()}/report/layout.json"],
                          timeout=900, clean_env=True)
 
     def dispatch(self, name: str, args: dict[str, Any]) -> str:
@@ -249,6 +324,9 @@ def run(ws: Path, model: str = MODEL) -> int:
     meta = json.loads(tracing.read_file(ws / META).decode("utf-8"))
     if not os.getenv("DEEPSEEK_API_KEY"):
         raise ValueError("缺少 DEEPSEEK_API_KEY；在仓库被忽略的 .env 填写，勿提交或发到聊天")
+    if not meta.get("require_review"):
+        meta["require_review"] = True
+        (ws / META).write_text(json.dumps(meta, ensure_ascii=False, indent=2), encoding="utf-8")
     tools = WorkspaceTools(ws, meta)
     client = LLMClient(get_settings(llm_base_url="https://api.deepseek.com", llm_model=model,
                                     llm_api_key=os.environ["DEEPSEEK_API_KEY"], llm_mode="live",
@@ -258,7 +336,9 @@ def run(ws: Path, model: str = MODEL) -> int:
     if not 1 <= max_api_calls <= MAX_API_CALLS:
         raise ValueError(f"FINAGENT_DEEPSEEK_MAX_CALLS 应在 1–{MAX_API_CALLS} 之间")
     api_calls = prompt_tokens = completion_tokens = 0
-    for _stage_iter in range(8):
+    # A late-stage correction can invalidate an earlier valuation or guard run.
+    # Re-evaluate the first failed gate instead of staying stuck on the old stage.
+    for _stage_iter in range(24):
         state = status(ws)
         if state["done"]:
             emit("stage", stage="全部", detail="8 个闸门通过")
@@ -274,6 +354,10 @@ def run(ws: Path, model: str = MODEL) -> int:
                 "不得访问工作区外、联网补公司数据、自己做算术或捏造数字。"
                 "只推进当前闸门，不跳阶段；模型结论不能代替程序校验。"
                 "估值假设可按工作区规则起草并标明分析师假设，不要求额外人工审批；缺有来源股价则停下。"
+                "文稿完成后优先调用 auto_review：它先跑数字护栏，再在最多五轮内用新上下文独立审读与局部修订；"
+                "仍有 blocker 就停下，不得跳过。也可单独调用 guard/review/revise 排查具体问题。"
+                "小范围修订优先用 replace_text 精确替换原句，避免整篇重写与引入新错误。"
+                "排版只写 layout.json，不写 Python；标题须以固定的十个章节名开头，extra_tables 只选已核验表 ID。"
                 "每次工具输出有错误时修正。完成当前阶段后调用 status，然后简短结束。")},
             {"role": "user", "content": guide + "\n\n当前闸门：" + json.dumps(stage, ensure_ascii=False)},
         ]
@@ -293,8 +377,9 @@ def run(ws: Path, model: str = MODEL) -> int:
             # 思考模式 + tools 的下一轮必须原样带回 reasoning_content。
             messages.append({"role": "assistant", **response})
             calls = response.get("tool_calls") or []
-            if len(calls) > 8:
-                raise ValueError("单轮工具调用过多，已停止")
+            if len(calls) > MAX_TOOLS_PER_ROUND:
+                emit("error", detail=f"单轮请求了 {len(calls)} 个工具，超过 {MAX_TOOLS_PER_ROUND} 上限；进度已保留")
+                return 4
             for call in calls:
                 name = call.get("function", {}).get("name", "")
                 try:
@@ -308,11 +393,14 @@ def run(ws: Path, model: str = MODEL) -> int:
                     content = json.dumps({"ok": False, "error": str(exc)}, ensure_ascii=False)
                 emit("tool", stage=stage["stage"], tool=name, ok=json.loads(content)["ok"])
                 messages.append({"role": "tool", "tool_call_id": call["id"], "content": content})
-            if status(ws)["stages"][index]["ok"]:
+            current = status(ws)
+            first_bad = next((i for i, item in enumerate(current["stages"]) if not item["ok"]), None)
+            if first_bad is None or first_bad != index or current["stages"][index]["ok"]:
                 break
             if not calls:
                 # 模型口头宣称结束但闸门未过，继续提醒；最多 30 轮。
                 messages.append({"role": "user", "content": "当前闸门仍未通过：" + status(ws)["next"] + "。请继续调用工具。"})
+            messages = _compact_messages(messages, stage["stage"], current["next"])
         else:
             emit("error", detail=f"{stage['stage']} 达到 {MAX_ROUNDS_PER_STAGE} 轮上限：{status(ws)['next']}")
             return 4
