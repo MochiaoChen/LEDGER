@@ -1,0 +1,393 @@
+{
+  "meta": {
+    "company_name": "招商轮船",
+    "industry": "航运（油气运输、干散货为双核心）",
+    "currency": "CNY",
+    "units": "CNY_mm",
+    "as_of_date": "2026-09-30",
+    "accounting_basis": "unspecified",
+    "model_purpose": "赛题4 三表联动预测（中国企业会计准则）"
+  },
+  "source_basis": [
+    {
+      "id": "src_hist",
+      "label": "2025 年报抽取数据",
+      "source_type": "company_filing",
+      "evidence_label": "public_filing",
+      "as_of_date": "2025-12-31",
+      "covers": [
+        "historicals"
+      ],
+      "notes": "由 financials 流水线抽取，逐项来源见 facts.json"
+    },
+    {
+      "id": "src_assump",
+      "label": "估值假设文件",
+      "source_type": "analyst_model",
+      "evidence_label": "analyst_estimate",
+      "as_of_date": "2026-09-30",
+      "covers": [
+        "forecast",
+        "revenue",
+        "costs",
+        "working_capital",
+        "ppe",
+        "debt",
+        "tax",
+        "equity"
+      ],
+      "notes": "驱动假设"
+    }
+  ],
+  "timeline": {
+    "start_period": "FY2026",
+    "start_year": 2026,
+    "horizon_periods": 5,
+    "periodicity": "annual"
+  },
+  "historicals": {
+    "income_statement": {
+      "FY2024": {
+        "revenue": 25799.2793952,
+        "cogs": 18466.9145856,
+        "opex": -1286.4472044499998,
+        "da": 2280.9717646199997,
+        "interest": 1056.53912301,
+        "taxes": 743.13322052,
+        "net_income": 5209.20384874
+      },
+      "FY2025": {
+        "revenue": 28177.21113195,
+        "cogs": 20717.50725047,
+        "opex": -2016.2611689100004,
+        "da": 2396.46217152,
+        "interest": 1159.71157555,
+        "taxes": 803.92534749,
+        "net_income": 6070.713066810001
+      }
+    },
+    "balance_sheet": {
+      "FY2024": {
+        "cash": 4589.22680324,
+        "ar": 1148.12894702,
+        "inventory": 1418.39143829,
+        "other_current_assets": 0.0,
+        "ppe_net": 46966.3121521,
+        "other_assets": 16497.249010980013,
+        "total_assets": 70619.30835163001,
+        "ap": 1860.32713876,
+        "accrued_expenses": 0.0,
+        "deferred_revenue": 0.0,
+        "debt": 24159.626066859997,
+        "other_liabilities": 3750.1691714000044,
+        "common_equity": 40849.18597461,
+        "retained_earnings": 0.0,
+        "total_liabilities_equity": 70619.30835163
+      },
+      "FY2025": {
+        "cash": 4720.9146631,
+        "ar": 1385.34236182,
+        "inventory": 1311.46477773,
+        "other_current_assets": 0.0,
+        "ppe_net": 53587.47527954,
+        "other_assets": 21049.682996699994,
+        "total_assets": 82054.88007889,
+        "ap": 1836.36727884,
+        "accrued_expenses": 0.0,
+        "deferred_revenue": 0.0,
+        "debt": 28397.929191509997,
+        "other_liabilities": 8065.790172590008,
+        "common_equity": 43754.79343595,
+        "retained_earnings": 0.0,
+        "total_liabilities_equity": 82054.88007889001
+      }
+    },
+    "working_capital": {
+      "FY2025": {
+        "ar": 1385.34236182,
+        "inventory": 1311.46477773,
+        "other_current_assets": 0.0,
+        "ap": 1836.36727884,
+        "accrued_expenses": 0.0,
+        "deferred_revenue": 0.0,
+        "nwc": 860.4398607100002
+      }
+    },
+    "cash_flow": {
+      "FY2025": {
+        "net_income": 6070.713066810001,
+        "da": 2396.46217152,
+        "cfo": 9054.9276113,
+        "capex": 7796.87905542
+      }
+    },
+    "debt_schedule": {
+      "FY2025": {
+        "beginning_debt": 24159.626066859997,
+        "ending_debt": 28397.929191509997
+      }
+    },
+    "ppe": {
+      "FY2025": {
+        "beginning_ppe": 46966.3121521,
+        "capex": 7796.87905542,
+        "depreciation": 2375.02731193,
+        "ending_ppe": 53587.47527954
+      }
+    }
+  },
+  "revenue": {
+    "model": "total_growth",
+    "base_revenue": 28177.21113195,
+    "growth_rates": {
+      "FY2026": 0.4,
+      "FY2027": -0.1,
+      "FY2028": -0.08,
+      "FY2029": 0.02,
+      "FY2030": 0.03
+    },
+    "source_id": "src_assump"
+  },
+  "costs": {
+    "cogs": {
+      "method": "gross_margin",
+      "gross_margin": {
+        "FY2026": 0.44,
+        "FY2027": 0.36,
+        "FY2028": 0.3,
+        "FY2029": 0.28,
+        "FY2030": 0.28
+      }
+    },
+    "opex": {
+      "method": "pct_revenue",
+      "pct_revenue": {
+        "FY2026": -0.05,
+        "FY2027": -0.05,
+        "FY2028": -0.05,
+        "FY2029": -0.05,
+        "FY2030": -0.05
+      }
+    }
+  },
+  "working_capital": {
+    "method": "days",
+    "ar_days": {
+      "FY2026": 17.945351642375492,
+      "FY2027": 17.945351642375492,
+      "FY2028": 17.945351642375492,
+      "FY2029": 17.945351642375492,
+      "FY2030": 17.945351642375492
+    },
+    "inventory_days": {
+      "FY2026": 23.10532044633847,
+      "FY2027": 23.10532044633847,
+      "FY2028": 23.10532044633847,
+      "FY2029": 23.10532044633847,
+      "FY2030": 23.10532044633847
+    },
+    "ap_days": {
+      "FY2026": 32.3530262918766,
+      "FY2027": 32.3530262918766,
+      "FY2028": 32.3530262918766,
+      "FY2029": 32.3530262918766,
+      "FY2030": 32.3530262918766
+    },
+    "other_current_assets_pct_revenue": {
+      "FY2026": 0.0,
+      "FY2027": 0.0,
+      "FY2028": 0.0,
+      "FY2029": 0.0,
+      "FY2030": 0.0
+    },
+    "accrued_expenses_pct_revenue": {
+      "FY2026": 0.0,
+      "FY2027": 0.0,
+      "FY2028": 0.0,
+      "FY2029": 0.0,
+      "FY2030": 0.0
+    },
+    "deferred_revenue_pct_revenue": {
+      "FY2026": 0.0,
+      "FY2027": 0.0,
+      "FY2028": 0.0,
+      "FY2029": 0.0,
+      "FY2030": 0.0
+    }
+  },
+  "ppe": {
+    "capex_method": "pct_revenue",
+    "capex_pct_revenue": {
+      "FY2026": 0.28,
+      "FY2027": 0.28,
+      "FY2028": 0.24,
+      "FY2029": 0.18,
+      "FY2030": 0.13
+    },
+    "depreciation_method": "pct_beginning_ppe",
+    "depreciation_pct_beginning_ppe": {
+      "FY2026": 0.0471143983284448,
+      "FY2027": 0.0471143983284448,
+      "FY2028": 0.0471143983284448,
+      "FY2029": 0.0471143983284448,
+      "FY2030": 0.0471143983284448
+    }
+  },
+  "debt": {
+    "beginning_debt": 28397.929191509997,
+    "beginning_revolver_drawn": 0.0,
+    "revolver_commitment": 0.0,
+    "mandatory_amortization": {
+      "FY2026": 0.0,
+      "FY2027": 0.0,
+      "FY2028": 0.0,
+      "FY2029": 0.0,
+      "FY2030": 0.0
+    },
+    "interest_rate": {
+      "FY2026": 0.04413110807186228,
+      "FY2027": 0.04413110807186228,
+      "FY2028": 0.04413110807186228,
+      "FY2029": 0.04413110807186228,
+      "FY2030": 0.04413110807186228
+    },
+    "cash_sweep": {
+      "enabled": false,
+      "min_cash": 0.0,
+      "sweep_pct": 0.0
+    },
+    "covenants": {}
+  },
+  "tax": {
+    "book_tax_rate": 0.11694074641333096,
+    "cash_tax_rate": 0.11694074641333096,
+    "nol_balance": 0.0
+  },
+  "equity": {
+    "common_equity": 43754.79343595,
+    "dividends": {
+      "FY2026": 0.0,
+      "FY2027": 0.0,
+      "FY2028": 0.0,
+      "FY2029": 0.0,
+      "FY2030": 0.0
+    },
+    "dividend_payout_ratio": {
+      "FY2026": 0.43,
+      "FY2027": 0.43,
+      "FY2028": 0.43,
+      "FY2029": 0.43,
+      "FY2030": 0.43
+    }
+  },
+  "other_balance_sheet": {
+    "other_assets": 21049.682996699994,
+    "other_liabilities": 8065.790172590008
+  },
+  "scenarios": {
+    "base": {
+      "description": "2026 年地缘冲突推高油轮运价、新船集中交付，收入大增；2027～2028 年运价回落，2029 年起回归周期中枢。",
+      "overrides": {}
+    },
+    "downside": {
+      "description": "地缘溢价快速消退、新船集中交付压低运价，收入增幅较小且回落更深，毛利率承压。",
+      "overrides": {
+        "revenue": {
+          "growth_rates": {
+            "FY2026": 0.25,
+            "FY2027": -0.18,
+            "FY2028": -0.1,
+            "FY2029": 0.0,
+            "FY2030": 0.02
+          }
+        },
+        "ppe": {
+          "capex_pct_revenue": {
+            "FY2026": 0.3,
+            "FY2027": 0.32,
+            "FY2028": 0.27,
+            "FY2029": 0.2,
+            "FY2030": 0.14
+          }
+        },
+        "costs": {
+          "cogs": {
+            "gross_margin": {
+              "FY2026": 0.4,
+              "FY2027": 0.32,
+              "FY2028": 0.26,
+              "FY2029": 0.24000000000000002,
+              "FY2030": 0.24000000000000002
+            }
+          }
+        }
+      }
+    },
+    "upside": {
+      "description": "油轮高景气延续至 2027 年，LNG 与干散货长约贡献增量，运价回落更缓。",
+      "overrides": {
+        "revenue": {
+          "growth_rates": {
+            "FY2026": 0.48,
+            "FY2027": 0.0,
+            "FY2028": -0.06,
+            "FY2029": 0.0,
+            "FY2030": 0.03
+          }
+        },
+        "ppe": {
+          "capex_pct_revenue": {
+            "FY2026": 0.26,
+            "FY2027": 0.25,
+            "FY2028": 0.22,
+            "FY2029": 0.17,
+            "FY2030": 0.13
+          }
+        },
+        "costs": {
+          "cogs": {
+            "gross_margin": {
+              "FY2026": 0.47,
+              "FY2027": 0.39,
+              "FY2028": 0.32999999999999996,
+              "FY2029": 0.31000000000000005,
+              "FY2030": 0.31000000000000005
+            }
+          }
+        }
+      }
+    }
+  },
+  "sensitivities": {
+    "revenue_growth_shocks": [
+      -0.05,
+      0.05
+    ],
+    "gross_margin_shocks": [
+      -0.02,
+      0.02
+    ],
+    "dso_day_shocks": [
+      15.0,
+      -15.0
+    ],
+    "capex_pct_revenue_shocks": [
+      0.01,
+      -0.01
+    ],
+    "interest_rate_shocks": [
+      0.01,
+      -0.01
+    ]
+  },
+  "_historical_drivers": {
+    "gross_margin": 0.2647424490148168,
+    "opex_pct": -0.07155644891427072,
+    "ar_days": 17.945351642375492,
+    "inventory_days": 23.10532044633847,
+    "ap_days": 32.3530262918766,
+    "dep_rate": 0.0471143983284448,
+    "tax_rate": 0.11694074641333096,
+    "interest_rate": 0.04413110807186228
+  }
+}

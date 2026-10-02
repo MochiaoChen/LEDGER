@@ -1,0 +1,207 @@
+{
+  "period": "2025",
+  "profit_bridge": {
+    "period": "2025",
+    "base_period": "2024",
+    "np_parent_start": 5107447941.27,
+    "np_parent_end": 6012096267.97,
+    "delta": 904648326.6999998,
+    "items": [
+      {
+        "item": "收入规模效应",
+        "value": 675827519.0205773,
+        "share_of_change": 0.7470610391619016,
+        "formula": "Δ营业收入 × 上年毛利率"
+      },
+      {
+        "item": "毛利率效应",
+        "value": -548488447.1405797,
+        "share_of_change": -0.6063001842289041,
+        "formula": "本年营业收入 × Δ毛利率"
+      },
+      {
+        "item": "销售费用",
+        "value": -6201693.789999992,
+        "share_of_change": -0.006855364241508847,
+        "formula": "−Δ销售费用"
+      },
+      {
+        "item": "管理费用",
+        "value": -157020446.46000004,
+        "share_of_change": -0.17357070347190426,
+        "formula": "−Δ管理费用"
+      },
+      {
+        "item": "研发费用",
+        "value": -8996658.170000002,
+        "share_of_change": -0.009944923241961051,
+        "formula": "−Δ研发费用"
+      },
+      {
+        "item": "财务费用",
+        "value": -103172452.53999996,
+        "share_of_change": -0.1140470274414315,
+        "formula": "−Δ财务费用"
+      },
+      {
+        "item": "其他经营损益",
+        "value": 1001553383.8300028,
+        "share_of_change": 1.1071190365028318,
+        "formula": "Δ(营业利润 − 毛利 + 四项费用)：含税金及附加、投资收益、公允价值变动、减值、其他收益"
+      },
+      {
+        "item": "营业外收支",
+        "value": 68800140.28999996,
+        "share_of_change": 0.07605180738129583,
+        "formula": "Δ(利润总额 − 营业利润)"
+      },
+      {
+        "item": "所得税",
+        "value": -60792126.97000003,
+        "share_of_change": -0.0671997340577185,
+        "formula": "−Δ所得税费用"
+      },
+      {
+        "item": "少数股东损益",
+        "value": 43139108.62999916,
+        "share_of_change": 0.04768605363739869,
+        "formula": "−Δ(净利润 − 归母净利润)"
+      }
+    ],
+    "closure_error": -3.5762786865234375e-07,
+    "non_recurring_delta": 895641864.32,
+    "non_recurring_share_of_delta": 0.9900442391654515,
+    "drivers_ranked": [
+      "其他经营损益",
+      "收入规模效应",
+      "毛利率效应"
+    ]
+  },
+  "beat_miss": [
+    {
+      "metric": "Revenue",
+      "period": "2025",
+      "units": "百万元",
+      "reported": 28177.21113195,
+      "consensus": null,
+      "internal": null,
+      "delta_cons": null,
+      "surprise_cons": null,
+      "delta_int": null,
+      "surprise_int": null,
+      "source_tag": "601872_招商轮船_2025_年度报告.pdf p.9 c0019",
+      "gaap_flag": "GAAP",
+      "comparable_gaap_metric": "",
+      "reconciliation_source_tag": "",
+      "notes": "",
+      "metric_cn": "营业收入"
+    },
+    {
+      "metric": "Operating Income",
+      "period": "2025",
+      "units": "百万元",
+      "reported": 6808.6806136800005,
+      "consensus": null,
+      "internal": null,
+      "delta_cons": null,
+      "surprise_cons": null,
+      "delta_int": null,
+      "surprise_int": null,
+      "source_tag": "601872_招商轮船_2025_年度报告.pdf p.103 c0209",
+      "gaap_flag": "GAAP",
+      "comparable_gaap_metric": "",
+      "reconciliation_source_tag": "",
+      "notes": "",
+      "metric_cn": "营业利润"
+    },
+    {
+      "metric": "Net Income Attributable",
+      "period": "2025",
+      "units": "百万元",
+      "reported": 6012.096267970001,
+      "consensus": null,
+      "internal": null,
+      "delta_cons": null,
+      "surprise_cons": null,
+      "delta_int": null,
+      "surprise_int": null,
+      "source_tag": "601872_招商轮船_2025_年度报告.pdf p.9 c0019",
+      "gaap_flag": "GAAP",
+      "comparable_gaap_metric": "",
+      "reconciliation_source_tag": "",
+      "notes": "",
+      "metric_cn": "归母净利润"
+    },
+    {
+      "metric": "Adjusted Net Income Attributable",
+      "period": "2025",
+      "units": "百万元",
+      "reported": 5024.0111369,
+      "consensus": null,
+      "internal": null,
+      "delta_cons": null,
+      "surprise_cons": null,
+      "delta_int": null,
+      "surprise_int": null,
+      "source_tag": "601872_招商轮船_2025_年度报告.pdf p.9 c0019",
+      "gaap_flag": "Non-GAAP",
+      "comparable_gaap_metric": "",
+      "reconciliation_source_tag": "",
+      "notes": "",
+      "metric_cn": "扣非归母净利润"
+    },
+    {
+      "metric": "GAAP EPS (Diluted)",
+      "period": "2025",
+      "units": "元/股",
+      "reported": 0.74,
+      "consensus": null,
+      "internal": null,
+      "delta_cons": null,
+      "surprise_cons": null,
+      "delta_int": null,
+      "surprise_int": null,
+      "source_tag": "601872_招商轮船_2025_年度报告.pdf p.10 c0022",
+      "gaap_flag": "GAAP",
+      "comparable_gaap_metric": "",
+      "reconciliation_source_tag": "",
+      "notes": "non-recurring gain: 非经常性损益占归母净利润 16.4%",
+      "metric_cn": "基本每股收益"
+    },
+    {
+      "metric": "Adjusted EPS",
+      "period": "2025",
+      "units": "元/股",
+      "reported": 0.6222041217161317,
+      "consensus": null,
+      "internal": null,
+      "delta_cons": null,
+      "surprise_cons": null,
+      "delta_int": null,
+      "surprise_int": null,
+      "source_tag": "计算：扣非归母净利润/总股本",
+      "gaap_flag": "Non-GAAP",
+      "comparable_gaap_metric": "GAAP EPS (Diluted)",
+      "reconciliation_source_tag": "",
+      "notes": "",
+      "metric_cn": "扣非每股收益"
+    }
+  ],
+  "guidance": [],
+  "eps_quality": [
+    {
+      "period": "2025",
+      "eps": 0.74,
+      "adjusted_eps": 0.6222041217161317,
+      "status": "需展开 EPS 质量拆解",
+      "flags": [
+        "存在失真项：一次性收益、非经常性损益"
+      ],
+      "read_through": "不应将全部 EPS 超预期视为可持续，需先剥离：存在失真项：一次性收益、非经常性损益"
+    }
+  ],
+  "limitations": [
+    "未提供一致预期数据（estimates），跳过超预期/不及预期分析",
+    "未提供业绩预告（guidance），跳过预告对比"
+  ]
+}

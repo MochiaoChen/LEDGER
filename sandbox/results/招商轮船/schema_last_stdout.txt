@@ -1,0 +1,711 @@
+{
+  "facts": [
+    {
+      "metric_id": "revenue",
+      "name": "营业收入",
+      "statement": "income",
+      "kind": "amount",
+      "aliases": [
+        "营业收入",
+        "营业总收入",
+        "一、营业总收入"
+      ]
+    },
+    {
+      "metric_id": "operating_cost",
+      "name": "营业成本",
+      "statement": "income",
+      "kind": "amount",
+      "aliases": [
+        "营业成本"
+      ]
+    },
+    {
+      "metric_id": "tax_surcharge",
+      "name": "税金及附加",
+      "statement": "income",
+      "kind": "amount",
+      "aliases": [
+        "税金及附加"
+      ]
+    },
+    {
+      "metric_id": "selling_expense",
+      "name": "销售费用",
+      "statement": "income",
+      "kind": "amount",
+      "aliases": [
+        "销售费用"
+      ]
+    },
+    {
+      "metric_id": "admin_expense",
+      "name": "管理费用",
+      "statement": "income",
+      "kind": "amount",
+      "aliases": [
+        "管理费用"
+      ]
+    },
+    {
+      "metric_id": "rd_expense",
+      "name": "研发费用",
+      "statement": "income",
+      "kind": "amount",
+      "aliases": [
+        "研发费用"
+      ]
+    },
+    {
+      "metric_id": "finance_expense",
+      "name": "财务费用",
+      "statement": "income",
+      "kind": "amount",
+      "aliases": [
+        "财务费用"
+      ]
+    },
+    {
+      "metric_id": "investment_income",
+      "name": "投资收益",
+      "statement": "income",
+      "kind": "amount",
+      "aliases": [
+        "投资收益"
+      ]
+    },
+    {
+      "metric_id": "fair_value_change",
+      "name": "公允价值变动收益",
+      "statement": "income",
+      "kind": "amount",
+      "aliases": [
+        "公允价值变动收益"
+      ]
+    },
+    {
+      "metric_id": "operating_profit",
+      "name": "营业利润",
+      "statement": "income",
+      "kind": "amount",
+      "aliases": [
+        "营业利润",
+        "三、营业利润"
+      ]
+    },
+    {
+      "metric_id": "total_profit",
+      "name": "利润总额",
+      "statement": "income",
+      "kind": "amount",
+      "aliases": [
+        "利润总额",
+        "四、利润总额"
+      ]
+    },
+    {
+      "metric_id": "income_tax",
+      "name": "所得税费用",
+      "statement": "income",
+      "kind": "amount",
+      "aliases": [
+        "所得税费用"
+      ]
+    },
+    {
+      "metric_id": "net_profit",
+      "name": "净利润",
+      "statement": "income",
+      "kind": "amount",
+      "aliases": [
+        "净利润",
+        "五、净利润"
+      ]
+    },
+    {
+      "metric_id": "np_parent",
+      "name": "归属于上市公司股东的净利润",
+      "statement": "key_data",
+      "kind": "amount",
+      "aliases": [
+        "归属于上市公司股东的净利润",
+        "归属于母公司所有者的净利润",
+        "归属于母公司股东的净利润"
+      ]
+    },
+    {
+      "metric_id": "np_parent_deducted",
+      "name": "归属于上市公司股东的扣除非经常性损益的净利润",
+      "statement": "key_data",
+      "kind": "amount",
+      "aliases": [
+        "归属于上市公司股东的扣除非经常性损益的净利润"
+      ]
+    },
+    {
+      "metric_id": "non_recurring",
+      "name": "非经常性损益合计",
+      "statement": "non_recurring",
+      "kind": "amount",
+      "aliases": [
+        "合计",
+        "非经常性损益合计"
+      ]
+    },
+    {
+      "metric_id": "gov_subsidy",
+      "name": "计入当期损益的政府补助",
+      "statement": "non_recurring",
+      "kind": "amount",
+      "aliases": [
+        "计入当期损益的政府补助",
+        "计入当期损益的政府补助（与公司正常经营业务密切相关、符合国家政策规定、按照确定的标准享有、对公司损益产生持续影响的政府补助除外）"
+      ]
+    },
+    {
+      "metric_id": "ocf",
+      "name": "经营活动产生的现金流量净额",
+      "statement": "cashflow",
+      "kind": "amount",
+      "aliases": [
+        "经营活动产生的现金流量净额"
+      ]
+    },
+    {
+      "metric_id": "capex",
+      "name": "购建固定资产、无形资产和其他长期资产支付的现金",
+      "statement": "cashflow",
+      "kind": "amount",
+      "aliases": [
+        "购建固定资产、无形资产和其他长期资产支付的现金"
+      ]
+    },
+    {
+      "metric_id": "depreciation",
+      "name": "固定资产折旧、油气资产折耗、生产性生物资产折旧",
+      "statement": "cashflow",
+      "kind": "amount",
+      "aliases": [
+        "固定资产折旧、油气资产折耗、生产性生物资产折旧",
+        "固定资产折旧"
+      ]
+    },
+    {
+      "metric_id": "amortization",
+      "name": "无形资产摊销",
+      "statement": "cashflow",
+      "kind": "amount",
+      "aliases": [
+        "无形资产摊销"
+      ]
+    },
+    {
+      "metric_id": "cash",
+      "name": "货币资金",
+      "statement": "balance",
+      "kind": "amount",
+      "aliases": [
+        "货币资金"
+      ]
+    },
+    {
+      "metric_id": "accounts_receivable",
+      "name": "应收账款",
+      "statement": "balance",
+      "kind": "amount",
+      "aliases": [
+        "应收账款"
+      ]
+    },
+    {
+      "metric_id": "inventory",
+      "name": "存货",
+      "statement": "balance",
+      "kind": "amount",
+      "aliases": [
+        "存货"
+      ]
+    },
+    {
+      "metric_id": "fixed_assets",
+      "name": "固定资产",
+      "statement": "balance",
+      "kind": "amount",
+      "aliases": [
+        "固定资产"
+      ]
+    },
+    {
+      "metric_id": "construction_in_progress",
+      "name": "在建工程",
+      "statement": "balance",
+      "kind": "amount",
+      "aliases": [
+        "在建工程"
+      ]
+    },
+    {
+      "metric_id": "accounts_payable",
+      "name": "应付账款",
+      "statement": "balance",
+      "kind": "amount",
+      "aliases": [
+        "应付账款"
+      ]
+    },
+    {
+      "metric_id": "contract_liab",
+      "name": "合同负债",
+      "statement": "balance",
+      "kind": "amount",
+      "aliases": [
+        "合同负债"
+      ]
+    },
+    {
+      "metric_id": "short_debt",
+      "name": "短期借款",
+      "statement": "balance",
+      "kind": "amount",
+      "aliases": [
+        "短期借款"
+      ]
+    },
+    {
+      "metric_id": "current_ltd",
+      "name": "一年内到期的非流动负债",
+      "statement": "balance",
+      "kind": "amount",
+      "aliases": [
+        "一年内到期的非流动负债"
+      ]
+    },
+    {
+      "metric_id": "long_debt",
+      "name": "长期借款",
+      "statement": "balance",
+      "kind": "amount",
+      "aliases": [
+        "长期借款"
+      ]
+    },
+    {
+      "metric_id": "bonds_payable",
+      "name": "应付债券",
+      "statement": "balance",
+      "kind": "amount",
+      "aliases": [
+        "应付债券"
+      ]
+    },
+    {
+      "metric_id": "lease_liab",
+      "name": "租赁负债",
+      "statement": "balance",
+      "kind": "amount",
+      "aliases": [
+        "租赁负债"
+      ]
+    },
+    {
+      "metric_id": "total_assets",
+      "name": "资产总计",
+      "statement": "balance",
+      "kind": "amount",
+      "aliases": [
+        "资产总计",
+        "总资产"
+      ]
+    },
+    {
+      "metric_id": "total_liabilities",
+      "name": "负债合计",
+      "statement": "balance",
+      "kind": "amount",
+      "aliases": [
+        "负债合计"
+      ]
+    },
+    {
+      "metric_id": "equity_parent",
+      "name": "归属于母公司所有者权益合计",
+      "statement": "balance",
+      "kind": "amount",
+      "aliases": [
+        "归属于母公司所有者权益合计",
+        "归属于母公司所有者权益（或股东权益）合计",
+        "归属于上市公司股东的净资产"
+      ]
+    },
+    {
+      "metric_id": "minority_equity",
+      "name": "少数股东权益",
+      "statement": "balance",
+      "kind": "amount",
+      "aliases": [
+        "少数股东权益"
+      ]
+    },
+    {
+      "metric_id": "total_equity",
+      "name": "所有者权益合计",
+      "statement": "balance",
+      "kind": "amount",
+      "aliases": [
+        "所有者权益合计",
+        "所有者权益（或股东权益）合计",
+        "股东权益合计"
+      ]
+    },
+    {
+      "metric_id": "total_liab_equity",
+      "name": "负债和所有者权益总计",
+      "statement": "balance",
+      "kind": "amount",
+      "aliases": [
+        "负债和所有者权益总计",
+        "负债和所有者权益（或股东权益）总计",
+        "负债和股东权益总计"
+      ]
+    },
+    {
+      "metric_id": "eps_basic",
+      "name": "基本每股收益",
+      "statement": "key_data",
+      "kind": "per_share",
+      "aliases": [
+        "基本每股收益（元／股）",
+        "基本每股收益（元/股）",
+        "基本每股收益"
+      ]
+    },
+    {
+      "metric_id": "roe_weighted",
+      "name": "加权平均净资产收益率",
+      "statement": "key_data",
+      "kind": "pct",
+      "aliases": [
+        "加权平均净资产收益率",
+        "加权平均净资产收益率（%）"
+      ]
+    },
+    {
+      "metric_id": "total_shares",
+      "name": "总股本",
+      "statement": "key_data",
+      "kind": "shares",
+      "aliases": [
+        "总股本",
+        "股份总数"
+      ]
+    }
+  ],
+  "core_metrics": [
+    "revenue",
+    "operating_cost",
+    "operating_profit",
+    "total_profit",
+    "net_profit",
+    "np_parent",
+    "np_parent_deducted",
+    "total_assets",
+    "total_liabilities",
+    "total_equity",
+    "cash",
+    "ocf",
+    "capex",
+    "eps_basic"
+  ],
+  "claim_metrics": [
+    {
+      "metric_id": "revenue",
+      "name": "营业收入",
+      "aliases": [
+        "营业收入",
+        "营业总收入",
+        "营收",
+        "收入"
+      ]
+    },
+    {
+      "metric_id": "operating_cost",
+      "name": "营业成本",
+      "aliases": [
+        "营业成本"
+      ]
+    },
+    {
+      "metric_id": "tax_surcharge",
+      "name": "税金及附加",
+      "aliases": [
+        "税金及附加"
+      ]
+    },
+    {
+      "metric_id": "selling_expense",
+      "name": "销售费用",
+      "aliases": [
+        "销售费用"
+      ]
+    },
+    {
+      "metric_id": "admin_expense",
+      "name": "管理费用",
+      "aliases": [
+        "管理费用"
+      ]
+    },
+    {
+      "metric_id": "rd_expense",
+      "name": "研发费用",
+      "aliases": [
+        "研发费用",
+        "研发投入"
+      ]
+    },
+    {
+      "metric_id": "finance_expense",
+      "name": "财务费用",
+      "aliases": [
+        "财务费用"
+      ]
+    },
+    {
+      "metric_id": "investment_income",
+      "name": "投资收益",
+      "aliases": [
+        "投资收益"
+      ]
+    },
+    {
+      "metric_id": "fair_value_change",
+      "name": "公允价值变动收益",
+      "aliases": [
+        "公允价值变动收益"
+      ]
+    },
+    {
+      "metric_id": "operating_profit",
+      "name": "营业利润",
+      "aliases": [
+        "营业利润"
+      ]
+    },
+    {
+      "metric_id": "total_profit",
+      "name": "利润总额",
+      "aliases": [
+        "利润总额"
+      ]
+    },
+    {
+      "metric_id": "income_tax",
+      "name": "所得税费用",
+      "aliases": [
+        "所得税"
+      ]
+    },
+    {
+      "metric_id": "net_profit",
+      "name": "净利润",
+      "aliases": [
+        "净利润"
+      ]
+    },
+    {
+      "metric_id": "np_parent",
+      "name": "归属于上市公司股东的净利润",
+      "aliases": [
+        "归母净利润",
+        "归属于上市公司股东的净利润",
+        "归属于母公司股东的净利润"
+      ]
+    },
+    {
+      "metric_id": "np_parent_deducted",
+      "name": "归属于上市公司股东的扣除非经常性损益的净利润",
+      "aliases": [
+        "扣非归母净利润",
+        "扣非净利润",
+        "扣除非经常性损益后的净利润"
+      ]
+    },
+    {
+      "metric_id": "non_recurring",
+      "name": "非经常性损益合计",
+      "aliases": [
+        "非经常性损益"
+      ]
+    },
+    {
+      "metric_id": "gov_subsidy",
+      "name": "计入当期损益的政府补助",
+      "aliases": [
+        "政府补助"
+      ]
+    },
+    {
+      "metric_id": "ocf",
+      "name": "经营活动产生的现金流量净额",
+      "aliases": [
+        "经营活动现金流量净额",
+        "经营活动产生的现金流量净额",
+        "经营性现金流",
+        "经营现金流"
+      ]
+    },
+    {
+      "metric_id": "capex",
+      "name": "购建固定资产、无形资产和其他长期资产支付的现金",
+      "aliases": [
+        "资本开支",
+        "资本性支出"
+      ]
+    },
+    {
+      "metric_id": "cash",
+      "name": "货币资金",
+      "aliases": [
+        "货币资金"
+      ]
+    },
+    {
+      "metric_id": "accounts_receivable",
+      "name": "应收账款",
+      "aliases": [
+        "应收账款"
+      ]
+    },
+    {
+      "metric_id": "inventory",
+      "name": "存货",
+      "aliases": [
+        "存货"
+      ]
+    },
+    {
+      "metric_id": "fixed_assets",
+      "name": "固定资产",
+      "aliases": [
+        "固定资产"
+      ]
+    },
+    {
+      "metric_id": "construction_in_progress",
+      "name": "在建工程",
+      "aliases": [
+        "在建工程"
+      ]
+    },
+    {
+      "metric_id": "accounts_payable",
+      "name": "应付账款",
+      "aliases": [
+        "应付账款"
+      ]
+    },
+    {
+      "metric_id": "contract_liab",
+      "name": "合同负债",
+      "aliases": [
+        "合同负债",
+        "预收款"
+      ]
+    },
+    {
+      "metric_id": "total_assets",
+      "name": "资产总计",
+      "aliases": [
+        "总资产"
+      ]
+    },
+    {
+      "metric_id": "total_liabilities",
+      "name": "负债合计",
+      "aliases": [
+        "总负债"
+      ]
+    },
+    {
+      "metric_id": "equity_parent",
+      "name": "归属于母公司所有者权益合计",
+      "aliases": [
+        "归母净资产"
+      ]
+    },
+    {
+      "metric_id": "eps_basic",
+      "name": "基本每股收益",
+      "aliases": [
+        "基本每股收益",
+        "每股收益",
+        "EPS"
+      ]
+    },
+    {
+      "metric_id": "roe_weighted",
+      "name": "加权平均净资产收益率",
+      "aliases": [
+        "ROE",
+        "净资产收益率"
+      ]
+    },
+    {
+      "metric_id": "total_shares",
+      "name": "总股本",
+      "aliases": [
+        "总股本"
+      ]
+    },
+    {
+      "metric_id": "gross_margin",
+      "name": "毛利率",
+      "aliases": [
+        "毛利率"
+      ]
+    },
+    {
+      "metric_id": "net_margin",
+      "name": "净利率",
+      "aliases": [
+        "净利率",
+        "销售净利率"
+      ]
+    },
+    {
+      "metric_id": "debt_ratio",
+      "name": "资产负债率",
+      "aliases": [
+        "资产负债率"
+      ]
+    },
+    {
+      "metric_id": "rd_ratio",
+      "name": "研发费用率",
+      "aliases": [
+        "研发费用率"
+      ]
+    },
+    {
+      "metric_id": "selling_ratio",
+      "name": "销售费用率",
+      "aliases": [
+        "销售费用率"
+      ]
+    },
+    {
+      "metric_id": "admin_ratio",
+      "name": "管理费用率",
+      "aliases": [
+        "管理费用率"
+      ]
+    },
+    {
+      "metric_id": "ocf_to_np",
+      "name": "经营现金流/归母净利润",
+      "aliases": [
+        "净现比"
+      ]
+    }
+  ]
+}

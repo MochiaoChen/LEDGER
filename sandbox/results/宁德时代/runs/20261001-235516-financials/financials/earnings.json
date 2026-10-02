@@ -1,0 +1,205 @@
+{
+  "period": "2025",
+  "profit_bridge": {
+    "period": "2025",
+    "base_period": "2024",
+    "np_parent_start": 50744682000.0,
+    "np_parent_end": 72201282000.0,
+    "delta": 21456600000.0,
+    "items": [
+      {
+        "item": "收入规模效应",
+        "value": 15079880793.7517,
+        "share_of_change": 0.7028084968611849,
+        "formula": "Δ营业收入 × 上年毛利率"
+      },
+      {
+        "item": "毛利率效应",
+        "value": 7745061206.248303,
+        "share_of_change": 0.36096404864928755,
+        "formula": "本年营业收入 × Δ毛利率"
+      },
+      {
+        "item": "销售费用",
+        "value": -172321000.0,
+        "share_of_change": -0.00803114193301828,
+        "formula": "−Δ销售费用"
+      },
+      {
+        "item": "管理费用",
+        "value": -1976902000.0,
+        "share_of_change": -0.09213491419889451,
+        "formula": "−Δ管理费用"
+      },
+      {
+        "item": "研发费用",
+        "value": -3539825000.0,
+        "share_of_change": -0.16497604466690902,
+        "formula": "−Δ研发费用"
+      },
+      {
+        "item": "财务费用",
+        "value": 3807945000.0,
+        "share_of_change": 0.1774719666675988,
+        "formula": "−Δ财务费用"
+      },
+      {
+        "item": "其他经营损益",
+        "value": 4522998000.0,
+        "share_of_change": 0.21079751684796286,
+        "formula": "Δ(营业利润 − 毛利 + 四项费用)：含税金及附加、投资收益、公允价值变动、减值、其他收益"
+      },
+      {
+        "item": "营业外收支",
+        "value": 877669000.0,
+        "share_of_change": 0.040904383732744236,
+        "formula": "Δ(利润总额 − 营业利润)"
+      },
+      {
+        "item": "所得税",
+        "value": -3564991000.0,
+        "share_of_change": -0.16614892387423916,
+        "formula": "−Δ所得税费用"
+      },
+      {
+        "item": "少数股东损益",
+        "value": -1322915000.0,
+        "share_of_change": -0.061655388085717217,
+        "formula": "−Δ(净利润 − 归母净利润)"
+      }
+    ],
+    "closure_error": 3.814697265625e-06,
+    "non_recurring_delta": 1941655000.0,
+    "non_recurring_share_of_delta": 0.09049220286531882,
+    "drivers_ranked": [
+      "收入规模效应",
+      "毛利率效应",
+      "其他经营损益"
+    ]
+  },
+  "beat_miss": [
+    {
+      "metric": "Revenue",
+      "period": "2025",
+      "units": "百万元",
+      "reported": 423701.834,
+      "consensus": null,
+      "internal": null,
+      "delta_cons": null,
+      "surprise_cons": null,
+      "delta_int": null,
+      "surprise_int": null,
+      "source_tag": "300750_宁德时代_2025_年度报告.pdf p.116 c0458",
+      "gaap_flag": "GAAP",
+      "comparable_gaap_metric": "",
+      "reconciliation_source_tag": "",
+      "notes": "",
+      "metric_cn": "营业收入"
+    },
+    {
+      "metric": "Operating Income",
+      "period": "2025",
+      "units": "百万元",
+      "reported": 89518.636,
+      "consensus": null,
+      "internal": null,
+      "delta_cons": null,
+      "surprise_cons": null,
+      "delta_int": null,
+      "surprise_int": null,
+      "source_tag": "300750_宁德时代_2025_年度报告.pdf p.117 c0460",
+      "gaap_flag": "GAAP",
+      "comparable_gaap_metric": "",
+      "reconciliation_source_tag": "",
+      "notes": "",
+      "metric_cn": "营业利润"
+    },
+    {
+      "metric": "Net Income Attributable",
+      "period": "2025",
+      "units": "百万元",
+      "reported": 72201.282,
+      "consensus": null,
+      "internal": null,
+      "delta_cons": null,
+      "surprise_cons": null,
+      "delta_int": null,
+      "surprise_int": null,
+      "source_tag": "300750_宁德时代_2025_年度报告.pdf p.11 c0016",
+      "gaap_flag": "GAAP",
+      "comparable_gaap_metric": "",
+      "reconciliation_source_tag": "",
+      "notes": "",
+      "metric_cn": "归母净利润"
+    },
+    {
+      "metric": "Adjusted Net Income Attributable",
+      "period": "2025",
+      "units": "百万元",
+      "reported": 64507.864,
+      "consensus": null,
+      "internal": null,
+      "delta_cons": null,
+      "surprise_cons": null,
+      "delta_int": null,
+      "surprise_int": null,
+      "source_tag": "300750_宁德时代_2025_年度报告.pdf p.11 c0016",
+      "gaap_flag": "Non-GAAP",
+      "comparable_gaap_metric": "",
+      "reconciliation_source_tag": "",
+      "notes": "",
+      "metric_cn": "扣非归母净利润"
+    },
+    {
+      "metric": "GAAP EPS (Diluted)",
+      "period": "2025",
+      "units": "元/股",
+      "reported": 16.14,
+      "consensus": null,
+      "internal": null,
+      "delta_cons": null,
+      "surprise_cons": null,
+      "delta_int": null,
+      "surprise_int": null,
+      "source_tag": "300750_宁德时代_2025_年度报告.pdf p.11 c0016",
+      "gaap_flag": "GAAP",
+      "comparable_gaap_metric": "",
+      "reconciliation_source_tag": "",
+      "notes": "",
+      "metric_cn": "基本每股收益"
+    },
+    {
+      "metric": "Adjusted EPS",
+      "period": "2025",
+      "units": "元/股",
+      "reported": 14.134671698642604,
+      "consensus": null,
+      "internal": null,
+      "delta_cons": null,
+      "surprise_cons": null,
+      "delta_int": null,
+      "surprise_int": null,
+      "source_tag": "计算：扣非归母净利润/总股本",
+      "gaap_flag": "Non-GAAP",
+      "comparable_gaap_metric": "GAAP EPS (Diluted)",
+      "reconciliation_source_tag": "",
+      "notes": "",
+      "metric_cn": "扣非每股收益"
+    }
+  ],
+  "guidance": [],
+  "eps_quality": [
+    {
+      "period": "2025",
+      "eps": 16.14,
+      "adjusted_eps": 14.134671698642604,
+      "status": "未触发 EPS 质量预警",
+      "flags": [],
+      "read_through": "未发现显著失真项，仍需与财报附注核对。"
+    }
+  ],
+  "limitations": [
+    "未提供一致预期数据（estimates），跳过超预期/不及预期分析",
+    "未提供业绩预告（guidance），跳过预告对比"
+  ]
+}

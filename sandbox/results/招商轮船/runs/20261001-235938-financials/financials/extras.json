@@ -1,0 +1,3061 @@
+{
+  "tables": [
+    {
+      "id": "segment",
+      "title": "分部经营情况（分板块收入、成本、净利润）",
+      "page": 20,
+      "columns": [
+        {
+          "name": "营业收入",
+          "unit": "元"
+        },
+        {
+          "name": "营业收入同比",
+          "unit": "%"
+        },
+        {
+          "name": "营业成本",
+          "unit": "元"
+        },
+        {
+          "name": "营业成本同比",
+          "unit": "%"
+        },
+        {
+          "name": "净利润",
+          "unit": "元"
+        },
+        {
+          "name": "净利润同比",
+          "unit": "%"
+        }
+      ],
+      "rows": [
+        {
+          "label": "油轮运输",
+          "alias": [
+            "油轮",
+            "油轮船队"
+          ],
+          "raw": [
+            "102.89",
+            "11.77",
+            "61.83",
+            "3.29",
+            "41.91",
+            "59.06"
+          ],
+          "values": [
+            10289000000.0,
+            11.77,
+            6183000000.0,
+            3.29,
+            4190999999.9999995,
+            59.06
+          ],
+          "sources": [
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 20,
+              "chunk_id": "c0039"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 20,
+              "chunk_id": "c0039"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 20,
+              "chunk_id": "c0039"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 20,
+              "chunk_id": "c0039"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 20,
+              "chunk_id": "c0039"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 20,
+              "chunk_id": "c0039"
+            }
+          ]
+        },
+        {
+          "label": "干散货船队",
+          "alias": [
+            "干散货",
+            "散货"
+          ],
+          "raw": [
+            "87.69",
+            "10.45",
+            "72.62",
+            "19.55",
+            "11.35",
+            "-26.69"
+          ],
+          "values": [
+            8769000000.0,
+            10.45,
+            7262000000.0,
+            19.55,
+            1135000000.0,
+            -26.69
+          ],
+          "sources": [
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 20,
+              "chunk_id": "c0039"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 20,
+              "chunk_id": "c0039"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 20,
+              "chunk_id": "c0039"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 20,
+              "chunk_id": "c0039"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 20,
+              "chunk_id": "c0039"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 20,
+              "chunk_id": "c0039"
+            }
+          ]
+        },
+        {
+          "label": "集装箱船队",
+          "alias": [
+            "集装箱",
+            "集运"
+          ],
+          "raw": [
+            "61.49",
+            "13.16",
+            "47.70",
+            "25.30",
+            "13.59",
+            "3.46"
+          ],
+          "values": [
+            6149000000.0,
+            13.16,
+            4770000000.0,
+            25.3,
+            1359000000.0,
+            3.46
+          ],
+          "sources": [
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 20,
+              "chunk_id": "c0039"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 20,
+              "chunk_id": "c0039"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 20,
+              "chunk_id": "c0039"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 20,
+              "chunk_id": "c0039"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 20,
+              "chunk_id": "c0039"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 20,
+              "chunk_id": "c0039"
+            }
+          ]
+        },
+        {
+          "label": "滚装船队",
+          "alias": [
+            "滚装"
+          ],
+          "raw": [
+            "16.90",
+            "-7.98",
+            "12.71",
+            "-1.01",
+            "2.29",
+            "-31.91"
+          ],
+          "values": [
+            1689999999.9999998,
+            -7.98,
+            1271000000.0,
+            -1.01,
+            229000000.0,
+            -31.91
+          ],
+          "sources": [
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 20,
+              "chunk_id": "c0039"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 20,
+              "chunk_id": "c0039"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 20,
+              "chunk_id": "c0039"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 20,
+              "chunk_id": "c0039"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 20,
+              "chunk_id": "c0039"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 20,
+              "chunk_id": "c0039"
+            }
+          ]
+        },
+        {
+          "label": "LNG船队",
+          "alias": [
+            "LNG"
+          ],
+          "raw": [
+            "0.55",
+            "83.16",
+            "0.39",
+            "143.27",
+            "6.71",
+            "11.08"
+          ],
+          "values": [
+            55000000.00000001,
+            83.16,
+            39000000.0,
+            143.27,
+            671000000.0,
+            11.08
+          ],
+          "sources": [
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 20,
+              "chunk_id": "c0039"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 20,
+              "chunk_id": "c0039"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 20,
+              "chunk_id": "c0039"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 20,
+              "chunk_id": "c0039"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 20,
+              "chunk_id": "c0039"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 20,
+              "chunk_id": "c0039"
+            }
+          ]
+        }
+      ],
+      "note": ""
+    },
+    {
+      "id": "segment_report",
+      "title": "主营业务分行业（收入、成本、毛利率）",
+      "page": 21,
+      "columns": [
+        {
+          "name": "营业收入",
+          "unit": "元"
+        },
+        {
+          "name": "营业成本",
+          "unit": "元"
+        },
+        {
+          "name": "毛利率",
+          "unit": "%"
+        },
+        {
+          "name": "营业收入同比",
+          "unit": "%"
+        },
+        {
+          "name": "营业成本同比",
+          "unit": "%"
+        }
+      ],
+      "rows": [
+        {
+          "label": "油轮运输",
+          "alias": [],
+          "raw": [
+            "10,289,276,515.57",
+            "6,183,185,067.42",
+            "39.91",
+            "11.77",
+            "3.29"
+          ],
+          "values": [
+            10289276515.57,
+            6183185067.42,
+            39.91,
+            11.77,
+            3.29
+          ],
+          "sources": [
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 21,
+              "chunk_id": "c0042"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 21,
+              "chunk_id": "c0042"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 21,
+              "chunk_id": "c0042"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 21,
+              "chunk_id": "c0042"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 21,
+              "chunk_id": "c0042"
+            }
+          ]
+        },
+        {
+          "label": "散货船运输",
+          "alias": [],
+          "raw": [
+            "8,769,388,393.77",
+            "7,301,344,253.81",
+            "16.74",
+            "10.44",
+            "20.20"
+          ],
+          "values": [
+            8769388393.77,
+            7301344253.81,
+            16.74,
+            10.44,
+            20.2
+          ],
+          "sources": [
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 21,
+              "chunk_id": "c0042"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 21,
+              "chunk_id": "c0042"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 21,
+              "chunk_id": "c0042"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 21,
+              "chunk_id": "c0042"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 21,
+              "chunk_id": "c0042"
+            }
+          ]
+        },
+        {
+          "label": "集装箱运输",
+          "alias": [],
+          "raw": [
+            "6,149,215,176.25",
+            "4,770,483,686.04",
+            "22.42",
+            "13.15",
+            "25.30"
+          ],
+          "values": [
+            6149215176.25,
+            4770483686.04,
+            22.42,
+            13.15,
+            25.3
+          ],
+          "sources": [
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 21,
+              "chunk_id": "c0042"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 21,
+              "chunk_id": "c0042"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 21,
+              "chunk_id": "c0042"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 21,
+              "chunk_id": "c0042"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 21,
+              "chunk_id": "c0042"
+            }
+          ]
+        },
+        {
+          "label": "滚装船运输",
+          "alias": [],
+          "raw": [
+            "1,690,427,764.64",
+            "1,273,259,244.68",
+            "24.68",
+            "-7.97",
+            "-0.83"
+          ],
+          "values": [
+            1690427764.64,
+            1273259244.68,
+            24.68,
+            -7.97,
+            -0.83
+          ],
+          "sources": [
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 21,
+              "chunk_id": "c0042"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 21,
+              "chunk_id": "c0042"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 21,
+              "chunk_id": "c0042"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 21,
+              "chunk_id": "c0042"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 21,
+              "chunk_id": "c0042"
+            }
+          ]
+        },
+        {
+          "label": "LNG运输",
+          "alias": [],
+          "raw": [
+            "54,949,095.27",
+            "39,085,391.28",
+            "28.87",
+            "83.16",
+            "144.28"
+          ],
+          "values": [
+            54949095.27,
+            39085391.28,
+            28.87,
+            83.16,
+            144.28
+          ],
+          "sources": [
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 21,
+              "chunk_id": "c0042"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 21,
+              "chunk_id": "c0042"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 21,
+              "chunk_id": "c0042"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 21,
+              "chunk_id": "c0042"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 21,
+              "chunk_id": "c0042"
+            }
+          ]
+        }
+      ],
+      "note": ""
+    },
+    {
+      "id": "fleet",
+      "title": "报告期末船队概况",
+      "page": 15,
+      "columns": [
+        {
+          "name": "现有船舶艘数",
+          "unit": "艘"
+        },
+        {
+          "name": "现有总载重量",
+          "unit": "万吨"
+        },
+        {
+          "name": "平均船龄",
+          "unit": "年"
+        },
+        {
+          "name": "订单船舶艘数",
+          "unit": "艘"
+        },
+        {
+          "name": "订单总载重量",
+          "unit": "万吨"
+        }
+      ],
+      "rows": [
+        {
+          "label": "油轮小计",
+          "alias": [],
+          "raw": [
+            "58",
+            "1642.7",
+            "10.08",
+            "13",
+            "244.85"
+          ],
+          "values": [
+            58.0,
+            1642.7,
+            10.08,
+            13.0,
+            244.85
+          ],
+          "sources": [
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 15,
+              "chunk_id": "c0033"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 15,
+              "chunk_id": "c0033"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 15,
+              "chunk_id": "c0033"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 15,
+              "chunk_id": "c0033"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 15,
+              "chunk_id": "c0033"
+            }
+          ]
+        },
+        {
+          "label": "VLCC",
+          "alias": [],
+          "raw": [
+            "51",
+            "1576.01",
+            "10.3",
+            "5",
+            "152.95"
+          ],
+          "values": [
+            51.0,
+            1576.01,
+            10.3,
+            5.0,
+            152.95
+          ],
+          "sources": [
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 15,
+              "chunk_id": "c0033"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 15,
+              "chunk_id": "c0033"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 15,
+              "chunk_id": "c0033"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 15,
+              "chunk_id": "c0033"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 15,
+              "chunk_id": "c0033"
+            }
+          ]
+        },
+        {
+          "label": "气体船小计",
+          "alias": [
+            "气体船"
+          ],
+          "raw": [
+            "30",
+            "260.92",
+            "7.1",
+            "34",
+            "301.66"
+          ],
+          "values": [
+            30.0,
+            260.92,
+            7.1,
+            34.0,
+            301.66
+          ],
+          "sources": [
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 15,
+              "chunk_id": "c0033"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 15,
+              "chunk_id": "c0033"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 15,
+              "chunk_id": "c0033"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 15,
+              "chunk_id": "c0033"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 15,
+              "chunk_id": "c0033"
+            }
+          ]
+        },
+        {
+          "label": "散货船小计",
+          "alias": [],
+          "raw": [
+            "98",
+            "1882.03",
+            "10.61",
+            "12",
+            "227.20"
+          ],
+          "values": [
+            98.0,
+            1882.03,
+            10.61,
+            12.0,
+            227.2
+          ],
+          "sources": [
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 15,
+              "chunk_id": "c0033"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 15,
+              "chunk_id": "c0033"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 15,
+              "chunk_id": "c0033"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 15,
+              "chunk_id": "c0033"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 15,
+              "chunk_id": "c0033"
+            }
+          ]
+        },
+        {
+          "label": "VLOC",
+          "alias": [],
+          "raw": [
+            "34",
+            "1313.13",
+            "8.18",
+            null,
+            null
+          ],
+          "values": [
+            34.0,
+            1313.13,
+            8.18,
+            null,
+            null
+          ],
+          "sources": [
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 15,
+              "chunk_id": "c0033"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 15,
+              "chunk_id": "c0033"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 15,
+              "chunk_id": "c0033"
+            },
+            null,
+            null
+          ]
+        },
+        {
+          "label": "滚装船小计",
+          "alias": [],
+          "raw": [
+            "23",
+            "13.53",
+            "11.5",
+            "4",
+            "8.20"
+          ],
+          "values": [
+            23.0,
+            13.53,
+            11.5,
+            4.0,
+            8.2
+          ],
+          "sources": [
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 15,
+              "chunk_id": "c0033"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 15,
+              "chunk_id": "c0033"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 15,
+              "chunk_id": "c0033"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 15,
+              "chunk_id": "c0033"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 15,
+              "chunk_id": "c0033"
+            }
+          ]
+        },
+        {
+          "label": "集装箱船小计",
+          "alias": [],
+          "raw": [
+            "19",
+            "42.40",
+            "11.5",
+            null,
+            null
+          ],
+          "values": [
+            19.0,
+            42.4,
+            11.5,
+            null,
+            null
+          ],
+          "sources": [
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 15,
+              "chunk_id": "c0033"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 15,
+              "chunk_id": "c0033"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 15,
+              "chunk_id": "c0033"
+            },
+            null,
+            null
+          ]
+        },
+        {
+          "label": "自有船总计",
+          "alias": [],
+          "raw": [
+            "235",
+            "3884.59",
+            null,
+            "64",
+            "788.02"
+          ],
+          "values": [
+            235.0,
+            3884.59,
+            null,
+            64.0,
+            788.02
+          ],
+          "sources": [
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 14,
+              "chunk_id": "c0032"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 14,
+              "chunk_id": "c0032"
+            },
+            null,
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 14,
+              "chunk_id": "c0032"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 14,
+              "chunk_id": "c0032"
+            }
+          ]
+        }
+      ],
+      "note": ""
+    },
+    {
+      "id": "volume",
+      "title": "船队货运量",
+      "page": 15,
+      "columns": [
+        {
+          "name": "货运量",
+          "unit": "万吨"
+        }
+      ],
+      "rows": [
+        {
+          "label": "油轮",
+          "alias": [],
+          "raw": [
+            "8,162"
+          ],
+          "values": [
+            8162.0
+          ],
+          "sources": [
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 15,
+              "chunk_id": "c0034"
+            }
+          ]
+        },
+        {
+          "label": "干散货",
+          "alias": [],
+          "raw": [
+            "11,419"
+          ],
+          "values": [
+            11419.0
+          ],
+          "sources": [
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 15,
+              "chunk_id": "c0034"
+            }
+          ]
+        },
+        {
+          "label": "LNG",
+          "alias": [],
+          "raw": [
+            "2,467"
+          ],
+          "values": [
+            2467.0
+          ],
+          "sources": [
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 15,
+              "chunk_id": "c0034"
+            }
+          ]
+        },
+        {
+          "label": "滚装",
+          "alias": [],
+          "raw": [
+            "664"
+          ],
+          "values": [
+            664.0
+          ],
+          "sources": [
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 15,
+              "chunk_id": "c0034"
+            }
+          ]
+        }
+      ],
+      "note": ""
+    },
+    {
+      "id": "roro",
+      "title": "汽车滚装船队运量",
+      "page": 17,
+      "columns": [
+        {
+          "name": "运量",
+          "unit": "万辆"
+        },
+        {
+          "name": "同比",
+          "unit": "%"
+        }
+      ],
+      "rows": [
+        {
+          "label": "全年完成运量",
+          "alias": [],
+          "raw": [
+            "68.71",
+            null
+          ],
+          "values": [
+            68.71,
+            null
+          ],
+          "sources": [
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 17,
+              "chunk_id": "c0036"
+            },
+            null
+          ]
+        },
+        {
+          "label": "外贸运量",
+          "alias": [],
+          "raw": [
+            "15.67",
+            "47"
+          ],
+          "values": [
+            15.67,
+            47.0
+          ],
+          "sources": [
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 17,
+              "chunk_id": "c0036"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 17,
+              "chunk_id": "c0036"
+            }
+          ]
+        },
+        {
+          "label": "沿海运量",
+          "alias": [],
+          "raw": [
+            "31.33",
+            "-19"
+          ],
+          "values": [
+            31.33,
+            -19.0
+          ],
+          "sources": [
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 17,
+              "chunk_id": "c0036"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 17,
+              "chunk_id": "c0036"
+            }
+          ]
+        },
+        {
+          "label": "长江运量",
+          "alias": [],
+          "raw": [
+            "21.71",
+            "-25"
+          ],
+          "values": [
+            21.71,
+            -25.0
+          ],
+          "sources": [
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 17,
+              "chunk_id": "c0036"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 17,
+              "chunk_id": "c0036"
+            }
+          ]
+        }
+      ],
+      "note": ""
+    },
+    {
+      "id": "lng_projects",
+      "title": "LNG 船队投资项目",
+      "page": 16,
+      "columns": [
+        {
+          "name": "艘数",
+          "unit": "艘"
+        }
+      ],
+      "rows": [
+        {
+          "label": "已投资LNG船舶",
+          "alias": [],
+          "raw": [
+            "64"
+          ],
+          "values": [
+            64.0
+          ],
+          "sources": [
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 16,
+              "chunk_id": "c0035"
+            }
+          ]
+        },
+        {
+          "label": "其中已锁定长约",
+          "alias": [],
+          "raw": [
+            "61"
+          ],
+          "values": [
+            61.0
+          ],
+          "sources": [
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 16,
+              "chunk_id": "c0035"
+            }
+          ]
+        }
+      ],
+      "note": ""
+    },
+    {
+      "id": "cost_fuel",
+      "title": "分板块燃油费",
+      "page": 22,
+      "columns": [
+        {
+          "name": "本期金额",
+          "unit": "元"
+        },
+        {
+          "name": "上年同期金额",
+          "unit": "元"
+        },
+        {
+          "name": "同比",
+          "unit": "%"
+        }
+      ],
+      "rows": [
+        {
+          "label": "油轮运输",
+          "alias": [],
+          "raw": [
+            "2,467,729,882.92",
+            "2,589,039,890.17",
+            "-4.69"
+          ],
+          "values": [
+            2467729882.92,
+            2589039890.17,
+            -4.69
+          ],
+          "sources": [
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 22,
+              "chunk_id": "c0044"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 22,
+              "chunk_id": "c0044"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 22,
+              "chunk_id": "c0044"
+            }
+          ]
+        },
+        {
+          "label": "散货船运输",
+          "alias": [],
+          "raw": [
+            "1,826,100,392.05",
+            "1,711,200,283.99",
+            "6.71"
+          ],
+          "values": [
+            1826100392.05,
+            1711200283.99,
+            6.71
+          ],
+          "sources": [
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 22,
+              "chunk_id": "c0044"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 22,
+              "chunk_id": "c0044"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 22,
+              "chunk_id": "c0044"
+            }
+          ]
+        },
+        {
+          "label": "集装箱运输",
+          "alias": [],
+          "raw": [
+            "826,482,382.07",
+            "743,072,936.44",
+            "11.22"
+          ],
+          "values": [
+            826482382.07,
+            743072936.44,
+            11.22
+          ],
+          "sources": [
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 22,
+              "chunk_id": "c0044"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 22,
+              "chunk_id": "c0044"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 22,
+              "chunk_id": "c0044"
+            }
+          ]
+        },
+        {
+          "label": "滚装船运输",
+          "alias": [],
+          "raw": [
+            "249,439,480.04",
+            "288,175,334.40",
+            "-13.44"
+          ],
+          "values": [
+            249439480.04,
+            288175334.4,
+            -13.44
+          ],
+          "sources": [
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 23,
+              "chunk_id": "c0046"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 23,
+              "chunk_id": "c0046"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 23,
+              "chunk_id": "c0046"
+            }
+          ]
+        },
+        {
+          "label": "LNG运输",
+          "alias": [],
+          "raw": [
+            "4,035,372.77",
+            null,
+            null
+          ],
+          "values": [
+            4035372.77,
+            null,
+            null
+          ],
+          "sources": [
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 23,
+              "chunk_id": "c0046"
+            },
+            null,
+            null
+          ]
+        }
+      ],
+      "note": ""
+    },
+    {
+      "id": "cost_dep",
+      "title": "分板块船舶折旧费",
+      "page": 22,
+      "columns": [
+        {
+          "name": "本期金额",
+          "unit": "元"
+        },
+        {
+          "name": "上年同期金额",
+          "unit": "元"
+        },
+        {
+          "name": "同比",
+          "unit": "%"
+        }
+      ],
+      "rows": [
+        {
+          "label": "油轮运输",
+          "alias": [],
+          "raw": [
+            "1,281,630,728.78",
+            "1,239,315,725.14",
+            "3.41"
+          ],
+          "values": [
+            1281630728.78,
+            1239315725.14,
+            3.41
+          ],
+          "sources": [
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 22,
+              "chunk_id": "c0044"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 22,
+              "chunk_id": "c0044"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 22,
+              "chunk_id": "c0044"
+            }
+          ]
+        },
+        {
+          "label": "散货船运输",
+          "alias": [],
+          "raw": [
+            "1,195,856,203.46",
+            "923,857,051.78",
+            "29.44"
+          ],
+          "values": [
+            1195856203.46,
+            923857051.78,
+            29.44
+          ],
+          "sources": [
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 22,
+              "chunk_id": "c0044"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 22,
+              "chunk_id": "c0044"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 22,
+              "chunk_id": "c0044"
+            }
+          ]
+        },
+        {
+          "label": "集装箱运输",
+          "alias": [],
+          "raw": [
+            "87,143,139.74",
+            "86,007,088.50",
+            "1.32"
+          ],
+          "values": [
+            87143139.74,
+            86007088.5,
+            1.32
+          ],
+          "sources": [
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 23,
+              "chunk_id": "c0046"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 23,
+              "chunk_id": "c0046"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 23,
+              "chunk_id": "c0046"
+            }
+          ]
+        },
+        {
+          "label": "滚装船运输",
+          "alias": [],
+          "raw": [
+            "99,819,457.39",
+            "94,701,973.55",
+            "5.40"
+          ],
+          "values": [
+            99819457.39,
+            94701973.55,
+            5.4
+          ],
+          "sources": [
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 23,
+              "chunk_id": "c0046"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 23,
+              "chunk_id": "c0046"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 23,
+              "chunk_id": "c0046"
+            }
+          ]
+        },
+        {
+          "label": "LNG运输",
+          "alias": [],
+          "raw": [
+            "11,151,229.83",
+            null,
+            null
+          ],
+          "values": [
+            11151229.83,
+            null,
+            null
+          ],
+          "sources": [
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 23,
+              "chunk_id": "c0046"
+            },
+            null,
+            null
+          ]
+        }
+      ],
+      "note": ""
+    },
+    {
+      "id": "cost_crew",
+      "title": "分板块船员费用",
+      "page": 22,
+      "columns": [
+        {
+          "name": "本期金额",
+          "unit": "元"
+        },
+        {
+          "name": "上年同期金额",
+          "unit": "元"
+        },
+        {
+          "name": "同比",
+          "unit": "%"
+        }
+      ],
+      "rows": [
+        {
+          "label": "油轮运输",
+          "alias": [],
+          "raw": [
+            "789,531,648.78",
+            "759,287,569.20",
+            "3.98"
+          ],
+          "values": [
+            789531648.78,
+            759287569.2,
+            3.98
+          ],
+          "sources": [
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 22,
+              "chunk_id": "c0044"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 22,
+              "chunk_id": "c0044"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 22,
+              "chunk_id": "c0044"
+            }
+          ]
+        },
+        {
+          "label": "散货船运输",
+          "alias": [],
+          "raw": [
+            "864,816,031.99",
+            "834,179,301.88",
+            "3.67"
+          ],
+          "values": [
+            864816031.99,
+            834179301.88,
+            3.67
+          ],
+          "sources": [
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 22,
+              "chunk_id": "c0044"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 22,
+              "chunk_id": "c0044"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 22,
+              "chunk_id": "c0044"
+            }
+          ]
+        },
+        {
+          "label": "集装箱运输",
+          "alias": [],
+          "raw": [
+            "164,892,145.56",
+            "166,489,371.23",
+            "-0.96"
+          ],
+          "values": [
+            164892145.56,
+            166489371.23,
+            -0.96
+          ],
+          "sources": [
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 23,
+              "chunk_id": "c0046"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 23,
+              "chunk_id": "c0046"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 23,
+              "chunk_id": "c0046"
+            }
+          ]
+        },
+        {
+          "label": "滚装船运输",
+          "alias": [],
+          "raw": [
+            "99,611,107.58",
+            "96,482,232.82",
+            "3.24"
+          ],
+          "values": [
+            99611107.58,
+            96482232.82,
+            3.24
+          ],
+          "sources": [
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 23,
+              "chunk_id": "c0046"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 23,
+              "chunk_id": "c0046"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 23,
+              "chunk_id": "c0046"
+            }
+          ]
+        },
+        {
+          "label": "LNG运输",
+          "alias": [],
+          "raw": [
+            "21,069,028.92",
+            "10,366,463.97",
+            "103.24"
+          ],
+          "values": [
+            21069028.92,
+            10366463.97,
+            103.24
+          ],
+          "sources": [
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 23,
+              "chunk_id": "c0046"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 23,
+              "chunk_id": "c0046"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 23,
+              "chunk_id": "c0046"
+            }
+          ]
+        }
+      ],
+      "note": ""
+    },
+    {
+      "id": "cost_rent",
+      "title": "分板块船舶租金",
+      "page": 22,
+      "columns": [
+        {
+          "name": "本期金额",
+          "unit": "元"
+        },
+        {
+          "name": "上年同期金额",
+          "unit": "元"
+        },
+        {
+          "name": "同比",
+          "unit": "%"
+        }
+      ],
+      "rows": [
+        {
+          "label": "油轮运输",
+          "alias": [],
+          "raw": [
+            "72,426,582.55",
+            null,
+            null
+          ],
+          "values": [
+            72426582.55,
+            null,
+            null
+          ],
+          "sources": [
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 22,
+              "chunk_id": "c0044"
+            },
+            null,
+            null
+          ]
+        },
+        {
+          "label": "散货船运输",
+          "alias": [],
+          "raw": [
+            "837,714,582.73",
+            "787,946,604.68",
+            "6.32"
+          ],
+          "values": [
+            837714582.73,
+            787946604.68,
+            6.32
+          ],
+          "sources": [
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 22,
+              "chunk_id": "c0044"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 22,
+              "chunk_id": "c0044"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 22,
+              "chunk_id": "c0044"
+            }
+          ]
+        },
+        {
+          "label": "集装箱运输",
+          "alias": [],
+          "raw": [
+            "1,002,366,830.07",
+            "583,600,020.12",
+            "71.76"
+          ],
+          "values": [
+            1002366830.07,
+            583600020.12,
+            71.76
+          ],
+          "sources": [
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 23,
+              "chunk_id": "c0046"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 23,
+              "chunk_id": "c0046"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 23,
+              "chunk_id": "c0046"
+            }
+          ]
+        }
+      ],
+      "note": ""
+    },
+    {
+      "id": "subsidiaries",
+      "title": "主要控股参股公司",
+      "page": 38,
+      "columns": [
+        {
+          "name": "总资产",
+          "unit": "元"
+        },
+        {
+          "name": "净资产",
+          "unit": "元"
+        },
+        {
+          "name": "营业收入",
+          "unit": "元"
+        },
+        {
+          "name": "净利润",
+          "unit": "元"
+        }
+      ],
+      "rows": [
+        {
+          "label": "CMES Tanker Holdings Inc.",
+          "alias": [
+            "油轮控股"
+          ],
+          "raw": [
+            "265.77",
+            "133.12",
+            "102.89",
+            "41.91"
+          ],
+          "values": [
+            26577000000.0,
+            13312000000.0,
+            10289000000.0,
+            4190999999.9999995
+          ],
+          "sources": [
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 38,
+              "chunk_id": "c0074"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 38,
+              "chunk_id": "c0074"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 38,
+              "chunk_id": "c0074"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 38,
+              "chunk_id": "c0074"
+            }
+          ]
+        },
+        {
+          "label": "CMES Bulker Holdings Inc.",
+          "alias": [
+            "散货控股"
+          ],
+          "raw": [
+            "205",
+            "129.99",
+            "68.94",
+            "8.22"
+          ],
+          "values": [
+            20500000000.0,
+            12999000000.0,
+            6894000000.0,
+            822000000.0000001
+          ],
+          "sources": [
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 38,
+              "chunk_id": "c0074"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 38,
+              "chunk_id": "c0074"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 38,
+              "chunk_id": "c0074"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 38,
+              "chunk_id": "c0074"
+            }
+          ]
+        },
+        {
+          "label": "CMES LNG Carrier Investment Inc.",
+          "alias": [],
+          "raw": [
+            "100.95",
+            "38.41",
+            "1.2",
+            "7.43"
+          ],
+          "values": [
+            10095000000.0,
+            3840999999.9999995,
+            120000000.0,
+            743000000.0
+          ],
+          "sources": [
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 38,
+              "chunk_id": "c0074"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 38,
+              "chunk_id": "c0074"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 38,
+              "chunk_id": "c0074"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 38,
+              "chunk_id": "c0074"
+            }
+          ]
+        },
+        {
+          "label": "中外运集装箱运输有限公司",
+          "alias": [],
+          "raw": [
+            "65.63",
+            "37.19",
+            "61.49",
+            "13.59"
+          ],
+          "values": [
+            6563000000.0,
+            3719000000.0,
+            6149000000.0,
+            1359000000.0
+          ],
+          "sources": [
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 38,
+              "chunk_id": "c0074"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 38,
+              "chunk_id": "c0074"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 38,
+              "chunk_id": "c0074"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 38,
+              "chunk_id": "c0074"
+            }
+          ]
+        },
+        {
+          "label": "广州招商滚装运输有限公司",
+          "alias": [],
+          "raw": [
+            "33.03",
+            "15.66",
+            "16.97",
+            "2.12"
+          ],
+          "values": [
+            3303000000.0,
+            1566000000.0,
+            1697000000.0,
+            212000000.0
+          ],
+          "sources": [
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 38,
+              "chunk_id": "c0074"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 38,
+              "chunk_id": "c0074"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 38,
+              "chunk_id": "c0074"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 38,
+              "chunk_id": "c0074"
+            }
+          ]
+        },
+        {
+          "label": "上海招商明华船务有限公司",
+          "alias": [],
+          "raw": [
+            "35.8",
+            "31.61",
+            "19.86",
+            "2.91"
+          ],
+          "values": [
+            3579999999.9999995,
+            3161000000.0,
+            1986000000.0,
+            291000000.0
+          ],
+          "sources": [
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 38,
+              "chunk_id": "c0074"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 38,
+              "chunk_id": "c0074"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 38,
+              "chunk_id": "c0074"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 38,
+              "chunk_id": "c0074"
+            }
+          ]
+        },
+        {
+          "label": "中国液化天然气运输（控股）有限公司",
+          "alias": [
+            "CLNG"
+          ],
+          "raw": [
+            "119.48",
+            "100.57",
+            "12.04",
+            "12.37"
+          ],
+          "values": [
+            11948000000.0,
+            10057000000.0,
+            1204000000.0,
+            1237000000.0
+          ],
+          "sources": [
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 38,
+              "chunk_id": "c0074"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 38,
+              "chunk_id": "c0074"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 38,
+              "chunk_id": "c0074"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 38,
+              "chunk_id": "c0074"
+            }
+          ]
+        }
+      ],
+      "note": ""
+    },
+    {
+      "id": "capex_projects",
+      "title": "重大非股权投资项目",
+      "page": 34,
+      "columns": [
+        {
+          "name": "累计投入",
+          "unit": "元"
+        },
+        {
+          "name": "本年投入",
+          "unit": "元"
+        },
+        {
+          "name": "项目进度",
+          "unit": "%"
+        }
+      ],
+      "rows": [
+        {
+          "label": "1艘新一代节能环保VLCC油轮（2023年甲醇双燃料）",
+          "alias": [],
+          "raw": [
+            "784,549,130.98",
+            "629,998,530.98",
+            "100.00"
+          ],
+          "values": [
+            784549130.98,
+            629998530.98,
+            100.0
+          ],
+          "sources": [
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 34,
+              "chunk_id": "c0066"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 34,
+              "chunk_id": "c0066"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 34,
+              "chunk_id": "c0066"
+            }
+          ]
+        },
+        {
+          "label": "2艘新一代节能环保AFRAMAX油轮（2023年）",
+          "alias": [],
+          "raw": [
+            "754,028,187.36",
+            "626,470,029.36",
+            "90.00"
+          ],
+          "values": [
+            754028187.36,
+            626470029.36,
+            90.0
+          ],
+          "sources": [
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 34,
+              "chunk_id": "c0066"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 34,
+              "chunk_id": "c0066"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 34,
+              "chunk_id": "c0066"
+            }
+          ]
+        },
+        {
+          "label": "5艘新一代节能环保VLCC油轮（2024年）",
+          "alias": [],
+          "raw": [
+            "843,456,000.00",
+            "412,152,000.00",
+            "20.000"
+          ],
+          "values": [
+            843456000.0,
+            412152000.0,
+            20.0
+          ],
+          "sources": [
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 34,
+              "chunk_id": "c0066"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 34,
+              "chunk_id": "c0066"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 34,
+              "chunk_id": "c0066"
+            }
+          ]
+        },
+        {
+          "label": "5艘新一代节能环保AFRAMAX油轮（2024年）",
+          "alias": [],
+          "raw": [
+            "504,667,840.00",
+            "268,169,480.00",
+            "20.000"
+          ],
+          "values": [
+            504667840.0,
+            268169480.0,
+            20.0
+          ],
+          "sources": [
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 34,
+              "chunk_id": "c0066"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 34,
+              "chunk_id": "c0066"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 34,
+              "chunk_id": "c0066"
+            }
+          ]
+        },
+        {
+          "label": "4艘17.5万m³LNG运输船（一期）",
+          "alias": [],
+          "raw": [
+            "5,052,401,671.88",
+            "1,784,869,203.34",
+            "91.41"
+          ],
+          "values": [
+            5052401671.88,
+            1784869203.34,
+            91.41
+          ],
+          "sources": [
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 34,
+              "chunk_id": "c0066"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 34,
+              "chunk_id": "c0066"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 34,
+              "chunk_id": "c0066"
+            }
+          ]
+        },
+        {
+          "label": "4艘17.5万m³LNG运输船（二期）",
+          "alias": [],
+          "raw": [
+            "4,388,269,245.49",
+            "2,377,719,751.24",
+            "61.14"
+          ],
+          "values": [
+            4388269245.49,
+            2377719751.24,
+            61.14
+          ],
+          "sources": [
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 34,
+              "chunk_id": "c0066"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 34,
+              "chunk_id": "c0066"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 34,
+              "chunk_id": "c0066"
+            }
+          ]
+        },
+        {
+          "label": "6艘17.4万m³LNG船+4艘27.1万m³型LNG船（卡能项目）",
+          "alias": [],
+          "raw": [
+            "3,338,664,790.43",
+            "1,394,202,590.43",
+            "18.46"
+          ],
+          "values": [
+            3338664790.43,
+            1394202590.43,
+            18.46
+          ],
+          "sources": [
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 34,
+              "chunk_id": "c0066"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 34,
+              "chunk_id": "c0066"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 34,
+              "chunk_id": "c0066"
+            }
+          ]
+        },
+        {
+          "label": "4艘6.2万吨多用途船",
+          "alias": [],
+          "raw": [
+            "1,070,493,769.87",
+            "599,744,257.18",
+            "84.25"
+          ],
+          "values": [
+            1070493769.87,
+            599744257.18,
+            84.25
+          ],
+          "sources": [
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 34,
+              "chunk_id": "c0066"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 34,
+              "chunk_id": "c0066"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 34,
+              "chunk_id": "c0066"
+            }
+          ]
+        },
+        {
+          "label": "4艘8.2万吨散货船",
+          "alias": [],
+          "raw": [
+            "938,028,305.96",
+            "609,718,450.24",
+            "88.43"
+          ],
+          "values": [
+            938028305.96,
+            609718450.24,
+            88.43
+          ],
+          "sources": [
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 34,
+              "chunk_id": "c0066"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 34,
+              "chunk_id": "c0066"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 34,
+              "chunk_id": "c0066"
+            }
+          ]
+        },
+        {
+          "label": "10艘21万吨散货船",
+          "alias": [],
+          "raw": [
+            "820,632,272.60",
+            "157,929,076.80",
+            "15.00"
+          ],
+          "values": [
+            820632272.6,
+            157929076.8,
+            15.0
+          ],
+          "sources": [
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 34,
+              "chunk_id": "c0066"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 34,
+              "chunk_id": "c0066"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 34,
+              "chunk_id": "c0066"
+            }
+          ]
+        },
+        {
+          "label": "2艘9300车位+4艘7800车位滚装船（甲醇双燃料）",
+          "alias": [],
+          "raw": [
+            "2,044,692,491.48",
+            "1,177,464,577.38",
+            "48.17"
+          ],
+          "values": [
+            2044692491.48,
+            1177464577.38,
+            48.17
+          ],
+          "sources": [
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 34,
+              "chunk_id": "c0066"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 34,
+              "chunk_id": "c0066"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 34,
+              "chunk_id": "c0066"
+            }
+          ]
+        },
+        {
+          "label": "合计",
+          "alias": [],
+          "raw": [
+            "20,539,883,706.05",
+            "10,038,437,946.95",
+            null
+          ],
+          "values": [
+            20539883706.05,
+            10038437946.95,
+            null
+          ],
+          "sources": [
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 34,
+              "chunk_id": "c0066"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 34,
+              "chunk_id": "c0066"
+            },
+            null
+          ]
+        }
+      ],
+      "note": ""
+    },
+    {
+      "id": "dividend",
+      "title": "2025 年度现金分红",
+      "page": 61,
+      "columns": [
+        {
+          "name": "金额",
+          "unit": "元"
+        }
+      ],
+      "rows": [
+        {
+          "label": "年度累计现金分红",
+          "alias": [],
+          "raw": [
+            "2,583,852,320.64"
+          ],
+          "values": [
+            2583852320.64
+          ],
+          "sources": [
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 61,
+              "chunk_id": "c0122"
+            }
+          ]
+        },
+        {
+          "label": "其中：中期已派发",
+          "alias": [],
+          "raw": [
+            "565,217,695.14"
+          ],
+          "values": [
+            565217695.14
+          ],
+          "sources": [
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 60,
+              "chunk_id": "c0120"
+            }
+          ]
+        },
+        {
+          "label": "报告期股份回购金额",
+          "alias": [],
+          "raw": [
+            "310,512,396.49"
+          ],
+          "values": [
+            310512396.49
+          ],
+          "sources": [
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 60,
+              "chunk_id": "c0120"
+            }
+          ]
+        }
+      ],
+      "note": ""
+    },
+    {
+      "id": "dividend_ratio",
+      "title": "分红与股东回报比例（年报口径）",
+      "page": 61,
+      "columns": [
+        {
+          "name": "比例",
+          "unit": "%"
+        }
+      ],
+      "rows": [
+        {
+          "label": "现金分红占归母净利润比例",
+          "alias": [],
+          "raw": [
+            "42.98"
+          ],
+          "values": [
+            42.98
+          ],
+          "sources": [
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 61,
+              "chunk_id": "c0122"
+            }
+          ]
+        },
+        {
+          "label": "现金股东回报占归母净利润比例",
+          "alias": [],
+          "raw": [
+            "48.14"
+          ],
+          "values": [
+            48.14
+          ],
+          "sources": [
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 60,
+              "chunk_id": "c0120"
+            }
+          ]
+        }
+      ],
+      "note": ""
+    },
+    {
+      "id": "customers",
+      "title": "前五名客户与供应商",
+      "page": 24,
+      "columns": [
+        {
+          "name": "金额",
+          "unit": "元"
+        },
+        {
+          "name": "占比",
+          "unit": "%"
+        }
+      ],
+      "rows": [
+        {
+          "label": "前五名客户销售额",
+          "alias": [],
+          "raw": [
+            "865,845.67",
+            "30.73"
+          ],
+          "values": [
+            8658456700.0,
+            30.73
+          ],
+          "sources": [
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 24,
+              "chunk_id": "c0048"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 24,
+              "chunk_id": "c0048"
+            }
+          ]
+        },
+        {
+          "label": "前五名客户关联方销售额",
+          "alias": [],
+          "raw": [
+            "489,400.66",
+            "17.37"
+          ],
+          "values": [
+            4894006600.0,
+            17.37
+          ],
+          "sources": [
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 24,
+              "chunk_id": "c0048"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 24,
+              "chunk_id": "c0048"
+            }
+          ]
+        },
+        {
+          "label": "前五名供应商采购额",
+          "alias": [],
+          "raw": [
+            "1,218,597.27",
+            "35.46"
+          ],
+          "values": [
+            12185972700.0,
+            35.46
+          ],
+          "sources": [
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 24,
+              "chunk_id": "c0048"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 24,
+              "chunk_id": "c0048"
+            }
+          ]
+        },
+        {
+          "label": "前五名供应商关联方采购额",
+          "alias": [],
+          "raw": [
+            "614,591.40",
+            "17.88"
+          ],
+          "values": [
+            6145914000.0,
+            17.88
+          ],
+          "sources": [
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 24,
+              "chunk_id": "c0048"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 24,
+              "chunk_id": "c0048"
+            }
+          ]
+        }
+      ],
+      "note": ""
+    },
+    {
+      "id": "staff",
+      "title": "员工情况",
+      "page": 58,
+      "columns": [
+        {
+          "name": "人数",
+          "unit": "人"
+        }
+      ],
+      "rows": [
+        {
+          "label": "在职员工合计",
+          "alias": [],
+          "raw": [
+            "5,513"
+          ],
+          "values": [
+            5513.0
+          ],
+          "sources": [
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 58,
+              "chunk_id": "c0117"
+            }
+          ]
+        },
+        {
+          "label": "生产人员",
+          "alias": [],
+          "raw": [
+            "4,122"
+          ],
+          "values": [
+            4122.0
+          ],
+          "sources": [
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 58,
+              "chunk_id": "c0117"
+            }
+          ]
+        },
+        {
+          "label": "销售人员",
+          "alias": [],
+          "raw": [
+            "358"
+          ],
+          "values": [
+            358.0
+          ],
+          "sources": [
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 58,
+              "chunk_id": "c0117"
+            }
+          ]
+        },
+        {
+          "label": "技术人员",
+          "alias": [],
+          "raw": [
+            "484"
+          ],
+          "values": [
+            484.0
+          ],
+          "sources": [
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 58,
+              "chunk_id": "c0117"
+            }
+          ]
+        },
+        {
+          "label": "财务人员",
+          "alias": [],
+          "raw": [
+            "193"
+          ],
+          "values": [
+            193.0
+          ],
+          "sources": [
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 58,
+              "chunk_id": "c0117"
+            }
+          ]
+        },
+        {
+          "label": "行政人员",
+          "alias": [],
+          "raw": [
+            "356"
+          ],
+          "values": [
+            356.0
+          ],
+          "sources": [
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 58,
+              "chunk_id": "c0117"
+            }
+          ]
+        }
+      ],
+      "note": ""
+    },
+    {
+      "id": "rd",
+      "title": "研发投入",
+      "page": 25,
+      "columns": [
+        {
+          "name": "金额",
+          "unit": "元"
+        },
+        {
+          "name": "占营业收入比例",
+          "unit": "%"
+        }
+      ],
+      "rows": [
+        {
+          "label": "本期费用化研发投入",
+          "alias": [],
+          "raw": [
+            "27,580,622.37",
+            null
+          ],
+          "values": [
+            27580622.37,
+            null
+          ],
+          "sources": [
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 25,
+              "chunk_id": "c0049"
+            },
+            null
+          ]
+        },
+        {
+          "label": "本期资本化研发投入",
+          "alias": [],
+          "raw": [
+            "54,080,855.95",
+            null
+          ],
+          "values": [
+            54080855.95,
+            null
+          ],
+          "sources": [
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 25,
+              "chunk_id": "c0049"
+            },
+            null
+          ]
+        },
+        {
+          "label": "研发投入合计",
+          "alias": [],
+          "raw": [
+            "81,661,478.32",
+            "0.29"
+          ],
+          "values": [
+            81661478.32,
+            0.29
+          ],
+          "sources": [
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 25,
+              "chunk_id": "c0049"
+            },
+            {
+              "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+              "page": 25,
+              "chunk_id": "c0049"
+            }
+          ]
+        }
+      ],
+      "note": ""
+    }
+  ],
+  "ratios": [
+    {
+      "id": "share_oil",
+      "label": "油轮收入占比",
+      "alias": [],
+      "unit": "%",
+      "op": "div",
+      "value": 36.515324216502584,
+      "num": [
+        "segment",
+        "油轮运输",
+        "营业收入"
+      ],
+      "den": [
+        "truth",
+        "revenue",
+        "2025"
+      ]
+    },
+    {
+      "id": "share_bulk",
+      "label": "干散货收入占比",
+      "alias": [],
+      "unit": "%",
+      "op": "div",
+      "value": 31.120893969726033,
+      "num": [
+        "segment",
+        "干散货船队",
+        "营业收入"
+      ],
+      "den": [
+        "truth",
+        "revenue",
+        "2025"
+      ]
+    },
+    {
+      "id": "share_container",
+      "label": "集装箱收入占比",
+      "alias": [],
+      "unit": "%",
+      "op": "div",
+      "value": 21.822599728571713,
+      "num": [
+        "segment",
+        "集装箱船队",
+        "营业收入"
+      ],
+      "den": [
+        "truth",
+        "revenue",
+        "2025"
+      ]
+    },
+    {
+      "id": "share_roro",
+      "label": "滚装收入占比",
+      "alias": [],
+      "unit": "%",
+      "op": "div",
+      "value": 5.997754682271295,
+      "num": [
+        "segment",
+        "滚装船队",
+        "营业收入"
+      ],
+      "den": [
+        "truth",
+        "revenue",
+        "2025"
+      ]
+    },
+    {
+      "id": "share_lng",
+      "label": "LNG收入占比",
+      "alias": [],
+      "unit": "%",
+      "op": "div",
+      "value": 0.19519319971888835,
+      "num": [
+        "segment",
+        "LNG船队",
+        "营业收入"
+      ],
+      "den": [
+        "truth",
+        "revenue",
+        "2025"
+      ]
+    },
+    {
+      "id": "netprofit_oil_share",
+      "label": "油轮板块净利润占公司净利润比重",
+      "alias": [],
+      "unit": "%",
+      "op": "div",
+      "value": 69.03637107991763,
+      "num": [
+        "segment",
+        "油轮运输",
+        "净利润"
+      ],
+      "den": [
+        "truth",
+        "net_profit",
+        "2025"
+      ]
+    },
+    {
+      "id": "payout",
+      "label": "现金分红率",
+      "alias": [],
+      "unit": "%",
+      "op": "div",
+      "value": 42.9775606622554,
+      "num": [
+        "dividend",
+        "年度累计现金分红",
+        "金额"
+      ],
+      "den": [
+        "truth",
+        "np_parent",
+        "2025"
+      ]
+    },
+    {
+      "id": "revenue_growth_check",
+      "label": "营业收入同比增速",
+      "alias": [],
+      "unit": "%",
+      "op": "growth",
+      "value": 9.21704711330975,
+      "num": [
+        "truth",
+        "revenue",
+        "2025"
+      ],
+      "den": [
+        "truth",
+        "revenue",
+        "2024"
+      ]
+    }
+  ],
+  "rejected": [],
+  "notes": ""
+}

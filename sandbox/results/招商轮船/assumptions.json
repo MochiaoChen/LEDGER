@@ -1,0 +1,62 @@
+{
+  "_status": "DRAFT — 分析师观点/假设，尚未经用户确认，不得用于出报告",
+  "_note": "按 finagent-research SKILL.md 描述字段起草：分部驱动预测 segment_forecast（各分部各情景的运量增速、运价增速、毛利率变动、费用率）+ 情景参数 scenarios（revenue_growth、capex_percent_revenue、terminal_growth_rate、wacc_adjustment）+ 三表参数 three_statement（分红率、毛利率情景偏移、应收天数偏移）+ 非经营性资产 non_operating_assets。分部分部名称与年报口径一致（油轮运输/干散货船队/集装箱船队/滚装船队/LNG船队）。确认后运行 valuation 时如字段名与引擎要求不符，会据报错调整。参考股价为外部行情数据，需用户提供。",
+  "company": "招商轮船",
+  "code": "601872.SH",
+  "fiscal_year": 2025,
+  "currency": "CNY",
+  "market_data": {
+    "share_price": null,
+    "price_date": null,
+    "_note": "外部行情数据，年报不含；请用户提供某一交易日收盘价与日期，并写入基本数据表表注。"
+  },
+  "scenarios": {
+    "pessimistic": {"revenue_growth": -0.03, "capex_percent_revenue": 0.28, "terminal_growth_rate": 0.015, "wacc_adjustment": 0.005},
+    "base": {"revenue_growth": 0.07, "capex_percent_revenue": 0.26, "terminal_growth_rate": 0.02, "wacc_adjustment": 0.0},
+    "optimistic": {"revenue_growth": 0.14, "capex_percent_revenue": 0.24, "terminal_growth_rate": 0.025, "wacc_adjustment": -0.005}
+  },
+  "three_statement": {
+    "dividend_payout": 0.43,
+    "gross_margin_shift": {"pessimistic": -0.01, "base": 0.0, "optimistic": 0.005},
+    "ar_days_shift": {"pessimistic": 5, "base": 0, "optimistic": -5}
+  },
+  "segment_forecast": {
+    "油轮运输": {
+      "volume_growth": {"pessimistic": 0.0, "base": 0.02, "optimistic": 0.03},
+      "price_growth": {"pessimistic": -0.05, "base": 0.05, "optimistic": 0.15},
+      "gross_margin_change": {"pessimistic": -0.03, "base": 0.0, "optimistic": 0.03}
+    },
+    "干散货船队": {
+      "volume_growth": {"pessimistic": 0.02, "base": 0.06, "optimistic": 0.08},
+      "price_growth": {"pessimistic": -0.08, "base": -0.03, "optimistic": 0.05},
+      "gross_margin_change": {"pessimistic": -0.02, "base": 0.0, "optimistic": 0.02}
+    },
+    "集装箱船队": {
+      "volume_growth": {"pessimistic": 0.0, "base": 0.05, "optimistic": 0.08},
+      "price_growth": {"pessimistic": -0.15, "base": -0.05, "optimistic": 0.05},
+      "gross_margin_change": {"pessimistic": -0.02, "base": -0.005, "optimistic": 0.01}
+    },
+    "滚装船队": {
+      "volume_growth": {"pessimistic": 0.0, "base": 0.05, "optimistic": 0.08},
+      "price_growth": {"pessimistic": -0.10, "base": -0.05, "optimistic": 0.0},
+      "gross_margin_change": {"pessimistic": -0.02, "base": 0.0, "optimistic": 0.01}
+    },
+    "LNG船队": {
+      "volume_growth": {"pessimistic": 0.25, "base": 0.30, "optimistic": 0.35},
+      "price_growth": {"pessimistic": -0.10, "base": -0.05, "optimistic": 0.0},
+      "gross_margin_change": {"pessimistic": -0.02, "base": -0.01, "optimistic": 0.0}
+    }
+  },
+  "expense_ratio": {
+    "selling_expense_ratio": 0.004,
+    "admin_expense_ratio": 0.035,
+    "rd_expense_ratio": 0.003
+  },
+  "non_operating_assets": [
+    {"label": "长期股权投资", "raw_value": "8,674,375,446.43", "unit": "元", "page": 98, "sign": 1},
+    {"label": "其他权益工具投资", "raw_value": "2,131,324.12", "unit": "元", "page": 98, "sign": 1}
+  ],
+  "rating_rule": {
+    "_note": "沿用引擎默认规则（基准情景 DCF 每股价值相对参考股价：≥20% 买入、≥5% 增持、≥-5% 中性、≥-20% 减持、其余卖出），如用户另有要求在此覆盖。"
+  }
+}

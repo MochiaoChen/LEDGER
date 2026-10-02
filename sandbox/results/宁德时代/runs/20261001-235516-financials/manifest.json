@@ -1,0 +1,56 @@
+{
+  "run_id": "20261001-235516-financials",
+  "task": "financials",
+  "status": "ok",
+  "started_at": "2026-10-01T23:55:16",
+  "elapsed_sec": 8.606,
+  "python": "3.12.14",
+  "platform": "macOS-26.6.2-arm64-arm-64bit",
+  "config": {
+    "llm_base_url": "https://api.deepseek.com/v1",
+    "llm_model": "deepseek-flash",
+    "llm_api_key": "",
+    "llm_mode": "off",
+    "llm_temperature": 0.0,
+    "llm_seed": 42,
+    "llm_timeout": 120.0,
+    "cache_dir": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/.cache/llm",
+    "runs_dir": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/results/宁德时代/runs",
+    "task": "financials",
+    "llm_extract": "fallback",
+    "extraction": "skill",
+    "argv": [
+      "financials",
+      "--input",
+      "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+      "--year",
+      "2025",
+      "--facts",
+      "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/results/宁德时代/facts.json",
+      "--company",
+      "宁德时代",
+      "--llm",
+      "off",
+      "--runs-dir",
+      "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/results/宁德时代/runs",
+      "--extras",
+      "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/results/宁德时代/extras.json"
+    ]
+  },
+  "inputs": {
+    "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf": "c15272977147dee7e6935a38ea0e4fd6855370aabb106f54cfe20f7cf6048ec9",
+    "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/results/宁德时代/facts.json": "3eaa73c22b2d1c2f3469060de8d58ed87effc693a42a9a1f5fb9c8e2e4bf7003",
+    "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/results/宁德时代/extras.json": "47b47e3098d819c06a31f1928f944ce2ddfe9693e074fcd1a9ec7eb1a42c6a59"
+  },
+  "artifacts": {
+    "financials/skill_extraction.json": "f32f6c43170e9b3a5b9850cd2d3f0eb4722ecc7908d34931c834428c7ab6d9b6",
+    "financials/facts.json": "504f481da95e7579e0da14cdde53a05c7ada7e96628020a9671a8d97b84a035b",
+    "financials/facts.csv": "9068c0632b51183b934391bab5c08338db3dacf902b0465a790b274e88e111e6",
+    "financials/analysis.json": "4a5be0d41931728945c2b24f43dde9b0bfd6ab226047074ea666b137b9ecee5d",
+    "financials/extras.json": "527079b6e1bd4d0bda6292790e6949de9e4f020695d519e3057d3cefb543982a",
+    "financials/earnings.json": "e627450ef34b9af724894d25cf57b8dfdcc9edc2b29150a14a943056b3a8f6c7",
+    "financials/report.md": "7bcff4ac4dab236190a84477a991ccefef072e31f030ec8c42fc1c18e3a5f3e5",
+    "summary.json": "cc3b39785d91e00766ce015b4b342121bfa2cf9cda9f581fef6141a3a11add81"
+  },
+  "event_count": 29
+}

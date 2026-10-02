@@ -6,3 +6,8 @@ runs/*
 !runs/.gitkeep
 # 注意：.cache/llm/ 需要随代码提交，供评审 replay 复现
 .venv/
+.DS_Store
+# Sandbox deliverables and audit records are tracked; disposable replays are not.
+sandbox/**/.api_cache/
+sandbox/**/preview/
+sandbox/sandbox/

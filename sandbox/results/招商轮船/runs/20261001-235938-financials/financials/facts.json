@@ -1,0 +1,3020 @@
+{
+  "facts": [
+    {
+      "metric_id": "accounts_payable",
+      "period": "2024",
+      "value": 1860327138.76,
+      "raw": "1,860,327,138.76",
+      "unit": "元",
+      "source": {
+        "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+        "page": 99,
+        "chunk_id": "c0201",
+        "caption": "合并资产负债表",
+        "table": "合并资产负债表",
+        "extractor": "claude-code-skill"
+      },
+      "label": "应付账款",
+      "method": "llm",
+      "confidence": "medium",
+      "corroborated_by": [],
+      "metric_name": "应付账款"
+    },
+    {
+      "metric_id": "accounts_payable",
+      "period": "2025",
+      "value": 1836367278.84,
+      "raw": "1,836,367,278.84",
+      "unit": "元",
+      "source": {
+        "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+        "page": 99,
+        "chunk_id": "c0201",
+        "caption": "合并资产负债表",
+        "table": "合并资产负债表",
+        "extractor": "claude-code-skill"
+      },
+      "label": "应付账款",
+      "method": "llm",
+      "confidence": "medium",
+      "corroborated_by": [],
+      "metric_name": "应付账款"
+    },
+    {
+      "metric_id": "accounts_receivable",
+      "period": "2024",
+      "value": 1148128947.02,
+      "raw": "1,148,128,947.02",
+      "unit": "元",
+      "source": {
+        "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+        "page": 98,
+        "chunk_id": "c0199",
+        "caption": "合并资产负债表",
+        "row": 8,
+        "col": 3
+      },
+      "label": "应收账款",
+      "method": "rule+llm",
+      "confidence": "high",
+      "corroborated_by": [
+        {
+          "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+          "page": 98,
+          "chunk_id": "c0199",
+          "caption": "合并资产负债表",
+          "table": "合并资产负债表",
+          "extractor": "claude-code-skill"
+        }
+      ],
+      "metric_name": "应收账款"
+    },
+    {
+      "metric_id": "accounts_receivable",
+      "period": "2025",
+      "value": 1385342361.82,
+      "raw": "1,385,342,361.82",
+      "unit": "元",
+      "source": {
+        "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+        "page": 98,
+        "chunk_id": "c0199",
+        "caption": "合并资产负债表",
+        "row": 8,
+        "col": 2
+      },
+      "label": "应收账款",
+      "method": "rule+llm",
+      "confidence": "high",
+      "corroborated_by": [
+        {
+          "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+          "page": 98,
+          "chunk_id": "c0199",
+          "caption": "合并资产负债表",
+          "table": "合并资产负债表",
+          "extractor": "claude-code-skill"
+        }
+      ],
+      "metric_name": "应收账款"
+    },
+    {
+      "metric_id": "admin_expense",
+      "period": "2024",
+      "value": 819102732.86,
+      "raw": "819,102,732.86",
+      "unit": "元",
+      "source": {
+        "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+        "page": 20,
+        "chunk_id": "c0040",
+        "caption": "1、 利润表及现金流量表相关科目变动分析表",
+        "row": 4,
+        "col": 2
+      },
+      "label": "管理费用",
+      "method": "rule+llm",
+      "confidence": "high",
+      "corroborated_by": [
+        {
+          "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+          "page": 103,
+          "chunk_id": "c0209",
+          "caption": "合并利润表",
+          "row": 17,
+          "col": 3
+        },
+        {
+          "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+          "page": 103,
+          "chunk_id": "c0209",
+          "caption": "合并利润表",
+          "table": "合并利润表",
+          "extractor": "claude-code-skill"
+        }
+      ],
+      "metric_name": "管理费用"
+    },
+    {
+      "metric_id": "admin_expense",
+      "period": "2025",
+      "value": 976123179.32,
+      "raw": "976,123,179.32",
+      "unit": "元",
+      "source": {
+        "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+        "page": 20,
+        "chunk_id": "c0040",
+        "caption": "1、 利润表及现金流量表相关科目变动分析表",
+        "row": 4,
+        "col": 1
+      },
+      "label": "管理费用",
+      "method": "rule+llm",
+      "confidence": "high",
+      "corroborated_by": [
+        {
+          "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+          "page": 103,
+          "chunk_id": "c0209",
+          "caption": "合并利润表",
+          "row": 17,
+          "col": 2
+        },
+        {
+          "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+          "page": 103,
+          "chunk_id": "c0209",
+          "caption": "合并利润表",
+          "table": "合并利润表",
+          "extractor": "claude-code-skill"
+        }
+      ],
+      "metric_name": "管理费用"
+    },
+    {
+      "metric_id": "admin_expense.reported_yoy",
+      "period": "2025",
+      "value": 19.17,
+      "raw": "19.17",
+      "unit": "%",
+      "source": {
+        "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+        "page": 20,
+        "chunk_id": "c0040",
+        "caption": "1、 利润表及现金流量表相关科目变动分析表",
+        "row": 4,
+        "col": 3
+      },
+      "label": "管理费用",
+      "method": "rule_table",
+      "confidence": "high",
+      "corroborated_by": [],
+      "metric_name": "管理费用（财报列示同比%）"
+    },
+    {
+      "metric_id": "amortization",
+      "period": "2024",
+      "value": 17925744.33,
+      "raw": "17,925,744.33",
+      "unit": "元",
+      "source": {
+        "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+        "page": 194,
+        "chunk_id": "c0436",
+        "caption": "(1).现金流量表补充资料",
+        "table": "现金流量表补充资料",
+        "extractor": "claude-code-skill"
+      },
+      "label": "无形资产摊销",
+      "method": "llm",
+      "confidence": "medium",
+      "corroborated_by": [],
+      "metric_name": "无形资产摊销"
+    },
+    {
+      "metric_id": "amortization",
+      "period": "2025",
+      "value": 21434859.59,
+      "raw": "21,434,859.59",
+      "unit": "元",
+      "source": {
+        "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+        "page": 194,
+        "chunk_id": "c0436",
+        "caption": "(1).现金流量表补充资料",
+        "table": "现金流量表补充资料",
+        "extractor": "claude-code-skill"
+      },
+      "label": "无形资产摊销",
+      "method": "llm",
+      "confidence": "medium",
+      "corroborated_by": [],
+      "metric_name": "无形资产摊销"
+    },
+    {
+      "metric_id": "capex",
+      "period": "2024",
+      "value": 7550235457.35,
+      "raw": "7,550,235,457.35",
+      "unit": "元",
+      "source": {
+        "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+        "page": 108,
+        "chunk_id": "c0219",
+        "caption": "合并现金流量表",
+        "table": "合并现金流量表",
+        "extractor": "claude-code-skill"
+      },
+      "label": "购建固定资产、无形资产和其他长期资产支付的现金",
+      "method": "llm",
+      "confidence": "medium",
+      "corroborated_by": [],
+      "metric_name": "购建固定资产、无形资产和其他长期资产支付的现金"
+    },
+    {
+      "metric_id": "capex",
+      "period": "2025",
+      "value": 7796879055.42,
+      "raw": "7,796,879,055.42",
+      "unit": "元",
+      "source": {
+        "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+        "page": 108,
+        "chunk_id": "c0219",
+        "caption": "合并现金流量表",
+        "table": "合并现金流量表",
+        "extractor": "claude-code-skill"
+      },
+      "label": "购建固定资产、无形资产和其他长期资产支付的现金",
+      "method": "llm",
+      "confidence": "medium",
+      "corroborated_by": [],
+      "metric_name": "购建固定资产、无形资产和其他长期资产支付的现金"
+    },
+    {
+      "metric_id": "cash",
+      "period": "2024",
+      "value": 4589226803.24,
+      "raw": "4,589,226,803.24",
+      "unit": "元",
+      "source": {
+        "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+        "page": 98,
+        "chunk_id": "c0199",
+        "caption": "合并资产负债表",
+        "row": 2,
+        "col": 3
+      },
+      "label": "货币资金",
+      "method": "rule+llm",
+      "confidence": "high",
+      "corroborated_by": [
+        {
+          "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+          "page": 98,
+          "chunk_id": "c0199",
+          "caption": "合并资产负债表",
+          "table": "合并资产负债表",
+          "extractor": "claude-code-skill"
+        }
+      ],
+      "metric_name": "货币资金"
+    },
+    {
+      "metric_id": "cash",
+      "period": "2025",
+      "value": 4720914663.1,
+      "raw": "4,720,914,663.10",
+      "unit": "元",
+      "source": {
+        "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+        "page": 98,
+        "chunk_id": "c0199",
+        "caption": "合并资产负债表",
+        "row": 2,
+        "col": 2
+      },
+      "label": "货币资金",
+      "method": "rule+llm",
+      "confidence": "high",
+      "corroborated_by": [
+        {
+          "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+          "page": 98,
+          "chunk_id": "c0199",
+          "caption": "合并资产负债表",
+          "table": "合并资产负债表",
+          "extractor": "claude-code-skill"
+        }
+      ],
+      "metric_name": "货币资金"
+    },
+    {
+      "metric_id": "construction_in_progress",
+      "period": "2024",
+      "value": 6557083368.72,
+      "raw": "6,557,083,368.72",
+      "unit": "元",
+      "source": {
+        "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+        "page": 98,
+        "chunk_id": "c0199",
+        "caption": "合并资产负债表",
+        "row": 35,
+        "col": 3
+      },
+      "label": "在建工程",
+      "method": "rule+llm",
+      "confidence": "high",
+      "corroborated_by": [
+        {
+          "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+          "page": 98,
+          "chunk_id": "c0199",
+          "caption": "合并资产负债表",
+          "table": "合并资产负债表",
+          "extractor": "claude-code-skill"
+        }
+      ],
+      "metric_name": "在建工程"
+    },
+    {
+      "metric_id": "construction_in_progress",
+      "period": "2025",
+      "value": 11408781174.52,
+      "raw": "11,408,781,174.52",
+      "unit": "元",
+      "source": {
+        "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+        "page": 98,
+        "chunk_id": "c0199",
+        "caption": "合并资产负债表",
+        "row": 35,
+        "col": 2
+      },
+      "label": "在建工程",
+      "method": "rule+llm",
+      "confidence": "high",
+      "corroborated_by": [
+        {
+          "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+          "page": 98,
+          "chunk_id": "c0199",
+          "caption": "合并资产负债表",
+          "table": "合并资产负债表",
+          "extractor": "claude-code-skill"
+        }
+      ],
+      "metric_name": "在建工程"
+    },
+    {
+      "metric_id": "contract_liab",
+      "period": "2024",
+      "value": 299538910.71,
+      "raw": "299,538,910.71",
+      "unit": "元",
+      "source": {
+        "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+        "page": 99,
+        "chunk_id": "c0201",
+        "caption": "合并资产负债表",
+        "table": "合并资产负债表",
+        "extractor": "claude-code-skill"
+      },
+      "label": "合同负债",
+      "method": "llm",
+      "confidence": "medium",
+      "corroborated_by": [],
+      "metric_name": "合同负债"
+    },
+    {
+      "metric_id": "contract_liab",
+      "period": "2025",
+      "value": 356271207.46,
+      "raw": "356,271,207.46",
+      "unit": "元",
+      "source": {
+        "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+        "page": 99,
+        "chunk_id": "c0201",
+        "caption": "合并资产负债表",
+        "table": "合并资产负债表",
+        "extractor": "claude-code-skill"
+      },
+      "label": "合同负债",
+      "method": "llm",
+      "confidence": "medium",
+      "corroborated_by": [],
+      "metric_name": "合同负债"
+    },
+    {
+      "metric_id": "current_ltd",
+      "period": "2024",
+      "value": 3336400669.99,
+      "raw": "3,336,400,669.99",
+      "unit": "元",
+      "source": {
+        "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+        "page": 99,
+        "chunk_id": "c0201",
+        "caption": "合并资产负债表",
+        "table": "合并资产负债表",
+        "extractor": "claude-code-skill"
+      },
+      "label": "一年内到期的非流动负债",
+      "method": "llm",
+      "confidence": "medium",
+      "corroborated_by": [],
+      "metric_name": "一年内到期的非流动负债"
+    },
+    {
+      "metric_id": "current_ltd",
+      "period": "2025",
+      "value": 4064723472.66,
+      "raw": "4,064,723,472.66",
+      "unit": "元",
+      "source": {
+        "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+        "page": 99,
+        "chunk_id": "c0201",
+        "caption": "合并资产负债表",
+        "table": "合并资产负债表",
+        "extractor": "claude-code-skill"
+      },
+      "label": "一年内到期的非流动负债",
+      "method": "llm",
+      "confidence": "medium",
+      "corroborated_by": [],
+      "metric_name": "一年内到期的非流动负债"
+    },
+    {
+      "metric_id": "depreciation",
+      "period": "2024",
+      "value": 2263046020.29,
+      "raw": "2,263,046,020.29",
+      "unit": "元",
+      "source": {
+        "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+        "page": 193,
+        "chunk_id": "c0434",
+        "caption": "(1).现金流量表补充资料",
+        "row": 5,
+        "col": 2
+      },
+      "label": "固定资产折旧、油气资产折耗、生产\n性生物资产折旧",
+      "method": "rule+llm",
+      "confidence": "high",
+      "corroborated_by": [
+        {
+          "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+          "page": 193,
+          "chunk_id": "c0434",
+          "caption": "(1).现金流量表补充资料",
+          "table": "现金流量表补充资料",
+          "extractor": "claude-code-skill"
+        }
+      ],
+      "metric_name": "固定资产折旧、油气资产折耗、生产性生物资产折旧"
+    },
+    {
+      "metric_id": "depreciation",
+      "period": "2025",
+      "value": 2375027311.93,
+      "raw": "2,375,027,311.93",
+      "unit": "元",
+      "source": {
+        "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+        "page": 193,
+        "chunk_id": "c0434",
+        "caption": "(1).现金流量表补充资料",
+        "row": 5,
+        "col": 1
+      },
+      "label": "固定资产折旧、油气资产折耗、生产\n性生物资产折旧",
+      "method": "rule+llm",
+      "confidence": "high",
+      "corroborated_by": [
+        {
+          "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+          "page": 193,
+          "chunk_id": "c0434",
+          "caption": "(1).现金流量表补充资料",
+          "table": "现金流量表补充资料",
+          "extractor": "claude-code-skill"
+        }
+      ],
+      "metric_name": "固定资产折旧、油气资产折耗、生产性生物资产折旧"
+    },
+    {
+      "metric_id": "eps_basic",
+      "period": "2023",
+      "value": 0.6,
+      "raw": "0.60",
+      "unit": "元/股",
+      "source": {
+        "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+        "page": 10,
+        "chunk_id": "c0022",
+        "caption": "七、 近三年主要会计数据和财务指标",
+        "row": 1,
+        "col": 4
+      },
+      "label": "基本每股收益（元／股）",
+      "method": "rule_table",
+      "confidence": "high",
+      "corroborated_by": [],
+      "metric_name": "基本每股收益"
+    },
+    {
+      "metric_id": "eps_basic",
+      "period": "2024",
+      "value": 0.63,
+      "raw": "0.63",
+      "unit": "元/股",
+      "source": {
+        "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+        "page": 10,
+        "chunk_id": "c0022",
+        "caption": "七、 近三年主要会计数据和财务指标",
+        "row": 1,
+        "col": 2
+      },
+      "label": "基本每股收益（元／股）",
+      "method": "rule+llm",
+      "confidence": "high",
+      "corroborated_by": [
+        {
+          "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+          "page": 10,
+          "chunk_id": "c0022",
+          "caption": "七、 近三年主要会计数据和财务指标",
+          "table": "主要财务指标",
+          "extractor": "claude-code-skill"
+        }
+      ],
+      "metric_name": "基本每股收益"
+    },
+    {
+      "metric_id": "eps_basic",
+      "period": "2025",
+      "value": 0.74,
+      "raw": "0.74",
+      "unit": "元/股",
+      "source": {
+        "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+        "page": 10,
+        "chunk_id": "c0022",
+        "caption": "七、 近三年主要会计数据和财务指标",
+        "row": 1,
+        "col": 1
+      },
+      "label": "基本每股收益（元／股）",
+      "method": "rule+llm",
+      "confidence": "high",
+      "corroborated_by": [
+        {
+          "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+          "page": 10,
+          "chunk_id": "c0022",
+          "caption": "七、 近三年主要会计数据和财务指标",
+          "table": "主要财务指标",
+          "extractor": "claude-code-skill"
+        }
+      ],
+      "metric_name": "基本每股收益"
+    },
+    {
+      "metric_id": "eps_basic.reported_yoy",
+      "period": "2025",
+      "value": 17.46,
+      "raw": "17.46%",
+      "unit": "%",
+      "source": {
+        "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+        "page": 10,
+        "chunk_id": "c0022",
+        "caption": "七、 近三年主要会计数据和财务指标",
+        "row": 1,
+        "col": 3
+      },
+      "label": "基本每股收益（元／股）",
+      "method": "rule_table",
+      "confidence": "high",
+      "corroborated_by": [],
+      "metric_name": "基本每股收益（财报列示同比%）"
+    },
+    {
+      "metric_id": "equity_parent",
+      "period": "2024",
+      "value": 40043682654.46,
+      "raw": "40,043,682,654.46",
+      "unit": "元",
+      "source": {
+        "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+        "page": 10,
+        "chunk_id": "c0021",
+        "caption": "七、 近三年主要会计数据和财务指标",
+        "table": "主要会计数据",
+        "extractor": "claude-code-skill"
+      },
+      "label": "归属于上市公司股东的净资产",
+      "method": "llm",
+      "confidence": "medium",
+      "corroborated_by": [
+        {
+          "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+          "page": 100,
+          "chunk_id": "c0203",
+          "caption": "合并资产负债表",
+          "table": "合并资产负债表",
+          "extractor": "claude-code-skill"
+        }
+      ],
+      "metric_name": "归属于母公司所有者权益合计"
+    },
+    {
+      "metric_id": "equity_parent",
+      "period": "2025",
+      "value": 43005621793.17,
+      "raw": "43,005,621,793.17",
+      "unit": "元",
+      "source": {
+        "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+        "page": 10,
+        "chunk_id": "c0021",
+        "caption": "七、 近三年主要会计数据和财务指标",
+        "table": "主要会计数据",
+        "extractor": "claude-code-skill"
+      },
+      "label": "归属于上市公司股东的净资产",
+      "method": "llm",
+      "confidence": "medium",
+      "corroborated_by": [
+        {
+          "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+          "page": 100,
+          "chunk_id": "c0203",
+          "caption": "合并资产负债表",
+          "table": "合并资产负债表",
+          "extractor": "claude-code-skill"
+        }
+      ],
+      "metric_name": "归属于母公司所有者权益合计"
+    },
+    {
+      "metric_id": "fair_value_change",
+      "period": "2025",
+      "value": 165379501.34,
+      "raw": "165,379,501.34",
+      "unit": "元",
+      "source": {
+        "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+        "page": 103,
+        "chunk_id": "c0209",
+        "caption": "合并利润表",
+        "row": 28,
+        "col": 2
+      },
+      "label": "公允价值变动收益（损失以\n“－”号填列）",
+      "method": "rule+llm",
+      "confidence": "high",
+      "corroborated_by": [
+        {
+          "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+          "page": 103,
+          "chunk_id": "c0209",
+          "caption": "合并利润表",
+          "table": "合并利润表",
+          "extractor": "claude-code-skill"
+        }
+      ],
+      "metric_name": "公允价值变动收益"
+    },
+    {
+      "metric_id": "finance_expense",
+      "period": "2024",
+      "value": 1056539123.01,
+      "raw": "1,056,539,123.01",
+      "unit": "元",
+      "source": {
+        "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+        "page": 20,
+        "chunk_id": "c0040",
+        "caption": "1、 利润表及现金流量表相关科目变动分析表",
+        "row": 5,
+        "col": 2
+      },
+      "label": "财务费用",
+      "method": "rule+llm",
+      "confidence": "high",
+      "corroborated_by": [
+        {
+          "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+          "page": 103,
+          "chunk_id": "c0209",
+          "caption": "合并利润表",
+          "row": 19,
+          "col": 3
+        },
+        {
+          "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+          "page": 103,
+          "chunk_id": "c0209",
+          "caption": "合并利润表",
+          "table": "合并利润表",
+          "extractor": "claude-code-skill"
+        }
+      ],
+      "metric_name": "财务费用"
+    },
+    {
+      "metric_id": "finance_expense",
+      "period": "2025",
+      "value": 1159711575.55,
+      "raw": "1,159,711,575.55",
+      "unit": "元",
+      "source": {
+        "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+        "page": 20,
+        "chunk_id": "c0040",
+        "caption": "1、 利润表及现金流量表相关科目变动分析表",
+        "row": 5,
+        "col": 1
+      },
+      "label": "财务费用",
+      "method": "rule+llm",
+      "confidence": "high",
+      "corroborated_by": [
+        {
+          "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+          "page": 103,
+          "chunk_id": "c0209",
+          "caption": "合并利润表",
+          "row": 19,
+          "col": 2
+        },
+        {
+          "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+          "page": 103,
+          "chunk_id": "c0209",
+          "caption": "合并利润表",
+          "table": "合并利润表",
+          "extractor": "claude-code-skill"
+        }
+      ],
+      "metric_name": "财务费用"
+    },
+    {
+      "metric_id": "finance_expense.reported_yoy",
+      "period": "2025",
+      "value": 9.77,
+      "raw": "9.77",
+      "unit": "%",
+      "source": {
+        "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+        "page": 20,
+        "chunk_id": "c0040",
+        "caption": "1、 利润表及现金流量表相关科目变动分析表",
+        "row": 5,
+        "col": 3
+      },
+      "label": "财务费用",
+      "method": "rule_table",
+      "confidence": "high",
+      "corroborated_by": [],
+      "metric_name": "财务费用（财报列示同比%）"
+    },
+    {
+      "metric_id": "fixed_assets",
+      "period": "2024",
+      "value": 40409228783.38,
+      "raw": "40,409,228,783.38",
+      "unit": "元",
+      "source": {
+        "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+        "page": 98,
+        "chunk_id": "c0199",
+        "caption": "合并资产负债表",
+        "row": 34,
+        "col": 3
+      },
+      "label": "固定资产",
+      "method": "rule+llm",
+      "confidence": "high",
+      "corroborated_by": [
+        {
+          "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+          "page": 98,
+          "chunk_id": "c0199",
+          "caption": "合并资产负债表",
+          "table": "合并资产负债表",
+          "extractor": "claude-code-skill"
+        }
+      ],
+      "metric_name": "固定资产"
+    },
+    {
+      "metric_id": "fixed_assets",
+      "period": "2025",
+      "value": 42178694105.02,
+      "raw": "42,178,694,105.02",
+      "unit": "元",
+      "source": {
+        "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+        "page": 98,
+        "chunk_id": "c0199",
+        "caption": "合并资产负债表",
+        "row": 34,
+        "col": 2
+      },
+      "label": "固定资产",
+      "method": "rule+llm",
+      "confidence": "high",
+      "corroborated_by": [
+        {
+          "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+          "page": 98,
+          "chunk_id": "c0199",
+          "caption": "合并资产负债表",
+          "table": "合并资产负债表",
+          "extractor": "claude-code-skill"
+        }
+      ],
+      "metric_name": "固定资产"
+    },
+    {
+      "metric_id": "gov_subsidy",
+      "period": "2024",
+      "value": 72112042.86,
+      "raw": "72,112,042.86",
+      "unit": "元",
+      "source": {
+        "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+        "page": 11,
+        "chunk_id": "c0026",
+        "caption": "十、 非经常性损益项目和金额",
+        "table": "非经常性损益项目和金额",
+        "extractor": "claude-code-skill"
+      },
+      "label": "计入当期损益的政府补助",
+      "method": "llm",
+      "confidence": "medium",
+      "corroborated_by": [],
+      "metric_name": "计入当期损益的政府补助"
+    },
+    {
+      "metric_id": "gov_subsidy",
+      "period": "2025",
+      "value": 48893900.17,
+      "raw": "48,893,900.17",
+      "unit": "元",
+      "source": {
+        "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+        "page": 11,
+        "chunk_id": "c0026",
+        "caption": "十、 非经常性损益项目和金额",
+        "table": "非经常性损益项目和金额",
+        "extractor": "claude-code-skill"
+      },
+      "label": "计入当期损益的政府补助",
+      "method": "llm",
+      "confidence": "medium",
+      "corroborated_by": [],
+      "metric_name": "计入当期损益的政府补助"
+    },
+    {
+      "metric_id": "income_tax",
+      "period": "2024",
+      "value": 743133220.52,
+      "raw": "743,133,220.52",
+      "unit": "元",
+      "source": {
+        "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+        "page": 103,
+        "chunk_id": "c0209",
+        "caption": "合并利润表",
+        "row": 36,
+        "col": 3
+      },
+      "label": "减：所得税费用",
+      "method": "rule+llm",
+      "confidence": "high",
+      "corroborated_by": [
+        {
+          "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+          "page": 103,
+          "chunk_id": "c0209",
+          "caption": "合并利润表",
+          "table": "合并利润表",
+          "extractor": "claude-code-skill"
+        }
+      ],
+      "metric_name": "所得税费用"
+    },
+    {
+      "metric_id": "income_tax",
+      "period": "2025",
+      "value": 803925347.49,
+      "raw": "803,925,347.49",
+      "unit": "元",
+      "source": {
+        "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+        "page": 103,
+        "chunk_id": "c0209",
+        "caption": "合并利润表",
+        "row": 36,
+        "col": 2
+      },
+      "label": "减：所得税费用",
+      "method": "rule+llm",
+      "confidence": "high",
+      "corroborated_by": [
+        {
+          "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+          "page": 103,
+          "chunk_id": "c0209",
+          "caption": "合并利润表",
+          "table": "合并利润表",
+          "extractor": "claude-code-skill"
+        }
+      ],
+      "metric_name": "所得税费用"
+    },
+    {
+      "metric_id": "inventory",
+      "period": "2024",
+      "value": 1418391438.29,
+      "raw": "1,418,391,438.29",
+      "unit": "元",
+      "source": {
+        "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+        "page": 98,
+        "chunk_id": "c0199",
+        "caption": "合并资产负债表",
+        "row": 18,
+        "col": 3
+      },
+      "label": "存货",
+      "method": "rule+llm",
+      "confidence": "high",
+      "corroborated_by": [
+        {
+          "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+          "page": 98,
+          "chunk_id": "c0199",
+          "caption": "合并资产负债表",
+          "table": "合并资产负债表",
+          "extractor": "claude-code-skill"
+        }
+      ],
+      "metric_name": "存货"
+    },
+    {
+      "metric_id": "inventory",
+      "period": "2025",
+      "value": 1311464777.73,
+      "raw": "1,311,464,777.73",
+      "unit": "元",
+      "source": {
+        "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+        "page": 98,
+        "chunk_id": "c0199",
+        "caption": "合并资产负债表",
+        "row": 18,
+        "col": 2
+      },
+      "label": "存货",
+      "method": "rule+llm",
+      "confidence": "high",
+      "corroborated_by": [
+        {
+          "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+          "page": 98,
+          "chunk_id": "c0199",
+          "caption": "合并资产负债表",
+          "table": "合并资产负债表",
+          "extractor": "claude-code-skill"
+        }
+      ],
+      "metric_name": "存货"
+    },
+    {
+      "metric_id": "investment_income",
+      "period": "2024",
+      "value": 671035942.84,
+      "raw": "671,035,942.84",
+      "unit": "元",
+      "source": {
+        "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+        "page": 103,
+        "chunk_id": "c0209",
+        "caption": "合并利润表",
+        "row": 23,
+        "col": 3
+      },
+      "label": "投资收益（损失以“－”号填\n列）",
+      "method": "rule+llm",
+      "confidence": "high",
+      "corroborated_by": [
+        {
+          "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+          "page": 103,
+          "chunk_id": "c0209",
+          "caption": "合并利润表",
+          "table": "合并利润表",
+          "extractor": "claude-code-skill"
+        }
+      ],
+      "metric_name": "投资收益"
+    },
+    {
+      "metric_id": "investment_income",
+      "period": "2025",
+      "value": 789467609.64,
+      "raw": "789,467,609.64",
+      "unit": "元",
+      "source": {
+        "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+        "page": 103,
+        "chunk_id": "c0209",
+        "caption": "合并利润表",
+        "row": 23,
+        "col": 2
+      },
+      "label": "投资收益（损失以“－”号填\n列）",
+      "method": "rule+llm",
+      "confidence": "high",
+      "corroborated_by": [
+        {
+          "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+          "page": 103,
+          "chunk_id": "c0209",
+          "caption": "合并利润表",
+          "table": "合并利润表",
+          "extractor": "claude-code-skill"
+        }
+      ],
+      "metric_name": "投资收益"
+    },
+    {
+      "metric_id": "lease_liab",
+      "period": "2024",
+      "value": 225599269.14,
+      "raw": "225,599,269.14",
+      "unit": "元",
+      "source": {
+        "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+        "page": 99,
+        "chunk_id": "c0201",
+        "caption": "合并资产负债表",
+        "table": "合并资产负债表",
+        "extractor": "claude-code-skill"
+      },
+      "label": "租赁负债",
+      "method": "llm",
+      "confidence": "medium",
+      "corroborated_by": [],
+      "metric_name": "租赁负债"
+    },
+    {
+      "metric_id": "lease_liab",
+      "period": "2025",
+      "value": 1126716485.3,
+      "raw": "1,126,716,485.30",
+      "unit": "元",
+      "source": {
+        "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+        "page": 99,
+        "chunk_id": "c0201",
+        "caption": "合并资产负债表",
+        "table": "合并资产负债表",
+        "extractor": "claude-code-skill"
+      },
+      "label": "租赁负债",
+      "method": "llm",
+      "confidence": "medium",
+      "corroborated_by": [],
+      "metric_name": "租赁负债"
+    },
+    {
+      "metric_id": "long_debt",
+      "period": "2024",
+      "value": 11792643669.56,
+      "raw": "11,792,643,669.56",
+      "unit": "元",
+      "source": {
+        "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+        "page": 99,
+        "chunk_id": "c0201",
+        "caption": "合并资产负债表",
+        "table": "合并资产负债表",
+        "extractor": "claude-code-skill"
+      },
+      "label": "长期借款",
+      "method": "llm",
+      "confidence": "medium",
+      "corroborated_by": [],
+      "metric_name": "长期借款"
+    },
+    {
+      "metric_id": "long_debt",
+      "period": "2025",
+      "value": 12802925353.15,
+      "raw": "12,802,925,353.15",
+      "unit": "元",
+      "source": {
+        "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+        "page": 99,
+        "chunk_id": "c0201",
+        "caption": "合并资产负债表",
+        "table": "合并资产负债表",
+        "extractor": "claude-code-skill"
+      },
+      "label": "长期借款",
+      "method": "llm",
+      "confidence": "medium",
+      "corroborated_by": [],
+      "metric_name": "长期借款"
+    },
+    {
+      "metric_id": "minority_equity",
+      "period": "2024",
+      "value": 805503320.15,
+      "raw": "805,503,320.15",
+      "unit": "元",
+      "source": {
+        "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+        "page": 100,
+        "chunk_id": "c0203",
+        "caption": "合并资产负债表",
+        "table": "合并资产负债表",
+        "extractor": "claude-code-skill"
+      },
+      "label": "少数股东权益",
+      "method": "llm",
+      "confidence": "medium",
+      "corroborated_by": [],
+      "metric_name": "少数股东权益"
+    },
+    {
+      "metric_id": "minority_equity",
+      "period": "2025",
+      "value": 749171642.78,
+      "raw": "749,171,642.78",
+      "unit": "元",
+      "source": {
+        "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+        "page": 100,
+        "chunk_id": "c0203",
+        "caption": "合并资产负债表",
+        "table": "合并资产负债表",
+        "extractor": "claude-code-skill"
+      },
+      "label": "少数股东权益",
+      "method": "llm",
+      "confidence": "medium",
+      "corroborated_by": [],
+      "metric_name": "少数股东权益"
+    },
+    {
+      "metric_id": "net_profit",
+      "period": "2024",
+      "value": 5209203848.74,
+      "raw": "5,209,203,848.74",
+      "unit": "元",
+      "source": {
+        "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+        "page": 103,
+        "chunk_id": "c0209",
+        "caption": "合并利润表",
+        "row": 37,
+        "col": 3
+      },
+      "label": "五、净利润（净亏损以“－”号填列）",
+      "method": "rule+llm",
+      "confidence": "high",
+      "corroborated_by": [
+        {
+          "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+          "page": 193,
+          "chunk_id": "c0434",
+          "caption": "(1).现金流量表补充资料",
+          "row": 2,
+          "col": 2
+        },
+        {
+          "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+          "page": 103,
+          "chunk_id": "c0209",
+          "caption": "合并利润表",
+          "table": "合并利润表",
+          "extractor": "claude-code-skill"
+        }
+      ],
+      "metric_name": "净利润"
+    },
+    {
+      "metric_id": "net_profit",
+      "period": "2025",
+      "value": 6070713066.81,
+      "raw": "6,070,713,066.81",
+      "unit": "元",
+      "source": {
+        "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+        "page": 103,
+        "chunk_id": "c0209",
+        "caption": "合并利润表",
+        "row": 37,
+        "col": 2
+      },
+      "label": "五、净利润（净亏损以“－”号填列）",
+      "method": "rule+llm",
+      "confidence": "high",
+      "corroborated_by": [
+        {
+          "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+          "page": 193,
+          "chunk_id": "c0434",
+          "caption": "(1).现金流量表补充资料",
+          "row": 2,
+          "col": 1
+        },
+        {
+          "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+          "page": 103,
+          "chunk_id": "c0209",
+          "caption": "合并利润表",
+          "table": "合并利润表",
+          "extractor": "claude-code-skill"
+        }
+      ],
+      "metric_name": "净利润"
+    },
+    {
+      "metric_id": "non_recurring",
+      "period": "2024",
+      "value": 92443266.75,
+      "raw": "92,443,266.75",
+      "unit": "元",
+      "source": {
+        "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+        "page": 12,
+        "chunk_id": "c0028",
+        "caption": "十、 非经常性损益项目和金额",
+        "table": "非经常性损益项目和金额",
+        "extractor": "claude-code-skill"
+      },
+      "label": "非经常性损益合计",
+      "method": "llm",
+      "confidence": "medium",
+      "corroborated_by": [],
+      "metric_name": "非经常性损益合计"
+    },
+    {
+      "metric_id": "non_recurring",
+      "period": "2025",
+      "value": 988085131.07,
+      "raw": "988,085,131.07",
+      "unit": "元",
+      "source": {
+        "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+        "page": 12,
+        "chunk_id": "c0028",
+        "caption": "十、 非经常性损益项目和金额",
+        "table": "非经常性损益项目和金额",
+        "extractor": "claude-code-skill"
+      },
+      "label": "非经常性损益合计",
+      "method": "llm",
+      "confidence": "medium",
+      "corroborated_by": [],
+      "metric_name": "非经常性损益合计"
+    },
+    {
+      "metric_id": "np_parent",
+      "period": "2023",
+      "value": 4836966617.91,
+      "raw": "4,836,966,617.91",
+      "unit": "元",
+      "source": {
+        "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+        "page": 9,
+        "chunk_id": "c0019",
+        "caption": "七、 近三年主要会计数据和财务指标",
+        "row": 3,
+        "col": 4
+      },
+      "label": "归属于上市公司股\n东的净利润",
+      "method": "rule_table",
+      "confidence": "high",
+      "corroborated_by": [],
+      "metric_name": "归属于上市公司股东的净利润"
+    },
+    {
+      "metric_id": "np_parent",
+      "period": "2024",
+      "value": 5107447941.27,
+      "raw": "5,107,447,941.27",
+      "unit": "元",
+      "source": {
+        "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+        "page": 9,
+        "chunk_id": "c0019",
+        "caption": "七、 近三年主要会计数据和财务指标",
+        "row": 3,
+        "col": 2
+      },
+      "label": "归属于上市公司股\n东的净利润",
+      "method": "rule+llm",
+      "confidence": "high",
+      "corroborated_by": [
+        {
+          "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+          "page": 9,
+          "chunk_id": "c0019",
+          "caption": "七、 近三年主要会计数据和财务指标",
+          "table": "主要会计数据",
+          "extractor": "claude-code-skill"
+        }
+      ],
+      "metric_name": "归属于上市公司股东的净利润"
+    },
+    {
+      "metric_id": "np_parent",
+      "period": "2025",
+      "value": 6012096267.97,
+      "raw": "6,012,096,267.97",
+      "unit": "元",
+      "source": {
+        "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+        "page": 9,
+        "chunk_id": "c0019",
+        "caption": "七、 近三年主要会计数据和财务指标",
+        "row": 3,
+        "col": 1
+      },
+      "label": "归属于上市公司股\n东的净利润",
+      "method": "rule+llm",
+      "confidence": "high",
+      "corroborated_by": [
+        {
+          "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+          "page": 9,
+          "chunk_id": "c0019",
+          "caption": "七、 近三年主要会计数据和财务指标",
+          "table": "主要会计数据",
+          "extractor": "claude-code-skill"
+        }
+      ],
+      "metric_name": "归属于上市公司股东的净利润"
+    },
+    {
+      "metric_id": "np_parent",
+      "period": "2025Q1",
+      "value": 865440837.28,
+      "raw": "865,440,837.28",
+      "unit": "元",
+      "source": {
+        "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+        "page": 10,
+        "chunk_id": "c0023",
+        "caption": "九、 2025年分季度主要财务数据",
+        "row": 2,
+        "col": 1
+      },
+      "label": "归属于上市公司股东的\n净利润",
+      "method": "rule+llm",
+      "confidence": "high",
+      "corroborated_by": [
+        {
+          "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+          "page": 10,
+          "chunk_id": "c0023",
+          "caption": "九、 2025年分季度主要财务数据",
+          "table": "分季度主要财务数据",
+          "extractor": "claude-code-skill"
+        }
+      ],
+      "metric_name": "归属于上市公司股东的净利润"
+    },
+    {
+      "metric_id": "np_parent",
+      "period": "2025Q2",
+      "value": 1259127449.67,
+      "raw": "1,259,127,449.67",
+      "unit": "元",
+      "source": {
+        "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+        "page": 10,
+        "chunk_id": "c0023",
+        "caption": "九、 2025年分季度主要财务数据",
+        "row": 2,
+        "col": 2
+      },
+      "label": "归属于上市公司股东的\n净利润",
+      "method": "rule+llm",
+      "confidence": "high",
+      "corroborated_by": [
+        {
+          "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+          "page": 10,
+          "chunk_id": "c0023",
+          "caption": "九、 2025年分季度主要财务数据",
+          "table": "分季度主要财务数据",
+          "extractor": "claude-code-skill"
+        }
+      ],
+      "metric_name": "归属于上市公司股东的净利润"
+    },
+    {
+      "metric_id": "np_parent",
+      "period": "2025Q3",
+      "value": 1175319756.09,
+      "raw": "1,175,319,756.09",
+      "unit": "元",
+      "source": {
+        "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+        "page": 10,
+        "chunk_id": "c0023",
+        "caption": "九、 2025年分季度主要财务数据",
+        "row": 2,
+        "col": 3
+      },
+      "label": "归属于上市公司股东的\n净利润",
+      "method": "rule+llm",
+      "confidence": "high",
+      "corroborated_by": [
+        {
+          "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+          "page": 10,
+          "chunk_id": "c0023",
+          "caption": "九、 2025年分季度主要财务数据",
+          "table": "分季度主要财务数据",
+          "extractor": "claude-code-skill"
+        }
+      ],
+      "metric_name": "归属于上市公司股东的净利润"
+    },
+    {
+      "metric_id": "np_parent",
+      "period": "2025Q4",
+      "value": 2712208224.93,
+      "raw": "2,712,208,224.93",
+      "unit": "元",
+      "source": {
+        "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+        "page": 10,
+        "chunk_id": "c0023",
+        "caption": "九、 2025年分季度主要财务数据",
+        "row": 2,
+        "col": 4
+      },
+      "label": "归属于上市公司股东的\n净利润",
+      "method": "rule+llm",
+      "confidence": "high",
+      "corroborated_by": [
+        {
+          "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+          "page": 10,
+          "chunk_id": "c0023",
+          "caption": "九、 2025年分季度主要财务数据",
+          "table": "分季度主要财务数据",
+          "extractor": "claude-code-skill"
+        }
+      ],
+      "metric_name": "归属于上市公司股东的净利润"
+    },
+    {
+      "metric_id": "np_parent.reported_yoy",
+      "period": "2025",
+      "value": 17.71,
+      "raw": "17.71%",
+      "unit": "%",
+      "source": {
+        "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+        "page": 9,
+        "chunk_id": "c0019",
+        "caption": "七、 近三年主要会计数据和财务指标",
+        "row": 3,
+        "col": 3
+      },
+      "label": "归属于上市公司股\n东的净利润",
+      "method": "rule_table",
+      "confidence": "high",
+      "corroborated_by": [],
+      "metric_name": "归属于上市公司股东的净利润（财报列示同比%）"
+    },
+    {
+      "metric_id": "np_parent_deducted",
+      "period": "2023",
+      "value": 4640441615.09,
+      "raw": "4,640,441,615.09",
+      "unit": "元",
+      "source": {
+        "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+        "page": 9,
+        "chunk_id": "c0019",
+        "caption": "七、 近三年主要会计数据和财务指标",
+        "row": 4,
+        "col": 4
+      },
+      "label": "归属于上市公司股\n东的扣除非经常性\n损益的净利润",
+      "method": "rule_table",
+      "confidence": "high",
+      "corroborated_by": [],
+      "metric_name": "归属于上市公司股东的扣除非经常性损益的净利润"
+    },
+    {
+      "metric_id": "np_parent_deducted",
+      "period": "2024",
+      "value": 5015004674.52,
+      "raw": "5,015,004,674.52",
+      "unit": "元",
+      "source": {
+        "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+        "page": 9,
+        "chunk_id": "c0019",
+        "caption": "七、 近三年主要会计数据和财务指标",
+        "row": 4,
+        "col": 2
+      },
+      "label": "归属于上市公司股\n东的扣除非经常性\n损益的净利润",
+      "method": "rule+llm",
+      "confidence": "high",
+      "corroborated_by": [
+        {
+          "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+          "page": 9,
+          "chunk_id": "c0019",
+          "caption": "七、 近三年主要会计数据和财务指标",
+          "table": "主要会计数据",
+          "extractor": "claude-code-skill"
+        }
+      ],
+      "metric_name": "归属于上市公司股东的扣除非经常性损益的净利润"
+    },
+    {
+      "metric_id": "np_parent_deducted",
+      "period": "2025",
+      "value": 5024011136.9,
+      "raw": "5,024,011,136.90",
+      "unit": "元",
+      "source": {
+        "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+        "page": 9,
+        "chunk_id": "c0019",
+        "caption": "七、 近三年主要会计数据和财务指标",
+        "row": 4,
+        "col": 1
+      },
+      "label": "归属于上市公司股\n东的扣除非经常性\n损益的净利润",
+      "method": "rule+llm",
+      "confidence": "high",
+      "corroborated_by": [
+        {
+          "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+          "page": 9,
+          "chunk_id": "c0019",
+          "caption": "七、 近三年主要会计数据和财务指标",
+          "table": "主要会计数据",
+          "extractor": "claude-code-skill"
+        }
+      ],
+      "metric_name": "归属于上市公司股东的扣除非经常性损益的净利润"
+    },
+    {
+      "metric_id": "np_parent_deducted",
+      "period": "2025Q1",
+      "value": 853180501.11,
+      "raw": "853,180,501.11",
+      "unit": "元",
+      "source": {
+        "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+        "page": 10,
+        "chunk_id": "c0023",
+        "caption": "九、 2025年分季度主要财务数据",
+        "table": "分季度主要财务数据",
+        "extractor": "claude-code-skill"
+      },
+      "label": "第一季度扣非净利润",
+      "method": "llm",
+      "confidence": "medium",
+      "corroborated_by": [],
+      "metric_name": "归属于上市公司股东的扣除非经常性损益的净利润"
+    },
+    {
+      "metric_id": "np_parent_deducted",
+      "period": "2025Q2",
+      "value": 1053003011.72,
+      "raw": "1,053,003,011.72",
+      "unit": "元",
+      "source": {
+        "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+        "page": 10,
+        "chunk_id": "c0023",
+        "caption": "九、 2025年分季度主要财务数据",
+        "table": "分季度主要财务数据",
+        "extractor": "claude-code-skill"
+      },
+      "label": "第二季度扣非净利润",
+      "method": "llm",
+      "confidence": "medium",
+      "corroborated_by": [],
+      "metric_name": "归属于上市公司股东的扣除非经常性损益的净利润"
+    },
+    {
+      "metric_id": "np_parent_deducted",
+      "period": "2025Q3",
+      "value": 994712944.64,
+      "raw": "994,712,944.64",
+      "unit": "元",
+      "source": {
+        "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+        "page": 10,
+        "chunk_id": "c0023",
+        "caption": "九、 2025年分季度主要财务数据",
+        "table": "分季度主要财务数据",
+        "extractor": "claude-code-skill"
+      },
+      "label": "第三季度扣非净利润",
+      "method": "llm",
+      "confidence": "medium",
+      "corroborated_by": [],
+      "metric_name": "归属于上市公司股东的扣除非经常性损益的净利润"
+    },
+    {
+      "metric_id": "np_parent_deducted",
+      "period": "2025Q4",
+      "value": 2123114679.43,
+      "raw": "2,123,114,679.43",
+      "unit": "元",
+      "source": {
+        "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+        "page": 10,
+        "chunk_id": "c0023",
+        "caption": "九、 2025年分季度主要财务数据",
+        "table": "分季度主要财务数据",
+        "extractor": "claude-code-skill"
+      },
+      "label": "第四季度扣非净利润",
+      "method": "llm",
+      "confidence": "medium",
+      "corroborated_by": [],
+      "metric_name": "归属于上市公司股东的扣除非经常性损益的净利润"
+    },
+    {
+      "metric_id": "np_parent_deducted.reported_yoy",
+      "period": "2025",
+      "value": 0.18,
+      "raw": "0.18%",
+      "unit": "%",
+      "source": {
+        "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+        "page": 9,
+        "chunk_id": "c0019",
+        "caption": "七、 近三年主要会计数据和财务指标",
+        "row": 4,
+        "col": 3
+      },
+      "label": "归属于上市公司股\n东的扣除非经常性\n损益的净利润",
+      "method": "rule_table",
+      "confidence": "high",
+      "corroborated_by": [],
+      "metric_name": "归属于上市公司股东的扣除非经常性损益的净利润（财报列示同比%）"
+    },
+    {
+      "metric_id": "ocf",
+      "period": "2023",
+      "value": 8917304888.14,
+      "raw": "8,917,304,888.14",
+      "unit": "元",
+      "source": {
+        "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+        "page": 9,
+        "chunk_id": "c0019",
+        "caption": "七、 近三年主要会计数据和财务指标",
+        "row": 5,
+        "col": 4
+      },
+      "label": "经营活动产生的现\n金流量净额",
+      "method": "rule_table",
+      "confidence": "high",
+      "corroborated_by": [],
+      "metric_name": "经营活动产生的现金流量净额"
+    },
+    {
+      "metric_id": "ocf",
+      "period": "2024",
+      "value": 8476220586.11,
+      "raw": "8,476,220,586.11",
+      "unit": "元",
+      "source": {
+        "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+        "page": 9,
+        "chunk_id": "c0019",
+        "caption": "七、 近三年主要会计数据和财务指标",
+        "row": 5,
+        "col": 2
+      },
+      "label": "经营活动产生的现\n金流量净额",
+      "method": "rule+llm",
+      "confidence": "high",
+      "corroborated_by": [
+        {
+          "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+          "page": 20,
+          "chunk_id": "c0040",
+          "caption": "1、 利润表及现金流量表相关科目变动分析表",
+          "row": 7,
+          "col": 2
+        },
+        {
+          "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+          "page": 107,
+          "chunk_id": "c0217",
+          "caption": "合并现金流量表",
+          "row": 27,
+          "col": 3
+        },
+        {
+          "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+          "page": 9,
+          "chunk_id": "c0019",
+          "caption": "七、 近三年主要会计数据和财务指标",
+          "table": "主要会计数据",
+          "extractor": "claude-code-skill"
+        }
+      ],
+      "metric_name": "经营活动产生的现金流量净额"
+    },
+    {
+      "metric_id": "ocf",
+      "period": "2025",
+      "value": 9054927611.3,
+      "raw": "9,054,927,611.30",
+      "unit": "元",
+      "source": {
+        "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+        "page": 9,
+        "chunk_id": "c0019",
+        "caption": "七、 近三年主要会计数据和财务指标",
+        "row": 5,
+        "col": 1
+      },
+      "label": "经营活动产生的现\n金流量净额",
+      "method": "rule+llm",
+      "confidence": "high",
+      "corroborated_by": [
+        {
+          "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+          "page": 20,
+          "chunk_id": "c0040",
+          "caption": "1、 利润表及现金流量表相关科目变动分析表",
+          "row": 7,
+          "col": 1
+        },
+        {
+          "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+          "page": 107,
+          "chunk_id": "c0217",
+          "caption": "合并现金流量表",
+          "row": 27,
+          "col": 2
+        },
+        {
+          "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+          "page": 9,
+          "chunk_id": "c0019",
+          "caption": "七、 近三年主要会计数据和财务指标",
+          "table": "主要会计数据",
+          "extractor": "claude-code-skill"
+        }
+      ],
+      "metric_name": "经营活动产生的现金流量净额"
+    },
+    {
+      "metric_id": "ocf",
+      "period": "2025Q1",
+      "value": 1380071379.09,
+      "raw": "1,380,071,379.09",
+      "unit": "元",
+      "source": {
+        "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+        "page": 11,
+        "chunk_id": "c0025",
+        "caption": "九、 2025年分季度主要财务数据",
+        "table": "分季度主要财务数据",
+        "extractor": "claude-code-skill"
+      },
+      "label": "第一季度经营活动产生的现金流量净额",
+      "method": "llm",
+      "confidence": "medium",
+      "corroborated_by": [],
+      "metric_name": "经营活动产生的现金流量净额"
+    },
+    {
+      "metric_id": "ocf",
+      "period": "2025Q2",
+      "value": 2146314922.84,
+      "raw": "2,146,314,922.84",
+      "unit": "元",
+      "source": {
+        "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+        "page": 11,
+        "chunk_id": "c0025",
+        "caption": "九、 2025年分季度主要财务数据",
+        "table": "分季度主要财务数据",
+        "extractor": "claude-code-skill"
+      },
+      "label": "第二季度经营活动产生的现金流量净额",
+      "method": "llm",
+      "confidence": "medium",
+      "corroborated_by": [],
+      "metric_name": "经营活动产生的现金流量净额"
+    },
+    {
+      "metric_id": "ocf",
+      "period": "2025Q3",
+      "value": 2277103421.47,
+      "raw": "2,277,103,421.47",
+      "unit": "元",
+      "source": {
+        "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+        "page": 11,
+        "chunk_id": "c0025",
+        "caption": "九、 2025年分季度主要财务数据",
+        "table": "分季度主要财务数据",
+        "extractor": "claude-code-skill"
+      },
+      "label": "第三季度经营活动产生的现金流量净额",
+      "method": "llm",
+      "confidence": "medium",
+      "corroborated_by": [],
+      "metric_name": "经营活动产生的现金流量净额"
+    },
+    {
+      "metric_id": "ocf",
+      "period": "2025Q4",
+      "value": 3251437887.9,
+      "raw": "3,251,437,887.90",
+      "unit": "元",
+      "source": {
+        "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+        "page": 11,
+        "chunk_id": "c0025",
+        "caption": "九、 2025年分季度主要财务数据",
+        "table": "分季度主要财务数据",
+        "extractor": "claude-code-skill"
+      },
+      "label": "第四季度经营活动产生的现金流量净额",
+      "method": "llm",
+      "confidence": "medium",
+      "corroborated_by": [],
+      "metric_name": "经营活动产生的现金流量净额"
+    },
+    {
+      "metric_id": "ocf.reported_yoy",
+      "period": "2025",
+      "value": 6.83,
+      "raw": "6.83%",
+      "unit": "%",
+      "source": {
+        "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+        "page": 9,
+        "chunk_id": "c0019",
+        "caption": "七、 近三年主要会计数据和财务指标",
+        "row": 5,
+        "col": 3
+      },
+      "label": "经营活动产生的现\n金流量净额",
+      "method": "rule_table",
+      "confidence": "high",
+      "corroborated_by": [
+        {
+          "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+          "page": 20,
+          "chunk_id": "c0040",
+          "caption": "1、 利润表及现金流量表相关科目变动分析表",
+          "row": 7,
+          "col": 3
+        }
+      ],
+      "metric_name": "经营活动产生的现金流量净额（财报列示同比%）"
+    },
+    {
+      "metric_id": "operating_cost",
+      "period": "2024",
+      "value": 18466914585.6,
+      "raw": "18,466,914,585.60",
+      "unit": "元",
+      "source": {
+        "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+        "page": 20,
+        "chunk_id": "c0040",
+        "caption": "1、 利润表及现金流量表相关科目变动分析表",
+        "row": 2,
+        "col": 2
+      },
+      "label": "营业成本",
+      "method": "rule+llm",
+      "confidence": "high",
+      "corroborated_by": [
+        {
+          "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+          "page": 103,
+          "chunk_id": "c0209",
+          "caption": "合并利润表",
+          "row": 7,
+          "col": 3
+        },
+        {
+          "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+          "page": 103,
+          "chunk_id": "c0209",
+          "caption": "合并利润表",
+          "table": "合并利润表",
+          "extractor": "claude-code-skill"
+        }
+      ],
+      "metric_name": "营业成本"
+    },
+    {
+      "metric_id": "operating_cost",
+      "period": "2025",
+      "value": 20717507250.47,
+      "raw": "20,717,507,250.47",
+      "unit": "元",
+      "source": {
+        "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+        "page": 20,
+        "chunk_id": "c0040",
+        "caption": "1、 利润表及现金流量表相关科目变动分析表",
+        "row": 2,
+        "col": 1
+      },
+      "label": "营业成本",
+      "method": "rule+llm",
+      "confidence": "high",
+      "corroborated_by": [
+        {
+          "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+          "page": 103,
+          "chunk_id": "c0209",
+          "caption": "合并利润表",
+          "row": 7,
+          "col": 2
+        },
+        {
+          "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+          "page": 103,
+          "chunk_id": "c0209",
+          "caption": "合并利润表",
+          "table": "合并利润表",
+          "extractor": "claude-code-skill"
+        }
+      ],
+      "metric_name": "营业成本"
+    },
+    {
+      "metric_id": "operating_cost.reported_yoy",
+      "period": "2025",
+      "value": 12.19,
+      "raw": "12.19",
+      "unit": "%",
+      "source": {
+        "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+        "page": 20,
+        "chunk_id": "c0040",
+        "caption": "1、 利润表及现金流量表相关科目变动分析表",
+        "row": 2,
+        "col": 3
+      },
+      "label": "营业成本",
+      "method": "rule_table",
+      "confidence": "high",
+      "corroborated_by": [],
+      "metric_name": "营业成本（财报列示同比%）"
+    },
+    {
+      "metric_id": "operating_profit",
+      "period": "2024",
+      "value": 5955179408.93,
+      "raw": "5,955,179,408.93",
+      "unit": "元",
+      "source": {
+        "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+        "page": 103,
+        "chunk_id": "c0209",
+        "caption": "合并利润表",
+        "row": 32,
+        "col": 3
+      },
+      "label": "三、营业利润（亏损以“－”号填列）",
+      "method": "rule+llm",
+      "confidence": "high",
+      "corroborated_by": [
+        {
+          "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+          "page": 103,
+          "chunk_id": "c0209",
+          "caption": "合并利润表",
+          "table": "合并利润表",
+          "extractor": "claude-code-skill"
+        }
+      ],
+      "metric_name": "营业利润"
+    },
+    {
+      "metric_id": "operating_profit",
+      "period": "2025",
+      "value": 6808680613.68,
+      "raw": "6,808,680,613.68",
+      "unit": "元",
+      "source": {
+        "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+        "page": 103,
+        "chunk_id": "c0209",
+        "caption": "合并利润表",
+        "row": 32,
+        "col": 2
+      },
+      "label": "三、营业利润（亏损以“－”号填列）",
+      "method": "rule+llm",
+      "confidence": "high",
+      "corroborated_by": [
+        {
+          "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+          "page": 103,
+          "chunk_id": "c0209",
+          "caption": "合并利润表",
+          "table": "合并利润表",
+          "extractor": "claude-code-skill"
+        }
+      ],
+      "metric_name": "营业利润"
+    },
+    {
+      "metric_id": "rd_expense",
+      "period": "2024",
+      "value": 18583964.2,
+      "raw": "18,583,964.20",
+      "unit": "元",
+      "source": {
+        "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+        "page": 20,
+        "chunk_id": "c0040",
+        "caption": "1、 利润表及现金流量表相关科目变动分析表",
+        "row": 6,
+        "col": 2
+      },
+      "label": "研发费用",
+      "method": "rule+llm",
+      "confidence": "high",
+      "corroborated_by": [
+        {
+          "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+          "page": 103,
+          "chunk_id": "c0209",
+          "caption": "合并利润表",
+          "row": 18,
+          "col": 3
+        },
+        {
+          "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+          "page": 103,
+          "chunk_id": "c0209",
+          "caption": "合并利润表",
+          "table": "合并利润表",
+          "extractor": "claude-code-skill"
+        }
+      ],
+      "metric_name": "研发费用"
+    },
+    {
+      "metric_id": "rd_expense",
+      "period": "2025",
+      "value": 27580622.37,
+      "raw": "27,580,622.37",
+      "unit": "元",
+      "source": {
+        "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+        "page": 20,
+        "chunk_id": "c0040",
+        "caption": "1、 利润表及现金流量表相关科目变动分析表",
+        "row": 6,
+        "col": 1
+      },
+      "label": "研发费用",
+      "method": "rule+llm",
+      "confidence": "high",
+      "corroborated_by": [
+        {
+          "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+          "page": 103,
+          "chunk_id": "c0209",
+          "caption": "合并利润表",
+          "row": 18,
+          "col": 2
+        },
+        {
+          "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+          "page": 103,
+          "chunk_id": "c0209",
+          "caption": "合并利润表",
+          "table": "合并利润表",
+          "extractor": "claude-code-skill"
+        }
+      ],
+      "metric_name": "研发费用"
+    },
+    {
+      "metric_id": "rd_expense.reported_yoy",
+      "period": "2025",
+      "value": 48.41,
+      "raw": "48.41",
+      "unit": "%",
+      "source": {
+        "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+        "page": 20,
+        "chunk_id": "c0040",
+        "caption": "1、 利润表及现金流量表相关科目变动分析表",
+        "row": 6,
+        "col": 3
+      },
+      "label": "研发费用",
+      "method": "rule_table",
+      "confidence": "high",
+      "corroborated_by": [],
+      "metric_name": "研发费用（财报列示同比%）"
+    },
+    {
+      "metric_id": "revenue",
+      "period": "2023",
+      "value": 25881013078.04,
+      "raw": "25,881,013,078.04",
+      "unit": "元",
+      "source": {
+        "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+        "page": 9,
+        "chunk_id": "c0019",
+        "caption": "七、 近三年主要会计数据和财务指标",
+        "row": 1,
+        "col": 4
+      },
+      "label": "营业收入",
+      "method": "rule_table",
+      "confidence": "high",
+      "corroborated_by": [],
+      "metric_name": "营业收入"
+    },
+    {
+      "metric_id": "revenue",
+      "period": "2024",
+      "value": 25799279395.2,
+      "raw": "25,799,279,395.20",
+      "unit": "元",
+      "source": {
+        "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+        "page": 9,
+        "chunk_id": "c0019",
+        "caption": "七、 近三年主要会计数据和财务指标",
+        "row": 1,
+        "col": 2
+      },
+      "label": "营业收入",
+      "method": "rule+llm",
+      "confidence": "high",
+      "corroborated_by": [
+        {
+          "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+          "page": 20,
+          "chunk_id": "c0040",
+          "caption": "1、 利润表及现金流量表相关科目变动分析表",
+          "row": 1,
+          "col": 2
+        },
+        {
+          "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+          "page": 103,
+          "chunk_id": "c0209",
+          "caption": "合并利润表",
+          "row": 2,
+          "col": 3
+        },
+        {
+          "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+          "page": 9,
+          "chunk_id": "c0019",
+          "caption": "七、 近三年主要会计数据和财务指标",
+          "table": "主要会计数据",
+          "extractor": "claude-code-skill"
+        }
+      ],
+      "metric_name": "营业收入"
+    },
+    {
+      "metric_id": "revenue",
+      "period": "2025",
+      "value": 28177211131.95,
+      "raw": "28,177,211,131.95",
+      "unit": "元",
+      "source": {
+        "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+        "page": 9,
+        "chunk_id": "c0019",
+        "caption": "七、 近三年主要会计数据和财务指标",
+        "row": 1,
+        "col": 1
+      },
+      "label": "营业收入",
+      "method": "rule+llm",
+      "confidence": "high",
+      "corroborated_by": [
+        {
+          "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+          "page": 20,
+          "chunk_id": "c0040",
+          "caption": "1、 利润表及现金流量表相关科目变动分析表",
+          "row": 1,
+          "col": 1
+        },
+        {
+          "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+          "page": 103,
+          "chunk_id": "c0209",
+          "caption": "合并利润表",
+          "row": 2,
+          "col": 2
+        },
+        {
+          "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+          "page": 9,
+          "chunk_id": "c0019",
+          "caption": "七、 近三年主要会计数据和财务指标",
+          "table": "主要会计数据",
+          "extractor": "claude-code-skill"
+        }
+      ],
+      "metric_name": "营业收入"
+    },
+    {
+      "metric_id": "revenue",
+      "period": "2025Q1",
+      "value": 5595174511.35,
+      "raw": "5,595,174,511.35",
+      "unit": "元",
+      "source": {
+        "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+        "page": 10,
+        "chunk_id": "c0023",
+        "caption": "九、 2025年分季度主要财务数据",
+        "row": 1,
+        "col": 1
+      },
+      "label": "营业收入",
+      "method": "rule+llm",
+      "confidence": "high",
+      "corroborated_by": [
+        {
+          "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+          "page": 10,
+          "chunk_id": "c0023",
+          "caption": "九、 2025年分季度主要财务数据",
+          "table": "分季度主要财务数据",
+          "extractor": "claude-code-skill"
+        }
+      ],
+      "metric_name": "营业收入"
+    },
+    {
+      "metric_id": "revenue",
+      "period": "2025Q2",
+      "value": 6989457055.43,
+      "raw": "6,989,457,055.43",
+      "unit": "元",
+      "source": {
+        "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+        "page": 10,
+        "chunk_id": "c0023",
+        "caption": "九、 2025年分季度主要财务数据",
+        "row": 1,
+        "col": 2
+      },
+      "label": "营业收入",
+      "method": "rule+llm",
+      "confidence": "high",
+      "corroborated_by": [
+        {
+          "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+          "page": 10,
+          "chunk_id": "c0023",
+          "caption": "九、 2025年分季度主要财务数据",
+          "table": "分季度主要财务数据",
+          "extractor": "claude-code-skill"
+        }
+      ],
+      "metric_name": "营业收入"
+    },
+    {
+      "metric_id": "revenue",
+      "period": "2025Q3",
+      "value": 6725303177.81,
+      "raw": "6,725,303,177.81",
+      "unit": "元",
+      "source": {
+        "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+        "page": 10,
+        "chunk_id": "c0023",
+        "caption": "九、 2025年分季度主要财务数据",
+        "row": 1,
+        "col": 3
+      },
+      "label": "营业收入",
+      "method": "rule+llm",
+      "confidence": "high",
+      "corroborated_by": [
+        {
+          "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+          "page": 10,
+          "chunk_id": "c0023",
+          "caption": "九、 2025年分季度主要财务数据",
+          "table": "分季度主要财务数据",
+          "extractor": "claude-code-skill"
+        }
+      ],
+      "metric_name": "营业收入"
+    },
+    {
+      "metric_id": "revenue",
+      "period": "2025Q4",
+      "value": 8867276387.36,
+      "raw": "8,867,276,387.36",
+      "unit": "元",
+      "source": {
+        "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+        "page": 10,
+        "chunk_id": "c0023",
+        "caption": "九、 2025年分季度主要财务数据",
+        "row": 1,
+        "col": 4
+      },
+      "label": "营业收入",
+      "method": "rule+llm",
+      "confidence": "high",
+      "corroborated_by": [
+        {
+          "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+          "page": 10,
+          "chunk_id": "c0023",
+          "caption": "九、 2025年分季度主要财务数据",
+          "table": "分季度主要财务数据",
+          "extractor": "claude-code-skill"
+        }
+      ],
+      "metric_name": "营业收入"
+    },
+    {
+      "metric_id": "revenue.reported_yoy",
+      "period": "2025",
+      "value": 9.22,
+      "raw": "9.22%",
+      "unit": "%",
+      "source": {
+        "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+        "page": 9,
+        "chunk_id": "c0019",
+        "caption": "七、 近三年主要会计数据和财务指标",
+        "row": 1,
+        "col": 3
+      },
+      "label": "营业收入",
+      "method": "rule_table",
+      "confidence": "high",
+      "corroborated_by": [
+        {
+          "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+          "page": 20,
+          "chunk_id": "c0040",
+          "caption": "1、 利润表及现金流量表相关科目变动分析表",
+          "row": 1,
+          "col": 3
+        }
+      ],
+      "metric_name": "营业收入（财报列示同比%）"
+    },
+    {
+      "metric_id": "roe_weighted",
+      "period": "2023",
+      "value": 13.25,
+      "raw": "13.25",
+      "unit": "%",
+      "source": {
+        "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+        "page": 10,
+        "chunk_id": "c0022",
+        "caption": "七、 近三年主要会计数据和财务指标",
+        "row": 4,
+        "col": 4
+      },
+      "label": "加权平均净资产收益率（%）",
+      "method": "rule_table",
+      "confidence": "high",
+      "corroborated_by": [],
+      "metric_name": "加权平均净资产收益率"
+    },
+    {
+      "metric_id": "roe_weighted",
+      "period": "2024",
+      "value": 13.21,
+      "raw": "13.21",
+      "unit": "%",
+      "source": {
+        "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+        "page": 10,
+        "chunk_id": "c0022",
+        "caption": "七、 近三年主要会计数据和财务指标",
+        "row": 4,
+        "col": 2
+      },
+      "label": "加权平均净资产收益率（%）",
+      "method": "rule+llm",
+      "confidence": "high",
+      "corroborated_by": [
+        {
+          "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+          "page": 10,
+          "chunk_id": "c0022",
+          "caption": "七、 近三年主要会计数据和财务指标",
+          "table": "主要财务指标",
+          "extractor": "claude-code-skill"
+        }
+      ],
+      "metric_name": "加权平均净资产收益率"
+    },
+    {
+      "metric_id": "roe_weighted",
+      "period": "2025",
+      "value": 14.55,
+      "raw": "14.55",
+      "unit": "%",
+      "source": {
+        "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+        "page": 10,
+        "chunk_id": "c0022",
+        "caption": "七、 近三年主要会计数据和财务指标",
+        "row": 4,
+        "col": 1
+      },
+      "label": "加权平均净资产收益率（%）",
+      "method": "rule+llm",
+      "confidence": "high",
+      "corroborated_by": [
+        {
+          "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+          "page": 10,
+          "chunk_id": "c0022",
+          "caption": "七、 近三年主要会计数据和财务指标",
+          "table": "主要财务指标",
+          "extractor": "claude-code-skill"
+        }
+      ],
+      "metric_name": "加权平均净资产收益率"
+    },
+    {
+      "metric_id": "selling_expense",
+      "period": "2024",
+      "value": 107633463.84,
+      "raw": "107,633,463.84",
+      "unit": "元",
+      "source": {
+        "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+        "page": 20,
+        "chunk_id": "c0040",
+        "caption": "1、 利润表及现金流量表相关科目变动分析表",
+        "row": 3,
+        "col": 2
+      },
+      "label": "销售费用",
+      "method": "rule+llm",
+      "confidence": "high",
+      "corroborated_by": [
+        {
+          "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+          "page": 103,
+          "chunk_id": "c0209",
+          "caption": "合并利润表",
+          "row": 16,
+          "col": 3
+        },
+        {
+          "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+          "page": 103,
+          "chunk_id": "c0209",
+          "caption": "合并利润表",
+          "table": "合并利润表",
+          "extractor": "claude-code-skill"
+        }
+      ],
+      "metric_name": "销售费用"
+    },
+    {
+      "metric_id": "selling_expense",
+      "period": "2025",
+      "value": 113835157.63,
+      "raw": "113,835,157.63",
+      "unit": "元",
+      "source": {
+        "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+        "page": 20,
+        "chunk_id": "c0040",
+        "caption": "1、 利润表及现金流量表相关科目变动分析表",
+        "row": 3,
+        "col": 1
+      },
+      "label": "销售费用",
+      "method": "rule+llm",
+      "confidence": "high",
+      "corroborated_by": [
+        {
+          "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+          "page": 103,
+          "chunk_id": "c0209",
+          "caption": "合并利润表",
+          "row": 16,
+          "col": 2
+        },
+        {
+          "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+          "page": 103,
+          "chunk_id": "c0209",
+          "caption": "合并利润表",
+          "table": "合并利润表",
+          "extractor": "claude-code-skill"
+        }
+      ],
+      "metric_name": "销售费用"
+    },
+    {
+      "metric_id": "selling_expense.reported_yoy",
+      "period": "2025",
+      "value": 5.76,
+      "raw": "5.76",
+      "unit": "%",
+      "source": {
+        "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+        "page": 20,
+        "chunk_id": "c0040",
+        "caption": "1、 利润表及现金流量表相关科目变动分析表",
+        "row": 3,
+        "col": 3
+      },
+      "label": "销售费用",
+      "method": "rule_table",
+      "confidence": "high",
+      "corroborated_by": [],
+      "metric_name": "销售费用（财报列示同比%）"
+    },
+    {
+      "metric_id": "short_debt",
+      "period": "2024",
+      "value": 8804982458.17,
+      "raw": "8,804,982,458.17",
+      "unit": "元",
+      "source": {
+        "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+        "page": 99,
+        "chunk_id": "c0201",
+        "caption": "合并资产负债表",
+        "table": "合并资产负债表",
+        "extractor": "claude-code-skill"
+      },
+      "label": "短期借款",
+      "method": "llm",
+      "confidence": "medium",
+      "corroborated_by": [],
+      "metric_name": "短期借款"
+    },
+    {
+      "metric_id": "short_debt",
+      "period": "2025",
+      "value": 10403563880.4,
+      "raw": "10,403,563,880.40",
+      "unit": "元",
+      "source": {
+        "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+        "page": 99,
+        "chunk_id": "c0201",
+        "caption": "合并资产负债表",
+        "table": "合并资产负债表",
+        "extractor": "claude-code-skill"
+      },
+      "label": "短期借款",
+      "method": "llm",
+      "confidence": "medium",
+      "corroborated_by": [],
+      "metric_name": "短期借款"
+    },
+    {
+      "metric_id": "tax_surcharge",
+      "period": "2024",
+      "value": 126845953.52,
+      "raw": "126,845,953.52",
+      "unit": "元",
+      "source": {
+        "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+        "page": 103,
+        "chunk_id": "c0209",
+        "caption": "合并利润表",
+        "row": 15,
+        "col": 3
+      },
+      "label": "税金及附加",
+      "method": "rule+llm",
+      "confidence": "high",
+      "corroborated_by": [
+        {
+          "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+          "page": 103,
+          "chunk_id": "c0209",
+          "caption": "合并利润表",
+          "table": "合并利润表",
+          "extractor": "claude-code-skill"
+        }
+      ],
+      "metric_name": "税金及附加"
+    },
+    {
+      "metric_id": "tax_surcharge",
+      "period": "2025",
+      "value": 41374591.63,
+      "raw": "41,374,591.63",
+      "unit": "元",
+      "source": {
+        "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+        "page": 103,
+        "chunk_id": "c0209",
+        "caption": "合并利润表",
+        "row": 15,
+        "col": 2
+      },
+      "label": "税金及附加",
+      "method": "rule+llm",
+      "confidence": "high",
+      "corroborated_by": [
+        {
+          "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+          "page": 103,
+          "chunk_id": "c0209",
+          "caption": "合并利润表",
+          "table": "合并利润表",
+          "extractor": "claude-code-skill"
+        }
+      ],
+      "metric_name": "税金及附加"
+    },
+    {
+      "metric_id": "total_assets",
+      "period": "2024",
+      "value": 70619308351.63,
+      "raw": "70,619,308,351.63",
+      "unit": "元",
+      "source": {
+        "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+        "page": 10,
+        "chunk_id": "c0021",
+        "caption": "七、 近三年主要会计数据和财务指标",
+        "table": "主要会计数据",
+        "extractor": "claude-code-skill"
+      },
+      "label": "总资产",
+      "method": "llm",
+      "confidence": "medium",
+      "corroborated_by": [
+        {
+          "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+          "page": 99,
+          "chunk_id": "c0201",
+          "caption": "合并资产负债表",
+          "table": "合并资产负债表",
+          "extractor": "claude-code-skill"
+        }
+      ],
+      "metric_name": "资产总计"
+    },
+    {
+      "metric_id": "total_assets",
+      "period": "2025",
+      "value": 82054880078.89,
+      "raw": "82,054,880,078.89",
+      "unit": "元",
+      "source": {
+        "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+        "page": 10,
+        "chunk_id": "c0021",
+        "caption": "七、 近三年主要会计数据和财务指标",
+        "table": "主要会计数据",
+        "extractor": "claude-code-skill"
+      },
+      "label": "总资产",
+      "method": "llm",
+      "confidence": "medium",
+      "corroborated_by": [
+        {
+          "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+          "page": 99,
+          "chunk_id": "c0201",
+          "caption": "合并资产负债表",
+          "table": "合并资产负债表",
+          "extractor": "claude-code-skill"
+        }
+      ],
+      "metric_name": "资产总计"
+    },
+    {
+      "metric_id": "total_equity",
+      "period": "2024",
+      "value": 40849185974.61,
+      "raw": "40,849,185,974.61",
+      "unit": "元",
+      "source": {
+        "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+        "page": 100,
+        "chunk_id": "c0203",
+        "caption": "合并资产负债表",
+        "table": "合并资产负债表",
+        "extractor": "claude-code-skill"
+      },
+      "label": "所有者权益（或股东权益）合计",
+      "method": "llm",
+      "confidence": "medium",
+      "corroborated_by": [],
+      "metric_name": "所有者权益合计"
+    },
+    {
+      "metric_id": "total_equity",
+      "period": "2025",
+      "value": 43754793435.95,
+      "raw": "43,754,793,435.95",
+      "unit": "元",
+      "source": {
+        "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+        "page": 100,
+        "chunk_id": "c0203",
+        "caption": "合并资产负债表",
+        "table": "合并资产负债表",
+        "extractor": "claude-code-skill"
+      },
+      "label": "所有者权益（或股东权益）合计",
+      "method": "llm",
+      "confidence": "medium",
+      "corroborated_by": [],
+      "metric_name": "所有者权益合计"
+    },
+    {
+      "metric_id": "total_liab_equity",
+      "period": "2024",
+      "value": 70619308351.63,
+      "raw": "70,619,308,351.63",
+      "unit": "元",
+      "source": {
+        "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+        "page": 100,
+        "chunk_id": "c0203",
+        "caption": "合并资产负债表",
+        "table": "合并资产负债表",
+        "extractor": "claude-code-skill"
+      },
+      "label": "负债和所有者权益（或股东权益）总计",
+      "method": "llm",
+      "confidence": "medium",
+      "corroborated_by": [],
+      "metric_name": "负债和所有者权益总计"
+    },
+    {
+      "metric_id": "total_liab_equity",
+      "period": "2025",
+      "value": 82054880078.89,
+      "raw": "82,054,880,078.89",
+      "unit": "元",
+      "source": {
+        "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+        "page": 100,
+        "chunk_id": "c0203",
+        "caption": "合并资产负债表",
+        "table": "合并资产负债表",
+        "extractor": "claude-code-skill"
+      },
+      "label": "负债和所有者权益（或股东权益）总计",
+      "method": "llm",
+      "confidence": "medium",
+      "corroborated_by": [],
+      "metric_name": "负债和所有者权益总计"
+    },
+    {
+      "metric_id": "total_liabilities",
+      "period": "2024",
+      "value": 29770122377.02,
+      "raw": "29,770,122,377.02",
+      "unit": "元",
+      "source": {
+        "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+        "page": 99,
+        "chunk_id": "c0201",
+        "caption": "合并资产负债表",
+        "table": "合并资产负债表",
+        "extractor": "claude-code-skill"
+      },
+      "label": "负债合计",
+      "method": "llm",
+      "confidence": "medium",
+      "corroborated_by": [],
+      "metric_name": "负债合计"
+    },
+    {
+      "metric_id": "total_liabilities",
+      "period": "2025",
+      "value": 38300086642.94,
+      "raw": "38,300,086,642.94",
+      "unit": "元",
+      "source": {
+        "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+        "page": 99,
+        "chunk_id": "c0201",
+        "caption": "合并资产负债表",
+        "table": "合并资产负债表",
+        "extractor": "claude-code-skill"
+      },
+      "label": "负债合计",
+      "method": "llm",
+      "confidence": "medium",
+      "corroborated_by": [],
+      "metric_name": "负债合计"
+    },
+    {
+      "metric_id": "total_profit",
+      "period": "2023",
+      "value": 5414594621.75,
+      "raw": "5,414,594,621.75",
+      "unit": "元",
+      "source": {
+        "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+        "page": 9,
+        "chunk_id": "c0019",
+        "caption": "七、 近三年主要会计数据和财务指标",
+        "row": 2,
+        "col": 4
+      },
+      "label": "利润总额",
+      "method": "rule_table",
+      "confidence": "high",
+      "corroborated_by": [],
+      "metric_name": "利润总额"
+    },
+    {
+      "metric_id": "total_profit",
+      "period": "2024",
+      "value": 5952337069.26,
+      "raw": "5,952,337,069.26",
+      "unit": "元",
+      "source": {
+        "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+        "page": 9,
+        "chunk_id": "c0019",
+        "caption": "七、 近三年主要会计数据和财务指标",
+        "row": 2,
+        "col": 2
+      },
+      "label": "利润总额",
+      "method": "rule+llm",
+      "confidence": "high",
+      "corroborated_by": [
+        {
+          "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+          "page": 103,
+          "chunk_id": "c0209",
+          "caption": "合并利润表",
+          "row": 35,
+          "col": 3
+        },
+        {
+          "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+          "page": 9,
+          "chunk_id": "c0019",
+          "caption": "七、 近三年主要会计数据和财务指标",
+          "table": "主要会计数据",
+          "extractor": "claude-code-skill"
+        }
+      ],
+      "metric_name": "利润总额"
+    },
+    {
+      "metric_id": "total_profit",
+      "period": "2025",
+      "value": 6874638414.3,
+      "raw": "6,874,638,414.30",
+      "unit": "元",
+      "source": {
+        "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+        "page": 9,
+        "chunk_id": "c0019",
+        "caption": "七、 近三年主要会计数据和财务指标",
+        "row": 2,
+        "col": 1
+      },
+      "label": "利润总额",
+      "method": "rule+llm",
+      "confidence": "high",
+      "corroborated_by": [
+        {
+          "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+          "page": 103,
+          "chunk_id": "c0209",
+          "caption": "合并利润表",
+          "row": 35,
+          "col": 2
+        },
+        {
+          "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+          "page": 9,
+          "chunk_id": "c0019",
+          "caption": "七、 近三年主要会计数据和财务指标",
+          "table": "主要会计数据",
+          "extractor": "claude-code-skill"
+        }
+      ],
+      "metric_name": "利润总额"
+    },
+    {
+      "metric_id": "total_profit.reported_yoy",
+      "period": "2025",
+      "value": 15.49,
+      "raw": "15.49%",
+      "unit": "%",
+      "source": {
+        "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+        "page": 9,
+        "chunk_id": "c0019",
+        "caption": "七、 近三年主要会计数据和财务指标",
+        "row": 2,
+        "col": 3
+      },
+      "label": "利润总额",
+      "method": "rule_table",
+      "confidence": "high",
+      "corroborated_by": [],
+      "metric_name": "利润总额（财报列示同比%）"
+    },
+    {
+      "metric_id": "total_shares",
+      "period": "2025",
+      "value": 8074538502.0,
+      "raw": "8,074,538,502",
+      "unit": "股",
+      "source": {
+        "source": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+        "page": 87,
+        "chunk_id": "c0177",
+        "caption": "1、 股份变动情况表",
+        "table": "股份变动情况表",
+        "extractor": "claude-code-skill"
+      },
+      "label": "股份总数",
+      "method": "llm",
+      "confidence": "medium",
+      "corroborated_by": [],
+      "metric_name": "总股本"
+    }
+  ],
+  "issues": [],
+  "stats": {
+    "rule_facts": 97,
+    "llm_facts": 96,
+    "merged": 114,
+    "rejected": 0,
+    "extractor": "claude-code-skill",
+    "supplements": []
+  },
+  "rejected": [],
+  "missing": []
+}

@@ -1,0 +1,322 @@
+{
+  "meta": {
+    "company": "宁德时代",
+    "ticker": "300750.SZ",
+    "industry": "电力设备 · 锂电池",
+    "currency": "CNY",
+    "units": "百万元（每股数据为元）",
+    "valuation_date": "2026-09-30",
+    "as_of_date": "2025-12-31",
+    "accounting_basis": "中国企业会计准则",
+    "model_type": "fcff"
+  },
+  "source_basis": [
+    {
+      "id": "src_hist",
+      "topic": "historicals",
+      "label": "reported",
+      "source_name": "300750_宁德时代_2025_年度报告.pdf",
+      "source_type": "company_filing",
+      "as_of_date": "2025-12-31",
+      "confidence": "high",
+      "notes": "由财报抽取结果计算，逐项来源见 financials.json"
+    },
+    {
+      "id": "src_bridge",
+      "topic": "net_debt",
+      "label": "reported",
+      "source_name": "300750_宁德时代_2025_年度报告.pdf",
+      "source_type": "company_filing",
+      "as_of_date": "2025-12-31",
+      "confidence": "high",
+      "notes": "由财报抽取结果计算，逐项来源见 financials.json"
+    },
+    {
+      "id": "src_shares",
+      "topic": "share_count",
+      "label": "reported",
+      "source_name": "300750_宁德时代_2025_年度报告.pdf",
+      "source_type": "company_filing",
+      "as_of_date": "2025-12-31",
+      "confidence": "high",
+      "notes": "由财报抽取结果计算，逐项来源见 financials.json"
+    },
+    {
+      "id": "src_forecast",
+      "topic": "forecast",
+      "label": "analyst_estimate",
+      "source_name": "估值假设文件",
+      "source_type": "analyst_model",
+      "as_of_date": "2026-09-30",
+      "confidence": "medium",
+      "notes": "收入按分部量价推演（segment_forecast）：动力电池 2025 年销量同比增长 41.85%、全球使用量市占率 39.2%，期末在建产能 321 GWh、产能利用率 96.9%，基准情景销量 2026～2030 年分别增长 25%/18%/14%/10%/8%（增速随基数扩大回落）；2025 年收入增速低于销量增速，反映碳酸锂等原材料价格下行向售价传导，基准情景假设单价仍小幅下行（-3%/-2%/-1%/-1%/-1%），毛利率 2026 年因竞争下调 0.3 个百分点后持平。储能电池 2025 年销量同比增长 29.13%，低于全球储能电池出货量 79% 的增速，公司正加大系统集成与海外项目，基准情景销量增长 35%/25%/20%/15%/12%，单价下行 5%/3%/2%/1%/1%，毛利率 2026～2027 年分别下调 0.5、0.3 个百分点。电池材料及回收、矿产资源与其他业务（2025 年合计约占收入 10.6%）引擎按基期金额保持不变（口径简化）。费用率、周转天数、折旧率与税率取 2025 年实际值。悲观情景：行业产能过剩、价格战加剧、海外贸易壁垒抬升；乐观情景：储能需求延续高增长、海外份额继续提升、锂价企稳带动单价持平。"
+    },
+    {
+      "id": "src_wacc",
+      "topic": "wacc",
+      "label": "analyst_estimate",
+      "source_name": "估值假设文件",
+      "source_type": "analyst_model",
+      "as_of_date": "2026-09-30",
+      "confidence": "medium",
+      "notes": "无风险利率 1.8%（10 年期国债收益率假设），β 1.10（成长性制造业龙头、盈利受行业周期影响），股权风险溢价 6.5%；目标资本结构债务 10%、股权 90%（期末有息负债与参考市值之比约一成），税前债务成本 3.0%，边际税率 15%（高新技术企业）。"
+    },
+    {
+      "id": "src_terminal_value",
+      "topic": "terminal_value",
+      "label": "analyst_estimate",
+      "source_name": "估值假设文件",
+      "source_type": "analyst_model",
+      "as_of_date": "2026-09-30",
+      "confidence": "medium",
+      "notes": "永续增长率 2.5%，不高于名义 GDP 长期增速假设；退出 EV/EBITDA 12 倍作交叉验证。"
+    }
+  ],
+  "timeline": {
+    "start_year": 2025,
+    "horizon_years": 5,
+    "periodicity": "annual"
+  },
+  "historicals": {
+    "latest_year": 2025,
+    "revenue": 423701.834,
+    "ebitda": 97476.83099999999,
+    "ebit": 72642.05099999999,
+    "cash_taxes": 10337.457714514014,
+    "da": 24834.78,
+    "capex": 42344.558,
+    "change_nwc": 17606.905999999988,
+    "net_working_capital": 10600.540999999997,
+    "unlevered_fcf": 27187.909285486,
+    "net_income": 72201.282,
+    "source_id": "src_hist"
+  },
+  "forecast": {
+    "cash_flow_basis": "fcff",
+    "mid_year_convention": true,
+    "source_id": "src_forecast"
+  },
+  "wacc": {
+    "risk_free_rate": 0.018,
+    "beta": 1.1,
+    "equity_risk_premium": 0.065,
+    "size_premium": 0.0,
+    "company_specific_premium": 0.0,
+    "country_risk_premium": 0.0,
+    "pre_tax_cost_of_debt": 0.03,
+    "marginal_tax_rate": 0.15,
+    "target_debt_pct": 0.1,
+    "target_equity_pct": 0.9,
+    "preferred_pct": 0.0,
+    "pre_tax_cost_of_preferred": 0.0,
+    "source_id": "src_wacc"
+  },
+  "terminal_value": {
+    "method": "perpetual_growth",
+    "perpetual_growth_rate": 0.025,
+    "exit_ebitda_multiple": 12.0,
+    "source_id": "src_terminal_value"
+  },
+  "ev_to_equity_bridge": {
+    "cash": 333512.927,
+    "debt": 116851.40699999999,
+    "leases": 2805.081,
+    "minorities": 33918.577,
+    "associates": 0.0,
+    "pensions": 0.0,
+    "preferred_stock": 0.0,
+    "non_operating_assets": 143056.966,
+    "options": 0.0,
+    "other_debt_like_items": 0.0,
+    "diluted_shares": 4563.803488,
+    "net_debt_source_id": "src_bridge",
+    "share_count_source_id": "src_shares"
+  },
+  "scenarios": {
+    "base": {
+      "description": "动力电池份额稳中有升、储能高增长，单价随原材料温和下行，利润率大体稳定。",
+      "revenue_growth": [
+        0.2003693299153857,
+        0.1514700873499466,
+        0.12663080530815463,
+        0.09152940769415818,
+        0.0720477109683304
+      ],
+      "capex_percent_revenue": [
+        0.1,
+        0.09,
+        0.08,
+        0.07,
+        0.07
+      ],
+      "terminal_growth_rate": 0.025,
+      "wacc_adjustment": 0.0,
+      "ebit_margin": [
+        0.1637453605147303,
+        0.16365695632755417,
+        0.16430397392890803,
+        0.16490207659782416,
+        0.1652667042891589
+      ],
+      "tax_rate": [
+        0.1423067985031702,
+        0.1423067985031702,
+        0.1423067985031702,
+        0.1423067985031702,
+        0.1423067985031702
+      ],
+      "da_percent_revenue": [
+        0.0601917424459371,
+        0.05776411370357272,
+        0.055626031433979484,
+        0.05410307454993882,
+        0.053076450087141014
+      ],
+      "nwc_percent_revenue": [
+        0.02372910396576602,
+        0.023199108221718796,
+        0.022885019356271945,
+        0.022690201239177896,
+        0.02255075335384649
+      ]
+    },
+    "downside": {
+      "description": "行业产能过剩与价格战，海外贸易壁垒抬升，销量增速放缓、单价与毛利率下行。",
+      "revenue_growth": [
+        0.06905451688226583,
+        0.05163355723682783,
+        0.054181989736201475,
+        0.03826919916723881,
+        0.028002629824551928
+      ],
+      "capex_percent_revenue": [
+        0.1,
+        0.09,
+        0.08,
+        0.07,
+        0.07
+      ],
+      "terminal_growth_rate": 0.02,
+      "wacc_adjustment": 0.005,
+      "ebit_margin": [
+        0.1478158318980727,
+        0.1404337773331429,
+        0.1401464086007905,
+        0.14063269658810187,
+        0.14123022988483908
+      ],
+      "tax_rate": [
+        0.1423067985031702,
+        0.1423067985031702,
+        0.1423067985031702,
+        0.1423067985031702,
+        0.1423067985031702
+      ],
+      "da_percent_revenue": [
+        0.06665246453956838,
+        0.06780952909461596,
+        0.06711325059458119,
+        0.06598916693378021,
+        0.06492900467630214
+      ],
+      "nwc_percent_revenue": [
+        0.049131784956021995,
+        0.04782050712128535,
+        0.04761330440915551,
+        0.04747895442170001,
+        0.04738150284330974
+      ]
+    },
+    "upside": {
+      "description": "储能需求延续高增长、海外份额提升，锂价企稳带动单价持平、毛利率小幅改善。",
+      "revenue_growth": [
+        0.3083034884385232,
+        0.21233286203527557,
+        0.16577298901599158,
+        0.124888420995936,
+        0.10518739211193329
+      ],
+      "capex_percent_revenue": [
+        0.1,
+        0.09,
+        0.08,
+        0.07,
+        0.07
+      ],
+      "terminal_growth_rate": 0.03,
+      "wacc_adjustment": -0.0025,
+      "ebit_margin": [
+        0.17425011802877874,
+        0.1757588234517917,
+        0.17663102576765663,
+        0.17726913701922165,
+        0.177711168424375
+      ],
+      "tax_rate": [
+        0.1423067985031702,
+        0.1423067985031702,
+        0.1423067985031702,
+        0.1423067985031702,
+        0.1423067985031702
+      ],
+      "da_percent_revenue": [
+        0.05585246315065452,
+        0.05217163756291807,
+        0.04989368026119871,
+        0.04833430816403755,
+        0.047217370976801384
+      ],
+      "nwc_percent_revenue": [
+        0.025027845797638015,
+        0.02457029437637221,
+        0.02427417577198973,
+        0.024080114588771254,
+        0.023937947454177377
+      ]
+    }
+  },
+  "sensitivities": {
+    "wacc_delta": [
+      -0.01,
+      -0.005,
+      0.0,
+      0.005,
+      0.01
+    ],
+    "terminal_growth_delta": [
+      -0.01,
+      -0.005,
+      0.0,
+      0.005,
+      0.01
+    ],
+    "exit_multiple_delta": [
+      -4.0,
+      -2.0,
+      0.0,
+      2.0,
+      4.0
+    ],
+    "revenue_growth_delta": [
+      -0.02,
+      -0.01,
+      0.0,
+      0.01,
+      0.02
+    ],
+    "ebit_margin_delta": [
+      -0.03,
+      -0.015,
+      0.0,
+      0.015,
+      0.03
+    ]
+  },
+  "_historical_ratios": {
+    "ebit_margin": 0.1714461566385384,
+    "da_percent_revenue": 0.05861381284462413,
+    "capex_percent_revenue": 0.09993952020514502,
+    "nwc_percent_revenue": 0.025018869755470536,
+    "effective_tax_rate": 0.1423067985031702
+  }
+}

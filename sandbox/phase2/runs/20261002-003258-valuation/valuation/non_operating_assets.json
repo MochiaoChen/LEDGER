@@ -1,0 +1,41 @@
+{
+  "total_mm": 7999.14156618,
+  "items": [
+    {
+      "label": "长期股权投资",
+      "raw": "8,674,375,446.43",
+      "unit": "元",
+      "sign": 1,
+      "value_mm": 8674.37544643,
+      "source": {
+        "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+        "page": 98,
+        "chunk_id": "c0199"
+      }
+    },
+    {
+      "label": "其他权益工具投资",
+      "raw": "2,131,324.12",
+      "unit": "元",
+      "sign": 1,
+      "value_mm": 2.13132412,
+      "source": {
+        "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+        "page": 98,
+        "chunk_id": "c0199"
+      }
+    },
+    {
+      "label": "长期应付款（主要为租赁公司借款）",
+      "raw": "677,365,204.37",
+      "unit": "元",
+      "sign": -1,
+      "value_mm": -677.36520437,
+      "source": {
+        "source": "sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf",
+        "page": 99,
+        "chunk_id": "c0201"
+      }
+    }
+  ]
+}

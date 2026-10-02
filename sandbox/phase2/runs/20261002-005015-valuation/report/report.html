@@ -1,0 +1,395 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><title>招商轮船（601872.SH）2025 年报深度点评</title>
+<style>:root {
+  --serif: "Times New Roman", "Times", "Kaiti SC", "STKaiti", "KaiTi", "楷体", "KaiTi_GB2312", serif;
+  /* 表格、图注、侧栏：数字与西文用 Helvetica / Arial，汉字回退到楷体 */
+  --sans: "Helvetica Neue", "Helvetica", "Arial", "Kaiti SC", "STKaiti", "KaiTi", "楷体", "KaiTi_GB2312", serif;
+  --mono: "SF Mono", "Menlo", "Consolas", "Kaiti SC", "STKaiti", "KaiTi", monospace;
+  --ink: #222222; --muted: #6F6A62; --rule: #D8D8D5; --light: #F8F5EE;
+  --navy: #C6342C; --slate: #235D96; --brick: #235D96; --teal: #2F6F6A;  /* 红色配色；变量名沿用角色名 */
+}
+
+@page {
+  size: A4;
+  margin: 17mm 15mm 15mm 15mm;
+  @top-left { content: "招商轮船（601872.SH）2025 年报深度点评"; font: 7.3pt var(--sans); color: #6B7280; }
+  @top-right { content: "公司研究｜公司深度"; font: 7.3pt var(--sans); color: #6B7280; }
+  @bottom-left { content: "请阅读最后一页的免责声明"; font: 6.8pt var(--sans); color: #9CA3AF; }
+  @bottom-right { content: counter(page) " / " counter(pages); font: 7.3pt var(--sans); color: #6B7280; }
+}
+@page :first {
+  margin-top: 12mm;
+  @top-left { content: none; }
+  @top-right { content: none; }
+}
+
+html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+body {
+  margin: 0; color: var(--ink); background: #fff;
+  font-family: var(--serif); font-size: 10.5pt; line-height: 1.62;
+  text-align: justify; line-break: strict; orphans: 3; widows: 3; font-kerning: normal;
+}
+p { margin: 0 0 2.2mm; }
+strong, b { font-weight: 700; }
+code { font-family: var(--mono); font-size: 0.82em; color: #374151; }
+pre {
+  font-family: var(--mono); font-size: 6.6pt; line-height: 1.5; background: var(--light);
+  padding: 2.2mm 3mm; white-space: pre-wrap; word-break: break-all; margin: 1mm 0 3mm;
+}
+
+/* ---------- 标题（楷体加粗，券商研报体例） ---------- */
+:root { --title: "Times New Roman", "Kaiti SC", "STKaiti", "KaiTi", "楷体", serif; }
+h1, h2, h3, .kicker, .point-h, .mast, .subline { text-align: left; }
+h2 {
+  font-family: var(--title); font-size: 13.5pt; font-weight: 700; color: var(--navy); margin: 6mm 0 2.6mm;
+  padding-bottom: 1.2mm; border-bottom: 0.8pt solid var(--navy); break-after: avoid;
+}
+h2 .num { margin-right: 2.5mm; }
+h3 { font-family: var(--title); font-size: 11pt; font-weight: 700; color: var(--navy); margin: 4mm 0 1.6mm; break-after: avoid; }
+p strong { color: var(--navy); }
+
+/* ---------- 首页抬头 ---------- */
+.cover { break-after: page; }
+.mast { display: flex; justify-content: space-between; align-items: flex-end; font-family: var(--title); }
+.mast .date { font-size: 10.5pt; color: var(--ink); margin-bottom: 1.5mm; }
+.mast .who { font-size: 13pt; font-weight: 700; color: var(--ink); }
+.mast .who span { margin-left: 5mm; }
+.mast .brand { font-family: var(--sans); font-size: 15pt; font-weight: 700; color: var(--navy); letter-spacing: 0.3pt; text-align: right; }
+.mast .brand small { display: block; font-size: 7.5pt; font-weight: 400; color: var(--muted); letter-spacing: 2pt; }
+h1 { font-family: var(--title); font-size: 22pt; line-height: 1.3; font-weight: 700; color: var(--navy);
+     margin: 5mm 0 1.5mm; letter-spacing: 0.5pt; word-spacing: 6mm; }
+.subline { display: flex; justify-content: space-between; align-items: baseline; font-family: var(--title);
+  font-size: 12.5pt; font-weight: 700; color: var(--navy); padding-bottom: 1.6mm; border-bottom: 2.4pt solid var(--navy);
+  margin-bottom: 5mm; }
+.subline .kind { font-size: 12.5pt; }
+.cover-grid { display: grid; grid-template-columns: 1fr 58mm; gap: 6mm; align-items: start; }
+.kicker { font-family: var(--title); font-size: 12pt; font-weight: 700; color: var(--navy); margin: 0 0 1.5mm; }
+p.point { font-size: 10.5pt; line-height: 1.52; margin: 0 0 1.7mm; }
+.point-h { font-family: var(--title); font-weight: 700; color: var(--navy); }
+.point-h::before { content: "\25CF"; font-family: var(--sans); font-size: 6.5pt; margin-right: 1.4mm; vertical-align: 1.5pt; }
+
+.rating { display: flex; align-items: baseline; gap: 2mm; border-top: 2pt solid var(--navy);
+  border-bottom: 0.6pt solid var(--navy); padding: 2mm 0 1.6mm; margin-bottom: 1mm; font-family: var(--title); }
+.rating span { font-size: 10.5pt; font-weight: 700; color: var(--ink); }
+.rating b { font-size: 16pt; color: var(--brick); }
+.rating em { font-style: normal; font-size: 9pt; color: var(--muted); }
+.kv.strong b { color: var(--navy); }
+.side { font-family: var(--sans); font-size: 7.8pt; line-height: 1.45; text-align: left; }
+.val-box { background: var(--navy); color: #fff; padding: 3mm 3.4mm; margin-bottom: 4mm; }
+.val-h { font-size: 7.6pt; opacity: 0.85; }
+.val-main { font-size: 18pt; font-weight: 600; margin: 0.6mm 0; font-variant-numeric: tabular-nums; }
+.val-main small { font-size: 8pt; font-weight: 400; }
+.val-sub { font-size: 7.3pt; opacity: 0.9; }
+.side-h {
+  font-size: 8.2pt; font-weight: 600; color: var(--navy); padding-bottom: 1mm; margin-bottom: 1.2mm;
+  border-bottom: 0.6pt solid var(--navy);
+}
+.side-h.gap { margin-top: 3.5mm; }
+.kv { display: flex; justify-content: space-between; align-items: baseline; padding: 0.7mm 0; border-bottom: 0.3pt solid #E5E7EB; }
+.kv span { color: #4B5563; }
+.kv b { font-variant-numeric: tabular-nums; font-weight: 600; }
+.note, .small { font-size: 7pt; color: var(--muted); line-height: 1.5; margin-top: 1.2mm; }
+.small.tight { margin-top: 1.4mm; }
+.side .small { text-align: justify; }
+.cover-table { margin-top: 3mm; }
+
+/* ---------- 图表 ---------- */
+figure { margin: 2.5mm 0 4mm; break-inside: avoid; }
+figcaption {
+  font-family: var(--sans); font-size: 8.3pt; font-weight: 600; color: var(--ink); margin-bottom: 1.6mm;
+  text-align: left; padding-bottom: 1mm; border-bottom: 0.4pt solid var(--rule);
+}
+.fno { color: var(--navy); margin-right: 2mm; }
+figure img { display: block; max-width: 100%; }
+.src { font-family: var(--sans); font-size: 6.7pt; color: #9CA3AF; margin-top: 1.3mm; text-align: left; line-height: 1.4; }
+.src code { white-space: nowrap; }
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: 6mm; align-items: start; }
+.two figure { margin-top: 1mm; }
+
+/* ---------- 表格（三线表） ---------- */
+table { border-collapse: collapse; width: 100%; font-family: var(--sans); font-variant-numeric: tabular-nums; }
+thead { display: table-header-group; }
+tr { break-inside: avoid; }
+table.data { font-size: 7.9pt; line-height: 1.35; border-top: 1pt solid var(--ink); border-bottom: 1pt solid var(--ink); }
+table.data th { font-weight: 600; text-align: right; padding: 1mm 1.6mm; border-bottom: 0.5pt solid var(--ink); white-space: nowrap; }
+table.data td { text-align: right; padding: 0.7mm 1.6mm; border-bottom: 0.3pt solid #E5E7EB; white-space: nowrap; }
+table.data th:first-child, table.data td:first-child { text-align: left; white-space: normal; }
+table.data td.pg, table.data th.pg { color: var(--muted); font-size: 7pt; }
+table.data tr.base td { background: #FFF6DB; }
+table.data tr.total td, table.data tr.sub td { font-weight: 600; border-top: 0.5pt solid var(--ink); }
+table.data tr.grp td { font-weight: 600; color: var(--navy); background: var(--light); padding-top: 0.9mm; }
+table.data.mono td code { font-size: 6.6pt; }
+table.data.nw td:first-child { white-space: nowrap; }
+table.forecast th.est, table.forecast td.est { background: #F4F7FB; }
+table.forecast td.neg, .neg { color: var(--brick); }
+
+table.heat { font-size: 7.8pt; border-top: 1pt solid var(--ink); border-bottom: 1pt solid var(--ink); }
+table.heat th { font-weight: 600; padding: 1.1mm 1mm; text-align: center; border-bottom: 0.5pt solid var(--ink); white-space: nowrap; }
+table.heat tbody th { text-align: left; border-bottom: none; border-right: 0.5pt solid var(--ink); padding-right: 2mm; }
+table.heat th.corner { font-size: 6.8pt; color: var(--muted); font-weight: 400; text-align: left; }
+table.heat td { text-align: center; padding: 1.2mm 0.5mm; border: 0.6pt solid #fff; }
+table.heat td.center { outline: 1.2pt solid var(--ink); outline-offset: -1.2pt; font-weight: 700; }
+
+/* ---------- 附录：财务报表 ---------- */
+.fin-grid { gap: 5mm; }
+table.fin { font-size: 7.3pt; line-height: 1.3; margin-bottom: 4mm; border-top: 1pt solid var(--navy); border-bottom: 0.8pt solid var(--navy); }
+table.fin th { background: var(--navy); color: #fff; font-weight: 600; text-align: right; padding: 1mm 1.4mm; white-space: nowrap; }
+table.fin th:first-child { text-align: left; }
+table.fin th.est { background: #3A5680; }
+table.fin td { text-align: right; padding: 0.6mm 1.4mm; border-bottom: 0.3pt solid #E5E7EB; white-space: nowrap; }
+table.fin td:first-child { text-align: left; }
+table.fin tr.total td { font-weight: 600; }
+
+ul { padding-left: 5mm; margin: 0 0 3mm; }
+li { margin-bottom: 1.3mm; }
+.appendix { font-size: 9pt; break-before: page; }
+.disclaimer {
+  margin-top: 4mm; padding: 2.6mm 3.2mm; border: 0.5pt solid var(--rule); background: #FAFAFA;
+  font-size: 7.2pt; line-height: 1.6; color: #4B5563; font-family: var(--sans);
+}
+.appendix .small { font-family: var(--sans); font-size: 7.6pt; line-height: 1.6; color: #4B5563; text-align: justify; }
+
+/* ---------- 目录 ---------- */
+.toc { break-after: page; font-family: var(--sans); }
+.toc-h { font-family: var(--title); font-size: 15pt; font-weight: 700; color: var(--navy); padding-bottom: 1.5mm;
+  border-bottom: 1.6pt solid var(--navy); margin: 0 0 2.5mm; text-align: left; }
+.toc-h.small-gap { font-size: 12pt; margin-top: 6mm; border-bottom-width: 0.8pt; }
+.toc-row { display: flex; align-items: baseline; font-size: 9.6pt; line-height: 1.75; text-align: left; }
+.toc-n { width: 8mm; color: var(--navy); font-weight: 600; }
+.toc-t { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.toc-dots { flex: 1; border-bottom: 0.5pt dotted #9CA3AF; margin: 0 1.5mm; transform: translateY(-1mm); min-width: 4mm; }
+.toc-p { width: 7mm; text-align: right; font-variant-numeric: tabular-nums; }
+.toc-figs { column-count: 2; column-gap: 7mm; }
+.toc-row.fig { font-size: 7.3pt; line-height: 1.55; break-inside: avoid; }
+.toc-row.fig .toc-t { max-width: 72mm; }
+
+figure.half { width: 50%; }
+.appendix figure.half { width: 60%; }
+table.assume td.basis { white-space: normal; text-align: left; color: #374151; }
+table.assume td:nth-child(2) { color: var(--navy); }
+figure.split { break-inside: auto; }
+figure.split figcaption { break-after: avoid; }
+
+/* ---------- 免责声明（末页） ---------- */
+.disclaimer-page { break-before: page; font-family: var(--serif); font-size: 8.6pt; line-height: 1.62; color: #374151; }
+.disc-h { font-family: var(--title); font-size: 15pt; font-weight: 700; color: var(--navy); padding-bottom: 1.5mm;
+  border-bottom: 1.6pt solid var(--navy); margin-bottom: 3mm; text-align: left; }
+.disclaimer-page h3 { font-size: 9.6pt; margin: 2.6mm 0 0.8mm; }
+.disclaimer-page p { margin: 0 0 1mm; }
+.toc-end { font-size: 1pt; color: #fff; line-height: 0; }
+
+/* ---------- 红色配色细节（元素级覆盖） ---------- */
+body { color: #222222; }
+h1 { color: #222222; }
+h2, h3, .kicker, .point-h, .toc-h, .disc-h { color: #CC2931; }
+h2 { border-bottom-color: #C6342C; }
+.subline { color: #222222; border-bottom-color: #C6342C; }
+p strong, li strong { color: #CC2931; }
+.cover::before { content: ""; display: block; height: 3.2mm; background: #C6342C; margin-bottom: 4mm; }
+.mast .brand { color: #C6342C; }
+.rating { border-top-color: #C6342C; border-bottom-color: #C6342C; }
+.rating b { color: #CC2931; }
+.kv.strong b, .fno, .toc-n { color: #A21316; }
+.side { background: #F8F5EE; padding: 2mm 2.6mm 3mm; }
+.side-h { color: #C6342C; border-bottom-color: #C6342C; }
+table.data tr.base td { background: #FBF0DC; }
+table.forecast th.est, table.forecast td.est { background: #FAF6EE; }
+table.fin { border-top-color: #C6342C; border-bottom-color: #C6342C; }
+table.fin th { background: #C6342C; }
+table.fin th.est { background: #A21316; }
+table.data tr.grp td { color: #A21316; background: #F8F5EE; }
+.kv, table.data td, table.fin td { border-bottom-color: #E8E6E1; }
+.disclaimer-page h3 { color: #CC2931; }
+
+    .appendix { font-size: 8.5pt; }
+    .appendix .small { font-size: 7.2pt; line-height: 1.43; }
+    .appendix h3 { margin-top: 2mm; margin-bottom: 0.7mm; }
+    .appendix .fin td, .appendix .fin th { padding-top: 0.6mm; padding-bottom: 0.6mm; }
+    </style></head><body>
+
+<section class="cover">
+  <div class="mast">
+    <div><div class="date">2026 年 9 月 30 日</div><div class="who">招商轮船（601872.SH）<span>交通运输 · 航运</span></div></div>
+    <div class="brand">FinAgent<small>投资研究</small></div>
+  </div>
+  <h1>油轮贡献利润增量，运价路径主导估值</h1>
+  <div class="subline"><span>招商轮船（601872.SH）2025 年年报点评</span><span class="kind">公司深度</span></div>
+  <div class="cover-grid">
+    <div class="cover-main"><div class="kicker">投资要点</div><p class="point"><span class="point-h">油轮贡献主要利润增量。</span>2025 年油轮船队收入 102.89 亿元，油轮船队净利润 41.91 亿元、同比增长 59.06%。全年归母净利润 60.12 亿元，同比增长 17.71%。油轮盈利变化对合并业绩影响显著。</p>
+<p class="point"><span class="point-h">经常性利润增长较弱。</span>营业收入 281.77 亿元，同比增长 9.22%；营业成本同比增长 12.19%，综合毛利率降至 26.47%。扣非归母净利润 50.24 亿元，同比增长 0.18%；非经常性损益 9.88 亿元。</p>
+<p class="point"><span class="point-h">新船投入抬高现金需求。</span>经营现金流净额 90.55 亿元，资本开支 77.97 亿元，已签约未确认的资本性支出 358.72 亿元。订单交付与运价变化将共同影响自由现金流。</p>
+<p class="point"><span class="point-h">估值对周期假设敏感。</span>基准 DCF 每股价值 7.51 元，相对 2026-09-30 参考股价 20.15 元的空间为 -62.8%；悲观至乐观情景为 2.61～12.59 元。终值占企业价值 76.3%，运价与长期增长假设影响较大。</p></div>
+    
+<aside class="side">
+  <div class="rating"><span>投资评级</span><b>卖出</b><em></em></div>
+  <div class="kv strong"><span>DCF 每股价值（元）</span><b>7.51</b></div>
+  <div class="kv strong"><span>估值区间（元）</span><b>2.61～12.59</b></div>
+  <div class="kv strong"><span>较参考股价空间</span><b>-62.8%</b></div>
+  <div class="side-h gap">基本数据</div>
+  <div class="kv"><span>参考股价（元）</span><b>20.15</b></div><div class="kv"><span>总股本（亿股）</span><b>80.75</b></div><div class="kv"><span>总市值（亿元）</span><b>1,627</b></div><div class="kv"><span>每股净资产（元）</span><b>5.33</b></div><div class="kv"><span>市净率（倍）</span><b>3.78</b></div><div class="kv"><span>市盈率（2025A，倍）</span><b>27.23</b></div><div class="kv"><span>资产负债率</span><b>46.68%</b></div><div class="kv"><span>2025 年度每股现金分红（元）</span><b>0.32</b></div><div class="kv"><span>控股股东持股</span><b>54.48%</b></div><div class="kv"><span>净有息负债 / 所有者权益</span><b>56.18%</b></div>
+  <div class="note">股价日期：2026 年 9 月 30 日收盘；财务数据截至 2025 年末</div>
+  <div class="side-h gap">营业收入与归母净利润（亿元）</div>
+  <img src="charts/cover.svg" style="width:56mm">
+<div class="note">图例：红/蓝为实际，浅金/浅蓝为预测；A 为实际年度，E 为基准情景预测年度。</div></aside>
+  </div>
+  <figure class="cover-table"><figcaption>盈利预测与估值</figcaption>
+    <table class="data forecast"><thead><tr><th>指标</th><th>2024A</th><th>2025A</th><th class=est>2026E</th><th class=est>2027E</th><th class=est>2028E</th></tr></thead><tbody><tr><td>营业收入（亿元）</td><td class="">257.99</td><td class="">281.77</td><td class="est">394.48</td><td class="est">355.03</td><td class="est">326.63</td></tr><tr><td>同比增长</td><td class="neg">-0.32%</td><td class="">+9.22%</td><td class="est">+40.00%</td><td class="est neg">-10.00%</td><td class="est neg">-8.00%</td></tr><tr><td>归母净利润（亿元）</td><td class="">51.07</td><td class="">60.12</td><td class="est">133.73</td><td class="est">88.81</td><td class="est">59.12</td></tr><tr><td>同比增长</td><td class="">+5.59%</td><td class="">+17.71%</td><td class="est">+122.43%</td><td class="est neg">-33.59%</td><td class="est neg">-33.43%</td></tr><tr><td>每股收益（元）</td><td class="">0.63</td><td class="">0.74</td><td class="est">1.66</td><td class="est">1.10</td><td class="est">0.73</td></tr><tr><td>P/E（倍）</td><td class="">32.0</td><td class="">27.2</td><td class="est">12.2</td><td class="est">18.3</td><td class="est">27.5</td></tr></tbody></table>
+    <div class="src">资料来源：公司公告，FinAgent 预测（基准情景）</div></figure>
+</section>
+<section class="toc"><div class="toc-h">目　录</div><div class="toc-row"><span class="toc-n">1</span><span class="toc-t">投资逻辑：油轮利润增长，估值取决于运价路径</span><span class="toc-dots"></span><span class="toc-p">3</span></div><div class="toc-row"><span class="toc-n">2</span><span class="toc-t">业务结构：油轮贡献主要利润增量</span><span class="toc-dots"></span><span class="toc-p">3</span></div><div class="toc-row"><span class="toc-n">3</span><span class="toc-t">业绩回顾：归母增长，扣非利润基本持平</span><span class="toc-dots"></span><span class="toc-p">4</span></div><div class="toc-row"><span class="toc-n">4</span><span class="toc-t">分船型：油轮利润增长，租船成本压制其他业务</span><span class="toc-dots"></span><span class="toc-p">5</span></div><div class="toc-row"><span class="toc-n">5</span><span class="toc-t">船队与资本开支：新船交付提高资金需求</span><span class="toc-dots"></span><span class="toc-p">6</span></div><div class="toc-row"><span class="toc-n">6</span><span class="toc-t">盈利能力：成本上行，非经常性收益抬高净利</span><span class="toc-dots"></span><span class="toc-p">7</span></div><div class="toc-row"><span class="toc-n">7</span><span class="toc-t">资产与现金流：扩表增杠杆，投资占用现金</span><span class="toc-dots"></span><span class="toc-p">8</span></div><div class="toc-row"><span class="toc-n">8</span><span class="toc-t">股东回报：分红与船队更新并行</span><span class="toc-dots"></span><span class="toc-p">9</span></div><div class="toc-row"><span class="toc-n">9</span><span class="toc-t">盈利预测：基准情景假设运价冲高后回落</span><span class="toc-dots"></span><span class="toc-p">9</span></div><div class="toc-row"><span class="toc-n">10</span><span class="toc-t">估值：DCF 基准情景每股价值 7.51 元</span><span class="toc-dots"></span><span class="toc-p">10</span></div><div class="toc-row"><span class="toc-n">11</span><span class="toc-t">投资建议</span><span class="toc-dots"></span><span class="toc-p">12</span></div><div class="toc-row"><span class="toc-n">12</span><span class="toc-t">风险提示</span><span class="toc-dots"></span><span class="toc-p">12</span></div><div class="toc-row"><span class="toc-n">附</span><span class="toc-t">财务报表预测</span><span class="toc-dots"></span><span class="toc-p">13</span></div><div class="toc-h small-gap">图表目录</div><div class="toc-figs"><div class="toc-row fig"><span class="toc-t">图表 1：2023A～2030E 营业收入与归母净利润</span><span class="toc-dots"></span><span class="toc-p">3</span></div><div class="toc-row fig"><span class="toc-t">图表 2：各船型收入占比与分部净利润占比</span><span class="toc-dots"></span><span class="toc-p">3</span></div><div class="toc-row fig"><span class="toc-t">图表 3：近三年主要会计数据与财务指标</span><span class="toc-dots"></span><span class="toc-p">4</span></div><div class="toc-row fig"><span class="toc-t">图表 4：主要财务指标</span><span class="toc-dots"></span><span class="toc-p">4</span></div><div class="toc-row fig"><span class="toc-t">图表 5：非经常性损益主要项目</span><span class="toc-dots"></span><span class="toc-p">5</span></div><div class="toc-row fig"><span class="toc-t">图表 6：2025 年分季度营业收入与归母净利润（亿元）</span><span class="toc-dots"></span><span class="toc-p">5</span></div><div class="toc-row fig"><span class="toc-t">图表 7：分船型收入与毛利率</span><span class="toc-dots"></span><span class="toc-p">5</span></div><div class="toc-row fig"><span class="toc-t">图表 8：主营业务分行业</span><span class="toc-dots"></span><span class="toc-p">5</span></div><div class="toc-row fig"><span class="toc-t">图表 9：散货船运输成本构成（亿元）</span><span class="toc-dots"></span><span class="toc-p">6</span></div><div class="toc-row fig"><span class="toc-t">图表 10：集装箱运输成本构成（亿元）</span><span class="toc-dots"></span><span class="toc-p">6</span></div><div class="toc-row fig"><span class="toc-t">图表 11：各分部净利润与同比（亿元）</span><span class="toc-dots"></span><span class="toc-p">6</span></div><div class="toc-row fig"><span class="toc-t">图表 12：现有运力与手持订单（万载重吨）</span><span class="toc-dots"></span><span class="toc-p">7</span></div><div class="toc-row fig"><span class="toc-t">图表 13：资本开支与资本承诺</span><span class="toc-dots"></span><span class="toc-p">7</span></div><div class="toc-row fig"><span class="toc-t">图表 14：毛利率与归母净利率（实际与预测）</span><span class="toc-dots"></span><span class="toc-p">7</span></div><div class="toc-row fig"><span class="toc-t">图表 15：归母净利润变动归因（2024 年至 2025 年，亿元）</span><span class="toc-dots"></span><span class="toc-p">8</span></div><div class="toc-row fig"><span class="toc-t">图表 16：资产负债与营运资本</span><span class="toc-dots"></span><span class="toc-p">8</span></div><div class="toc-row fig"><span class="toc-t">图表 17：三类现金流量净额（亿元）</span><span class="toc-dots"></span><span class="toc-p">9</span></div><div class="toc-row fig"><span class="toc-t">图表 18：股东回报指标</span><span class="toc-dots"></span><span class="toc-p">9</span></div><div class="toc-row fig"><span class="toc-t">图表 19：关键假设与依据</span><span class="toc-dots"></span><span class="toc-p">9</span></div><div class="toc-row fig"><span class="toc-t">图表 20：毛利率假设</span><span class="toc-dots"></span><span class="toc-p">10</span></div><div class="toc-row fig"><span class="toc-t">图表 21：盈利预测</span><span class="toc-dots"></span><span class="toc-p">10</span></div><div class="toc-row fig"><span class="toc-t">图表 22：折现参数</span><span class="toc-dots"></span><span class="toc-p">10</span></div><div class="toc-row fig"><span class="toc-t">图表 23：FCFF 预测与折现（基准情景）</span><span class="toc-dots"></span><span class="toc-p">11</span></div><div class="toc-row fig"><span class="toc-t">图表 24：从企业价值到每股价值</span><span class="toc-dots"></span><span class="toc-p">11</span></div><div class="toc-row fig"><span class="toc-t">图表 25：股权价值桥（亿元）</span><span class="toc-dots"></span><span class="toc-p">11</span></div><div class="toc-row fig"><span class="toc-t">图表 26：非经营性资产净额明细（亿元）</span><span class="toc-dots"></span><span class="toc-p">11</span></div><div class="toc-row fig"><span class="toc-t">图表 27：三情景关键驱动与估值</span><span class="toc-dots"></span><span class="toc-p">12</span></div><div class="toc-row fig"><span class="toc-t">图表 28：每股价值区间（元）</span><span class="toc-dots"></span><span class="toc-p">12</span></div><div class="toc-row fig"><span class="toc-t">图表 29：敏感性：WACC × 永续增长率（元/股）</span><span class="toc-dots"></span><span class="toc-p">12</span></div><div class="toc-row fig"><span class="toc-t">图表 30：敏感性：WACC × 退出 EV/EBITDA 倍数（元/股）</span><span class="toc-dots"></span><span class="toc-p">12</span></div><div class="toc-row fig"><span class="toc-t">图表 31：敏感性：收入增速 × EBIT 利润率（元/股）</span><span class="toc-dots"></span><span class="toc-p">12</span></div></div><span class="toc-end">FINAGENTTOCEND</span></section>
+
+<section class="body">
+  <h2><span class="num">1</span>投资逻辑：油轮利润增长，估值取决于运价路径</h2>
+  <h3>核心判断</h3>
+<p>油轮船队净利润 41.91 亿元、同比增长 59.06%；同期干散货、集装箱成本增速高于收入增速。分部盈利分化拉大，合并净利润增长主要依赖油轮及非经常性项目。公司未披露分船型 TCE 和运量单价，运价贡献尚不能精确量化。</p>
+  <figure class=""><figcaption><span class="fno">图表 1</span>2023A～2030E 营业收入与归母净利润</figcaption><img src="charts/history.svg" style="width:172mm"><div class="src">资料来源：公司公告，FinAgent；预测为基准情景</div></figure>
+  <h3>估值的关键变量</h3>
+<p>基准情景假设 2026E 收入增长 40%、毛利率升至 44%，随后运价回落。该路径与 2025 年实际毛利率 26.47% 存在显著落差；新船交付、运价及资本开支是后续检验估值的核心指标。</p>
+
+  <h2><span class="num">2</span>业务结构：油轮贡献主要利润增量</h2>
+  <h3>业务平台</h3>
+<p>公司经营油轮、干散货、集装箱、滚装及 LNG 航运。2025 年油轮收入 102.89 亿元，干散货收入 87.69 亿元，集装箱收入 61.49 亿元，滚装收入 16.90 亿元。船型间的利润率和运价周期各异，合并数据需要分部拆解。</p>
+  <figure class=""><figcaption><span class="fno">图表 2</span>各船型收入占比与分部净利润占比</figcaption><img src="charts/mix.svg" style="width:83mm"><div class="src">资料来源：公司公告，FinAgent</div></figure>
+  <h3>船队结构</h3>
+<p>油轮船队净利润 41.91 亿元、同比增长 59.06%。LNG 船队收入 0.55 亿元，当前规模较小；手持订单 64 艘，2026 年预计交付 28 艘。交付将同步增加运力、折旧与资本投入。</p>
+  <figure class=""><figcaption><span class="fno">图表 3</span>近三年主要会计数据与财务指标</figcaption><table class="data"><thead><tr><th>指标</th><th>2023A</th><th>2024A</th><th>2025A</th></tr></thead><tbody><tr><td>营业收入（亿元）</td><td>258.81</td><td>257.99</td><td>281.77</td></tr><tr><td>利润总额（亿元）</td><td>54.15</td><td>59.52</td><td>68.75</td></tr><tr><td>归母净利润（亿元）</td><td>48.37</td><td>51.07</td><td>60.12</td></tr><tr><td>扣非归母净利润（亿元）</td><td>46.40</td><td>50.15</td><td>50.24</td></tr><tr><td>经营现金流净额（亿元）</td><td>89.17</td><td>84.76</td><td>90.55</td></tr><tr><td>总资产（亿元）</td><td>—</td><td>706.19</td><td>820.55</td></tr><tr><td>归母净资产（亿元）</td><td>—</td><td>400.44</td><td>430.06</td></tr><tr><td>基本每股收益（元）</td><td>0.60</td><td>0.63</td><td>0.74</td></tr><tr><td>加权平均 ROE</td><td>13.25%</td><td>13.21%</td><td>14.55%</td></tr><tr><td>净现比（倍）</td><td>1.84</td><td>1.66</td><td>1.51</td></tr></tbody></table><div class="src">资料来源：公司公告，FinAgent</div></figure>
+  <h3>盈利质量</h3>
+<p>全年归母净利润 60.12 亿元，同比增长 17.71%；扣非归母净利润 50.24 亿元，同比增长 0.18%。非经常性损益 9.88 亿元，因而判断盈利中枢时应同时观察扣非结果。</p>
+  <h3>行业环境：细分市场分化，VLCC 领涨</h3>
+  <p>2025 年 VLCC 运力增长 0.2%，15 年以上老龄运力占比 44%。供给约束是油轮景气的重要背景；后续盈利水平仍取决于实际运价和船队营运率。</p>
+  
+
+  <h2><span class="num">3</span>业绩回顾：归母增长，扣非利润基本持平</h2>
+  <h3>表观利润与扣非利润分化</h3>
+<p>2025 年营业收入 281.77 亿元，同比增长 9.22%；归母净利润 60.12 亿元，同比增长 17.71%；扣非归母净利润 50.24 亿元，同比增长 0.18%。非经常性损益 9.88 亿元，对表观利润增长有明显贡献。</p>
+  <figure class="split"><figcaption><span class="fno">图表 4</span>主要财务指标</figcaption><table class="data"><thead><tr><th>亿元 / %</th><th>2025A</th><th>2024A</th><th>同比</th></tr></thead><tbody><tr><td>营业收入</td><td>281.77</td><td>257.99</td><td>+9.22%</td></tr><tr><td>营业成本</td><td>207.18</td><td>184.67</td><td>+12.19%</td></tr><tr><td>税金及附加</td><td>0.41</td><td>1.27</td><td class="neg">-67.38%</td></tr><tr><td>销售费用</td><td>1.14</td><td>1.08</td><td>+5.76%</td></tr><tr><td>管理费用</td><td>9.76</td><td>8.19</td><td>+19.17%</td></tr><tr><td>研发费用</td><td>0.28</td><td>0.19</td><td>+48.41%</td></tr><tr><td>财务费用</td><td>11.60</td><td>10.57</td><td>+9.77%</td></tr><tr><td>营业利润</td><td>68.09</td><td>59.55</td><td>+14.33%</td></tr><tr><td>归母净利润</td><td>60.12</td><td>51.07</td><td>+17.71%</td></tr><tr><td>扣非归母净利润</td><td>50.24</td><td>50.15</td><td>+0.18%</td></tr><tr><td>基本每股收益（元）</td><td>0.74</td><td>0.63</td><td>+17.46%</td></tr><tr><td>毛利率</td><td>26.47%</td><td>28.42%</td><td class="neg">-1.95 pp</td></tr><tr><td>销售费用率</td><td>0.40%</td><td>0.42%</td><td class="neg">-0.01 pp</td></tr><tr><td>管理费用率</td><td>3.46%</td><td>3.17%</td><td>+0.29 pp</td></tr><tr><td>研发费用率</td><td>0.10%</td><td>0.07%</td><td>+0.03 pp</td></tr></tbody></table><div class="src">资料来源：公司公告，FinAgent</div></figure>
+  <div class="two"><figure class=""><figcaption><span class="fno">图表 5</span>非经常性损益主要项目</figcaption><img src="charts/nonrec.svg" style="width:83mm"><div class="src">资料来源：公司公告，FinAgent</div></figure><figure class=""><figcaption><span class="fno">图表 6</span>2025 年分季度营业收入与归母净利润（亿元）</figcaption><img src="charts/quarterly_np_parent.svg" style="width:83mm"><div class="src">资料来源：公司公告，FinAgent</div></figure></div>
+  <h3>成本增长快于收入</h3>
+<p>营业成本 207.18 亿元，同比增长 12.19%；综合毛利率 26.47%，同比下降 1.95 个百分点。季度收入、利润与现金流数据列于下表，重点观察成本压力在后续期间的变化。</p>
+  
+
+  <h2><span class="num">4</span>分船型：油轮利润增长，租船成本压制其他业务</h2>
+  <h3>油轮</h3>
+<p>油轮船队收入 102.89 亿元，油轮船队净利润 41.91 亿元、同比增长 59.06%。板块利润增速高于收入增速；分船型运价与运量贡献的精确拆分留待后续披露。</p>
+  <figure class=""><figcaption><span class="fno">图表 7</span>分船型收入与毛利率</figcaption><img src="charts/segment.svg" style="width:172mm"><div class="src">资料来源：公司公告，FinAgent</div></figure>
+  <figure class=""><figcaption><span class="fno">图表 8</span>主营业务分行业</figcaption><table class="data nw"><thead><tr><th>主营业务分行业</th><th>收入（亿元）</th><th>收入同比</th><th>成本同比</th><th>毛利率</th><th>毛利率变动</th><th>收入占比</th></tr></thead><tbody><tr><td>油轮运输</td><td>102.89</td><td>+11.77%</td><td>+3.29%</td><td>39.91%</td><td>+4.94 pp</td><td>36.52%</td></tr><tr><td>散货船运输</td><td>87.69</td><td>+10.44%</td><td>+20.20%</td><td>16.74%</td><td class="neg">-6.76 pp</td><td>31.12%</td></tr><tr><td>集装箱运输</td><td>61.49</td><td>+13.15%</td><td>+25.30%</td><td>22.42%</td><td class="neg">-7.52 pp</td><td>21.82%</td></tr><tr><td>滚装船运输</td><td>16.90</td><td class="neg">-7.97%</td><td class="neg">-0.83%</td><td>24.68%</td><td class="neg">-5.42 pp</td><td>6.00%</td></tr><tr><td>LNG运输</td><td>0.55</td><td>+83.16%</td><td>+144.28%</td><td>28.87%</td><td class="neg">-17.80 pp</td><td>0.20%</td></tr></tbody></table><div class="src">资料来源：公司公告，FinAgent；毛利率变动单位为百分点</div></figure>
+  <h3>干散货</h3>
+<p>干散货船队收入同比增长 10.45%，干散货运输成本同比增长 20.20%。程租运费同比增长 228.23%，船舶折旧费同比增长 29.44%，租入运力与折旧增加压缩了增量收入的利润空间。</p>
+  <figure class=""><figcaption><span class="fno">图表 9</span>散货船运输成本构成（亿元）</figcaption><img src="charts/cost_bulk.svg" style="width:83mm"><div class="src">资料来源：公司公告，FinAgent</div></figure>
+  <h3>集装箱与滚装</h3>
+<p>集装箱船队收入同比增长 13.16%，集装箱运输成本同比增长 25.30%，其中船舶租金同比增长 71.76%；滚装船队收入同比下降 7.97%，滚装船队净利润同比下降 31.91%。两项业务均面临收入与成本变化不匹配的压力。</p>
+  <div class="two"><figure class=""><figcaption><span class="fno">图表 10</span>集装箱运输成本构成（亿元）</figcaption><img src="charts/cost_box.svg" style="width:83mm"><div class="src">资料来源：公司公告，FinAgent</div></figure><figure class=""><figcaption><span class="fno">图表 11</span>各分部净利润与同比（亿元）</figcaption><img src="charts/seg_profit.svg" style="width:83mm"><div class="src">资料来源：公司公告，FinAgent</div></figure></div>
+  <h3>LNG 与口径</h3>
+<p>LNG 分部收入 0.55 亿元，对当前合并收入贡献较小。分部经营表和分行业表存在口径差异，相关数值在表格中分别标示；跨表比较应以同一口径为准。</p>
+  
+  
+
+  <h2><span class="num">5</span>船队与资本开支：新船交付提高资金需求</h2>
+  <h3>订单与交付</h3>
+<p>公司手持订单 64 艘，预计 2026 年交付 28 艘。交船扩大可用运力，也增加折旧；收入兑现还取决于交付时间、营运率与实际运价。</p>
+  <figure class=""><figcaption><span class="fno">图表 12</span>现有运力与手持订单（万载重吨）</figcaption><img src="charts/fleet.svg" style="width:172mm"><div class="src">资料来源：公司公告，FinAgent</div></figure>
+  <h3>资本投入</h3>
+<p>已签约未确认的资本性支出 358.72 亿元，在建工程 114.09 亿元，同比增长 73.99%。未来几年资本支出强度较高，需要结合经营现金流和融资结构观察。</p>
+  
+  <figure class=""><figcaption><span class="fno">图表 13</span>资本开支与资本承诺</figcaption><table class="data"><thead><tr><th>资本开支与承诺</th><th>2025</th><th>2024</th></tr></thead><tbody><tr><td>购建长期资产支付的现金（亿元）</td><td>77.97</td><td>75.50</td></tr><tr><td>资本开支 / 营业收入</td><td>27.67%</td><td>—</td></tr><tr><td>资本开支 / 经营现金流</td><td>86.11%</td><td>—</td></tr><tr><td>新造船项目本年投入（亿元）</td><td>100.38</td><td>—</td></tr><tr><td>在建工程（亿元）</td><td>114.09</td><td>65.57</td></tr><tr><td>已签约未确认资本性支出（亿元）</td><td>358.72</td><td>—</td></tr><tr><td>资本承诺 / 当年资本开支（倍）</td><td>4.60</td><td>—</td></tr><tr><td>资本承诺 / 所有者权益</td><td>81.99%</td><td>—</td></tr><tr><td>2026 年预计新造船交付（艘）</td><td>28</td><td>—</td></tr></tbody></table><div class="src">资料来源：公司公告，FinAgent</div></figure>
+
+  <h2><span class="num">6</span>盈利能力：成本上行，非经常性收益抬高净利</h2>
+  <h3>毛利与净利方向分化</h3>
+<p>综合毛利率 26.47%，同比下降 1.95 个百分点；净利率 21.54%，同比提高 1.35 个百分点。毛利以下项目对净利润形成贡献，扣非净利润增速仅 0.18%。</p>
+  <figure class=""><figcaption><span class="fno">图表 14</span>毛利率与归母净利率（实际与预测）</figcaption><img src="charts/margins.svg" style="width:83mm"><div class="src">资料来源：公司公告，FinAgent；预测为基准情景</div></figure>
+  <h3>租船与折旧</h3>
+<p>干散货程租运费同比增长 228.23%，集装箱船舶租金同比增长 71.76%。运力扩张与租入成本同时上行，后续需要观察新船投用后的单位成本变化。</p>
+  <h3>利润归因</h3>
+<p>油轮船队净利润同比增长 59.06%，非经常性损益 9.88 亿元。估值预测应分别考虑油轮周期性收益与非经常性项目，避免把本期表观利润增速直接外推。</p>
+  <figure class=""><figcaption><span class="fno">图表 15</span>归母净利润变动归因（2024 年至 2025 年，亿元）</figcaption><img src="charts/bridge.svg" style="width:172mm"><div class="src">资料来源：公司公告，FinAgent；收入规模效应 = Δ营业收入 × 上年毛利率；毛利率效应 = 本年营业收入 × Δ毛利率</div></figure>
+
+  <h2><span class="num">7</span>资产与现金流：扩表增杠杆，投资占用现金</h2>
+  <h3>资产与杠杆</h3>
+<p>年末资产总计 820.55 亿元，同比增长 16.19%；资产负债率 46.68%，同比提高 4.52 个百分点。短期借款 104.04 亿元，长期借款 128.03 亿元；扩表与杠杆同步上升。</p>
+  <figure class="split"><figcaption><span class="fno">图表 16</span>资产负债与营运资本</figcaption><table class="data"><thead><tr><th>项目</th><th>2025 年末</th><th>2024 年末</th><th>同比</th></tr></thead><tbody><tr><td>货币资金（亿元）</td><td>47.21</td><td>45.89</td><td>+2.87%</td></tr><tr><td>应收账款（亿元）</td><td>13.85</td><td>11.48</td><td>+20.66%</td></tr><tr><td>存货（亿元）</td><td>13.11</td><td>14.18</td><td class="neg">-7.54%</td></tr><tr><td>合同负债（亿元）</td><td>3.56</td><td>3.00</td><td>+18.94%</td></tr><tr><td>应付账款（亿元）</td><td>18.36</td><td>18.60</td><td>—</td></tr><tr><td>总资产（亿元）</td><td>820.55</td><td>706.19</td><td>+16.19%</td></tr><tr><td>资产负债率</td><td>46.68%</td><td>42.16%</td><td>+4.52 pp</td></tr><tr><td>净现比（倍）</td><td>1.51</td><td>1.66</td><td>—</td></tr></tbody></table><div class="src">资料来源：公司公告，FinAgent</div></figure>
+  <h3>营运资本与在建项目</h3>
+<p>应收账款 13.85 亿元，同比增长 20.66%；在建工程 114.09 亿元，同比增长 73.99%。新船交付前后，资金占用和折旧将影响现金流与利润的匹配。</p>
+  
+  <h3>经营现金流</h3>
+<p>经营现金流净额 90.55 亿元，同比增长 6.83%。分季度现金流列于图表，第四季度高于第一季度；全年现金流仍需扣除船队更新所需资本开支。</p>
+  <figure class=""><figcaption><span class="fno">图表 17</span>三类现金流量净额（亿元）</figcaption><img src="charts/cashflows.svg" style="width:83mm"><div class="src">资料来源：公司公告，FinAgent</div></figure>
+  
+
+  <h2><span class="num">8</span>股东回报：分红与船队更新并行</h2>
+  <p>2025 年现金分红 25.84 亿元，现金分红率 42.98%。船队更新期的股东回报需要由经营现金流和融资安排共同支持；预测采用 43% 的分红率假设。</p>
+  
+  <figure class=""><figcaption><span class="fno">图表 18</span>股东回报指标</figcaption><div class="two"><table class="data"><thead><tr><th>现金分红</th><th>2025</th></tr></thead><tbody><tr><td>2025 年度现金分红（亿元）</td><td>25.84</td></tr><tr><td>　其中：中期（亿元）</td><td>5.65</td></tr><tr><td>　　　　年度（亿元）</td><td>20.19</td></tr><tr><td>每 10 股派息（元，含税）</td><td>3.2</td></tr><tr><td>现金分红率</td><td>42.98%</td></tr><tr><td>年度现金分红同比</td><td>+24.58%</td></tr></tbody></table><table class="data"><thead><tr><th>回购与累计回报</th><th>2025</th></tr></thead><tbody><tr><td>已回购股份金额（亿元）</td><td>3.11</td></tr><tr><td>分红和回购占归母净利润</td><td>48.14%</td></tr><tr><td>回购注销股份（股）</td><td>69,267,851</td></tr><tr><td>回购注销占期初总股本</td><td>0.85%</td></tr><tr><td>近三年分红与回购 / 年均净利润</td><td>132.34%</td></tr></tbody></table></div><div class="src">资料来源：公司公告，FinAgent</div></figure>
+
+  <h2><span class="num">9</span>盈利预测：基准情景假设运价冲高后回落</h2>
+  <h3>运价周期情景</h3>
+<p>基准情景假设 2026E 收入增长 40%、毛利率升至 44%；2027E、2028E 收入分别下降 10%、8%，毛利率分别回落至 36%、30%。这是对运价周期和交船节奏的情景设定，实际路径须由后续披露验证。</p>
+  <figure class=""><figcaption><span class="fno">图表 19</span>关键假设与依据</figcaption><table class="data assume"><thead><tr><th>关键假设（基准情景）</th><th>2026E / 2027E / 2028E</th><th>依据</th></tr></thead><tbody><tr><td>营业收入增速</td><td>+40% / -10% / -8%</td><td class="basis">2026E 油轮运价高点 + 28 艘新船交付；2027～2028E 地缘溢价消退（第 1、4、5 节）</td></tr><tr><td>毛利率</td><td>44% / 36% / 30%</td><td class="basis">油轮运价弹性；2029E 起回归周期中枢，略高于 2025A（第 4、6 节）</td></tr><tr><td>经营费用率（轧差）</td><td>-5% / -5% / -5%</td><td class="basis">营业成本含船舶折旧致轧差为负；剔除资产处置收益（第 6 节）</td></tr><tr><td>资本开支 / 营业收入</td><td>28% / 28% / 24%</td><td class="basis">资本承诺 358.72 亿元集中于 2026～2028 年支付（第 5 节）</td></tr><tr><td>折旧率（期初 PP&E）</td><td>4.71% / 4.71% / 4.71%</td><td class="basis">取 2025A；新船交付后折旧随 PP&amp;E 增加（第 7 节）</td></tr><tr><td>所得税率</td><td>11.69%</td><td class="basis">取 2025A 有效税率，境外单船公司为主（第 6 节）</td></tr><tr><td>现金分红率</td><td>43%</td><td class="basis">与 2025 年度一致（第 8 节）</td></tr></tbody></table><div class="src">资料来源：公司公告，FinAgent；假设为分析师观点；未使用分部量价模型</div></figure>
+  <figure class=""><figcaption><span class="fno">图表 20</span>毛利率假设</figcaption><img src="charts/gm_scenarios.svg" style="width:83mm"><div class="src">资料来源：公司公告，FinAgent</div></figure>
+  <h3>利润与资本开支</h3>
+<p>基准情景下，2026E 归母净利润 133.73 亿元、EPS 1.66 元；2027E 分别为 88.81 亿元、1.10 元；2028E 分别为 59.12 亿元、0.73 元。2026E 毛利率较 2025 年实际水平明显抬升，是盈利预测中最敏感的环节。</p>
+  <figure class=""><figcaption><span class="fno">图表 21</span>盈利预测</figcaption><table class="data forecast"><thead><tr><th>指标</th><th>2024A</th><th>2025A</th><th class=est>2026E</th><th class=est>2027E</th><th class=est>2028E</th><th class=est>2029E</th><th class=est>2030E</th></tr></thead><tbody><tr><td>营业收入（亿元）</td><td class="">257.99</td><td class="">281.77</td><td class="est">394.48</td><td class="est">355.03</td><td class="est">326.63</td><td class="est">333.16</td><td class="est">343.16</td></tr><tr><td>同比增长</td><td class="neg">-0.32%</td><td class="">+9.22%</td><td class="est">+40.00%</td><td class="est neg">-10.00%</td><td class="est neg">-8.00%</td><td class="est">+2.00%</td><td class="est">+3.00%</td></tr><tr><td>归母净利润（亿元）</td><td class="">51.07</td><td class="">60.12</td><td class="est">133.73</td><td class="est">88.81</td><td class="est">59.12</td><td class="est">53.85</td><td class="est">56.06</td></tr><tr><td>同比增长</td><td class="">+5.59%</td><td class="">+17.71%</td><td class="est">+122.43%</td><td class="est neg">-33.59%</td><td class="est neg">-33.43%</td><td class="est neg">-8.91%</td><td class="est">+4.10%</td></tr><tr><td>每股收益（元）</td><td class="">0.63</td><td class="">0.74</td><td class="est">1.66</td><td class="est">1.10</td><td class="est">0.73</td><td class="est">0.67</td><td class="est">0.69</td></tr><tr><td>毛利率</td><td class="">28.42%</td><td class="">26.47%</td><td class="est">44.00%</td><td class="est">36.00%</td><td class="est">30.00%</td><td class="est">28.00%</td><td class="est">28.00%</td></tr><tr><td>归母净利率</td><td class="">19.80%</td><td class="">21.34%</td><td class="est">33.90%</td><td class="est">25.01%</td><td class="est">18.10%</td><td class="est">16.16%</td><td class="est">16.34%</td></tr><tr><td>ROE（加权平均）</td><td class="">13.21%</td><td class="">14.55%</td><td class="est">—</td><td class="est">—</td><td class="est">—</td><td class="est">—</td><td class="est">—</td></tr><tr><td>P/E（倍）</td><td class="">32.0</td><td class="">27.2</td><td class="est">12.2</td><td class="est">18.3</td><td class="est">27.5</td><td class="est">30.2</td><td class="est">29.0</td></tr></tbody></table><div class="src">资料来源：公司公告，FinAgent；基准情景</div></figure>
+
+  <h2><span class="num">10</span>估值：DCF 基准情景每股价值 7.51 元</h2>
+  <h3>DCF 基准情景</h3>
+<p>基准 WACC 为 8.36%，永续增长率为 1.5%，DCF 每股价值 7.51 元。相对 2026-09-30 参考股价 20.15 元的空间为 -62.8%。经营预测与折现参数均取自分析师情景假设。</p>
+  <figure class=""><figcaption><span class="fno">图表 22</span>折现参数</figcaption><table class="data"><thead><tr><th>折现参数</th><th>取值</th></tr></thead><tbody><tr><td>无风险利率</td><td>1.80%</td></tr><tr><td>β</td><td>1.20</td></tr><tr><td>股权风险溢价</td><td>6.50%</td></tr><tr><td>股权成本</td><td>9.60%</td></tr><tr><td>税后债务成本</td><td>3.40%</td></tr><tr><td>目标负债占比</td><td>20%</td></tr><tr class=sub><td>WACC（基准）</td><td>8.36%</td></tr><tr><td>永续增长率</td><td>1.5%</td></tr><tr><td>退出 EV/EBITDA（交叉验证，倍）</td><td>6.0</td></tr></tbody></table><div class="src">资料来源：公司公告，FinAgent；参数为分析师假设</div></figure>
+  <figure class=""><figcaption><span class="fno">图表 23</span>FCFF 预测与折现（基准情景）</figcaption><table class="data"><thead><tr><th>亿元</th><th>2026E</th><th>2027E</th><th>2028E</th><th>2029E</th><th>2030E</th></tr></thead><tbody><tr><td>营业收入</td><td>394.48</td><td>355.03</td><td>326.63</td><td>333.16</td><td>343.16</td></tr><tr><td>EBIT</td><td>165.45</td><td>114.08</td><td>80.13</td><td>74.11</td><td>76.63</td></tr><tr><td>EBIT 利润率</td><td>41.94%</td><td>32.13%</td><td>24.53%</td><td>22.24%</td><td>22.33%</td></tr><tr><td>所得税</td><td>19.35</td><td>13.34</td><td>9.37</td><td>8.67</td><td>8.96</td></tr><tr class=sub><td>NOPAT</td><td>146.10</td><td>100.74</td><td>70.76</td><td>65.44</td><td>67.67</td></tr><tr><td>加：折旧摊销</td><td>27.85</td><td>31.48</td><td>34.19</td><td>35.84</td><td>36.61</td></tr><tr><td>减：资本开支</td><td>110.45</td><td>99.41</td><td>78.39</td><td>59.97</td><td>44.61</td></tr><tr><td>减：营运资本增加</td><td>5.19</td><td class="neg">-2.10</td><td class="neg">-1.43</td><td>0.04</td><td>0.31</td></tr><tr class=sub><td>FCFF</td><td>58.30</td><td>34.91</td><td>27.99</td><td>41.27</td><td>59.36</td></tr><tr><td>折现期（年）</td><td>0.5</td><td>1.5</td><td>2.5</td><td>3.5</td><td>4.5</td></tr><tr class=sub><td>FCFF 现值</td><td>56.01</td><td>30.95</td><td>22.90</td><td>31.16</td><td>41.36</td></tr></tbody></table><div class="src">资料来源：公司公告，FinAgent</div></figure>
+  <figure class=""><figcaption><span class="fno">图表 24</span>从企业价值到每股价值</figcaption><img src="charts/ev_bridge.svg" style="width:172mm"><div class="src">资料来源：公司公告，FinAgent</div></figure>
+  <div class="two"><figure class=""><figcaption><span class="fno">图表 25</span>股权价值桥（亿元）</figcaption><table class="data"><thead><tr><th>股权价值桥（基准情景）</th><th>亿元</th></tr></thead><tbody><tr class=sub><td>企业价值</td><td>770.27</td></tr><tr><td>加：货币资金</td><td>47.21</td></tr><tr><td>加：非经营性资产净额（明细见附录）</td><td>79.99</td></tr><tr><td>减：有息负债</td><td class="neg">-272.71</td></tr><tr><td>减：租赁负债</td><td class="neg">-11.27</td></tr><tr><td>减：少数股东权益</td><td class="neg">-7.49</td></tr><tr class=sub><td>股权价值</td><td>606.00</td></tr><tr><td>总股本（亿股）</td><td>80.75</td></tr><tr class=sub><td>每股价值（元）</td><td><b>7.51</b></td></tr></tbody></table><div class="src">资料来源：公司公告，FinAgent</div></figure><figure class=""><figcaption><span class="fno">图表 26</span>非经营性资产净额明细（亿元）</figcaption><table class="data slim"><thead><tr><th>非经营性资产净额（2025 年末）</th><th>亿元</th></tr></thead><tbody><tr><td>长期股权投资</td><td>86.74</td></tr><tr><td>其他权益工具投资</td><td>0.02</td></tr><tr><td>减：长期应付款（主要为租赁公司借款）</td><td class="neg">-6.77</td></tr><tr class='total'><td>合计</td><td>79.99</td></tr></tbody></table><div class="src">资料来源：公司公告，FinAgent；类负债项目以负数列示，已在合计中扣减</div></figure></div>
+  <h3>情景区间</h3>
+<p>悲观、乐观情景每股价值分别为 2.61 元和 12.59 元；基准情景终值占企业价值 76.3%。预测采用合并收入和毛利率路径；运价与终值假设共同决定估值区间。</p>
+  <figure class=""><figcaption><span class="fno">图表 27</span>三情景关键驱动与估值</figcaption><table class="data nw"><thead><tr><th>情景</th><th>收入增速（2026E）</th><th>毛利率（2026E）</th><th>终期毛利率</th><th>WACC</th><th>永续增长</th><th>企业价值（亿元）</th><th>每股价值（元）</th><th>较参考股价</th><th>终值占比</th></tr></thead><tbody><tr><td>悲观</td><td>+25%</td><td>40%</td><td>24%</td><td>8.86%</td><td>1.0%</td><td>375</td><td><b>2.61</b></td><td class="neg">-87.1%</td><td>77.9%</td></tr><tr class=base><td>基准</td><td>+40%</td><td>44%</td><td>28%</td><td>8.36%</td><td>1.5%</td><td>770</td><td><b>7.51</b></td><td class="neg">-62.8%</td><td>76.3%</td></tr><tr><td>乐观</td><td>+48%</td><td>47%</td><td>31%</td><td>8.11%</td><td>2.0%</td><td>1,181</td><td><b>12.59</b></td><td class="neg">-37.5%</td><td>76.5%</td></tr></tbody></table><div class="src">资料来源：公司公告，FinAgent</div></figure>
+  <div class="two"><figure class=""><figcaption><span class="fno">图表 28</span>每股价值区间（元）</figcaption><img src="charts/football.svg" style="width:83mm"><div class="src">资料来源：公司公告，FinAgent</div></figure><figure class=""><figcaption><span class="fno">图表 29</span>敏感性：WACC × 永续增长率（元/股）</figcaption><table class="heat"><thead><tr><th class="corner">WACC ＼ g</th><th>0.5%</th><th>1.0%</th><th>1.5%</th><th>2.0%</th><th>2.5%</th></tr></thead><tbody><tr><th>7.36%</th><td style="background: rgba(35,93,150,0.58);color:#fff;">7.83</td><td style="background: rgba(35,93,150,0.56);color:#fff;">8.46</td><td style="background: rgba(35,93,150,0.53);color:#fff;">9.20</td><td style="background: rgba(35,93,150,0.50);color:#fff;">10.08</td><td style="background: rgba(35,93,150,0.45);color:#fff;">11.14</td></tr><tr><th>7.86%</th><td style="background: rgba(35,93,150,0.58);color:#fff;">7.13</td><td style="background: rgba(35,93,150,0.58);color:#fff;">7.66</td><td style="background: rgba(35,93,150,0.57);color:#fff;">8.29</td><td style="background: rgba(35,93,150,0.54);color:#fff;">9.01</td><td style="background: rgba(35,93,150,0.50);color:#fff;">9.88</td></tr><tr><th>8.36%</th><td style="background: rgba(35,93,150,0.58);color:#fff;">6.52</td><td style="background: rgba(35,93,150,0.58);color:#fff;">6.98</td><td style="background: rgba(35,93,150,0.58);color:#fff;" class=center>7.51</td><td style="background: rgba(35,93,150,0.58);color:#fff;">8.12</td><td style="background: rgba(35,93,150,0.55);color:#fff;">8.83</td></tr><tr><th>8.86%</th><td style="background: rgba(35,93,150,0.58);color:#fff;">5.98</td><td style="background: rgba(35,93,150,0.58);color:#fff;">6.38</td><td style="background: rgba(35,93,150,0.58);color:#fff;">6.83</td><td style="background: rgba(35,93,150,0.58);color:#fff;">7.35</td><td style="background: rgba(35,93,150,0.58);color:#fff;">7.95</td></tr><tr><th>9.36%</th><td style="background: rgba(35,93,150,0.58);color:#fff;">5.51</td><td style="background: rgba(35,93,150,0.58);color:#fff;">5.85</td><td style="background: rgba(35,93,150,0.58);color:#fff;">6.25</td><td style="background: rgba(35,93,150,0.58);color:#fff;">6.69</td><td style="background: rgba(35,93,150,0.58);color:#fff;">7.20</td></tr></tbody></table><div class="src">资料来源：公司公告，FinAgent</div></figure></div><div class="two"><figure class=""><figcaption><span class="fno">图表 30</span>敏感性：WACC × 退出 EV/EBITDA 倍数（元/股）</figcaption><table class="heat"><thead><tr><th class="corner">WACC ＼ 退出倍数</th><th>4x</th><th>5x</th><th>6x</th><th>7x</th><th>8x</th></tr></thead><tbody><tr><th>7.36%</th><td style="background: rgba(35,93,150,0.58);color:#fff;">4.21</td><td style="background: rgba(35,93,150,0.58);color:#fff;">5.19</td><td style="background: rgba(35,93,150,0.58);color:#fff;">6.17</td><td style="background: rgba(35,93,150,0.58);color:#fff;">7.16</td><td style="background: rgba(35,93,150,0.58);color:#fff;">8.14</td></tr><tr><th>7.86%</th><td style="background: rgba(35,93,150,0.58);color:#fff;">4.09</td><td style="background: rgba(35,93,150,0.58);color:#fff;">5.05</td><td style="background: rgba(35,93,150,0.58);color:#fff;">6.01</td><td style="background: rgba(35,93,150,0.58);color:#fff;">6.97</td><td style="background: rgba(35,93,150,0.58);color:#fff;">7.93</td></tr><tr><th>8.36%</th><td style="background: rgba(35,93,150,0.58);color:#fff;">3.98</td><td style="background: rgba(35,93,150,0.58);color:#fff;">4.92</td><td style="background: rgba(35,93,150,0.58);color:#fff;" class=center>5.86</td><td style="background: rgba(35,93,150,0.58);color:#fff;">6.80</td><td style="background: rgba(35,93,150,0.58);color:#fff;">7.73</td></tr><tr><th>8.86%</th><td style="background: rgba(35,93,150,0.58);color:#fff;">3.87</td><td style="background: rgba(35,93,150,0.58);color:#fff;">4.79</td><td style="background: rgba(35,93,150,0.58);color:#fff;">5.70</td><td style="background: rgba(35,93,150,0.58);color:#fff;">6.62</td><td style="background: rgba(35,93,150,0.58);color:#fff;">7.54</td></tr><tr><th>9.36%</th><td style="background: rgba(35,93,150,0.58);color:#fff;">3.76</td><td style="background: rgba(35,93,150,0.58);color:#fff;">4.66</td><td style="background: rgba(35,93,150,0.58);color:#fff;">5.56</td><td style="background: rgba(35,93,150,0.58);color:#fff;">6.45</td><td style="background: rgba(35,93,150,0.58);color:#fff;">7.35</td></tr></tbody></table><div class="src">资料来源：公司公告，FinAgent</div></figure><figure class=""><figcaption><span class="fno">图表 31</span>敏感性：收入增速 × EBIT 利润率（元/股）</figcaption><table class="heat"><thead><tr><th class="corner">收入增速 ＼ 利润率</th><th>-3.0pp</th><th>-1.5pp</th><th>+0.0pp</th><th>+1.5pp</th><th>+3.0pp</th></tr></thead><tbody><tr><th>-2pp</th><td style="background: rgba(35,93,150,0.58);color:#fff;">5.28</td><td style="background: rgba(35,93,150,0.58);color:#fff;">6.01</td><td style="background: rgba(35,93,150,0.58);color:#fff;">6.74</td><td style="background: rgba(35,93,150,0.58);color:#fff;">7.47</td><td style="background: rgba(35,93,150,0.57);color:#fff;">8.20</td></tr><tr><th>-1pp</th><td style="background: rgba(35,93,150,0.58);color:#fff;">5.59</td><td style="background: rgba(35,93,150,0.58);color:#fff;">6.35</td><td style="background: rgba(35,93,150,0.58);color:#fff;">7.12</td><td style="background: rgba(35,93,150,0.58);color:#fff;">7.88</td><td style="background: rgba(35,93,150,0.56);color:#fff;">8.64</td></tr><tr><th>+0pp</th><td style="background: rgba(35,93,150,0.58);color:#fff;">5.91</td><td style="background: rgba(35,93,150,0.58);color:#fff;">6.71</td><td style="background: rgba(35,93,150,0.58);color:#fff;" class=center>7.51</td><td style="background: rgba(35,93,150,0.57);color:#fff;">8.30</td><td style="background: rgba(35,93,150,0.54);color:#fff;">9.10</td></tr><tr><th>+1pp</th><td style="background: rgba(35,93,150,0.58);color:#fff;">6.25</td><td style="background: rgba(35,93,150,0.58);color:#fff;">7.08</td><td style="background: rgba(35,93,150,0.58);color:#fff;">7.91</td><td style="background: rgba(35,93,150,0.55);color:#fff;">8.74</td><td style="background: rgba(35,93,150,0.52);color:#fff;">9.57</td></tr><tr><th>+2pp</th><td style="background: rgba(35,93,150,0.58);color:#fff;">6.60</td><td style="background: rgba(35,93,150,0.58);color:#fff;">7.46</td><td style="background: rgba(35,93,150,0.57);color:#fff;">8.33</td><td style="background: rgba(35,93,150,0.53);color:#fff;">9.19</td><td style="background: rgba(35,93,150,0.50);color:#fff;">10.06</td></tr></tbody></table><div class="src">资料来源：公司公告，FinAgent</div></figure></div>
+
+  <h2><span class="num">11</span>投资建议</h2>
+  <p>基准 DCF 每股价值 7.51 元，低于参考股价 20.15 元，评级为“卖出”。2026E 的 40% 收入增长及 44% 毛利率构成关键假设；悲观至乐观情景区间为 2.61～12.59 元，运价数据与交船进度将决定估值路径。</p>
+
+  <h2><span class="num">12</span>风险提示</h2>
+  <ul><li><strong>运价与交付。</strong>油轮运价回落、新船交付延后或营运率不足，将改变收入和毛利率路径。</li><li><strong>资本投入。</strong>已签约未确认的资本性支出 358.72 亿元，投资节奏及融资成本变化会影响自由现金流。</li><li><strong>估值口径。</strong>长期股权投资按账面价值加回，终值占企业价值 76.3%；股权桥和终值参数对估值结果影响较大。</li></ul>
+</section>
+
+<section class="appendix">
+  <h2><span class="num">附</span>财务报表预测</h2>
+  <table class="fin"><thead><tr><th>利润表（百万元）</th><th>2025A</th><th class=est>2026E</th><th class=est>2027E</th><th class=est>2028E</th><th class=est>2029E</th><th class=est>2030E</th></tr></thead><tbody><tr class=total><td>营业收入</td><td>28,177</td><td>39,448</td><td>35,503</td><td>32,663</td><td>33,316</td><td>34,316</td></tr><tr><td>营业成本</td><td>20,718</td><td>22,091</td><td>22,722</td><td>22,864</td><td>23,988</td><td>24,707</td></tr><tr class=total><td>毛利</td><td>7,460</td><td>17,357</td><td>12,781</td><td>9,799</td><td>9,329</td><td>9,608</td></tr><tr><td>经营费用（不含折旧摊销）</td><td class="neg">-2,016</td><td class="neg">-1,972</td><td class="neg">-1,775</td><td class="neg">-1,633</td><td class="neg">-1,666</td><td class="neg">-1,716</td></tr><tr><td>折旧摊销</td><td>2,396</td><td>2,785</td><td>3,148</td><td>3,419</td><td>3,584</td><td>3,661</td></tr><tr class=total><td>EBIT（经营性）</td><td>7,080</td><td>16,545</td><td>11,408</td><td>8,013</td><td>7,411</td><td>7,663</td></tr><tr><td>所得税</td><td>804</td><td>1,788</td><td>1,188</td><td>791</td><td>720</td><td>750</td></tr><tr class=total><td>净利润</td><td>6,071</td><td>13,503</td><td>8,967</td><td>5,970</td><td>5,438</td><td>5,660</td></tr><tr class=total><td>归母净利润</td><td>6,012</td><td>13,373</td><td>8,881</td><td>5,912</td><td>5,385</td><td>5,606</td></tr><tr><td>每股收益（元）</td><td>0.74</td><td>1.66</td><td>1.10</td><td>0.73</td><td>0.67</td><td>0.69</td></tr></tbody></table><table class="fin"><thead><tr><th>资产负债表（百万元）</th><th>2025A</th><th class=est>2026E</th><th class=est>2027E</th><th class=est>2028E</th><th class=est>2029E</th><th class=est>2030E</th></tr></thead><tbody><tr><td>货币资金</td><td>4,721</td><td>3,638</td><td>2,166</td><td>1,292</td><td>1,974</td><td>4,370</td></tr><tr><td>应收账款</td><td>1,385</td><td>1,939</td><td>1,746</td><td>1,606</td><td>1,638</td><td>1,687</td></tr><tr><td>存货</td><td>1,311</td><td>1,398</td><td>1,438</td><td>1,447</td><td>1,518</td><td>1,564</td></tr><tr><td>固定资产+在建工程</td><td>53,587</td><td>61,848</td><td>68,641</td><td>73,061</td><td>75,475</td><td>76,275</td></tr><tr><td>其他资产</td><td>21,050</td><td>21,050</td><td>21,050</td><td>21,050</td><td>21,050</td><td>21,050</td></tr><tr class=total><td>资产总计</td><td>82,055</td><td>89,873</td><td>95,041</td><td>98,456</td><td>101,655</td><td>104,945</td></tr><tr><td>应付账款</td><td>1,836</td><td>1,958</td><td>2,014</td><td>2,027</td><td>2,126</td><td>2,190</td></tr><tr><td>有息负债（含租赁）</td><td>28,398</td><td>28,398</td><td>28,398</td><td>28,398</td><td>28,398</td><td>28,398</td></tr><tr><td>其他负债</td><td>8,066</td><td>8,066</td><td>8,066</td><td>8,066</td><td>8,066</td><td>8,066</td></tr><tr><td>股本、资本公积及其他权益</td><td>43,755</td><td>43,755</td><td>43,755</td><td>43,755</td><td>43,755</td><td>43,755</td></tr><tr><td>留存收益（预测期累计）</td><td>0</td><td>7,697</td><td>12,808</td><td>16,211</td><td>19,310</td><td>22,537</td></tr><tr class=total><td>负债和权益总计</td><td>82,055</td><td>89,873</td><td>95,041</td><td>98,456</td><td>101,655</td><td>104,945</td></tr></tbody></table><div class="two fin-grid"><div><table class="fin"><thead><tr><th>现金流量表（百万元）</th><th>2025A</th><th class=est>2026E</th><th class=est>2027E</th><th class=est>2028E</th><th class=est>2029E</th><th class=est>2030E</th></tr></thead><tbody><tr><td>净利润</td><td>6,071</td><td>13,503</td><td>8,967</td><td>5,970</td><td>5,438</td><td>5,660</td></tr><tr><td>折旧摊销</td><td>2,396</td><td>2,785</td><td>3,148</td><td>3,419</td><td>3,584</td><td>3,661</td></tr><tr><td>营运资本增加</td><td>154</td><td>519</td><td class="neg">-210</td><td class="neg">-143</td><td>4</td><td>31</td></tr><tr class=total><td>经营活动现金流</td><td>9,055</td><td>15,769</td><td>12,326</td><td>9,532</td><td>9,017</td><td>9,290</td></tr><tr><td>资本开支</td><td>7,797</td><td>11,045</td><td>9,941</td><td>7,839</td><td>5,997</td><td>4,461</td></tr><tr><td>现金分红</td><td>—</td><td class="neg">-5,806</td><td class="neg">-3,856</td><td class="neg">-2,567</td><td class="neg">-2,338</td><td class="neg">-2,434</td></tr><tr class=total><td>期末现金</td><td>4,721</td><td>3,638</td><td>2,166</td><td>1,292</td><td>1,974</td><td>4,370</td></tr></tbody></table></div><div><table class="fin"><thead><tr><th>主要财务比率</th><th>2025A</th><th class=est>2026E</th><th class=est>2027E</th><th class=est>2028E</th><th class=est>2029E</th><th class=est>2030E</th></tr></thead><tbody><tr><td>营业收入增长率</td><td>+9.22%</td><td>+40.00%</td><td class="neg">-10.00%</td><td class="neg">-8.00%</td><td>+2.00%</td><td>+3.00%</td></tr><tr><td>归母净利润增长率</td><td>+17.71%</td><td>+122.43%</td><td class="neg">-33.59%</td><td class="neg">-33.43%</td><td class="neg">-8.91%</td><td>+4.10%</td></tr><tr><td>毛利率</td><td>26.47%</td><td>44.00%</td><td>36.00%</td><td>30.00%</td><td>28.00%</td><td>28.00%</td></tr><tr><td>归母净利率</td><td>21.34%</td><td>33.90%</td><td>25.01%</td><td>18.10%</td><td>16.16%</td><td>16.34%</td></tr><tr><td>ROE（加权平均）</td><td>14.55%</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td></tr><tr><td>每股收益（元）</td><td>0.74</td><td>1.66</td><td>1.10</td><td>0.73</td><td>0.67</td><td>0.69</td></tr><tr><td>P/E（倍）</td><td>27.2</td><td>12.2</td><td>18.3</td><td>27.5</td><td>30.2</td><td>29.0</td></tr></tbody></table></div></div>
+  <div class="src">资料来源：公司公告，FinAgent 预测（基准情景）。经营费用为轧差项，含税金及附加；2025A 净利润为报表值。</div>
+  
+  
+<h3>估值方法说明</h3>
+<p class="small">DCF 采用 FCFF 口径、年中折现，经营预测取自三表模型；EBIT = 利润总额 + 财务费用 − 投资收益 −
+公允价值变动收益，剔除的投资类资产在股权桥中逐项加回。年报未披露分船型 TCE，预测采用合并收入与毛利率；营业成本已含船舶折旧。使用权资产摊销与租赁负债处理可能重复扣减；长期股权投资按账面加回，长期应付款按类负债扣减。预测期归母净利润 = 三表模型净利润 × 0.9903（2025 年归母净利润/净利润，假设少数股东损益占比不变）；预测期 EPS 按 2025 年末总股本摊薄，未考虑回购注销对股本的影响。
+估值输入（无风险利率、β、股权风险溢价、永续增长率、分部量价与费用率）为分析师假设，参考股价为外部行情数据。</p>
+<h3>数据来源与方法</h3>
+<p class="small">财务与经营数据来自公司 2025 年年度报告：财务数据 104 项、经营数据 447 个数字由模型读取年报后，
+经 FinAgent 逐字核对原文并与规则通道交叉校验，19 项勾稽全部通过；单价、占比、增速等比率与全部估值计算由确定性程序完成，
+正文数字经数字护栏核对出处。逐项页码见估值模型 model.xlsx“历史财务”“经营数据”页与 financials/extras.json。
+参考股价为外部行情数据（2026-09-30 收盘）。</p>
+<table class="data slim mono"><thead><tr><th>输入文件（运行 20261002-005015-valuation）</th><th>SHA-256</th></tr></thead><tbody><tr><td><code>sandbox/annual_reports/601872_招商轮船_2025_年度报告.pdf</code></td><td><code>3fe6f99980f9f0c2…</code></td></tr><tr><td><code>sandbox/phase2/inputs/招商轮船_facts_supplemented.json</code></td><td><code>fe45e989ad8b18fb…</code></td></tr><tr><td><code>data/extractions/招商轮船_2025/extras.json</code></td><td><code>bf4f341a03134c0c…</code></td></tr><tr><td><code>data/extractions/招商轮船_2025/valuation_assumptions.json</code></td><td><code>6c6325958ef113d4…</code></td></tr></tbody></table>
+<h3>内容说明</h3>
+<p class="small">本报告中直接引用的财务与经营数据为事实；以“主要系”“反映”等表述的归因为基于数据的推论；以“我们认为”“我们预计”
+表述的判断、盈利预测、估值与评级为观点，依赖第 9、10 节所列假设。</p>
+
+</section>
+<section class="disclaimer-page">
+  <div class="disc-h">免责声明</div>
+  <h3>一、报告性质与编制主体</h3>
+<p>本报告由 FinAgent 投研智能体系统生成，系 2026 北京市大学生金融人工智能竞赛（主题：金融投研智能体构建）的参赛作品，仅用于展示金融人工智能研究方法与技术能力。本报告的编制主体不是经中国证券监督管理委员会核准或备案的证券公司、证券投资咨询机构或其他持牌金融机构，参与编制的人员亦不具有证券投资咨询执业资格。本报告不是证券公司、证券投资咨询机构依据《证券法》《证券、期货投资咨询管理暂行办法》《发布证券研究报告暂行规定》等法律法规发布的证券研究报告，未经任何持牌机构的合规审查，不构成对任何主体开展证券投资咨询业务。</p>
+<h3>二、不构成投资建议</h3>
+<p>本报告中的任何内容，包括但不限于投资评级、每股价值、估值区间、盈利预测、目标空间及相关分析判断，均不构成、亦不应被视为买卖或持有任何证券、金融工具或其他投资标的的要约、要约邀请、推荐或投资建议，也不构成法律、税务、会计或其他专业意见。本报告未考虑任何特定读者的投资目标、财务状况、风险承受能力或特殊需求。读者不应以本报告取代其独立判断，据此作出的任何投资决策及其后果，由读者自行承担。</p>
+<h3>三、信息来源与准确性</h3>
+<p>本报告所载财务与经营数据来源于上市公司依法公开披露的定期报告；参考股价等市场数据来源于第三方公开行情，报告中已注明。编制者已通过程序化方式对所引用数据与原始披露文件进行逐字核对，但不对原始披露信息及第三方数据的真实性、准确性、完整性、及时性作出任何明示或默示的保证。原始信息如存在错误、遗漏或事后更正、调整，本报告不承担相应责任，亦不承诺随之更新。</p>
+<h3>四、人工智能生成内容的特别提示</h3>
+<p>本报告的文字分析由大语言模型参与撰写，数值计算由确定性程序完成，并经数字核对程序校验。尽管如此，人工智能生成内容仍可能存在理解偏差、表述不当、事实归因错误或其他未能识别的缺陷。本报告未经持牌证券分析师复核签署，读者应对其中的分析与结论保持审慎，并以原始披露文件为准。</p>
+<h3>五、预测性陈述与模型假设</h3>
+<p>本报告中的盈利预测、估值结果、情景分析与敏感性分析均为前瞻性陈述，依赖于编制者设定的假设，包括但不限于分部销量与吨价增速、毛利率与费用率路径、资本开支、分红率、折现率及永续增长率等。上述假设为观点而非事实，可能因宏观经济、行业政策、市场需求、公司经营及其他不可预见因素而与实际情况存在重大差异。过往业绩不代表未来表现，预测结果不构成对未来业绩或证券价格的任何承诺或保证。投资评级由模型按报告所列规则机械生成，不代表任何机构或个人的投资意见。</p>
+<h3>六、责任限制</h3>
+<p>在适用法律允许的最大范围内，本报告的编制者、竞赛组织方及相关参与方，对任何人因使用、引用或依赖本报告全部或部分内容而直接或间接遭受的任何损失或损害（包括但不限于投资损失、利润损失、数据损失及其他经济损失），不承担任何法律责任。</p>
+<h3>七、利益冲突</h3>
+<p>本报告的编制不受所研究上市公司或其关联方的委托、资助或指示，编制者与所研究上市公司之间不存在已知的委托关系。本报告观点可能与其他研究机构或市场参与者的观点不一致，编制者无义务就此作出说明。</p>
+<h3>八、版权与使用限制</h3>
+<p>本报告的版权归编制者所有。本报告仅供竞赛评审与学术交流使用，未经编制者书面许可，任何机构或个人不得以任何形式复制、转载、刊登、发表、修改或向第三方传播本报告的全部或部分内容，不得将本报告用于任何商业目的，亦不得以任何方式暗示本报告系持牌机构发布的证券研究报告。经许可引用的，应注明出处，并不得对本报告作出有悖原意的删节或修改。</p>
+<h3>九、适用法律</h3>
+<p>本声明及因本报告产生的任何争议，适用中华人民共和国法律（为本声明之目的，不含香港特别行政区、澳门特别行政区及台湾地区法律）。</p>
+<h3>十、其他</h3>
+<p>读者阅读或使用本报告，即视为已阅读、理解并同意本声明的全部内容。本声明与报告正文不一致的，以本声明为准。</p>
+</section>
+</body></html>

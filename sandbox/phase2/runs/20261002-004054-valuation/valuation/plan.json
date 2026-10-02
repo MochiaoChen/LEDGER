@@ -1,0 +1,322 @@
+{
+  "meta": {
+    "company": "招商轮船",
+    "ticker": "601872.SH",
+    "industry": "航运（油气运输、干散货为双核心）",
+    "currency": "CNY",
+    "units": "百万元（每股数据为元）",
+    "valuation_date": "2026-09-30",
+    "as_of_date": "2025-12-31",
+    "accounting_basis": "中国企业会计准则",
+    "model_type": "fcff"
+  },
+  "source_basis": [
+    {
+      "id": "src_hist",
+      "topic": "historicals",
+      "label": "reported",
+      "source_name": "601872_招商轮船_2025_年度报告.pdf",
+      "source_type": "company_filing",
+      "as_of_date": "2025-12-31",
+      "confidence": "high",
+      "notes": "由财报抽取结果计算，逐项来源见 financials.json"
+    },
+    {
+      "id": "src_bridge",
+      "topic": "net_debt",
+      "label": "reported",
+      "source_name": "601872_招商轮船_2025_年度报告.pdf",
+      "source_type": "company_filing",
+      "as_of_date": "2025-12-31",
+      "confidence": "high",
+      "notes": "由财报抽取结果计算，逐项来源见 financials.json"
+    },
+    {
+      "id": "src_shares",
+      "topic": "share_count",
+      "label": "reported",
+      "source_name": "601872_招商轮船_2025_年度报告.pdf",
+      "source_type": "company_filing",
+      "as_of_date": "2025-12-31",
+      "confidence": "high",
+      "notes": "由财报抽取结果计算，逐项来源见 financials.json"
+    },
+    {
+      "id": "src_forecast",
+      "topic": "forecast",
+      "label": "analyst_estimate",
+      "source_name": "估值假设文件",
+      "source_type": "analyst_model",
+      "as_of_date": "2026-09-30",
+      "confidence": "medium",
+      "notes": "航运收入由运力 × 运价驱动，年报未披露各船型营运天数与 TCE，无法按“量 × 价”拆分，故不用 segment_forecast，直接给出合并收入增速与毛利率路径（观点/假设）。2026E：年报披露 2026 年 3 月中东冲突导致霍尔木兹海峡通行受阻，VLCC 运价大幅上行；公司 2026 年半年报（外部信息，不在本次年报中）显示上半年收入与利润大幅增长；叠加 2026 年预计 28 艘新造船交付（含 14 艘自有 LNG 船长约），基准情景收入增长 40%、毛利率 44%。2027E～2028E：地缘溢价消退、油轮与集运运价回落，收入分别下降 10%、8%，毛利率回落至 36%、30%；新交付 LNG 长约船与 VLOC 长约提供托底。2029E～2030E：运价回归周期中枢，毛利率 28%，略高于 2025 年，反映船队扩张与长约占比提升。经营费用率（引擎轧差口径 = 毛利 − EBIT − 折旧摊销）为负值，因为营业成本中已含船舶折旧，而引擎另行扣减折旧摊销；2025 年实际值为 -7.16%，其中资产处置收益（占营业收入 2.41%）压低了轧差项，预测期取 -5%，即剔除卖船收益后的经常性水平（观点/假设）。周转天数、折旧率、税率、利率取 2025 年实际值。"
+    },
+    {
+      "id": "src_wacc",
+      "topic": "wacc",
+      "label": "analyst_estimate",
+      "source_name": "估值假设文件",
+      "source_type": "analyst_model",
+      "as_of_date": "2026-09-30",
+      "confidence": "medium",
+      "notes": "无风险利率 1.8%（10 年期国债收益率假设）；β 1.20（强周期航运股高于市场）；股权风险溢价 6.5%；税前债务成本 4.0%（2025 年利息费用 / 平均有息负债约 4% 左右，美元借款为主）；边际税率 15%（境外单船公司为主，低于法定税率）；目标负债占比 20%（跨周期资本结构）。"
+    },
+    {
+      "id": "src_terminal_value",
+      "topic": "terminal_value",
+      "label": "analyst_estimate",
+      "source_name": "估值假设文件",
+      "source_type": "analyst_model",
+      "as_of_date": "2026-09-30",
+      "confidence": "medium",
+      "notes": "永续增长率 1.5%（成熟航运业，低于名义 GDP 长期增速假设）；退出 EV/EBITDA 6 倍作交叉验证（航运周期中枢倍数假设）。"
+    }
+  ],
+  "timeline": {
+    "start_year": 2025,
+    "horizon_years": 5,
+    "periodicity": "annual"
+  },
+  "historicals": {
+    "latest_year": 2025,
+    "revenue": 28177.21113195,
+    "ebitda": 9475.965050390001,
+    "ebit": 7079.50287887,
+    "cash_taxes": 827.8823508903832,
+    "da": 2396.46217152,
+    "capex": 7796.87905542,
+    "change_nwc": 154.24661416000004,
+    "net_working_capital": 860.4398607100002,
+    "unlevered_fcf": 696.9570299196164,
+    "net_income": 6012.096267970001,
+    "source_id": "src_hist"
+  },
+  "forecast": {
+    "cash_flow_basis": "fcff",
+    "mid_year_convention": true,
+    "source_id": "src_forecast"
+  },
+  "wacc": {
+    "risk_free_rate": 0.018,
+    "beta": 1.2,
+    "equity_risk_premium": 0.065,
+    "size_premium": 0.0,
+    "company_specific_premium": 0.0,
+    "country_risk_premium": 0.0,
+    "pre_tax_cost_of_debt": 0.04,
+    "marginal_tax_rate": 0.15,
+    "target_debt_pct": 0.2,
+    "target_equity_pct": 0.8,
+    "preferred_pct": 0.0,
+    "pre_tax_cost_of_preferred": 0.0,
+    "source_id": "src_wacc"
+  },
+  "terminal_value": {
+    "method": "perpetual_growth",
+    "perpetual_growth_rate": 0.015,
+    "exit_ebitda_multiple": 6.0,
+    "source_id": "src_terminal_value"
+  },
+  "ev_to_equity_bridge": {
+    "cash": 4720.9146631,
+    "debt": 27271.212706209997,
+    "leases": 1126.7164853,
+    "minorities": 749.17164278,
+    "associates": 0.0,
+    "pensions": 0.0,
+    "preferred_stock": 0.0,
+    "non_operating_assets": 7999.14156618,
+    "options": 0.0,
+    "other_debt_like_items": 0.0,
+    "diluted_shares": 8074.538502,
+    "net_debt_source_id": "src_bridge",
+    "share_count_source_id": "src_shares"
+  },
+  "scenarios": {
+    "base": {
+      "description": "2026 年地缘冲突推高油轮运价、新船集中交付，收入大增；2027～2028 年运价回落，2029 年起回归周期中枢。",
+      "revenue_growth": [
+        0.3999999999999999,
+        -0.09999999999999987,
+        -0.07999999999999996,
+        0.020000000000000018,
+        0.030000000000000027
+      ],
+      "capex_percent_revenue": [
+        0.28,
+        0.28,
+        0.24,
+        0.18,
+        0.13
+      ],
+      "terminal_growth_rate": 0.015,
+      "wacc_adjustment": 0.0,
+      "ebit_margin": [
+        0.4194023735526331,
+        0.3213290092119454,
+        0.24533613505507504,
+        0.22243968677717663,
+        0.22331332174858212
+      ],
+      "tax_rate": [
+        0.11694074641333096,
+        0.11694074641333096,
+        0.11694074641333096,
+        0.11694074641333096,
+        0.11694074641333096
+      ],
+      "da_percent_revenue": [
+        0.07059762644736688,
+        0.08867099078805467,
+        0.10466386494492498,
+        0.10756031322282338,
+        0.10668667825141784
+      ],
+      "nwc_percent_revenue": [
+        0.03497708594212093,
+        0.03295019151022215,
+        0.03143002068629808,
+        0.030923297078323395,
+        0.030923297078323385
+      ]
+    },
+    "downside": {
+      "description": "地缘溢价快速消退、新船集中交付压低运价，收入增幅较小且回落更深，毛利率承压。",
+      "revenue_growth": [
+        0.25,
+        -0.17999999999999994,
+        -0.09999999999999998,
+        0.0,
+        0.020000000000000018
+      ],
+      "capex_percent_revenue": [
+        0.3,
+        0.32,
+        0.27,
+        0.2,
+        0.14
+      ],
+      "terminal_growth_rate": 0.01,
+      "wacc_adjustment": 0.005,
+      "ebit_margin": [
+        0.3712510362875825,
+        0.2623325335633207,
+        0.18126946481619508,
+        0.15626264292069422,
+        0.1571452844706145
+      ],
+      "tax_rate": [
+        0.11694074641333096,
+        0.11694074641333096,
+        0.11694074641333096,
+        0.11694074641333096,
+        0.11694074641333096
+      ],
+      "da_percent_revenue": [
+        0.07874896371241746,
+        0.10766746643667933,
+        0.12873053518380487,
+        0.13373735707930573,
+        0.13285471552938558
+      ],
+      "nwc_percent_revenue": [
+        0.033963638726171544,
+        0.03193674429427279,
+        0.030416573470348693,
+        0.029909849862373987,
+        0.029909849862374008
+      ]
+    },
+    "upside": {
+      "description": "油轮高景气延续至 2027 年，LNG 与干散货长约贡献增量，运价回落更缓。",
+      "revenue_growth": [
+        0.48,
+        0.0,
+        -0.06000000000000005,
+        0.0,
+        0.030000000000000027
+      ],
+      "capex_percent_revenue": [
+        0.26,
+        0.25,
+        0.22,
+        0.17,
+        0.13
+      ],
+      "terminal_growth_rate": 0.02,
+      "wacc_adjustment": -0.0025,
+      "ebit_margin": [
+        0.4533330640592357,
+        0.3644598650607323,
+        0.2919765579679028,
+        0.2669364218039971,
+        0.26695342084561824
+      ],
+      "tax_rate": [
+        0.11694074641333096,
+        0.11694074641333096,
+        0.11694074641333096,
+        0.11694074641333096,
+        0.11694074641333096
+      ],
+      "da_percent_revenue": [
+        0.06666693594076434,
+        0.07554013493926767,
+        0.0880234420320972,
+        0.09306357819600293,
+        0.09304657915438179
+      ],
+      "nwc_percent_revenue": [
+        0.03573717135408296,
+        0.0337102769221842,
+        0.03219010609826012,
+        0.03168338249028543,
+        0.03168338249028542
+      ]
+    }
+  },
+  "sensitivities": {
+    "wacc_delta": [
+      -0.01,
+      -0.005,
+      0.0,
+      0.005,
+      0.01
+    ],
+    "terminal_growth_delta": [
+      -0.01,
+      -0.005,
+      0.0,
+      0.005,
+      0.01
+    ],
+    "exit_multiple_delta": [
+      -2.0,
+      -1.0,
+      0.0,
+      1.0,
+      2.0
+    ],
+    "revenue_growth_delta": [
+      -0.02,
+      -0.01,
+      0.0,
+      0.01,
+      0.02
+    ],
+    "ebit_margin_delta": [
+      -0.03,
+      -0.015,
+      0.0,
+      0.015,
+      0.03
+    ]
+  },
+  "_historical_ratios": {
+    "ebit_margin": 0.2512492398810394,
+    "da_percent_revenue": 0.08504965804804804,
+    "capex_percent_revenue": 0.2767086855724752,
+    "nwc_percent_revenue": 0.030536729014119912,
+    "effective_tax_rate": 0.11694074641333096
+  }
+}
