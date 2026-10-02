@@ -1,0 +1,651 @@
+{
+  "tables": [
+    {
+      "name": "price_target_scenario",
+      "description": "Bull/base/bear price-target, expected return, break-even probability, and skew table.",
+      "columns": [
+        "scenario",
+        "price_target",
+        "return_vs_share_price",
+        "required_return",
+        "expected_return_vs_hurdle",
+        "downside_upside_ratio",
+        "break_even_probability",
+        "skew_label",
+        "action_rule",
+        "probability",
+        "probability_check",
+        "probability_sum",
+        "rationale",
+        "implication",
+        "source_id",
+        "source_posture",
+        "as_of_date"
+      ],
+      "rows": [
+        {
+          "scenario": "upside",
+          "price_target": "527.3",
+          "return_vs_share_price": "81.1%",
+          "required_return": "10.0%",
+          "expected_return_vs_hurdle": "71.1%",
+          "downside_upside_ratio": "0.19x",
+          "break_even_probability": "15.7%",
+          "skew_label": "underwriteable upside",
+          "action_rule": "add / press if evidence confirms",
+          "probability": "25.0%",
+          "probability_check": "ok",
+          "probability_sum": "100.0%",
+          "rationale": "储能需求延续高增长、海外份额提升，锂价企稳带动单价持平、毛利率小幅改善。",
+          "implication": "",
+          "source_id": "financials+dcf",
+          "source_posture": "model_validated",
+          "as_of_date": "2026-09-30"
+        },
+        {
+          "scenario": "base",
+          "price_target": "383.3",
+          "return_vs_share_price": "31.7%",
+          "required_return": "10.0%",
+          "expected_return_vs_hurdle": "21.7%",
+          "downside_upside_ratio": "0.19x",
+          "break_even_probability": "15.7%",
+          "skew_label": "underwriteable upside",
+          "action_rule": "add / press if evidence confirms",
+          "probability": "50.0%",
+          "probability_check": "ok",
+          "probability_sum": "100.0%",
+          "rationale": "动力电池份额稳中有升、储能高增长，单价随原材料温和下行，利润率大体稳定。",
+          "implication": "",
+          "source_id": "financials+dcf",
+          "source_posture": "model_validated",
+          "as_of_date": "2026-09-30"
+        },
+        {
+          "scenario": "downside",
+          "price_target": "247.0",
+          "return_vs_share_price": "-15.2%",
+          "required_return": "10.0%",
+          "expected_return_vs_hurdle": "-25.2%",
+          "downside_upside_ratio": "0.19x",
+          "break_even_probability": "15.7%",
+          "skew_label": "negative skew",
+          "action_rule": "trim / exit unless thesis is re-underwritten",
+          "probability": "25.0%",
+          "probability_check": "ok",
+          "probability_sum": "100.0%",
+          "rationale": "行业产能过剩与价格战，海外贸易壁垒抬升，销量增速放缓、单价与毛利率下行。",
+          "implication": "",
+          "source_id": "financials+dcf",
+          "source_posture": "model_validated",
+          "as_of_date": "2026-09-30"
+        },
+        {
+          "scenario": "probability_weighted",
+          "price_target": "385.2",
+          "return_vs_share_price": "32.3%",
+          "required_return": "10.0%",
+          "expected_return_vs_hurdle": "22.3%",
+          "downside_upside_ratio": "0.19x",
+          "break_even_probability": "15.7%",
+          "skew_label": "underwriteable upside",
+          "action_rule": "add / press if evidence confirms",
+          "probability": "n/a",
+          "probability_check": "ok",
+          "probability_sum": "100.0%",
+          "rationale": "weighted by supplied case probabilities",
+          "implication": "compare expected return to hurdle and downside/upside skew",
+          "source_id": "financials+dcf",
+          "source_posture": "model_validated",
+          "as_of_date": "2026-09-30"
+        }
+      ],
+      "notes": [
+        "Requires share_price and complete case price targets for calculated return output.",
+        "Probability-weighted output requires every case probability to be present and sum to 100%.",
+        "Skew labels distinguish underwriteable upside from merely optical upside."
+      ],
+      "name_cn": "三情景目标价与收益偏度"
+    },
+    {
+      "name": "valuation_sensitivity",
+      "description": "Implied price by valuation multiple.",
+      "columns": [
+        "multiple",
+        "ev_ebitda_implied_price",
+        "pe_implied_price",
+        "method_note",
+        "source_id",
+        "source_posture",
+        "as_of_date"
+      ],
+      "rows": [
+        {
+          "multiple": "6.0x",
+          "ev_ebitda_implied_price": "198.9",
+          "pe_implied_price": "96.8",
+          "method_note": "EV/EBITDA requires ebitda, net_debt, shares; P/E requires eps",
+          "source_id": "financials+dcf",
+          "source_posture": "model_validated",
+          "as_of_date": "2026-09-30"
+        },
+        {
+          "multiple": "8.0x",
+          "ev_ebitda_implied_price": "241.6",
+          "pe_implied_price": "129.1",
+          "method_note": "EV/EBITDA requires ebitda, net_debt, shares; P/E requires eps",
+          "source_id": "financials+dcf",
+          "source_posture": "model_validated",
+          "as_of_date": "2026-09-30"
+        },
+        {
+          "multiple": "10.0x",
+          "ev_ebitda_implied_price": "284.4",
+          "pe_implied_price": "161.4",
+          "method_note": "EV/EBITDA requires ebitda, net_debt, shares; P/E requires eps",
+          "source_id": "financials+dcf",
+          "source_posture": "model_validated",
+          "as_of_date": "2026-09-30"
+        },
+        {
+          "multiple": "12.0x",
+          "ev_ebitda_implied_price": "327.1",
+          "pe_implied_price": "193.7",
+          "method_note": "EV/EBITDA requires ebitda, net_debt, shares; P/E requires eps",
+          "source_id": "financials+dcf",
+          "source_posture": "model_validated",
+          "as_of_date": "2026-09-30"
+        },
+        {
+          "multiple": "14.0x",
+          "ev_ebitda_implied_price": "369.8",
+          "pe_implied_price": "226.0",
+          "method_note": "EV/EBITDA requires ebitda, net_debt, shares; P/E requires eps",
+          "source_id": "financials+dcf",
+          "source_posture": "model_validated",
+          "as_of_date": "2026-09-30"
+        }
+      ],
+      "notes": [],
+      "name_cn": "估值倍数 → 隐含股价"
+    },
+    {
+      "name": "eps_revision_sensitivity",
+      "description": "Price sensitivity to EPS revisions and multiple change.",
+      "columns": [
+        "eps_revision",
+        "multiple_change",
+        "revised_eps",
+        "revised_multiple",
+        "implied_price",
+        "source_id",
+        "source_posture",
+        "as_of_date"
+      ],
+      "rows": [
+        {
+          "eps_revision": "-20.0%",
+          "multiple_change": "-20.0%",
+          "revised_eps": "12.91",
+          "revised_multiple": "14.4x",
+          "implied_price": "186.3",
+          "source_id": "financials+dcf",
+          "source_posture": "model_validated",
+          "as_of_date": "2026-09-30"
+        },
+        {
+          "eps_revision": "-20.0%",
+          "multiple_change": "-10.0%",
+          "revised_eps": "12.91",
+          "revised_multiple": "16.2x",
+          "implied_price": "209.6",
+          "source_id": "financials+dcf",
+          "source_posture": "model_validated",
+          "as_of_date": "2026-09-30"
+        },
+        {
+          "eps_revision": "-20.0%",
+          "multiple_change": "0.0%",
+          "revised_eps": "12.91",
+          "revised_multiple": "18.0x",
+          "implied_price": "232.9",
+          "source_id": "financials+dcf",
+          "source_posture": "model_validated",
+          "as_of_date": "2026-09-30"
+        },
+        {
+          "eps_revision": "-20.0%",
+          "multiple_change": "10.0%",
+          "revised_eps": "12.91",
+          "revised_multiple": "19.8x",
+          "implied_price": "256.2",
+          "source_id": "financials+dcf",
+          "source_posture": "model_validated",
+          "as_of_date": "2026-09-30"
+        },
+        {
+          "eps_revision": "-10.0%",
+          "multiple_change": "-20.0%",
+          "revised_eps": "14.53",
+          "revised_multiple": "14.4x",
+          "implied_price": "209.6",
+          "source_id": "financials+dcf",
+          "source_posture": "model_validated",
+          "as_of_date": "2026-09-30"
+        },
+        {
+          "eps_revision": "-10.0%",
+          "multiple_change": "-10.0%",
+          "revised_eps": "14.53",
+          "revised_multiple": "16.2x",
+          "implied_price": "235.8",
+          "source_id": "financials+dcf",
+          "source_posture": "model_validated",
+          "as_of_date": "2026-09-30"
+        },
+        {
+          "eps_revision": "-10.0%",
+          "multiple_change": "0.0%",
+          "revised_eps": "14.53",
+          "revised_multiple": "18.0x",
+          "implied_price": "262.0",
+          "source_id": "financials+dcf",
+          "source_posture": "model_validated",
+          "as_of_date": "2026-09-30"
+        },
+        {
+          "eps_revision": "-10.0%",
+          "multiple_change": "10.0%",
+          "revised_eps": "14.53",
+          "revised_multiple": "19.8x",
+          "implied_price": "288.2",
+          "source_id": "financials+dcf",
+          "source_posture": "model_validated",
+          "as_of_date": "2026-09-30"
+        },
+        {
+          "eps_revision": "0.0%",
+          "multiple_change": "-20.0%",
+          "revised_eps": "16.14",
+          "revised_multiple": "14.4x",
+          "implied_price": "232.9",
+          "source_id": "financials+dcf",
+          "source_posture": "model_validated",
+          "as_of_date": "2026-09-30"
+        },
+        {
+          "eps_revision": "0.0%",
+          "multiple_change": "-10.0%",
+          "revised_eps": "16.14",
+          "revised_multiple": "16.2x",
+          "implied_price": "262.0",
+          "source_id": "financials+dcf",
+          "source_posture": "model_validated",
+          "as_of_date": "2026-09-30"
+        },
+        {
+          "eps_revision": "0.0%",
+          "multiple_change": "0.0%",
+          "revised_eps": "16.14",
+          "revised_multiple": "18.0x",
+          "implied_price": "291.1",
+          "source_id": "financials+dcf",
+          "source_posture": "model_validated",
+          "as_of_date": "2026-09-30"
+        },
+        {
+          "eps_revision": "0.0%",
+          "multiple_change": "10.0%",
+          "revised_eps": "16.14",
+          "revised_multiple": "19.8x",
+          "implied_price": "320.2",
+          "source_id": "financials+dcf",
+          "source_posture": "model_validated",
+          "as_of_date": "2026-09-30"
+        },
+        {
+          "eps_revision": "10.0%",
+          "multiple_change": "-20.0%",
+          "revised_eps": "17.75",
+          "revised_multiple": "14.4x",
+          "implied_price": "256.2",
+          "source_id": "financials+dcf",
+          "source_posture": "model_validated",
+          "as_of_date": "2026-09-30"
+        },
+        {
+          "eps_revision": "10.0%",
+          "multiple_change": "-10.0%",
+          "revised_eps": "17.75",
+          "revised_multiple": "16.2x",
+          "implied_price": "288.2",
+          "source_id": "financials+dcf",
+          "source_posture": "model_validated",
+          "as_of_date": "2026-09-30"
+        },
+        {
+          "eps_revision": "10.0%",
+          "multiple_change": "0.0%",
+          "revised_eps": "17.75",
+          "revised_multiple": "18.0x",
+          "implied_price": "320.2",
+          "source_id": "financials+dcf",
+          "source_posture": "model_validated",
+          "as_of_date": "2026-09-30"
+        },
+        {
+          "eps_revision": "10.0%",
+          "multiple_change": "10.0%",
+          "revised_eps": "17.75",
+          "revised_multiple": "19.8x",
+          "implied_price": "352.2",
+          "source_id": "financials+dcf",
+          "source_posture": "model_validated",
+          "as_of_date": "2026-09-30"
+        }
+      ],
+      "notes": [
+        "Requires eps and pe_multiple or multiple."
+      ],
+      "name_cn": "EPS 修正 × 倍数变化"
+    },
+    {
+      "name": "kpi_driver_sensitivity",
+      "description": "Operating KPI sensitivity to revenue and margin shocks.",
+      "columns": [
+        "revenue_shock",
+        "margin_shock",
+        "revenue_delta",
+        "profit_impact",
+        "flowthrough_note",
+        "source_id",
+        "source_posture",
+        "as_of_date"
+      ],
+      "rows": [
+        {
+          "revenue_shock": "-10.0%",
+          "margin_shock": "-300 bps",
+          "revenue_delta": "-42370.2",
+          "profit_impact": "-18704.2",
+          "flowthrough_note": "uses margin shock on scenario revenue; incremental margin available separately",
+          "source_id": "financials+dcf",
+          "source_posture": "model_validated",
+          "as_of_date": "2026-09-30"
+        },
+        {
+          "revenue_shock": "-10.0%",
+          "margin_shock": "-150 bps",
+          "revenue_delta": "-42370.2",
+          "profit_impact": "-12984.2",
+          "flowthrough_note": "uses margin shock on scenario revenue; incremental margin available separately",
+          "source_id": "financials+dcf",
+          "source_posture": "model_validated",
+          "as_of_date": "2026-09-30"
+        },
+        {
+          "revenue_shock": "-10.0%",
+          "margin_shock": "0 bps",
+          "revenue_delta": "-42370.2",
+          "profit_impact": "-7264.2",
+          "flowthrough_note": "uses margin shock on scenario revenue; incremental margin available separately",
+          "source_id": "financials+dcf",
+          "source_posture": "model_validated",
+          "as_of_date": "2026-09-30"
+        },
+        {
+          "revenue_shock": "-10.0%",
+          "margin_shock": "150 bps",
+          "revenue_delta": "-42370.2",
+          "profit_impact": "-1544.2",
+          "flowthrough_note": "uses margin shock on scenario revenue; incremental margin available separately",
+          "source_id": "financials+dcf",
+          "source_posture": "model_validated",
+          "as_of_date": "2026-09-30"
+        },
+        {
+          "revenue_shock": "-5.0%",
+          "margin_shock": "-300 bps",
+          "revenue_delta": "-21185.1",
+          "profit_impact": "-15707.6",
+          "flowthrough_note": "uses margin shock on scenario revenue; incremental margin available separately",
+          "source_id": "financials+dcf",
+          "source_posture": "model_validated",
+          "as_of_date": "2026-09-30"
+        },
+        {
+          "revenue_shock": "-5.0%",
+          "margin_shock": "-150 bps",
+          "revenue_delta": "-21185.1",
+          "profit_impact": "-9669.9",
+          "flowthrough_note": "uses margin shock on scenario revenue; incremental margin available separately",
+          "source_id": "financials+dcf",
+          "source_posture": "model_validated",
+          "as_of_date": "2026-09-30"
+        },
+        {
+          "revenue_shock": "-5.0%",
+          "margin_shock": "0 bps",
+          "revenue_delta": "-21185.1",
+          "profit_impact": "-3632.1",
+          "flowthrough_note": "uses margin shock on scenario revenue; incremental margin available separately",
+          "source_id": "financials+dcf",
+          "source_posture": "model_validated",
+          "as_of_date": "2026-09-30"
+        },
+        {
+          "revenue_shock": "-5.0%",
+          "margin_shock": "150 bps",
+          "revenue_delta": "-21185.1",
+          "profit_impact": "2405.6",
+          "flowthrough_note": "uses margin shock on scenario revenue; incremental margin available separately",
+          "source_id": "financials+dcf",
+          "source_posture": "model_validated",
+          "as_of_date": "2026-09-30"
+        },
+        {
+          "revenue_shock": "0.0%",
+          "margin_shock": "-300 bps",
+          "revenue_delta": "0.0",
+          "profit_impact": "-12711.1",
+          "flowthrough_note": "uses margin shock on scenario revenue; incremental margin available separately",
+          "source_id": "financials+dcf",
+          "source_posture": "model_validated",
+          "as_of_date": "2026-09-30"
+        },
+        {
+          "revenue_shock": "0.0%",
+          "margin_shock": "-150 bps",
+          "revenue_delta": "0.0",
+          "profit_impact": "-6355.5",
+          "flowthrough_note": "uses margin shock on scenario revenue; incremental margin available separately",
+          "source_id": "financials+dcf",
+          "source_posture": "model_validated",
+          "as_of_date": "2026-09-30"
+        },
+        {
+          "revenue_shock": "0.0%",
+          "margin_shock": "0 bps",
+          "revenue_delta": "0.0",
+          "profit_impact": "0.0",
+          "flowthrough_note": "uses margin shock on scenario revenue; incremental margin available separately",
+          "source_id": "financials+dcf",
+          "source_posture": "model_validated",
+          "as_of_date": "2026-09-30"
+        },
+        {
+          "revenue_shock": "0.0%",
+          "margin_shock": "150 bps",
+          "revenue_delta": "0.0",
+          "profit_impact": "6355.5",
+          "flowthrough_note": "uses margin shock on scenario revenue; incremental margin available separately",
+          "source_id": "financials+dcf",
+          "source_posture": "model_validated",
+          "as_of_date": "2026-09-30"
+        },
+        {
+          "revenue_shock": "5.0%",
+          "margin_shock": "-300 bps",
+          "revenue_delta": "21185.1",
+          "profit_impact": "-9714.5",
+          "flowthrough_note": "uses margin shock on scenario revenue; incremental margin available separately",
+          "source_id": "financials+dcf",
+          "source_posture": "model_validated",
+          "as_of_date": "2026-09-30"
+        },
+        {
+          "revenue_shock": "5.0%",
+          "margin_shock": "-150 bps",
+          "revenue_delta": "21185.1",
+          "profit_impact": "-3041.2",
+          "flowthrough_note": "uses margin shock on scenario revenue; incremental margin available separately",
+          "source_id": "financials+dcf",
+          "source_posture": "model_validated",
+          "as_of_date": "2026-09-30"
+        },
+        {
+          "revenue_shock": "5.0%",
+          "margin_shock": "0 bps",
+          "revenue_delta": "21185.1",
+          "profit_impact": "3632.1",
+          "flowthrough_note": "uses margin shock on scenario revenue; incremental margin available separately",
+          "source_id": "financials+dcf",
+          "source_posture": "model_validated",
+          "as_of_date": "2026-09-30"
+        },
+        {
+          "revenue_shock": "5.0%",
+          "margin_shock": "150 bps",
+          "revenue_delta": "21185.1",
+          "profit_impact": "10305.4",
+          "flowthrough_note": "uses margin shock on scenario revenue; incremental margin available separately",
+          "source_id": "financials+dcf",
+          "source_posture": "model_validated",
+          "as_of_date": "2026-09-30"
+        }
+      ],
+      "notes": [
+        "Adapt driver names to the relevant sector KPI: NIM, ARR, NRR, NOI, production, loss ratio, take rate, or other key KPI."
+      ],
+      "name_cn": "收入 × 利润率冲击"
+    },
+    {
+      "name": "equity_liquidity_downside",
+      "description": "Common-equity liquidity downside stress; route credit-security valuation to Credit Markets.",
+      "columns": [
+        "stress_case",
+        "stressed_fcf",
+        "liquidity_after_12m_maturities",
+        "minimum_liquidity",
+        "liquidity_headroom",
+        "debt_to_ebitda",
+        "implication",
+        "source_id",
+        "source_posture",
+        "as_of_date"
+      ],
+      "rows": [
+        {
+          "stress_case": "fcf shock -10.0%",
+          "stressed_fcf": "81787.9",
+          "liquidity_after_12m_maturities": "380127.8",
+          "minimum_liquidity": "0.0",
+          "liquidity_headroom": "380127.8",
+          "debt_to_ebitda": "1.2x",
+          "implication": "liquidity ok",
+          "source_id": "financials+dcf",
+          "source_posture": "model_validated",
+          "as_of_date": "2026-09-30"
+        },
+        {
+          "stress_case": "fcf shock -5.0%",
+          "stressed_fcf": "86331.7",
+          "liquidity_after_12m_maturities": "384671.5",
+          "minimum_liquidity": "0.0",
+          "liquidity_headroom": "384671.5",
+          "debt_to_ebitda": "1.2x",
+          "implication": "liquidity ok",
+          "source_id": "financials+dcf",
+          "source_posture": "model_validated",
+          "as_of_date": "2026-09-30"
+        },
+        {
+          "stress_case": "fcf shock 0.0%",
+          "stressed_fcf": "90875.4",
+          "liquidity_after_12m_maturities": "389215.3",
+          "minimum_liquidity": "0.0",
+          "liquidity_headroom": "389215.3",
+          "debt_to_ebitda": "1.2x",
+          "implication": "liquidity ok",
+          "source_id": "financials+dcf",
+          "source_posture": "model_validated",
+          "as_of_date": "2026-09-30"
+        },
+        {
+          "stress_case": "fcf shock 5.0%",
+          "stressed_fcf": "95419.2",
+          "liquidity_after_12m_maturities": "393759.1",
+          "minimum_liquidity": "0.0",
+          "liquidity_headroom": "393759.1",
+          "debt_to_ebitda": "1.2x",
+          "implication": "liquidity ok",
+          "source_id": "financials+dcf",
+          "source_posture": "model_validated",
+          "as_of_date": "2026-09-30"
+        }
+      ],
+      "notes": [],
+      "name_cn": "流动性压力测试"
+    },
+    {
+      "name": "thesis_trigger_table",
+      "description": "Confirm/disconfirm triggers and next actions.",
+      "columns": [
+        "trigger",
+        "threshold",
+        "monitoring_cadence",
+        "implication",
+        "next_step",
+        "source_or_owner",
+        "source_id",
+        "source_posture",
+        "as_of_date"
+      ],
+      "rows": [
+        {
+          "trigger": "存货增速 − 收入增速",
+          "threshold": "> 20 个百分点",
+          "monitoring_cadence": "每期定期报告",
+          "implication": "存货增速显著快于收入",
+          "next_step": "复核跌价准备与去库存节奏",
+          "source_or_owner": "财报异常信号 S6",
+          "source_id": "financials+dcf",
+          "source_posture": "model_validated",
+          "as_of_date": "2026-09-30"
+        },
+        {
+          "trigger": "会计政策/口径变更",
+          "threshold": "出现追溯调整",
+          "monitoring_cadence": "每期定期报告",
+          "implication": "存在会计政策/口径变化的披露",
+          "next_step": "使用调整后可比数据重算同比",
+          "source_or_owner": "财报异常信号 S8",
+          "source_id": "financials+dcf",
+          "source_posture": "model_validated",
+          "as_of_date": "2026-09-30"
+        }
+      ],
+      "notes": [],
+      "name_cn": "跟踪触发条件"
+    }
+  ],
+  "readiness": {
+    "model_status": "senior-review-ready",
+    "readiness_effect": "senior_review_ready",
+    "decision_impact": "Scenario math, source/as-of posture, current price, and probability checks are complete enough for senior review.",
+    "missing_required_inputs": [],
+    "warnings": [],
+    "source_posture": "model_validated",
+    "probability_validation": "ok"
+  }
+}

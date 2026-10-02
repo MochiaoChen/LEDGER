@@ -1,0 +1,20 @@
+{
+  "run_dir": "sandbox/phase2/runs/20261002-003730-valuation",
+  "financials": {
+    "tieout_fail": 0,
+    "signals_high": 1,
+    "signals_total": 2
+  },
+  "valuation": {
+    "model_status": "screen-grade",
+    "value_range": {
+      "low": 246.9805774731149,
+      "base": 383.3076632594605,
+      "high": 527.2999117581043
+    }
+  },
+  "three_statement": {
+    "model_status": "senior-review-ready",
+    "integrity_all_pass": true
+  }
+}

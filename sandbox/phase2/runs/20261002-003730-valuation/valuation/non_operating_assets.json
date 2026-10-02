@@ -1,0 +1,53 @@
+{
+  "total_mm": 143056.966,
+  "items": [
+    {
+      "label": "交易性金融资产",
+      "raw": "58,993,528",
+      "unit": "千元",
+      "sign": 1,
+      "value_mm": 58993.528,
+      "source": {
+        "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+        "page": 111,
+        "chunk_id": "c0446"
+      }
+    },
+    {
+      "label": "长期股权投资",
+      "raw": "64,884,321",
+      "unit": "千元",
+      "sign": 1,
+      "value_mm": 64884.321,
+      "source": {
+        "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+        "page": 111,
+        "chunk_id": "c0446"
+      }
+    },
+    {
+      "label": "其他权益工具投资",
+      "raw": "16,296,853",
+      "unit": "千元",
+      "sign": 1,
+      "value_mm": 16296.853,
+      "source": {
+        "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+        "page": 111,
+        "chunk_id": "c0446"
+      }
+    },
+    {
+      "label": "其他非流动金融资产",
+      "raw": "2,882,264",
+      "unit": "千元",
+      "sign": 1,
+      "value_mm": 2882.264,
+      "source": {
+        "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+        "page": 112,
+        "chunk_id": "c0448"
+      }
+    }
+  ]
+}

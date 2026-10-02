@@ -1,0 +1,429 @@
+{
+  "meta": {
+    "company_name": "宁德时代",
+    "industry": "电力设备 · 锂电池",
+    "currency": "CNY",
+    "units": "CNY_mm",
+    "as_of_date": "2026-09-30",
+    "accounting_basis": "unspecified",
+    "model_purpose": "赛题4 三表联动预测（中国企业会计准则）"
+  },
+  "source_basis": [
+    {
+      "id": "src_hist",
+      "label": "2025 年报抽取数据",
+      "source_type": "company_filing",
+      "evidence_label": "public_filing",
+      "as_of_date": "2025-12-31",
+      "covers": [
+        "historicals"
+      ],
+      "notes": "由 financials 流水线抽取，逐项来源见 facts.json"
+    },
+    {
+      "id": "src_assump",
+      "label": "估值假设文件",
+      "source_type": "analyst_model",
+      "evidence_label": "analyst_estimate",
+      "as_of_date": "2026-09-30",
+      "covers": [
+        "forecast",
+        "revenue",
+        "costs",
+        "working_capital",
+        "ppe",
+        "debt",
+        "tax",
+        "equity"
+      ],
+      "notes": "驱动假设"
+    }
+  ],
+  "timeline": {
+    "start_period": "FY2026",
+    "start_year": 2026,
+    "horizon_periods": 5,
+    "periodicity": "annual"
+  },
+  "historicals": {
+    "income_statement": {
+      "FY2024": {
+        "revenue": 362012.554,
+        "cogs": 273518.959,
+        "opex": 11187.247000000032,
+        "da": 22908.273,
+        "interest": -4131.918,
+        "taxes": 9175.245,
+        "net_income": 54006.794
+      },
+      "FY2025": {
+        "revenue": 423701.834,
+        "cogs": 312383.297,
+        "opex": 13841.705999999962,
+        "da": 24834.78,
+        "interest": -7939.863,
+        "taxes": 12740.236,
+        "net_income": 76786.309
+      }
+    },
+    "balance_sheet": {
+      "FY2024": {
+        "cash": 303511.993,
+        "ar": 64135.51,
+        "inventory": 59835.533,
+        "other_current_assets": 0.0,
+        "ppe_net": 142343.756,
+        "other_assets": 216831.331,
+        "total_assets": 786658.123,
+        "ap": 130977.408,
+        "accrued_expenses": 0.0,
+        "deferred_revenue": 0.0,
+        "debt": 136401.592,
+        "other_liabilities": 245822.94900000002,
+        "common_equity": 273456.174,
+        "retained_earnings": 0.0,
+        "total_liabilities_equity": 786658.123
+      },
+      "FY2025": {
+        "cash": 333512.927,
+        "ar": 76403.264,
+        "inventory": 94526.239,
+        "other_current_assets": 0.0,
+        "ppe_net": 176133.7,
+        "other_assets": 294251.414,
+        "total_assets": 974827.544,
+        "ap": 160328.962,
+        "accrued_expenses": 0.0,
+        "deferred_revenue": 0.0,
+        "debt": 119656.488,
+        "other_liabilities": 323815.76999999996,
+        "common_equity": 371026.324,
+        "retained_earnings": 0.0,
+        "total_liabilities_equity": 974827.544
+      }
+    },
+    "working_capital": {
+      "FY2025": {
+        "ar": 76403.264,
+        "inventory": 94526.239,
+        "other_current_assets": 0.0,
+        "ap": 160328.962,
+        "accrued_expenses": 0.0,
+        "deferred_revenue": 0.0,
+        "nwc": 10600.540999999997
+      }
+    },
+    "cash_flow": {
+      "FY2025": {
+        "net_income": 76786.309,
+        "da": 24834.78,
+        "cfo": 133219.982,
+        "capex": 42344.558
+      }
+    },
+    "debt_schedule": {
+      "FY2025": {
+        "beginning_debt": 136401.592,
+        "ending_debt": 119656.488
+      }
+    },
+    "ppe": {
+      "FY2025": {
+        "beginning_ppe": 142343.756,
+        "capex": 42344.558,
+        "depreciation": 24322.78,
+        "ending_ppe": 176133.7
+      }
+    }
+  },
+  "revenue": {
+    "model": "total_growth",
+    "base_revenue": 423701.834,
+    "growth_rates": {
+      "FY2026": 0.2003693299153857,
+      "FY2027": 0.1514700873499466,
+      "FY2028": 0.12663080530815463,
+      "FY2029": 0.09152940769415818,
+      "FY2030": 0.0720477109683304
+    },
+    "source_id": "src_assump"
+  },
+  "costs": {
+    "cogs": {
+      "method": "gross_margin",
+      "gross_margin": {
+        "FY2026": 0.25660560918195496,
+        "FY2027": 0.25408957625241446,
+        "FY2028": 0.2525985115841751,
+        "FY2029": 0.25167365736905056,
+        "FY2030": 0.2510116605975875
+      }
+    },
+    "opex": {
+      "method": "pct_revenue",
+      "pct_revenue": {
+        "FY2026": 0.0326685062212876,
+        "FY2027": 0.0326685062212876,
+        "FY2028": 0.0326685062212876,
+        "FY2029": 0.0326685062212876,
+        "FY2030": 0.0326685062212876
+      }
+    }
+  },
+  "working_capital": {
+    "method": "days",
+    "ar_days": {
+      "FY2026": 65.81796235510276,
+      "FY2027": 65.81796235510276,
+      "FY2028": 65.81796235510276,
+      "FY2029": 65.81796235510276,
+      "FY2030": 65.81796235510276
+    },
+    "inventory_days": {
+      "FY2026": 110.447893873788,
+      "FY2027": 110.447893873788,
+      "FY2028": 110.447893873788,
+      "FY2029": 110.447893873788,
+      "FY2030": 110.447893873788
+    },
+    "ap_days": {
+      "FY2026": 187.3341874933857,
+      "FY2027": 187.3341874933857,
+      "FY2028": 187.3341874933857,
+      "FY2029": 187.3341874933857,
+      "FY2030": 187.3341874933857
+    },
+    "other_current_assets_pct_revenue": {
+      "FY2026": 0.0,
+      "FY2027": 0.0,
+      "FY2028": 0.0,
+      "FY2029": 0.0,
+      "FY2030": 0.0
+    },
+    "accrued_expenses_pct_revenue": {
+      "FY2026": 0.0,
+      "FY2027": 0.0,
+      "FY2028": 0.0,
+      "FY2029": 0.0,
+      "FY2030": 0.0
+    },
+    "deferred_revenue_pct_revenue": {
+      "FY2026": 0.0,
+      "FY2027": 0.0,
+      "FY2028": 0.0,
+      "FY2029": 0.0,
+      "FY2030": 0.0
+    }
+  },
+  "ppe": {
+    "capex_method": "pct_revenue",
+    "capex_pct_revenue": {
+      "FY2026": 0.1,
+      "FY2027": 0.09,
+      "FY2028": 0.08,
+      "FY2029": 0.07,
+      "FY2030": 0.07
+    },
+    "depreciation_method": "pct_beginning_ppe",
+    "depreciation_pct_beginning_ppe": {
+      "FY2026": 0.15187978353315623,
+      "FY2027": 0.15187978353315623,
+      "FY2028": 0.15187978353315623,
+      "FY2029": 0.15187978353315623,
+      "FY2030": 0.15187978353315623
+    }
+  },
+  "debt": {
+    "beginning_debt": 119656.488,
+    "beginning_revolver_drawn": 0.0,
+    "revolver_commitment": 0.0,
+    "mandatory_amortization": {
+      "FY2026": 0.0,
+      "FY2027": 0.0,
+      "FY2028": 0.0,
+      "FY2029": 0.0,
+      "FY2030": 0.0
+    },
+    "interest_rate": {
+      "FY2026": -0.062016109782593073,
+      "FY2027": -0.062016109782593073,
+      "FY2028": -0.062016109782593073,
+      "FY2029": -0.062016109782593073,
+      "FY2030": -0.062016109782593073
+    },
+    "cash_sweep": {
+      "enabled": false,
+      "min_cash": 0.0,
+      "sweep_pct": 0.0
+    },
+    "covenants": {}
+  },
+  "tax": {
+    "book_tax_rate": 0.1423067985031702,
+    "cash_tax_rate": 0.1423067985031702,
+    "nol_balance": 0.0
+  },
+  "equity": {
+    "common_equity": 371026.324,
+    "dividends": {
+      "FY2026": 0.0,
+      "FY2027": 0.0,
+      "FY2028": 0.0,
+      "FY2029": 0.0,
+      "FY2030": 0.0
+    },
+    "dividend_payout_ratio": {
+      "FY2026": 0.5,
+      "FY2027": 0.5,
+      "FY2028": 0.5,
+      "FY2029": 0.5,
+      "FY2030": 0.5
+    }
+  },
+  "other_balance_sheet": {
+    "other_assets": 294251.414,
+    "other_liabilities": 323815.76999999996
+  },
+  "scenarios": {
+    "base": {
+      "description": "动力电池份额稳中有升、储能高增长，单价随原材料温和下行，利润率大体稳定。",
+      "overrides": {}
+    },
+    "downside": {
+      "description": "行业产能过剩与价格战，海外贸易壁垒抬升，销量增速放缓、单价与毛利率下行。",
+      "overrides": {
+        "revenue": {
+          "growth_rates": {
+            "FY2026": 0.06905451688226583,
+            "FY2027": 0.05163355723682783,
+            "FY2028": 0.054181989736201475,
+            "FY2029": 0.03826919916723881,
+            "FY2030": 0.028002629824551928
+          }
+        },
+        "ppe": {
+          "capex_pct_revenue": {
+            "FY2026": 0.1,
+            "FY2027": 0.09,
+            "FY2028": 0.08,
+            "FY2029": 0.07,
+            "FY2030": 0.07
+          }
+        },
+        "costs": {
+          "cogs": {
+            "gross_margin": {
+              "FY2026": 0.24713680265892868,
+              "FY2027": 0.24091181264904638,
+              "FY2028": 0.2399281654166593,
+              "FY2029": 0.23929036974316975,
+              "FY2030": 0.23882774078242874
+            }
+          },
+          "opex": {
+            "pct_revenue": {
+              "FY2026": 0.0326685062212876,
+              "FY2027": 0.0326685062212876,
+              "FY2028": 0.0326685062212876,
+              "FY2029": 0.0326685062212876,
+              "FY2030": 0.0326685062212876
+            }
+          }
+        },
+        "working_capital": {
+          "ar_days": {
+            "FY2026": 75.81796235510276,
+            "FY2027": 75.81796235510276,
+            "FY2028": 75.81796235510276,
+            "FY2029": 75.81796235510276,
+            "FY2030": 75.81796235510276
+          }
+        }
+      }
+    },
+    "upside": {
+      "description": "储能需求延续高增长、海外份额提升，锂价企稳带动单价持平、毛利率小幅改善。",
+      "overrides": {
+        "revenue": {
+          "growth_rates": {
+            "FY2026": 0.3083034884385232,
+            "FY2027": 0.21233286203527557,
+            "FY2028": 0.16577298901599158,
+            "FY2029": 0.124888420995936,
+            "FY2030": 0.10518739211193329
+          }
+        },
+        "ppe": {
+          "capex_pct_revenue": {
+            "FY2026": 0.1,
+            "FY2027": 0.09,
+            "FY2028": 0.08,
+            "FY2029": 0.07,
+            "FY2030": 0.07
+          }
+        },
+        "costs": {
+          "cogs": {
+            "gross_margin": {
+              "FY2026": 0.26277108740072086,
+              "FY2027": 0.2605989672359974,
+              "FY2028": 0.2591932122501429,
+              "FY2029": 0.25827195140454684,
+              "FY2030": 0.257597045622464
+            }
+          },
+          "opex": {
+            "pct_revenue": {
+              "FY2026": 0.0326685062212876,
+              "FY2027": 0.0326685062212876,
+              "FY2028": 0.0326685062212876,
+              "FY2029": 0.0326685062212876,
+              "FY2030": 0.0326685062212876
+            }
+          }
+        },
+        "working_capital": {
+          "ar_days": {
+            "FY2026": 65.81796235510276,
+            "FY2027": 65.81796235510276,
+            "FY2028": 65.81796235510276,
+            "FY2029": 65.81796235510276,
+            "FY2030": 65.81796235510276
+          }
+        }
+      }
+    }
+  },
+  "sensitivities": {
+    "revenue_growth_shocks": [
+      -0.05,
+      0.05
+    ],
+    "gross_margin_shocks": [
+      -0.02,
+      0.02
+    ],
+    "dso_day_shocks": [
+      15.0,
+      -15.0
+    ],
+    "capex_pct_revenue_shocks": [
+      0.01,
+      -0.01
+    ],
+    "interest_rate_shocks": [
+      0.01,
+      -0.01
+    ]
+  },
+  "_historical_drivers": {
+    "gross_margin": 0.2627284757044501,
+    "opex_pct": 0.03266850622128759,
+    "ar_days": 65.81796235510276,
+    "inventory_days": 110.447893873788,
+    "ap_days": 187.3341874933857,
+    "dep_rate": 0.15187978353315623,
+    "tax_rate": 0.1423067985031702,
+    "interest_rate": -0.062016109782593073
+  }
+}

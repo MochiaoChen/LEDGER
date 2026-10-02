@@ -1,0 +1,6244 @@
+{
+  "tables": [
+    {
+      "id": "product",
+      "title": "主营业务分产品",
+      "page": 25,
+      "columns": [
+        {
+          "name": "营业收入",
+          "unit": "元"
+        },
+        {
+          "name": "营业成本",
+          "unit": "元"
+        },
+        {
+          "name": "毛利率",
+          "unit": "%"
+        },
+        {
+          "name": "营业收入同比",
+          "unit": "%"
+        },
+        {
+          "name": "营业成本同比",
+          "unit": "%"
+        },
+        {
+          "name": "毛利率同比",
+          "unit": "pp"
+        }
+      ],
+      "rows": [
+        {
+          "label": "动力电池系统",
+          "alias": [
+            "动力电池",
+            "动力业务"
+          ],
+          "raw": [
+            "316,506,369",
+            "241,064,397",
+            "23.84",
+            "25.08",
+            "25.25",
+            "-0.10"
+          ],
+          "values": [
+            316506369000.0,
+            241064397000.0,
+            23.84,
+            25.08,
+            25.25,
+            -0.1
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 25,
+              "chunk_id": "c0039"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 25,
+              "chunk_id": "c0039"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 25,
+              "chunk_id": "c0039"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 25,
+              "chunk_id": "c0039"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 25,
+              "chunk_id": "c0039"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 25,
+              "chunk_id": "c0039"
+            }
+          ]
+        },
+        {
+          "label": "储能电池系统",
+          "alias": [
+            "储能电池",
+            "储能业务"
+          ],
+          "raw": [
+            "62,439,820",
+            "45,763,689",
+            "26.71",
+            "8.99",
+            "9.18",
+            "-0.13"
+          ],
+          "values": [
+            62439820000.0,
+            45763689000.0,
+            26.71,
+            8.99,
+            9.18,
+            -0.13
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 25,
+              "chunk_id": "c0039"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 25,
+              "chunk_id": "c0039"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 25,
+              "chunk_id": "c0039"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 25,
+              "chunk_id": "c0039"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 25,
+              "chunk_id": "c0039"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 25,
+              "chunk_id": "c0039"
+            }
+          ]
+        },
+        {
+          "label": "电池材料及回收",
+          "alias": [
+            "电池材料"
+          ],
+          "raw": [
+            "21,860,936",
+            "15,899,813",
+            "27.27",
+            "-23.83",
+            "-38.09",
+            "16.76"
+          ],
+          "values": [
+            21860936000.0,
+            15899813000.0,
+            27.27,
+            -23.83,
+            -38.09,
+            16.76
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 25,
+              "chunk_id": "c0039"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 25,
+              "chunk_id": "c0039"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 25,
+              "chunk_id": "c0039"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 25,
+              "chunk_id": "c0039"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 25,
+              "chunk_id": "c0039"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 25,
+              "chunk_id": "c0039"
+            }
+          ]
+        },
+        {
+          "label": "电池矿产资源",
+          "alias": [
+            "矿产资源"
+          ],
+          "raw": [
+            "5,978,096",
+            "5,305,599",
+            "11.25",
+            "8.83",
+            "5.59",
+            "2.72"
+          ],
+          "values": [
+            5978096000.0,
+            5305599000.0,
+            11.25,
+            8.83,
+            5.59,
+            2.72
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 25,
+              "chunk_id": "c0038"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 25,
+              "chunk_id": "c0039"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 25,
+              "chunk_id": "c0039"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 25,
+              "chunk_id": "c0038"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 25,
+              "chunk_id": "c0039"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 25,
+              "chunk_id": "c0039"
+            }
+          ]
+        }
+      ],
+      "note": ""
+    },
+    {
+      "id": "region",
+      "title": "主营业务分地区",
+      "page": 25,
+      "columns": [
+        {
+          "name": "营业收入",
+          "unit": "元"
+        },
+        {
+          "name": "营业成本",
+          "unit": "元"
+        },
+        {
+          "name": "毛利率",
+          "unit": "%"
+        },
+        {
+          "name": "营业收入同比",
+          "unit": "%"
+        },
+        {
+          "name": "营业成本同比",
+          "unit": "%"
+        },
+        {
+          "name": "毛利率同比",
+          "unit": "pp"
+        }
+      ],
+      "rows": [
+        {
+          "label": "境内",
+          "alias": [
+            "境内业务"
+          ],
+          "raw": [
+            "294,060,576",
+            "223,497,885",
+            "24.00",
+            "16.84",
+            "14.22",
+            "1.75"
+          ],
+          "values": [
+            294060576000.0,
+            223497885000.0,
+            24.0,
+            16.84,
+            14.22,
+            1.75
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 25,
+              "chunk_id": "c0038"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 25,
+              "chunk_id": "c0039"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 25,
+              "chunk_id": "c0039"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 25,
+              "chunk_id": "c0038"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 25,
+              "chunk_id": "c0039"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 25,
+              "chunk_id": "c0039"
+            }
+          ]
+        },
+        {
+          "label": "境外",
+          "alias": [
+            "境外业务",
+            "海外"
+          ],
+          "raw": [
+            "129,641,258",
+            "88,885,412",
+            "31.44",
+            "17.50",
+            "14.19",
+            "1.99"
+          ],
+          "values": [
+            129641258000.0,
+            88885412000.0,
+            31.44,
+            17.5,
+            14.19,
+            1.99
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 25,
+              "chunk_id": "c0038"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 25,
+              "chunk_id": "c0039"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 25,
+              "chunk_id": "c0039"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 25,
+              "chunk_id": "c0038"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 25,
+              "chunk_id": "c0039"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 25,
+              "chunk_id": "c0039"
+            }
+          ]
+        }
+      ],
+      "note": ""
+    },
+    {
+      "id": "industry_seg",
+      "title": "主营业务分行业",
+      "page": 25,
+      "columns": [
+        {
+          "name": "营业收入",
+          "unit": "元"
+        },
+        {
+          "name": "营业成本",
+          "unit": "元"
+        },
+        {
+          "name": "毛利率",
+          "unit": "%"
+        },
+        {
+          "name": "营业收入同比",
+          "unit": "%"
+        },
+        {
+          "name": "营业成本同比",
+          "unit": "%"
+        },
+        {
+          "name": "毛利率同比",
+          "unit": "pp"
+        }
+      ],
+      "rows": [
+        {
+          "label": "电气机械及器材制造业",
+          "alias": [],
+          "raw": [
+            "417,723,738",
+            "307,077,698",
+            "26.49",
+            "17.17",
+            "14.37",
+            "1.80"
+          ],
+          "values": [
+            417723738000.0,
+            307077698000.0,
+            26.49,
+            17.17,
+            14.37,
+            1.8
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 25,
+              "chunk_id": "c0039"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 25,
+              "chunk_id": "c0039"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 25,
+              "chunk_id": "c0039"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 25,
+              "chunk_id": "c0039"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 25,
+              "chunk_id": "c0039"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 25,
+              "chunk_id": "c0039"
+            }
+          ]
+        }
+      ],
+      "note": ""
+    },
+    {
+      "id": "revenue_mix",
+      "title": "营业收入构成",
+      "page": 24,
+      "columns": [
+        {
+          "name": "本期",
+          "unit": "元"
+        },
+        {
+          "name": "本期占比",
+          "unit": "%"
+        },
+        {
+          "name": "上期",
+          "unit": "元"
+        },
+        {
+          "name": "上期占比",
+          "unit": "%"
+        },
+        {
+          "name": "同比",
+          "unit": "%"
+        }
+      ],
+      "rows": [
+        {
+          "label": "营业收入合计",
+          "alias": [],
+          "raw": [
+            "423,701,834",
+            "100.00",
+            "362,012,554",
+            "100.00",
+            "17.04"
+          ],
+          "values": [
+            423701834000.0,
+            100.0,
+            362012554000.0,
+            100.0,
+            17.04
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 24,
+              "chunk_id": "c0036"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 24,
+              "chunk_id": "c0036"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 24,
+              "chunk_id": "c0036"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 24,
+              "chunk_id": "c0036"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 24,
+              "chunk_id": "c0036"
+            }
+          ]
+        },
+        {
+          "label": "电气机械及器材制造业",
+          "alias": [],
+          "raw": [
+            "417,723,738",
+            "98.59",
+            "356,519,551",
+            "98.48",
+            "17.17"
+          ],
+          "values": [
+            417723738000.0,
+            98.59,
+            356519551000.0,
+            98.48,
+            17.17
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 24,
+              "chunk_id": "c0036"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 24,
+              "chunk_id": "c0036"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 24,
+              "chunk_id": "c0036"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 24,
+              "chunk_id": "c0036"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 24,
+              "chunk_id": "c0036"
+            }
+          ]
+        },
+        {
+          "label": "动力电池系统",
+          "alias": [],
+          "raw": [
+            "316,506,369",
+            "74.70",
+            "253,041,337",
+            "69.90",
+            "25.08"
+          ],
+          "values": [
+            316506369000.0,
+            74.7,
+            253041337000.0,
+            69.9,
+            25.08
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 24,
+              "chunk_id": "c0036"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 24,
+              "chunk_id": "c0036"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 24,
+              "chunk_id": "c0036"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 24,
+              "chunk_id": "c0036"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 24,
+              "chunk_id": "c0036"
+            }
+          ]
+        },
+        {
+          "label": "储能电池系统",
+          "alias": [],
+          "raw": [
+            "62,439,820",
+            "14.74",
+            "57,290,460",
+            "15.83",
+            "8.99"
+          ],
+          "values": [
+            62439820000.0,
+            14.74,
+            57290460000.0,
+            15.83,
+            8.99
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 24,
+              "chunk_id": "c0036"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 24,
+              "chunk_id": "c0036"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 24,
+              "chunk_id": "c0036"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 24,
+              "chunk_id": "c0036"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 24,
+              "chunk_id": "c0036"
+            }
+          ]
+        },
+        {
+          "label": "电池材料及回收",
+          "alias": [],
+          "raw": [
+            "21,860,936",
+            "5.16",
+            "28,699,935",
+            "7.93",
+            "-23.83"
+          ],
+          "values": [
+            21860936000.0,
+            5.16,
+            28699935000.0,
+            7.93,
+            -23.83
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 24,
+              "chunk_id": "c0036"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 24,
+              "chunk_id": "c0036"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 24,
+              "chunk_id": "c0036"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 24,
+              "chunk_id": "c0036"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 24,
+              "chunk_id": "c0036"
+            }
+          ]
+        },
+        {
+          "label": "电池矿产资源",
+          "alias": [],
+          "raw": [
+            "5,978,096",
+            "1.41",
+            "5,493,003",
+            "1.52",
+            "8.83"
+          ],
+          "values": [
+            5978096000.0,
+            1.41,
+            5493003000.0,
+            1.52,
+            8.83
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 25,
+              "chunk_id": "c0038"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 25,
+              "chunk_id": "c0038"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 25,
+              "chunk_id": "c0038"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 25,
+              "chunk_id": "c0038"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 25,
+              "chunk_id": "c0038"
+            }
+          ]
+        },
+        {
+          "label": "其他业务",
+          "alias": [],
+          "raw": [
+            "16,916,612",
+            "3.99",
+            "17,487,818",
+            "4.83",
+            "-3.27"
+          ],
+          "values": [
+            16916612000.0,
+            3.99,
+            17487818000.0,
+            4.83,
+            -3.27
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 25,
+              "chunk_id": "c0038"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 25,
+              "chunk_id": "c0038"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 25,
+              "chunk_id": "c0038"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 25,
+              "chunk_id": "c0038"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 25,
+              "chunk_id": "c0038"
+            }
+          ]
+        },
+        {
+          "label": "境内",
+          "alias": [],
+          "raw": [
+            "294,060,576",
+            "69.40",
+            "251,677,045",
+            "69.52",
+            "16.84"
+          ],
+          "values": [
+            294060576000.0,
+            69.4,
+            251677045000.0,
+            69.52,
+            16.84
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 25,
+              "chunk_id": "c0038"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 25,
+              "chunk_id": "c0038"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 25,
+              "chunk_id": "c0038"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 25,
+              "chunk_id": "c0038"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 25,
+              "chunk_id": "c0038"
+            }
+          ]
+        },
+        {
+          "label": "境外",
+          "alias": [],
+          "raw": [
+            "129,641,258",
+            "30.60",
+            "110,335,509",
+            "30.48",
+            "17.50"
+          ],
+          "values": [
+            129641258000.0,
+            30.6,
+            110335509000.0,
+            30.48,
+            17.5
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 25,
+              "chunk_id": "c0038"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 25,
+              "chunk_id": "c0038"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 25,
+              "chunk_id": "c0038"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 25,
+              "chunk_id": "c0038"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 25,
+              "chunk_id": "c0038"
+            }
+          ]
+        }
+      ],
+      "note": ""
+    },
+    {
+      "id": "other_biz",
+      "title": "主营与其他业务收入成本",
+      "page": 195,
+      "columns": [
+        {
+          "name": "本期收入",
+          "unit": "元"
+        },
+        {
+          "name": "本期成本",
+          "unit": "元"
+        },
+        {
+          "name": "上期收入",
+          "unit": "元"
+        },
+        {
+          "name": "上期成本",
+          "unit": "元"
+        }
+      ],
+      "rows": [
+        {
+          "label": "主营业务",
+          "alias": [],
+          "raw": [
+            "406,785,222",
+            "308,033,498",
+            "344,524,735",
+            "265,082,813"
+          ],
+          "values": [
+            406785222000.0,
+            308033498000.0,
+            344524735000.0,
+            265082813000.0
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 195,
+              "chunk_id": "c0734"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 195,
+              "chunk_id": "c0734"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 195,
+              "chunk_id": "c0734"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 195,
+              "chunk_id": "c0734"
+            }
+          ]
+        },
+        {
+          "label": "其他业务",
+          "alias": [],
+          "raw": [
+            "16,916,612",
+            "4,349,799",
+            "17,487,818",
+            "8,436,146"
+          ],
+          "values": [
+            16916612000.0,
+            4349799000.0,
+            17487818000.0,
+            8436146000.0
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 195,
+              "chunk_id": "c0734"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 195,
+              "chunk_id": "c0734"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 195,
+              "chunk_id": "c0734"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 195,
+              "chunk_id": "c0734"
+            }
+          ]
+        }
+      ],
+      "note": ""
+    },
+    {
+      "id": "volume",
+      "title": "分产品销量",
+      "page": 21,
+      "columns": [
+        {
+          "name": "销量",
+          "unit": "GWh"
+        },
+        {
+          "name": "销量同比",
+          "unit": "%"
+        }
+      ],
+      "rows": [
+        {
+          "label": "动力电池系统",
+          "alias": [
+            "动力电池"
+          ],
+          "raw": [
+            "541",
+            "41.85"
+          ],
+          "values": [
+            541.0,
+            41.85
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 21,
+              "chunk_id": "c0033"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 21,
+              "chunk_id": "c0033"
+            }
+          ]
+        },
+        {
+          "label": "储能电池系统",
+          "alias": [
+            "储能电池"
+          ],
+          "raw": [
+            "121",
+            "29.13"
+          ],
+          "values": [
+            121.0,
+            29.13
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 22,
+              "chunk_id": "c0034"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 22,
+              "chunk_id": "c0034"
+            }
+          ]
+        }
+      ],
+      "note": ""
+    },
+    {
+      "id": "psi",
+      "title": "电池系统产销存",
+      "page": 26,
+      "columns": [
+        {
+          "name": "本期",
+          "unit": "GWh"
+        },
+        {
+          "name": "上期",
+          "unit": "GWh"
+        },
+        {
+          "name": "同比",
+          "unit": "%"
+        }
+      ],
+      "rows": [
+        {
+          "label": "销售量",
+          "alias": [
+            "锂离子电池销量",
+            "电池销量"
+          ],
+          "raw": [
+            "661",
+            "475",
+            "39.16"
+          ],
+          "values": [
+            661.0,
+            475.0,
+            39.16
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 26,
+              "chunk_id": "c0045"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 26,
+              "chunk_id": "c0045"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 26,
+              "chunk_id": "c0045"
+            }
+          ]
+        },
+        {
+          "label": "生产量",
+          "alias": [
+            "电池产量"
+          ],
+          "raw": [
+            "748",
+            "516",
+            "44.96"
+          ],
+          "values": [
+            748.0,
+            516.0,
+            44.96
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 27,
+              "chunk_id": "c0047"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 27,
+              "chunk_id": "c0047"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 27,
+              "chunk_id": "c0047"
+            }
+          ]
+        },
+        {
+          "label": "库存量",
+          "alias": [
+            "电池库存量"
+          ],
+          "raw": [
+            "186",
+            "106",
+            "75.47"
+          ],
+          "values": [
+            186.0,
+            106.0,
+            75.47
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 27,
+              "chunk_id": "c0047"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 27,
+              "chunk_id": "c0047"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 27,
+              "chunk_id": "c0047"
+            }
+          ]
+        }
+      ],
+      "note": ""
+    },
+    {
+      "id": "capacity",
+      "title": "电池系统产能",
+      "page": 26,
+      "columns": [
+        {
+          "name": "产能",
+          "unit": "GWh"
+        },
+        {
+          "name": "在建产能",
+          "unit": "GWh"
+        },
+        {
+          "name": "产能利用率",
+          "unit": "%"
+        },
+        {
+          "name": "产量",
+          "unit": "GWh"
+        }
+      ],
+      "rows": [
+        {
+          "label": "电池系统",
+          "alias": [],
+          "raw": [
+            "772",
+            "321",
+            "96.9",
+            "748"
+          ],
+          "values": [
+            772.0,
+            321.0,
+            96.9,
+            748.0
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 26,
+              "chunk_id": "c0044"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 26,
+              "chunk_id": "c0044"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 26,
+              "chunk_id": "c0044"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 26,
+              "chunk_id": "c0044"
+            }
+          ]
+        }
+      ],
+      "note": ""
+    },
+    {
+      "id": "market_share",
+      "title": "全球及国内市占率",
+      "page": 21,
+      "columns": [
+        {
+          "name": "市占率",
+          "unit": "%"
+        },
+        {
+          "name": "同比变动",
+          "unit": "pp"
+        }
+      ],
+      "rows": [
+        {
+          "label": "全球动力电池使用量",
+          "alias": [
+            "全球动力电池市占率"
+          ],
+          "raw": [
+            "39.2",
+            "1.2"
+          ],
+          "values": [
+            39.2,
+            1.2
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 21,
+              "chunk_id": "c0033"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 21,
+              "chunk_id": "c0033"
+            }
+          ]
+        },
+        {
+          "label": "国内动力电池装机量",
+          "alias": [
+            "国内动力电池市占率"
+          ],
+          "raw": [
+            "43.42",
+            null
+          ],
+          "values": [
+            43.42,
+            null
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 21,
+              "chunk_id": "c0033"
+            },
+            null
+          ]
+        },
+        {
+          "label": "海外动力电池使用量",
+          "alias": [
+            "海外动力电池市占率"
+          ],
+          "raw": [
+            "30.0",
+            null
+          ],
+          "values": [
+            30.0,
+            null
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 21,
+              "chunk_id": "c0033"
+            },
+            null
+          ]
+        }
+      ],
+      "note": ""
+    },
+    {
+      "id": "industry",
+      "title": "行业需求（公司引用第三方数据）",
+      "page": 17,
+      "columns": [
+        {
+          "name": "数量",
+          "unit": "GWh"
+        },
+        {
+          "name": "同比",
+          "unit": "%"
+        }
+      ],
+      "rows": [
+        {
+          "label": "全球动力电池使用量",
+          "alias": [],
+          "raw": [
+            "1,187",
+            "31.7"
+          ],
+          "values": [
+            1187.0,
+            31.7
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 17,
+              "chunk_id": "c0026"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 17,
+              "chunk_id": "c0026"
+            }
+          ]
+        },
+        {
+          "label": "全球储能电池出货量",
+          "alias": [],
+          "raw": [
+            "550",
+            "79"
+          ],
+          "values": [
+            550.0,
+            79.0
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 17,
+              "chunk_id": "c0026"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 17,
+              "chunk_id": "c0026"
+            }
+          ]
+        },
+        {
+          "label": "我国新型储能新增装机规模",
+          "alias": [],
+          "raw": [
+            "189.5",
+            "73"
+          ],
+          "values": [
+            189.5,
+            73.0
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 17,
+              "chunk_id": "c0026"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 17,
+              "chunk_id": "c0026"
+            }
+          ]
+        }
+      ],
+      "note": ""
+    },
+    {
+      "id": "ev_sales",
+      "title": "新能源车销量（公司引用第三方数据）",
+      "page": 17,
+      "columns": [
+        {
+          "name": "销量",
+          "unit": "万辆"
+        },
+        {
+          "name": "同比",
+          "unit": "%"
+        }
+      ],
+      "rows": [
+        {
+          "label": "全球新能源车",
+          "alias": [],
+          "raw": [
+            "2,147.0",
+            "21.5"
+          ],
+          "values": [
+            2147.0,
+            21.5
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 17,
+              "chunk_id": "c0026"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 17,
+              "chunk_id": "c0026"
+            }
+          ]
+        },
+        {
+          "label": "欧洲新能源乘用车",
+          "alias": [],
+          "raw": [
+            "385.8",
+            "30.9"
+          ],
+          "values": [
+            385.8,
+            30.9
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 17,
+              "chunk_id": "c0026"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 17,
+              "chunk_id": "c0026"
+            }
+          ]
+        }
+      ],
+      "note": ""
+    },
+    {
+      "id": "recycle",
+      "title": "电池回收",
+      "page": 24,
+      "columns": [
+        {
+          "name": "数量",
+          "unit": "万吨"
+        },
+        {
+          "name": "同比",
+          "unit": "%"
+        }
+      ],
+      "rows": [
+        {
+          "label": "废旧电池及材料综合回收量",
+          "alias": [],
+          "raw": [
+            "21.0",
+            "63.2"
+          ],
+          "values": [
+            21.0,
+            63.2
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 24,
+              "chunk_id": "c0037"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 24,
+              "chunk_id": "c0037"
+            }
+          ]
+        },
+        {
+          "label": "再生锂盐",
+          "alias": [],
+          "raw": [
+            "2.4",
+            "40.4"
+          ],
+          "values": [
+            2.4,
+            40.4
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 24,
+              "chunk_id": "c0037"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 24,
+              "chunk_id": "c0037"
+            }
+          ]
+        }
+      ],
+      "note": ""
+    },
+    {
+      "id": "cost",
+      "title": "电池行业营业成本构成",
+      "page": 27,
+      "columns": [
+        {
+          "name": "本期",
+          "unit": "元"
+        },
+        {
+          "name": "本期占比",
+          "unit": "%"
+        },
+        {
+          "name": "上期",
+          "unit": "元"
+        },
+        {
+          "name": "上期占比",
+          "unit": "%"
+        }
+      ],
+      "rows": [
+        {
+          "label": "直接材料",
+          "alias": [],
+          "raw": [
+            "221,152,510",
+            "71.79",
+            "202,723,479",
+            "76.48"
+          ],
+          "values": [
+            221152510000.0,
+            71.79,
+            202723479000.0,
+            76.48
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 27,
+              "chunk_id": "c0059"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 27,
+              "chunk_id": "c0059"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 27,
+              "chunk_id": "c0059"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 27,
+              "chunk_id": "c0059"
+            }
+          ]
+        }
+      ],
+      "note": ""
+    },
+    {
+      "id": "customers",
+      "title": "前五名客户与供应商",
+      "page": 28,
+      "columns": [
+        {
+          "name": "金额",
+          "unit": "元"
+        },
+        {
+          "name": "占比",
+          "unit": "%"
+        }
+      ],
+      "rows": [
+        {
+          "label": "前五名客户销售额",
+          "alias": [],
+          "raw": [
+            "165,061,533",
+            "38.96"
+          ],
+          "values": [
+            165061533000.0,
+            38.96
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 28,
+              "chunk_id": "c0061"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 28,
+              "chunk_id": "c0061"
+            }
+          ]
+        },
+        {
+          "label": "第一名客户销售额",
+          "alias": [],
+          "raw": [
+            "58,159,202",
+            "13.73"
+          ],
+          "values": [
+            58159202000.0,
+            13.73
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 28,
+              "chunk_id": "c0062"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 28,
+              "chunk_id": "c0062"
+            }
+          ]
+        },
+        {
+          "label": "前五名供应商采购额",
+          "alias": [],
+          "raw": [
+            "59,938,203",
+            "10.38"
+          ],
+          "values": [
+            59938203000.0,
+            10.38
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 28,
+              "chunk_id": "c0063"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 28,
+              "chunk_id": "c0063"
+            }
+          ]
+        }
+      ],
+      "note": ""
+    },
+    {
+      "id": "selling_detail",
+      "title": "销售费用明细",
+      "page": 196,
+      "columns": [
+        {
+          "name": "本期",
+          "unit": "元"
+        },
+        {
+          "name": "上期",
+          "unit": "元"
+        }
+      ],
+      "rows": [
+        {
+          "label": "职工薪酬",
+          "alias": [],
+          "raw": [
+            "1,991,174",
+            "1,533,505"
+          ],
+          "values": [
+            1991174000.0,
+            1533505000.0
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 196,
+              "chunk_id": "c0739"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 196,
+              "chunk_id": "c0739"
+            }
+          ]
+        },
+        {
+          "label": "宣传及办公费",
+          "alias": [],
+          "raw": [
+            "665,638",
+            "999,331"
+          ],
+          "values": [
+            665638000.0,
+            999331000.0
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 196,
+              "chunk_id": "c0739"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 196,
+              "chunk_id": "c0739"
+            }
+          ]
+        },
+        {
+          "label": "业务费用",
+          "alias": [],
+          "raw": [
+            "400,112",
+            "343,182"
+          ],
+          "values": [
+            400112000.0,
+            343182000.0
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 196,
+              "chunk_id": "c0739"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 196,
+              "chunk_id": "c0739"
+            }
+          ]
+        },
+        {
+          "label": "其他",
+          "alias": [],
+          "raw": [
+            "678,195",
+            "686,778"
+          ],
+          "values": [
+            678195000.0,
+            686778000.0
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 196,
+              "chunk_id": "c0739"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 196,
+              "chunk_id": "c0739"
+            }
+          ]
+        },
+        {
+          "label": "销售费用合计",
+          "alias": [],
+          "raw": [
+            "3,735,118",
+            "3,562,797"
+          ],
+          "values": [
+            3735118000.0,
+            3562797000.0
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 196,
+              "chunk_id": "c0739"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 196,
+              "chunk_id": "c0739"
+            }
+          ]
+        }
+      ],
+      "note": ""
+    },
+    {
+      "id": "admin_detail",
+      "title": "管理费用明细",
+      "page": 196,
+      "columns": [
+        {
+          "name": "本期",
+          "unit": "元"
+        },
+        {
+          "name": "上期",
+          "unit": "元"
+        }
+      ],
+      "rows": [
+        {
+          "label": "职工薪酬",
+          "alias": [],
+          "raw": [
+            "6,626,219",
+            "4,707,167"
+          ],
+          "values": [
+            6626219000.0,
+            4707167000.0
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 196,
+              "chunk_id": "c0738"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 196,
+              "chunk_id": "c0738"
+            }
+          ]
+        },
+        {
+          "label": "折旧和摊销费",
+          "alias": [],
+          "raw": [
+            "1,662,402",
+            "2,059,630"
+          ],
+          "values": [
+            1662402000.0,
+            2059630000.0
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 196,
+              "chunk_id": "c0738"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 196,
+              "chunk_id": "c0738"
+            }
+          ]
+        },
+        {
+          "label": "后勤及办公费",
+          "alias": [],
+          "raw": [
+            "1,609,693",
+            "1,248,011"
+          ],
+          "values": [
+            1609693000.0,
+            1248011000.0
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 196,
+              "chunk_id": "c0738"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 196,
+              "chunk_id": "c0738"
+            }
+          ]
+        },
+        {
+          "label": "其他",
+          "alias": [],
+          "raw": [
+            "1,768,427",
+            "1,675,031"
+          ],
+          "values": [
+            1768427000.0,
+            1675031000.0
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 196,
+              "chunk_id": "c0738"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 196,
+              "chunk_id": "c0738"
+            }
+          ]
+        },
+        {
+          "label": "管理费用合计",
+          "alias": [],
+          "raw": [
+            "11,666,741",
+            "9,689,839"
+          ],
+          "values": [
+            11666741000.0,
+            9689839000.0
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 196,
+              "chunk_id": "c0738"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 196,
+              "chunk_id": "c0738"
+            }
+          ]
+        }
+      ],
+      "note": ""
+    },
+    {
+      "id": "rd_detail",
+      "title": "研发费用明细",
+      "page": 196,
+      "columns": [
+        {
+          "name": "本期",
+          "unit": "元"
+        },
+        {
+          "name": "上期",
+          "unit": "元"
+        }
+      ],
+      "rows": [
+        {
+          "label": "职工薪酬",
+          "alias": [],
+          "raw": [
+            "8,422,709",
+            "7,561,191"
+          ],
+          "values": [
+            8422709000.0,
+            7561191000.0
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 196,
+              "chunk_id": "c0740"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 196,
+              "chunk_id": "c0740"
+            }
+          ]
+        },
+        {
+          "label": "材料费",
+          "alias": [],
+          "raw": [
+            "7,227,790",
+            "5,845,226"
+          ],
+          "values": [
+            7227790000.0,
+            5845226000.0
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 196,
+              "chunk_id": "c0740"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 196,
+              "chunk_id": "c0740"
+            }
+          ]
+        },
+        {
+          "label": "其他",
+          "alias": [],
+          "raw": [
+            "6,496,081",
+            "5,200,339"
+          ],
+          "values": [
+            6496081000.0,
+            5200339000.0
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 196,
+              "chunk_id": "c0740"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 196,
+              "chunk_id": "c0740"
+            }
+          ]
+        },
+        {
+          "label": "研发费用合计",
+          "alias": [],
+          "raw": [
+            "22,146,581",
+            "18,606,756"
+          ],
+          "values": [
+            22146581000.0,
+            18606756000.0
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 196,
+              "chunk_id": "c0740"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 196,
+              "chunk_id": "c0740"
+            }
+          ]
+        }
+      ],
+      "note": ""
+    },
+    {
+      "id": "finance_detail",
+      "title": "财务费用明细",
+      "page": 196,
+      "columns": [
+        {
+          "name": "本期",
+          "unit": "元"
+        },
+        {
+          "name": "上期",
+          "unit": "元"
+        }
+      ],
+      "rows": [
+        {
+          "label": "利息支出",
+          "alias": [],
+          "raw": [
+            "2,887,843",
+            "4,149,186"
+          ],
+          "values": [
+            2887843000.0,
+            4149186000.0
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 196,
+              "chunk_id": "c0741"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 196,
+              "chunk_id": "c0741"
+            }
+          ]
+        },
+        {
+          "label": "利息收入",
+          "alias": [],
+          "raw": [
+            "10,594,657",
+            "9,502,997"
+          ],
+          "values": [
+            10594657000.0,
+            9502997000.0
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 196,
+              "chunk_id": "c0741"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 196,
+              "chunk_id": "c0741"
+            }
+          ]
+        },
+        {
+          "label": "汇兑损益",
+          "alias": [],
+          "raw": [
+            "-282,298",
+            "1,287,050"
+          ],
+          "values": [
+            -282298000.0,
+            1287050000.0
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 196,
+              "chunk_id": "c0741"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 196,
+              "chunk_id": "c0741"
+            }
+          ]
+        },
+        {
+          "label": "财务费用合计",
+          "alias": [],
+          "raw": [
+            "-7,939,863",
+            "-4,131,918"
+          ],
+          "values": [
+            -7939863000.0,
+            -4131918000.0
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 196,
+              "chunk_id": "c0741"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 196,
+              "chunk_id": "c0741"
+            }
+          ]
+        }
+      ],
+      "note": ""
+    },
+    {
+      "id": "rd_staff",
+      "title": "研发人员",
+      "page": 29,
+      "columns": [
+        {
+          "name": "本期",
+          "unit": "人"
+        },
+        {
+          "name": "上期",
+          "unit": "人"
+        }
+      ],
+      "rows": [
+        {
+          "label": "研发人员数量",
+          "alias": [],
+          "raw": [
+            "22,901",
+            "20,346"
+          ],
+          "values": [
+            22901.0,
+            20346.0
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 29,
+              "chunk_id": "c0069"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 29,
+              "chunk_id": "c0069"
+            }
+          ]
+        },
+        {
+          "label": "博士",
+          "alias": [],
+          "raw": [
+            "745",
+            "573"
+          ],
+          "values": [
+            745.0,
+            573.0
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 30,
+              "chunk_id": "c0071"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 30,
+              "chunk_id": "c0071"
+            }
+          ]
+        }
+      ],
+      "note": ""
+    },
+    {
+      "id": "rd_ratio",
+      "title": "研发投入占营业收入比例",
+      "page": 30,
+      "columns": [
+        {
+          "name": "2025年",
+          "unit": "%"
+        },
+        {
+          "name": "2024年",
+          "unit": "%"
+        },
+        {
+          "name": "2023年",
+          "unit": "%"
+        }
+      ],
+      "rows": [
+        {
+          "label": "研发投入占营业收入比例",
+          "alias": [],
+          "raw": [
+            "5.23",
+            "5.14",
+            "4.58"
+          ],
+          "values": [
+            5.23,
+            5.14,
+            4.58
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 30,
+              "chunk_id": "c0072"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 30,
+              "chunk_id": "c0072"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 30,
+              "chunk_id": "c0072"
+            }
+          ]
+        }
+      ],
+      "note": ""
+    },
+    {
+      "id": "employees",
+      "title": "员工专业构成",
+      "page": 56,
+      "columns": [
+        {
+          "name": "人数",
+          "unit": "人"
+        }
+      ],
+      "rows": [
+        {
+          "label": "生产人员",
+          "alias": [],
+          "raw": [
+            "145,568"
+          ],
+          "values": [
+            145568.0
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 56,
+              "chunk_id": "c0208"
+            }
+          ]
+        },
+        {
+          "label": "销售人员",
+          "alias": [],
+          "raw": [
+            "3,615"
+          ],
+          "values": [
+            3615.0
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 56,
+              "chunk_id": "c0208"
+            }
+          ]
+        },
+        {
+          "label": "技术人员",
+          "alias": [],
+          "raw": [
+            "22,901"
+          ],
+          "values": [
+            22901.0
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 56,
+              "chunk_id": "c0208"
+            }
+          ]
+        },
+        {
+          "label": "财务人员",
+          "alias": [],
+          "raw": [
+            "780"
+          ],
+          "values": [
+            780.0
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 56,
+              "chunk_id": "c0208"
+            }
+          ]
+        },
+        {
+          "label": "行政人员",
+          "alias": [],
+          "raw": [
+            "12,975"
+          ],
+          "values": [
+            12975.0
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 56,
+              "chunk_id": "c0208"
+            }
+          ]
+        },
+        {
+          "label": "员工合计",
+          "alias": [],
+          "raw": [
+            "185,839"
+          ],
+          "values": [
+            185839.0
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 56,
+              "chunk_id": "c0208"
+            }
+          ]
+        }
+      ],
+      "note": ""
+    },
+    {
+      "id": "pay",
+      "title": "员工薪酬成本",
+      "page": 57,
+      "columns": [
+        {
+          "name": "金额",
+          "unit": "元"
+        },
+        {
+          "name": "占营业额比例",
+          "unit": "%"
+        }
+      ],
+      "rows": [
+        {
+          "label": "员工薪酬成本",
+          "alias": [],
+          "raw": [
+            "37,555,335",
+            "8.86"
+          ],
+          "values": [
+            37555335000.0,
+            8.86
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 57,
+              "chunk_id": "c0211"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 57,
+              "chunk_id": "c0211"
+            }
+          ]
+        }
+      ],
+      "note": ""
+    },
+    {
+      "id": "other_gains",
+      "title": "其他收益与投资收益",
+      "page": 197,
+      "columns": [
+        {
+          "name": "本期",
+          "unit": "元"
+        },
+        {
+          "name": "上期",
+          "unit": "元"
+        }
+      ],
+      "rows": [
+        {
+          "label": "其他收益",
+          "alias": [],
+          "raw": [
+            "10,600,477",
+            "9,967,630"
+          ],
+          "values": [
+            10600477000.0,
+            9967630000.0
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 197,
+              "chunk_id": "c0743"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 197,
+              "chunk_id": "c0743"
+            }
+          ]
+        },
+        {
+          "label": "权益法核算的长期股权投资收益",
+          "alias": [
+            "联营合营企业投资收益"
+          ],
+          "raw": [
+            "7,353,106",
+            "3,743,040"
+          ],
+          "values": [
+            7353106000.0,
+            3743040000.0
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 197,
+              "chunk_id": "c0745"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 197,
+              "chunk_id": "c0745"
+            }
+          ]
+        },
+        {
+          "label": "处置长期股权投资产生的投资收益",
+          "alias": [],
+          "raw": [
+            "613,671",
+            "300,363"
+          ],
+          "values": [
+            613671000.0,
+            300363000.0
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 197,
+              "chunk_id": "c0745"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 197,
+              "chunk_id": "c0745"
+            }
+          ]
+        },
+        {
+          "label": "投资收益合计",
+          "alias": [],
+          "raw": [
+            "7,970,552",
+            "3,987,823"
+          ],
+          "values": [
+            7970552000.0,
+            3987823000.0
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 197,
+              "chunk_id": "c0745"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 197,
+              "chunk_id": "c0745"
+            }
+          ]
+        }
+      ],
+      "note": ""
+    },
+    {
+      "id": "impairment",
+      "title": "资产减值损失",
+      "page": 198,
+      "columns": [
+        {
+          "name": "本期",
+          "unit": "元"
+        },
+        {
+          "name": "上期",
+          "unit": "元"
+        }
+      ],
+      "rows": [
+        {
+          "label": "存货跌价损失",
+          "alias": [],
+          "raw": [
+            "-5,151,694",
+            "-2,207,180"
+          ],
+          "values": [
+            -5151694000.0,
+            -2207180000.0
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 198,
+              "chunk_id": "c0749"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 198,
+              "chunk_id": "c0749"
+            }
+          ]
+        },
+        {
+          "label": "固定资产减值损失",
+          "alias": [],
+          "raw": [
+            "-2,659,992",
+            "-3,214,322"
+          ],
+          "values": [
+            -2659992000.0,
+            -3214322000.0
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 198,
+              "chunk_id": "c0749"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 198,
+              "chunk_id": "c0749"
+            }
+          ]
+        },
+        {
+          "label": "无形资产减值损失",
+          "alias": [],
+          "raw": [
+            "-3,273",
+            "-2,017,078"
+          ],
+          "values": [
+            -3273000.0,
+            -2017078000.0
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 198,
+              "chunk_id": "c0749"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 198,
+              "chunk_id": "c0749"
+            }
+          ]
+        },
+        {
+          "label": "其他",
+          "alias": [],
+          "raw": [
+            "-845,206",
+            "-984,745"
+          ],
+          "values": [
+            -845206000.0,
+            -984745000.0
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 198,
+              "chunk_id": "c0749"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 198,
+              "chunk_id": "c0749"
+            }
+          ]
+        },
+        {
+          "label": "资产减值损失合计",
+          "alias": [],
+          "raw": [
+            "-8,660,164",
+            "-8,423,325"
+          ],
+          "values": [
+            -8660164000.0,
+            -8423325000.0
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 198,
+              "chunk_id": "c0749"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 198,
+              "chunk_id": "c0749"
+            }
+          ]
+        }
+      ],
+      "note": ""
+    },
+    {
+      "id": "inventory_detail",
+      "title": "存货构成（账面价值）",
+      "page": 172,
+      "columns": [
+        {
+          "name": "期末",
+          "unit": "元"
+        },
+        {
+          "name": "期初",
+          "unit": "元"
+        }
+      ],
+      "rows": [
+        {
+          "label": "原材料",
+          "alias": [],
+          "raw": [
+            "11,272,396",
+            "9,800,111"
+          ],
+          "values": [
+            11272396000.0,
+            9800111000.0
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 172,
+              "chunk_id": "c0599"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 172,
+              "chunk_id": "c0599"
+            }
+          ]
+        },
+        {
+          "label": "库存商品",
+          "alias": [],
+          "raw": [
+            "22,614,633",
+            "10,847,126"
+          ],
+          "values": [
+            22614633000.0,
+            10847126000.0
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 172,
+              "chunk_id": "c0599"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 172,
+              "chunk_id": "c0599"
+            }
+          ]
+        },
+        {
+          "label": "发出商品",
+          "alias": [],
+          "raw": [
+            "38,674,787",
+            "23,813,861"
+          ],
+          "values": [
+            38674787000.0,
+            23813861000.0
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 172,
+              "chunk_id": "c0599"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 172,
+              "chunk_id": "c0599"
+            }
+          ]
+        },
+        {
+          "label": "自制半成品",
+          "alias": [],
+          "raw": [
+            "12,380,556",
+            "7,523,720"
+          ],
+          "values": [
+            12380556000.0,
+            7523720000.0
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 172,
+              "chunk_id": "c0599"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 172,
+              "chunk_id": "c0599"
+            }
+          ]
+        },
+        {
+          "label": "合同履约成本",
+          "alias": [],
+          "raw": [
+            "5,331,621",
+            "3,684,683"
+          ],
+          "values": [
+            5331621000.0,
+            3684683000.0
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 172,
+              "chunk_id": "c0599"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 172,
+              "chunk_id": "c0599"
+            }
+          ]
+        },
+        {
+          "label": "委托加工物资",
+          "alias": [],
+          "raw": [
+            "3,345,491",
+            "3,167,038"
+          ],
+          "values": [
+            3345491000.0,
+            3167038000.0
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 172,
+              "chunk_id": "c0599"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 172,
+              "chunk_id": "c0599"
+            }
+          ]
+        },
+        {
+          "label": "在产品",
+          "alias": [],
+          "raw": [
+            "301,153",
+            "596,705"
+          ],
+          "values": [
+            301153000.0,
+            596705000.0
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 172,
+              "chunk_id": "c0599"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 172,
+              "chunk_id": "c0599"
+            }
+          ]
+        },
+        {
+          "label": "周转材料",
+          "alias": [],
+          "raw": [
+            "605,603",
+            "402,289"
+          ],
+          "values": [
+            605603000.0,
+            402289000.0
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 172,
+              "chunk_id": "c0599"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 172,
+              "chunk_id": "c0599"
+            }
+          ]
+        },
+        {
+          "label": "存货合计",
+          "alias": [],
+          "raw": [
+            "94,526,239",
+            "59,835,533"
+          ],
+          "values": [
+            94526239000.0,
+            59835533000.0
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 172,
+              "chunk_id": "c0599"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 172,
+              "chunk_id": "c0599"
+            }
+          ]
+        }
+      ],
+      "note": ""
+    },
+    {
+      "id": "inventory_reserve",
+      "title": "存货跌价准备",
+      "page": 172,
+      "columns": [
+        {
+          "name": "期末",
+          "unit": "元"
+        },
+        {
+          "name": "期初",
+          "unit": "元"
+        }
+      ],
+      "rows": [
+        {
+          "label": "存货跌价准备合计",
+          "alias": [],
+          "raw": [
+            "7,716,449",
+            "6,059,183"
+          ],
+          "values": [
+            7716449000.0,
+            6059183000.0
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 172,
+              "chunk_id": "c0599"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 172,
+              "chunk_id": "c0599"
+            }
+          ]
+        }
+      ],
+      "note": ""
+    },
+    {
+      "id": "provisions",
+      "title": "预计负债",
+      "page": 192,
+      "columns": [
+        {
+          "name": "期末",
+          "unit": "元"
+        },
+        {
+          "name": "期初",
+          "unit": "元"
+        }
+      ],
+      "rows": [
+        {
+          "label": "售后综合服务费",
+          "alias": [
+            "质保金",
+            "质量保证"
+          ],
+          "raw": [
+            "51,233,080",
+            "39,070,181"
+          ],
+          "values": [
+            51233080000.0,
+            39070181000.0
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 192,
+              "chunk_id": "c0714"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 192,
+              "chunk_id": "c0714"
+            }
+          ]
+        },
+        {
+          "label": "销售返利",
+          "alias": [],
+          "raw": [
+            "33,944,295",
+            "32,721,169"
+          ],
+          "values": [
+            33944295000.0,
+            32721169000.0
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 192,
+              "chunk_id": "c0714"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 192,
+              "chunk_id": "c0714"
+            }
+          ]
+        },
+        {
+          "label": "预计负债合计",
+          "alias": [],
+          "raw": [
+            "85,324,358",
+            "71,926,943"
+          ],
+          "values": [
+            85324358000.0,
+            71926943000.0
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 192,
+              "chunk_id": "c0714"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 192,
+              "chunk_id": "c0714"
+            }
+          ]
+        }
+      ],
+      "note": ""
+    },
+    {
+      "id": "assets",
+      "title": "主要资产项目",
+      "page": 31,
+      "columns": [
+        {
+          "name": "期末",
+          "unit": "元"
+        },
+        {
+          "name": "期末占总资产",
+          "unit": "%"
+        },
+        {
+          "name": "期初",
+          "unit": "元"
+        },
+        {
+          "name": "期初占总资产",
+          "unit": "%"
+        }
+      ],
+      "rows": [
+        {
+          "label": "货币资金",
+          "alias": [],
+          "raw": [
+            "333,512,927",
+            "34.21",
+            "303,511,993",
+            "38.58"
+          ],
+          "values": [
+            333512927000.0,
+            34.21,
+            303511993000.0,
+            38.58
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 31,
+              "chunk_id": "c0076"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 31,
+              "chunk_id": "c0076"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 31,
+              "chunk_id": "c0076"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 31,
+              "chunk_id": "c0076"
+            }
+          ]
+        },
+        {
+          "label": "交易性金融资产",
+          "alias": [],
+          "raw": [
+            "58,993,528",
+            "6.05",
+            "14,282,253",
+            "1.82"
+          ],
+          "values": [
+            58993528000.0,
+            6.05,
+            14282253000.0,
+            1.82
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 31,
+              "chunk_id": "c0076"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 31,
+              "chunk_id": "c0076"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 31,
+              "chunk_id": "c0076"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 31,
+              "chunk_id": "c0076"
+            }
+          ]
+        },
+        {
+          "label": "应收账款",
+          "alias": [],
+          "raw": [
+            "76,403,264",
+            "7.84",
+            "64,135,510",
+            "8.15"
+          ],
+          "values": [
+            76403264000.0,
+            7.84,
+            64135510000.0,
+            8.15
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 31,
+              "chunk_id": "c0076"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 31,
+              "chunk_id": "c0076"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 31,
+              "chunk_id": "c0076"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 31,
+              "chunk_id": "c0076"
+            }
+          ]
+        },
+        {
+          "label": "存货",
+          "alias": [],
+          "raw": [
+            "94,526,239",
+            "9.70",
+            "59,835,533",
+            "7.61"
+          ],
+          "values": [
+            94526239000.0,
+            9.7,
+            59835533000.0,
+            7.61
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 31,
+              "chunk_id": "c0076"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 31,
+              "chunk_id": "c0076"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 31,
+              "chunk_id": "c0076"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 31,
+              "chunk_id": "c0076"
+            }
+          ]
+        },
+        {
+          "label": "长期股权投资",
+          "alias": [],
+          "raw": [
+            "64,884,321",
+            "6.66",
+            "54,791,525",
+            "6.97"
+          ],
+          "values": [
+            64884321000.0,
+            6.66,
+            54791525000.0,
+            6.97
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 31,
+              "chunk_id": "c0076"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 31,
+              "chunk_id": "c0076"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 31,
+              "chunk_id": "c0076"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 31,
+              "chunk_id": "c0076"
+            }
+          ]
+        },
+        {
+          "label": "固定资产",
+          "alias": [],
+          "raw": [
+            "146,400,592",
+            "15.02",
+            "112,589,053",
+            "14.31"
+          ],
+          "values": [
+            146400592000.0,
+            15.02,
+            112589053000.0,
+            14.31
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 31,
+              "chunk_id": "c0076"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 31,
+              "chunk_id": "c0076"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 31,
+              "chunk_id": "c0076"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 31,
+              "chunk_id": "c0076"
+            }
+          ]
+        },
+        {
+          "label": "在建工程",
+          "alias": [],
+          "raw": [
+            "29,733,108",
+            "3.05",
+            "29,754,703",
+            "3.78"
+          ],
+          "values": [
+            29733108000.0,
+            3.05,
+            29754703000.0,
+            3.78
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 31,
+              "chunk_id": "c0076"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 31,
+              "chunk_id": "c0076"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 31,
+              "chunk_id": "c0076"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 31,
+              "chunk_id": "c0076"
+            }
+          ]
+        }
+      ],
+      "note": ""
+    },
+    {
+      "id": "wc",
+      "title": "营运资本相关项目",
+      "page": 111,
+      "columns": [
+        {
+          "name": "期末",
+          "unit": "元"
+        },
+        {
+          "name": "期初",
+          "unit": "元"
+        }
+      ],
+      "rows": [
+        {
+          "label": "应收票据",
+          "alias": [],
+          "raw": [
+            "1,380,016",
+            "130,403"
+          ],
+          "values": [
+            1380016000.0,
+            130403000.0
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 111,
+              "chunk_id": "c0446"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 111,
+              "chunk_id": "c0446"
+            }
+          ]
+        },
+        {
+          "label": "应收款项融资",
+          "alias": [],
+          "raw": [
+            "43,205,292",
+            "53,309,701"
+          ],
+          "values": [
+            43205292000.0,
+            53309701000.0
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 111,
+              "chunk_id": "c0446"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 111,
+              "chunk_id": "c0446"
+            }
+          ]
+        },
+        {
+          "label": "预付款项",
+          "alias": [],
+          "raw": [
+            "14,282,335",
+            "5,969,685"
+          ],
+          "values": [
+            14282335000.0,
+            5969685000.0
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 111,
+              "chunk_id": "c0446"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 111,
+              "chunk_id": "c0446"
+            }
+          ]
+        },
+        {
+          "label": "应付票据",
+          "alias": [],
+          "raw": [
+            "103,276,999",
+            "67,356,323"
+          ],
+          "values": [
+            103276999000.0,
+            67356323000.0
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 112,
+              "chunk_id": "c0448"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 112,
+              "chunk_id": "c0448"
+            }
+          ]
+        },
+        {
+          "label": "应付账款",
+          "alias": [],
+          "raw": [
+            "160,328,962",
+            "130,977,408"
+          ],
+          "values": [
+            160328962000.0,
+            130977408000.0
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 112,
+              "chunk_id": "c0448"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 112,
+              "chunk_id": "c0448"
+            }
+          ]
+        },
+        {
+          "label": "合同负债",
+          "alias": [],
+          "raw": [
+            "49,233,377",
+            "27,834,446"
+          ],
+          "values": [
+            49233377000.0,
+            27834446000.0
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 112,
+              "chunk_id": "c0448"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 112,
+              "chunk_id": "c0448"
+            }
+          ]
+        },
+        {
+          "label": "预计负债",
+          "alias": [],
+          "raw": [
+            "85,324,358",
+            "71,926,943"
+          ],
+          "values": [
+            85324358000.0,
+            71926943000.0
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 113,
+              "chunk_id": "c0450"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 113,
+              "chunk_id": "c0450"
+            }
+          ]
+        },
+        {
+          "label": "递延收益",
+          "alias": [],
+          "raw": [
+            "27,321,553",
+            "22,041,069"
+          ],
+          "values": [
+            27321553000.0,
+            22041069000.0
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 113,
+              "chunk_id": "c0450"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 113,
+              "chunk_id": "c0450"
+            }
+          ]
+        }
+      ],
+      "note": ""
+    },
+    {
+      "id": "cash_detail",
+      "title": "货币资金",
+      "page": 164,
+      "columns": [
+        {
+          "name": "期末",
+          "unit": "元"
+        },
+        {
+          "name": "期初",
+          "unit": "元"
+        }
+      ],
+      "rows": [
+        {
+          "label": "货币资金合计",
+          "alias": [],
+          "raw": [
+            "333,512,927",
+            "303,511,993"
+          ],
+          "values": [
+            333512927000.0,
+            303511993000.0
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 164,
+              "chunk_id": "c0556"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 164,
+              "chunk_id": "c0556"
+            }
+          ]
+        },
+        {
+          "label": "存放在境外的款项总额",
+          "alias": [
+            "境外存放款项"
+          ],
+          "raw": [
+            "87,741,244",
+            "35,198,866"
+          ],
+          "values": [
+            87741244000.0,
+            35198866000.0
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 164,
+              "chunk_id": "c0556"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 164,
+              "chunk_id": "c0556"
+            }
+          ]
+        }
+      ],
+      "note": ""
+    },
+    {
+      "id": "cashflow_total",
+      "title": "三类现金流量净额",
+      "page": 30,
+      "columns": [
+        {
+          "name": "本期",
+          "unit": "元"
+        },
+        {
+          "name": "上期",
+          "unit": "元"
+        }
+      ],
+      "rows": [
+        {
+          "label": "经营活动现金流量净额",
+          "alias": [],
+          "raw": [
+            "133,219,982",
+            "96,990,345"
+          ],
+          "values": [
+            133219982000.0,
+            96990345000.0
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 30,
+              "chunk_id": "c0073"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 30,
+              "chunk_id": "c0073"
+            }
+          ]
+        },
+        {
+          "label": "投资活动现金流量净额",
+          "alias": [],
+          "raw": [
+            "-94,475,790",
+            "-48,875,311"
+          ],
+          "values": [
+            -94475790000.0,
+            -48875311000.0
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 30,
+              "chunk_id": "c0073"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 30,
+              "chunk_id": "c0073"
+            }
+          ]
+        },
+        {
+          "label": "筹资活动现金流量净额",
+          "alias": [],
+          "raw": [
+            "-6,309,543",
+            "-14,524,236"
+          ],
+          "values": [
+            -6309543000.0,
+            -14524236000.0
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 30,
+              "chunk_id": "c0073"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 30,
+              "chunk_id": "c0073"
+            }
+          ]
+        }
+      ],
+      "note": ""
+    },
+    {
+      "id": "cashflow_items",
+      "title": "现金流量主要项目",
+      "page": 120,
+      "columns": [
+        {
+          "name": "本期",
+          "unit": "元"
+        },
+        {
+          "name": "上期",
+          "unit": "元"
+        }
+      ],
+      "rows": [
+        {
+          "label": "销售商品、提供劳务收到的现金",
+          "alias": [],
+          "raw": [
+            "477,796,524",
+            "417,525,378"
+          ],
+          "values": [
+            477796524000.0,
+            417525378000.0
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 119,
+              "chunk_id": "c0466"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 119,
+              "chunk_id": "c0466"
+            }
+          ]
+        },
+        {
+          "label": "购建固定资产等支付的现金",
+          "alias": [],
+          "raw": [
+            "42,344,558",
+            "31,179,943"
+          ],
+          "values": [
+            42344558000.0,
+            31179943000.0
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 120,
+              "chunk_id": "c0468"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 120,
+              "chunk_id": "c0468"
+            }
+          ]
+        },
+        {
+          "label": "投资支付的现金",
+          "alias": [],
+          "raw": [
+            "57,533,827",
+            "22,169,451"
+          ],
+          "values": [
+            57533827000.0,
+            22169451000.0
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 120,
+              "chunk_id": "c0468"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 120,
+              "chunk_id": "c0468"
+            }
+          ]
+        },
+        {
+          "label": "吸收投资收到的现金",
+          "alias": [],
+          "raw": [
+            "44,813,984",
+            "2,560,428"
+          ],
+          "values": [
+            44813984000.0,
+            2560428000.0
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 120,
+              "chunk_id": "c0468"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 120,
+              "chunk_id": "c0468"
+            }
+          ]
+        },
+        {
+          "label": "偿还债务支付的现金",
+          "alias": [],
+          "raw": [
+            "51,702,039",
+            "19,972,240"
+          ],
+          "values": [
+            51702039000.0,
+            19972240000.0
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 121,
+              "chunk_id": "c0470"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 121,
+              "chunk_id": "c0470"
+            }
+          ]
+        },
+        {
+          "label": "分配股利、利润或偿付利息支付的现金",
+          "alias": [],
+          "raw": [
+            "34,923,036",
+            "25,807,432"
+          ],
+          "values": [
+            34923036000.0,
+            25807432000.0
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 121,
+              "chunk_id": "c0470"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 121,
+              "chunk_id": "c0470"
+            }
+          ]
+        }
+      ],
+      "note": ""
+    },
+    {
+      "id": "wc_change",
+      "title": "经营性营运资本变动（现金流量表补充资料）",
+      "page": 201,
+      "columns": [
+        {
+          "name": "本期",
+          "unit": "元"
+        },
+        {
+          "name": "上期",
+          "unit": "元"
+        }
+      ],
+      "rows": [
+        {
+          "label": "存货的减少",
+          "alias": [],
+          "raw": [
+            "-39,837,988",
+            "-16,606,853"
+          ],
+          "values": [
+            -39837988000.0,
+            -16606853000.0
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 201,
+              "chunk_id": "c0767"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 201,
+              "chunk_id": "c0767"
+            }
+          ]
+        },
+        {
+          "label": "经营性应收项目的减少",
+          "alias": [],
+          "raw": [
+            "-16,911,542",
+            "634,969"
+          ],
+          "values": [
+            -16911542000.0,
+            634969000.0
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 201,
+              "chunk_id": "c0767"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 201,
+              "chunk_id": "c0767"
+            }
+          ]
+        },
+        {
+          "label": "经营性应付项目的增加",
+          "alias": [],
+          "raw": [
+            "89,965,735",
+            "31,206,935"
+          ],
+          "values": [
+            89965735000.0,
+            31206935000.0
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 201,
+              "chunk_id": "c0767"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 201,
+              "chunk_id": "c0767"
+            }
+          ]
+        },
+        {
+          "label": "资产减值准备",
+          "alias": [],
+          "raw": [
+            "8,660,164",
+            "8,423,325"
+          ],
+          "values": [
+            8660164000.0,
+            8423325000.0
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 200,
+              "chunk_id": "c0765"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 200,
+              "chunk_id": "c0765"
+            }
+          ]
+        }
+      ],
+      "note": ""
+    },
+    {
+      "id": "projects",
+      "title": "重大在建项目",
+      "page": 33,
+      "columns": [
+        {
+          "name": "本期投入",
+          "unit": "元"
+        },
+        {
+          "name": "累计投入",
+          "unit": "元"
+        }
+      ],
+      "rows": [
+        {
+          "label": "宜昌邦普一体化电池材料产业园",
+          "alias": [],
+          "raw": [
+            "2,262,305",
+            "16,528,380"
+          ],
+          "values": [
+            2262305000.0,
+            16528380000.0
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 33,
+              "chunk_id": "c0084"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 33,
+              "chunk_id": "c0084"
+            }
+          ]
+        },
+        {
+          "label": "印度尼西亚动力电池产业链",
+          "alias": [],
+          "raw": [
+            "1,483,482",
+            "5,369,789"
+          ],
+          "values": [
+            1483482000.0,
+            5369789000.0
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 33,
+              "chunk_id": "c0084"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 33,
+              "chunk_id": "c0084"
+            }
+          ]
+        },
+        {
+          "label": "山东时代新能源电池产业基地",
+          "alias": [],
+          "raw": [
+            "6,801,291",
+            "8,799,218"
+          ],
+          "values": [
+            6801291000.0,
+            8799218000.0
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 33,
+              "chunk_id": "c0084"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 33,
+              "chunk_id": "c0084"
+            }
+          ]
+        },
+        {
+          "label": "中州时代新能源电池生产基地",
+          "alias": [],
+          "raw": [
+            "7,804,396",
+            "9,767,971"
+          ],
+          "values": [
+            7804396000.0,
+            9767971000.0
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 33,
+              "chunk_id": "c0084"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 33,
+              "chunk_id": "c0084"
+            }
+          ]
+        },
+        {
+          "label": "匈牙利时代新能源电池产业基地",
+          "alias": [],
+          "raw": [
+            "5,200,179",
+            "9,806,013"
+          ],
+          "values": [
+            5200179000.0,
+            9806013000.0
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 33,
+              "chunk_id": "c0084"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 33,
+              "chunk_id": "c0084"
+            }
+          ]
+        }
+      ],
+      "note": ""
+    },
+    {
+      "id": "dividend",
+      "title": "2025 年度利润分配",
+      "page": 58,
+      "columns": [
+        {
+          "name": "金额",
+          "unit": "元"
+        }
+      ],
+      "rows": [
+        {
+          "label": "年度现金分红",
+          "alias": [],
+          "raw": [
+            "31,532,206,318.17"
+          ],
+          "values": [
+            31532206318.17
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 58,
+              "chunk_id": "c0213"
+            }
+          ]
+        },
+        {
+          "label": "回购计入现金分红",
+          "alias": [],
+          "raw": [
+            "4,385,504,687.90"
+          ],
+          "values": [
+            4385504687.9
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 58,
+              "chunk_id": "c0213"
+            }
+          ]
+        },
+        {
+          "label": "现金分红总额（含其他方式）",
+          "alias": [],
+          "raw": [
+            "40,486,145,571.82"
+          ],
+          "values": [
+            40486145571.82
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 58,
+              "chunk_id": "c0213"
+            }
+          ]
+        },
+        {
+          "label": "中期现金分红",
+          "alias": [],
+          "raw": [
+            "4,568,434,565.75"
+          ],
+          "values": [
+            4568434565.75
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 59,
+              "chunk_id": "c0215"
+            }
+          ]
+        },
+        {
+          "label": "按归母净利润50%确定的分配额",
+          "alias": [],
+          "raw": [
+            "36,100,640,883.92"
+          ],
+          "values": [
+            36100640883.92
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 59,
+              "chunk_id": "c0215"
+            }
+          ]
+        }
+      ],
+      "note": ""
+    },
+    {
+      "id": "dps10",
+      "title": "每 10 股派息（含税）",
+      "page": 58,
+      "columns": [
+        {
+          "name": "每10股派息",
+          "unit": "元/股"
+        }
+      ],
+      "rows": [
+        {
+          "label": "2024年特别分红",
+          "alias": [],
+          "raw": [
+            "12.30"
+          ],
+          "values": [
+            12.3
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 41,
+              "chunk_id": "c0158"
+            }
+          ]
+        },
+        {
+          "label": "2024年度",
+          "alias": [],
+          "raw": [
+            "45.53"
+          ],
+          "values": [
+            45.53
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 57,
+              "chunk_id": "c0211"
+            }
+          ]
+        },
+        {
+          "label": "2025年中期",
+          "alias": [],
+          "raw": [
+            "10.07"
+          ],
+          "values": [
+            10.07
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 58,
+              "chunk_id": "c0214"
+            }
+          ]
+        },
+        {
+          "label": "2025年度",
+          "alias": [],
+          "raw": [
+            "69.57"
+          ],
+          "values": [
+            69.57
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 58,
+              "chunk_id": "c0213"
+            }
+          ]
+        }
+      ],
+      "note": ""
+    },
+    {
+      "id": "buyback",
+      "title": "股份回购",
+      "page": 41,
+      "columns": [
+        {
+          "name": "金额",
+          "unit": "元"
+        }
+      ],
+      "rows": [
+        {
+          "label": "截至期末累计回购金额",
+          "alias": [],
+          "raw": [
+            "43.86"
+          ],
+          "values": [
+            4386000000.0
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 41,
+              "chunk_id": "c0158"
+            }
+          ]
+        }
+      ],
+      "note": ""
+    },
+    {
+      "id": "holders",
+      "title": "主要股东持股",
+      "page": 97,
+      "columns": [
+        {
+          "name": "持股数量",
+          "unit": "元"
+        },
+        {
+          "name": "持股比例",
+          "unit": "%"
+        }
+      ],
+      "rows": [
+        {
+          "label": "厦门瑞庭投资有限公司",
+          "alias": [],
+          "raw": [
+            "1,024,704,949",
+            "22.45"
+          ],
+          "values": [
+            1024704949.0,
+            22.45
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 97,
+              "chunk_id": "c0392"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 97,
+              "chunk_id": "c0392"
+            }
+          ]
+        },
+        {
+          "label": "香港中央结算有限公司",
+          "alias": [],
+          "raw": [
+            "692,541,784",
+            "15.17"
+          ],
+          "values": [
+            692541784.0,
+            15.17
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 97,
+              "chunk_id": "c0392"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 97,
+              "chunk_id": "c0392"
+            }
+          ]
+        },
+        {
+          "label": "黄世霖",
+          "alias": [],
+          "raw": [
+            "420,388,947",
+            "9.21"
+          ],
+          "values": [
+            420388947.0,
+            9.21
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 97,
+              "chunk_id": "c0392"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 97,
+              "chunk_id": "c0392"
+            }
+          ]
+        },
+        {
+          "label": "宁波联合创新新能源投资管理合伙企业（有限合伙）",
+          "alias": [],
+          "raw": [
+            "284,220,608",
+            "6.23"
+          ],
+          "values": [
+            284220608.0,
+            6.23
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 97,
+              "chunk_id": "c0392"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 97,
+              "chunk_id": "c0392"
+            }
+          ]
+        },
+        {
+          "label": "李平",
+          "alias": [],
+          "raw": [
+            "197,460,277",
+            "4.33"
+          ],
+          "values": [
+            197460277.0,
+            4.33
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 97,
+              "chunk_id": "c0392"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 97,
+              "chunk_id": "c0392"
+            }
+          ]
+        },
+        {
+          "label": "HKSCC NOMINEES LIMITED",
+          "alias": [],
+          "raw": [
+            "155,906,787",
+            "3.42"
+          ],
+          "values": [
+            155906787.0,
+            3.42
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 97,
+              "chunk_id": "c0392"
+            },
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 97,
+              "chunk_id": "c0392"
+            }
+          ]
+        }
+      ],
+      "note": ""
+    },
+    {
+      "id": "hshare",
+      "title": "H 股发行",
+      "page": 20,
+      "columns": [
+        {
+          "name": "数量",
+          "unit": "元"
+        }
+      ],
+      "rows": [
+        {
+          "label": "H股全球发售股份",
+          "alias": [],
+          "raw": [
+            "155,915,300"
+          ],
+          "values": [
+            155915300.0
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 20,
+              "chunk_id": "c0032"
+            }
+          ]
+        }
+      ],
+      "note": ""
+    },
+    {
+      "id": "swap",
+      "title": "换电网络",
+      "page": 3,
+      "columns": [
+        {
+          "name": "数量",
+          "unit": "座"
+        }
+      ],
+      "rows": [
+        {
+          "label": "累计建成换电站",
+          "alias": [],
+          "raw": [
+            "1,325"
+          ],
+          "values": [
+            1325.0
+          ],
+          "sources": [
+            {
+              "source": "sandbox/annual_reports/300750_宁德时代_2025_年度报告.pdf",
+              "page": 3,
+              "chunk_id": "c0003"
+            }
+          ]
+        }
+      ],
+      "note": ""
+    }
+  ],
+  "ratios": [
+    {
+      "id": "price_power",
+      "label": "动力电池单位售价",
+      "alias": [
+        "动力电池单价"
+      ],
+      "unit": "元/Wh",
+      "op": "div",
+      "value": 0.5850394990757857,
+      "num": [
+        "product",
+        "动力电池系统",
+        "营业收入"
+      ],
+      "den": [
+        "volume",
+        "动力电池系统",
+        "销量"
+      ]
+    },
+    {
+      "id": "price_ess",
+      "label": "储能电池单位售价",
+      "alias": [
+        "储能电池单价"
+      ],
+      "unit": "元/Wh",
+      "op": "div",
+      "value": 0.5160315702479339,
+      "num": [
+        "product",
+        "储能电池系统",
+        "营业收入"
+      ],
+      "den": [
+        "volume",
+        "储能电池系统",
+        "销量"
+      ]
+    },
+    {
+      "id": "unitcost_power",
+      "label": "动力电池单位成本",
+      "alias": [],
+      "unit": "元/Wh",
+      "op": "div",
+      "value": 0.445590382624769,
+      "num": [
+        "product",
+        "动力电池系统",
+        "营业成本"
+      ],
+      "den": [
+        "volume",
+        "动力电池系统",
+        "销量"
+      ]
+    },
+    {
+      "id": "unitcost_ess",
+      "label": "储能电池单位成本",
+      "alias": [],
+      "unit": "元/Wh",
+      "op": "div",
+      "value": 0.378212305785124,
+      "num": [
+        "product",
+        "储能电池系统",
+        "营业成本"
+      ],
+      "den": [
+        "volume",
+        "储能电池系统",
+        "销量"
+      ]
+    },
+    {
+      "id": "unitgp_power",
+      "label": "动力电池单位毛利",
+      "alias": [],
+      "unit": "元",
+      "op": "diff",
+      "value": 0.13944911645101665,
+      "num": [
+        "ratio",
+        "price_power"
+      ],
+      "den": [
+        "ratio",
+        "unitcost_power"
+      ]
+    },
+    {
+      "id": "unitgp_ess",
+      "label": "储能电池单位毛利",
+      "alias": [],
+      "unit": "元",
+      "op": "diff",
+      "value": 0.1378192644628099,
+      "num": [
+        "ratio",
+        "price_ess"
+      ],
+      "den": [
+        "ratio",
+        "unitcost_ess"
+      ]
+    },
+    {
+      "id": "batt_rev_a",
+      "label": "电气机械减电池材料（本期）",
+      "alias": [],
+      "unit": "元",
+      "op": "diff",
+      "value": 395862802000.0,
+      "num": [
+        "revenue_mix",
+        "电气机械及器材制造业",
+        "本期"
+      ],
+      "den": [
+        "revenue_mix",
+        "电池材料及回收",
+        "本期"
+      ]
+    },
+    {
+      "id": "batt_rev",
+      "label": "动力与储能电池系统合计收入",
+      "alias": [
+        "电池系统收入"
+      ],
+      "unit": "元",
+      "op": "diff",
+      "value": 378946190000.0,
+      "num": [
+        "ratio",
+        "batt_rev_a"
+      ],
+      "den": [
+        "revenue_mix",
+        "其他业务",
+        "本期"
+      ]
+    },
+    {
+      "id": "batt_rev_pa",
+      "label": "电气机械减电池材料（上期）",
+      "alias": [],
+      "unit": "元",
+      "op": "diff",
+      "value": 327819616000.0,
+      "num": [
+        "revenue_mix",
+        "电气机械及器材制造业",
+        "上期"
+      ],
+      "den": [
+        "revenue_mix",
+        "电池材料及回收",
+        "上期"
+      ]
+    },
+    {
+      "id": "batt_rev_prev",
+      "label": "动力与储能电池系统合计收入（上期）",
+      "alias": [],
+      "unit": "元",
+      "op": "diff",
+      "value": 310331798000.0,
+      "num": [
+        "ratio",
+        "batt_rev_pa"
+      ],
+      "den": [
+        "revenue_mix",
+        "其他业务",
+        "上期"
+      ]
+    },
+    {
+      "id": "batt_rev_g",
+      "label": "动力与储能电池系统合计收入同比",
+      "alias": [],
+      "unit": "%",
+      "op": "growth",
+      "value": 22.11001013824565,
+      "num": [
+        "ratio",
+        "batt_rev"
+      ],
+      "den": [
+        "ratio",
+        "batt_rev_prev"
+      ]
+    },
+    {
+      "id": "price_batt",
+      "label": "电池系统平均单位售价",
+      "alias": [
+        "电池平均售价"
+      ],
+      "unit": "元/Wh",
+      "op": "div",
+      "value": 0.5732922692889562,
+      "num": [
+        "ratio",
+        "batt_rev"
+      ],
+      "den": [
+        "psi",
+        "销售量",
+        "本期"
+      ]
+    },
+    {
+      "id": "price_batt_prev",
+      "label": "电池系统平均单位售价（上期）",
+      "alias": [],
+      "unit": "元/Wh",
+      "op": "div",
+      "value": 0.6533301010526317,
+      "num": [
+        "ratio",
+        "batt_rev_prev"
+      ],
+      "den": [
+        "psi",
+        "销售量",
+        "上期"
+      ]
+    },
+    {
+      "id": "price_batt_g",
+      "label": "电池系统平均单位售价同比",
+      "alias": [
+        "电池平均售价同比"
+      ],
+      "unit": "%",
+      "op": "growth",
+      "value": -12.250749144225903,
+      "num": [
+        "ratio",
+        "price_batt"
+      ],
+      "den": [
+        "ratio",
+        "price_batt_prev"
+      ]
+    },
+    {
+      "id": "vol_share_power",
+      "label": "动力电池销量占比",
+      "alias": [],
+      "unit": "%",
+      "op": "div",
+      "value": 81.84568835098335,
+      "num": [
+        "volume",
+        "动力电池系统",
+        "销量"
+      ],
+      "den": [
+        "psi",
+        "销售量",
+        "本期"
+      ]
+    },
+    {
+      "id": "vol_share_ess",
+      "label": "储能电池销量占比",
+      "alias": [],
+      "unit": "%",
+      "op": "div",
+      "value": 18.305597579425115,
+      "num": [
+        "volume",
+        "储能电池系统",
+        "销量"
+      ],
+      "den": [
+        "psi",
+        "销售量",
+        "本期"
+      ]
+    },
+    {
+      "id": "gm_gap_ess_power",
+      "label": "储能与动力电池毛利率差",
+      "alias": [],
+      "unit": "pp",
+      "op": "diff",
+      "value": 2.870000000000001,
+      "num": [
+        "product",
+        "储能电池系统",
+        "毛利率"
+      ],
+      "den": [
+        "product",
+        "动力电池系统",
+        "毛利率"
+      ]
+    },
+    {
+      "id": "gm_gap_overseas",
+      "label": "境外与境内毛利率差",
+      "alias": [],
+      "unit": "pp",
+      "op": "diff",
+      "value": 7.440000000000001,
+      "num": [
+        "region",
+        "境外",
+        "毛利率"
+      ],
+      "den": [
+        "region",
+        "境内",
+        "毛利率"
+      ]
+    },
+    {
+      "id": "mix_power_chg",
+      "label": "动力电池收入占比变动",
+      "alias": [],
+      "unit": "pp",
+      "op": "diff",
+      "value": 4.799999999999997,
+      "num": [
+        "revenue_mix",
+        "动力电池系统",
+        "本期占比"
+      ],
+      "den": [
+        "revenue_mix",
+        "动力电池系统",
+        "上期占比"
+      ]
+    },
+    {
+      "id": "mix_ess_chg",
+      "label": "储能电池收入占比变动",
+      "alias": [],
+      "unit": "pp",
+      "op": "diff",
+      "value": -1.0899999999999999,
+      "num": [
+        "revenue_mix",
+        "储能电池系统",
+        "本期占比"
+      ],
+      "den": [
+        "revenue_mix",
+        "储能电池系统",
+        "上期占比"
+      ]
+    },
+    {
+      "id": "inc_power",
+      "label": "动力电池收入增量",
+      "alias": [],
+      "unit": "元",
+      "op": "diff",
+      "value": 63465032000.0,
+      "num": [
+        "revenue_mix",
+        "动力电池系统",
+        "本期"
+      ],
+      "den": [
+        "revenue_mix",
+        "动力电池系统",
+        "上期"
+      ]
+    },
+    {
+      "id": "inc_ess",
+      "label": "储能电池收入增量",
+      "alias": [],
+      "unit": "元",
+      "op": "diff",
+      "value": 5149360000.0,
+      "num": [
+        "revenue_mix",
+        "储能电池系统",
+        "本期"
+      ],
+      "den": [
+        "revenue_mix",
+        "储能电池系统",
+        "上期"
+      ]
+    },
+    {
+      "id": "inc_total",
+      "label": "营业收入增量",
+      "alias": [],
+      "unit": "元",
+      "op": "diff",
+      "value": 61689280000.0,
+      "num": [
+        "truth",
+        "revenue",
+        "2025"
+      ],
+      "den": [
+        "truth",
+        "revenue",
+        "2024"
+      ]
+    },
+    {
+      "id": "inc_power_share",
+      "label": "动力电池贡献收入增量比例",
+      "alias": [],
+      "unit": "%",
+      "op": "div",
+      "value": 102.87854226860809,
+      "num": [
+        "ratio",
+        "inc_power"
+      ],
+      "den": [
+        "ratio",
+        "inc_total"
+      ]
+    },
+    {
+      "id": "inc_overseas",
+      "label": "境外收入增量",
+      "alias": [],
+      "unit": "元",
+      "op": "diff",
+      "value": 19305749000.0,
+      "num": [
+        "revenue_mix",
+        "境外",
+        "本期"
+      ],
+      "den": [
+        "revenue_mix",
+        "境外",
+        "上期"
+      ]
+    },
+    {
+      "id": "prod_to_sales",
+      "label": "电池产销率",
+      "alias": [],
+      "unit": "%",
+      "op": "div",
+      "value": 88.36898395721924,
+      "num": [
+        "psi",
+        "销售量",
+        "本期"
+      ],
+      "den": [
+        "psi",
+        "生产量",
+        "本期"
+      ]
+    },
+    {
+      "id": "prod_to_sales_prev",
+      "label": "电池产销率（上期）",
+      "alias": [],
+      "unit": "%",
+      "op": "div",
+      "value": 92.05426356589147,
+      "num": [
+        "psi",
+        "销售量",
+        "上期"
+      ],
+      "den": [
+        "psi",
+        "生产量",
+        "上期"
+      ]
+    },
+    {
+      "id": "stock_to_sales",
+      "label": "电池库存量与销量之比",
+      "alias": [],
+      "unit": "%",
+      "op": "div",
+      "value": 28.139183055975792,
+      "num": [
+        "psi",
+        "库存量",
+        "本期"
+      ],
+      "den": [
+        "psi",
+        "销售量",
+        "本期"
+      ]
+    },
+    {
+      "id": "stock_to_sales_prev",
+      "label": "电池库存量与销量之比（上期）",
+      "alias": [],
+      "unit": "%",
+      "op": "div",
+      "value": 22.315789473684212,
+      "num": [
+        "psi",
+        "库存量",
+        "上期"
+      ],
+      "den": [
+        "psi",
+        "销售量",
+        "上期"
+      ]
+    },
+    {
+      "id": "capacity_under_pct",
+      "label": "在建产能与现有产能之比",
+      "alias": [],
+      "unit": "%",
+      "op": "div",
+      "value": 41.58031088082901,
+      "num": [
+        "capacity",
+        "电池系统",
+        "在建产能"
+      ],
+      "den": [
+        "capacity",
+        "电池系统",
+        "产能"
+      ]
+    },
+    {
+      "id": "share_material",
+      "label": "直接材料占主营成本比例变动",
+      "alias": [],
+      "unit": "pp",
+      "op": "diff",
+      "value": -4.689999999999998,
+      "num": [
+        "cost",
+        "直接材料",
+        "本期占比"
+      ],
+      "den": [
+        "cost",
+        "直接材料",
+        "上期占比"
+      ]
+    },
+    {
+      "id": "material_g",
+      "label": "直接材料同比",
+      "alias": [],
+      "unit": "%",
+      "op": "growth",
+      "value": 9.090723526898437,
+      "num": [
+        "cost",
+        "直接材料",
+        "本期"
+      ],
+      "den": [
+        "cost",
+        "直接材料",
+        "上期"
+      ]
+    },
+    {
+      "id": "main_gm_diff_a",
+      "label": "主营业务毛利（本期）",
+      "alias": [],
+      "unit": "元",
+      "op": "diff",
+      "value": 98751724000.0,
+      "num": [
+        "other_biz",
+        "主营业务",
+        "本期收入"
+      ],
+      "den": [
+        "other_biz",
+        "主营业务",
+        "本期成本"
+      ]
+    },
+    {
+      "id": "main_gm",
+      "label": "主营业务毛利率",
+      "alias": [],
+      "unit": "%",
+      "op": "div",
+      "value": 24.27613361037978,
+      "num": [
+        "ratio",
+        "main_gm_diff_a"
+      ],
+      "den": [
+        "other_biz",
+        "主营业务",
+        "本期收入"
+      ]
+    },
+    {
+      "id": "main_gm_diff_p",
+      "label": "主营业务毛利（上期）",
+      "alias": [],
+      "unit": "元",
+      "op": "diff",
+      "value": 79441922000.0,
+      "num": [
+        "other_biz",
+        "主营业务",
+        "上期收入"
+      ],
+      "den": [
+        "other_biz",
+        "主营业务",
+        "上期成本"
+      ]
+    },
+    {
+      "id": "main_gm_prev",
+      "label": "主营业务毛利率（上期）",
+      "alias": [],
+      "unit": "%",
+      "op": "div",
+      "value": 23.058408854156724,
+      "num": [
+        "ratio",
+        "main_gm_diff_p"
+      ],
+      "den": [
+        "other_biz",
+        "主营业务",
+        "上期收入"
+      ]
+    },
+    {
+      "id": "main_gm_chg",
+      "label": "主营业务毛利率变动",
+      "alias": [],
+      "unit": "pp",
+      "op": "diff",
+      "value": 1.2177247562230562,
+      "num": [
+        "ratio",
+        "main_gm"
+      ],
+      "den": [
+        "ratio",
+        "main_gm_prev"
+      ]
+    },
+    {
+      "id": "oth_gp",
+      "label": "其他业务毛利（本期）",
+      "alias": [],
+      "unit": "元",
+      "op": "diff",
+      "value": 12566813000.0,
+      "num": [
+        "other_biz",
+        "其他业务",
+        "本期收入"
+      ],
+      "den": [
+        "other_biz",
+        "其他业务",
+        "本期成本"
+      ]
+    },
+    {
+      "id": "oth_gm",
+      "label": "其他业务毛利率（本期）",
+      "alias": [
+        "其他业务毛利率"
+      ],
+      "unit": "%",
+      "op": "div",
+      "value": 74.28681937021432,
+      "num": [
+        "ratio",
+        "oth_gp"
+      ],
+      "den": [
+        "other_biz",
+        "其他业务",
+        "本期收入"
+      ]
+    },
+    {
+      "id": "oth_gp_p",
+      "label": "其他业务毛利（上期）",
+      "alias": [],
+      "unit": "元",
+      "op": "diff",
+      "value": 9051672000.0,
+      "num": [
+        "other_biz",
+        "其他业务",
+        "上期收入"
+      ],
+      "den": [
+        "other_biz",
+        "其他业务",
+        "上期成本"
+      ]
+    },
+    {
+      "id": "oth_gm_prev",
+      "label": "其他业务毛利率（上期）",
+      "alias": [],
+      "unit": "%",
+      "op": "div",
+      "value": 51.7598707854805,
+      "num": [
+        "ratio",
+        "oth_gp_p"
+      ],
+      "den": [
+        "other_biz",
+        "其他业务",
+        "上期收入"
+      ]
+    },
+    {
+      "id": "rd_pay_g",
+      "label": "研发职工薪酬同比",
+      "alias": [],
+      "unit": "%",
+      "op": "growth",
+      "value": 11.39394574214565,
+      "num": [
+        "rd_detail",
+        "职工薪酬",
+        "本期"
+      ],
+      "den": [
+        "rd_detail",
+        "职工薪酬",
+        "上期"
+      ]
+    },
+    {
+      "id": "rd_mat_g",
+      "label": "研发材料费同比",
+      "alias": [],
+      "unit": "%",
+      "op": "growth",
+      "value": 23.652875012873764,
+      "num": [
+        "rd_detail",
+        "材料费",
+        "本期"
+      ],
+      "den": [
+        "rd_detail",
+        "材料费",
+        "上期"
+      ]
+    },
+    {
+      "id": "rd_staff_g",
+      "label": "研发人员数量同比",
+      "alias": [],
+      "unit": "%",
+      "op": "growth",
+      "value": 12.557750909269627,
+      "num": [
+        "rd_staff",
+        "研发人员数量",
+        "本期"
+      ],
+      "den": [
+        "rd_staff",
+        "研发人员数量",
+        "上期"
+      ]
+    },
+    {
+      "id": "adm_pay_g",
+      "label": "管理费用职工薪酬同比",
+      "alias": [],
+      "unit": "%",
+      "op": "growth",
+      "value": 40.76872564750731,
+      "num": [
+        "admin_detail",
+        "职工薪酬",
+        "本期"
+      ],
+      "den": [
+        "admin_detail",
+        "职工薪酬",
+        "上期"
+      ]
+    },
+    {
+      "id": "int_income_g",
+      "label": "利息收入同比",
+      "alias": [],
+      "unit": "%",
+      "op": "growth",
+      "value": 11.487533880101196,
+      "num": [
+        "finance_detail",
+        "利息收入",
+        "本期"
+      ],
+      "den": [
+        "finance_detail",
+        "利息收入",
+        "上期"
+      ]
+    },
+    {
+      "id": "int_exp_g",
+      "label": "利息支出同比",
+      "alias": [],
+      "unit": "%",
+      "op": "growth",
+      "value": -30.39976997897901,
+      "num": [
+        "finance_detail",
+        "利息支出",
+        "本期"
+      ],
+      "den": [
+        "finance_detail",
+        "利息支出",
+        "上期"
+      ]
+    },
+    {
+      "id": "fin_exp_chg",
+      "label": "财务费用变动额",
+      "alias": [],
+      "unit": "元",
+      "op": "diff",
+      "value": -3807945000.0,
+      "num": [
+        "truth",
+        "finance_expense",
+        "2025"
+      ],
+      "den": [
+        "truth",
+        "finance_expense",
+        "2024"
+      ]
+    },
+    {
+      "id": "inv_income_g",
+      "label": "投资收益同比",
+      "alias": [],
+      "unit": "%",
+      "op": "growth",
+      "value": 99.87226113094789,
+      "num": [
+        "other_gains",
+        "投资收益合计",
+        "本期"
+      ],
+      "den": [
+        "other_gains",
+        "投资收益合计",
+        "上期"
+      ]
+    },
+    {
+      "id": "equity_inc_g",
+      "label": "联营合营企业投资收益同比",
+      "alias": [],
+      "unit": "%",
+      "op": "growth",
+      "value": 96.44743310250492,
+      "num": [
+        "other_gains",
+        "权益法核算的长期股权投资收益",
+        "本期"
+      ],
+      "den": [
+        "other_gains",
+        "权益法核算的长期股权投资收益",
+        "上期"
+      ]
+    },
+    {
+      "id": "other_inc_rate",
+      "label": "其他收益占利润总额比例",
+      "alias": [],
+      "unit": "%",
+      "op": "div",
+      "value": 11.840596551559093,
+      "num": [
+        "other_gains",
+        "其他收益",
+        "本期"
+      ],
+      "den": [
+        "truth",
+        "total_profit",
+        "2025"
+      ]
+    },
+    {
+      "id": "inv_inc_rate",
+      "label": "投资收益占利润总额比例",
+      "alias": [],
+      "unit": "%",
+      "op": "div",
+      "value": 8.903004131344508,
+      "num": [
+        "other_gains",
+        "投资收益合计",
+        "本期"
+      ],
+      "den": [
+        "truth",
+        "total_profit",
+        "2025"
+      ]
+    },
+    {
+      "id": "nr_share",
+      "label": "非经常性损益占归母净利润比例",
+      "alias": [],
+      "unit": "%",
+      "op": "div",
+      "value": 10.655513014298002,
+      "num": [
+        "truth",
+        "non_recurring",
+        "2025"
+      ],
+      "den": [
+        "truth",
+        "np_parent",
+        "2025"
+      ]
+    },
+    {
+      "id": "impair_rate",
+      "label": "资产减值损失占利润总额比例",
+      "alias": [],
+      "unit": "%",
+      "op": "div",
+      "value": -9.6732918711428,
+      "num": [
+        "impairment",
+        "资产减值损失合计",
+        "本期"
+      ],
+      "den": [
+        "truth",
+        "total_profit",
+        "2025"
+      ]
+    },
+    {
+      "id": "inv_impair_g",
+      "label": "存货跌价损失同比",
+      "alias": [],
+      "unit": "%",
+      "op": "growth",
+      "value": 133.40615627180387,
+      "num": [
+        "impairment",
+        "存货跌价损失",
+        "本期"
+      ],
+      "den": [
+        "impairment",
+        "存货跌价损失",
+        "上期"
+      ]
+    },
+    {
+      "id": "inv_g",
+      "label": "存货同比",
+      "alias": [],
+      "unit": "%",
+      "op": "growth",
+      "value": 57.976764408532965,
+      "num": [
+        "inventory_detail",
+        "存货合计",
+        "期末"
+      ],
+      "den": [
+        "inventory_detail",
+        "存货合计",
+        "期初"
+      ]
+    },
+    {
+      "id": "inv_fg_g",
+      "label": "库存商品同比",
+      "alias": [],
+      "unit": "%",
+      "op": "growth",
+      "value": 108.48502174677424,
+      "num": [
+        "inventory_detail",
+        "库存商品",
+        "期末"
+      ],
+      "den": [
+        "inventory_detail",
+        "库存商品",
+        "期初"
+      ]
+    },
+    {
+      "id": "inv_ship_g",
+      "label": "发出商品同比",
+      "alias": [],
+      "unit": "%",
+      "op": "growth",
+      "value": 62.404521467560436,
+      "num": [
+        "inventory_detail",
+        "发出商品",
+        "期末"
+      ],
+      "den": [
+        "inventory_detail",
+        "发出商品",
+        "期初"
+      ]
+    },
+    {
+      "id": "inv_ship_share",
+      "label": "发出商品占存货比例",
+      "alias": [],
+      "unit": "%",
+      "op": "div",
+      "value": 40.91434019711712,
+      "num": [
+        "inventory_detail",
+        "发出商品",
+        "期末"
+      ],
+      "den": [
+        "inventory_detail",
+        "存货合计",
+        "期末"
+      ]
+    },
+    {
+      "id": "inv_fg_share",
+      "label": "库存商品占存货比例",
+      "alias": [],
+      "unit": "%",
+      "op": "div",
+      "value": 23.9241857491019,
+      "num": [
+        "inventory_detail",
+        "库存商品",
+        "期末"
+      ],
+      "den": [
+        "inventory_detail",
+        "存货合计",
+        "期末"
+      ]
+    },
+    {
+      "id": "warranty_g",
+      "label": "售后综合服务费同比",
+      "alias": [],
+      "unit": "%",
+      "op": "growth",
+      "value": 31.13090005905015,
+      "num": [
+        "provisions",
+        "售后综合服务费",
+        "期末"
+      ],
+      "den": [
+        "provisions",
+        "售后综合服务费",
+        "期初"
+      ]
+    },
+    {
+      "id": "warranty_to_rev",
+      "label": "售后综合服务费余额与营业收入之比",
+      "alias": [],
+      "unit": "%",
+      "op": "div",
+      "value": 12.09177678470941,
+      "num": [
+        "provisions",
+        "售后综合服务费",
+        "期末"
+      ],
+      "den": [
+        "truth",
+        "revenue",
+        "2025"
+      ]
+    },
+    {
+      "id": "warranty_inc",
+      "label": "售后综合服务费余额增加额",
+      "alias": [],
+      "unit": "元",
+      "op": "diff",
+      "value": 12162899000.0,
+      "num": [
+        "provisions",
+        "售后综合服务费",
+        "期末"
+      ],
+      "den": [
+        "provisions",
+        "售后综合服务费",
+        "期初"
+      ]
+    },
+    {
+      "id": "contract_g",
+      "label": "合同负债同比",
+      "alias": [],
+      "unit": "%",
+      "op": "growth",
+      "value": 76.87931349522819,
+      "num": [
+        "truth",
+        "contract_liab",
+        "2025"
+      ],
+      "den": [
+        "truth",
+        "contract_liab",
+        "2024"
+      ]
+    },
+    {
+      "id": "contract_to_rev",
+      "label": "合同负债与营业收入之比",
+      "alias": [],
+      "unit": "%",
+      "op": "div",
+      "value": 11.6198168261882,
+      "num": [
+        "truth",
+        "contract_liab",
+        "2025"
+      ],
+      "den": [
+        "truth",
+        "revenue",
+        "2025"
+      ]
+    },
+    {
+      "id": "contract_to_rev_prev",
+      "label": "合同负债与营业收入之比（上期）",
+      "alias": [],
+      "unit": "%",
+      "op": "div",
+      "value": 7.688806836240271,
+      "num": [
+        "truth",
+        "contract_liab",
+        "2024"
+      ],
+      "den": [
+        "truth",
+        "revenue",
+        "2024"
+      ]
+    },
+    {
+      "id": "bills_g",
+      "label": "应付票据同比",
+      "alias": [],
+      "unit": "%",
+      "op": "growth",
+      "value": 53.329330343641224,
+      "num": [
+        "wc",
+        "应付票据",
+        "期末"
+      ],
+      "den": [
+        "wc",
+        "应付票据",
+        "期初"
+      ]
+    },
+    {
+      "id": "ap_g",
+      "label": "应付账款同比",
+      "alias": [],
+      "unit": "%",
+      "op": "growth",
+      "value": 22.409631132721763,
+      "num": [
+        "wc",
+        "应付账款",
+        "期末"
+      ],
+      "den": [
+        "wc",
+        "应付账款",
+        "期初"
+      ]
+    },
+    {
+      "id": "ar_g",
+      "label": "应收账款同比",
+      "alias": [],
+      "unit": "%",
+      "op": "growth",
+      "value": 19.12786535883164,
+      "num": [
+        "truth",
+        "accounts_receivable",
+        "2025"
+      ],
+      "den": [
+        "truth",
+        "accounts_receivable",
+        "2024"
+      ]
+    },
+    {
+      "id": "overseas_cash_g",
+      "label": "境外存放款项同比",
+      "alias": [],
+      "unit": "%",
+      "op": "growth",
+      "value": 149.2729282812691,
+      "num": [
+        "cash_detail",
+        "存放在境外的款项总额",
+        "期末"
+      ],
+      "den": [
+        "cash_detail",
+        "存放在境外的款项总额",
+        "期初"
+      ]
+    },
+    {
+      "id": "overseas_cash_share",
+      "label": "境外存放款项占货币资金比例",
+      "alias": [],
+      "unit": "%",
+      "op": "div",
+      "value": 26.308198842319534,
+      "num": [
+        "cash_detail",
+        "存放在境外的款项总额",
+        "期末"
+      ],
+      "den": [
+        "cash_detail",
+        "货币资金合计",
+        "期末"
+      ]
+    },
+    {
+      "id": "capex_g",
+      "label": "购建长期资产支付现金同比",
+      "alias": [],
+      "unit": "%",
+      "op": "growth",
+      "value": 35.807041084071265,
+      "num": [
+        "truth",
+        "capex",
+        "2025"
+      ],
+      "den": [
+        "truth",
+        "capex",
+        "2024"
+      ]
+    },
+    {
+      "id": "capex_to_rev",
+      "label": "资本开支占营业收入比例",
+      "alias": [],
+      "unit": "%",
+      "op": "div",
+      "value": 9.993952020514502,
+      "num": [
+        "truth",
+        "capex",
+        "2025"
+      ],
+      "den": [
+        "truth",
+        "revenue",
+        "2025"
+      ]
+    },
+    {
+      "id": "capex_to_da",
+      "label": "资本开支与折旧摊销之比",
+      "alias": [],
+      "unit": "倍",
+      "op": "div",
+      "value": 1.7409423593849058,
+      "num": [
+        "truth",
+        "capex",
+        "2025"
+      ],
+      "den": [
+        "truth",
+        "depreciation",
+        "2025"
+      ]
+    },
+    {
+      "id": "fcf_simple",
+      "label": "经营现金流减资本开支",
+      "alias": [
+        "自由现金流"
+      ],
+      "unit": "元",
+      "op": "diff",
+      "value": 90875424000.0,
+      "num": [
+        "truth",
+        "ocf",
+        "2025"
+      ],
+      "den": [
+        "truth",
+        "capex",
+        "2025"
+      ]
+    },
+    {
+      "id": "fcf_simple_prev",
+      "label": "经营现金流减资本开支（上期）",
+      "alias": [],
+      "unit": "元",
+      "op": "diff",
+      "value": 65810402000.0,
+      "num": [
+        "truth",
+        "ocf",
+        "2024"
+      ],
+      "den": [
+        "truth",
+        "capex",
+        "2024"
+      ]
+    },
+    {
+      "id": "payout",
+      "label": "2025 年度现金分红率",
+      "alias": [],
+      "unit": "%",
+      "op": "div",
+      "value": 49.99999983922723,
+      "num": [
+        "dividend",
+        "按归母净利润50%确定的分配额",
+        "金额"
+      ],
+      "den": [
+        "truth",
+        "np_parent",
+        "2025"
+      ]
+    },
+    {
+      "id": "payout_all",
+      "label": "含回购的现金分红总额占归母净利润比例",
+      "alias": [],
+      "unit": "%",
+      "op": "div",
+      "value": 56.0739982038269,
+      "num": [
+        "dividend",
+        "现金分红总额（含其他方式）",
+        "金额"
+      ],
+      "den": [
+        "truth",
+        "np_parent",
+        "2025"
+      ]
+    },
+    {
+      "id": "q2_rev_qoq",
+      "label": "第二季度营业收入环比",
+      "alias": [
+        "第二季度收入"
+      ],
+      "unit": "%",
+      "op": "growth",
+      "value": 11.188384374310578,
+      "num": [
+        "truth",
+        "revenue",
+        "2025Q2"
+      ],
+      "den": [
+        "truth",
+        "revenue",
+        "2025Q1"
+      ]
+    },
+    {
+      "id": "q3_rev_qoq",
+      "label": "第三季度营业收入环比",
+      "alias": [
+        "第三季度收入"
+      ],
+      "unit": "%",
+      "op": "growth",
+      "value": 10.622099435406017,
+      "num": [
+        "truth",
+        "revenue",
+        "2025Q3"
+      ],
+      "den": [
+        "truth",
+        "revenue",
+        "2025Q2"
+      ]
+    },
+    {
+      "id": "q4_rev_qoq",
+      "label": "第四季度营业收入环比",
+      "alias": [
+        "第四季度收入"
+      ],
+      "unit": "%",
+      "op": "growth",
+      "value": 34.979945526899115,
+      "num": [
+        "truth",
+        "revenue",
+        "2025Q4"
+      ],
+      "den": [
+        "truth",
+        "revenue",
+        "2025Q3"
+      ]
+    },
+    {
+      "id": "q4_np_qoq",
+      "label": "第四季度归母净利润环比",
+      "alias": [],
+      "unit": "%",
+      "op": "growth",
+      "value": 24.89735548658496,
+      "num": [
+        "truth",
+        "np_parent",
+        "2025Q4"
+      ],
+      "den": [
+        "truth",
+        "np_parent",
+        "2025Q3"
+      ]
+    },
+    {
+      "id": "q4_rev_share",
+      "label": "第四季度收入占全年比例",
+      "alias": [],
+      "unit": "%",
+      "op": "div",
+      "value": 33.190757205927035,
+      "num": [
+        "truth",
+        "revenue",
+        "2025Q4"
+      ],
+      "den": [
+        "truth",
+        "revenue",
+        "2025"
+      ]
+    },
+    {
+      "id": "q1_rev_share",
+      "label": "第一季度收入占全年比例",
+      "alias": [],
+      "unit": "%",
+      "op": "div",
+      "value": 19.99155590154939,
+      "num": [
+        "truth",
+        "revenue",
+        "2025Q1"
+      ],
+      "den": [
+        "truth",
+        "revenue",
+        "2025"
+      ]
+    },
+    {
+      "id": "q4_ocf_share",
+      "label": "第四季度经营现金流占全年比例",
+      "alias": [],
+      "unit": "%",
+      "op": "div",
+      "value": 39.45320455005016,
+      "num": [
+        "truth",
+        "ocf",
+        "2025Q4"
+      ],
+      "den": [
+        "truth",
+        "ocf",
+        "2025"
+      ]
+    },
+    {
+      "id": "staff_prod_share",
+      "label": "生产人员占比",
+      "alias": [],
+      "unit": "%",
+      "op": "div",
+      "value": 78.33016751058712,
+      "num": [
+        "employees",
+        "生产人员",
+        "人数"
+      ],
+      "den": [
+        "employees",
+        "员工合计",
+        "人数"
+      ]
+    },
+    {
+      "id": "staff_tech_share",
+      "label": "技术人员占比",
+      "alias": [],
+      "unit": "%",
+      "op": "div",
+      "value": 12.323032302154015,
+      "num": [
+        "employees",
+        "技术人员",
+        "人数"
+      ],
+      "den": [
+        "employees",
+        "员工合计",
+        "人数"
+      ]
+    },
+    {
+      "id": "recycle_share",
+      "label": "电池材料及回收收入同比",
+      "alias": [],
+      "unit": "%",
+      "op": "growth",
+      "value": -23.8293187772028,
+      "num": [
+        "revenue_mix",
+        "电池材料及回收",
+        "本期"
+      ],
+      "den": [
+        "revenue_mix",
+        "电池材料及回收",
+        "上期"
+      ]
+    }
+  ],
+  "rejected": [],
+  "notes": "单位按原表（千元）；GWh 为年报披露口径。动力、储能电池销量取管理层讨论与分析文字（第 21、22 页）。动力与储能合计收入 = 分行业“电气机械及器材制造业” − 电池材料及回收 − 其他业务（第 24～25 页四项相加等于电气机械及器材制造业）。"
+}
