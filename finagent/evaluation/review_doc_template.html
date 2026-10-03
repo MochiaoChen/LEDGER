@@ -1,0 +1,268 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>__TITLE__</title>
+<style>
+:root{color-scheme:light;--red:#a51e29;--ink:#202633;--muted:#667181;--line:#dce1e7;--paper:#fff;--wash:#f6f7f9}
+*{box-sizing:border-box}body{margin:0;background:var(--wash);color:var(--ink);font:15px/1.65 -apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif}
+main{max-width:1000px;margin:auto;padding:36px 22px 90px}header{border-top:5px solid var(--red);background:var(--paper);padding:28px 32px;border-bottom:1px solid var(--line)}
+.eyebrow{color:var(--red);font-size:12px;font-weight:700;letter-spacing:.13em;text-transform:uppercase}h1{font-size:30px;line-height:1.25;margin:10px 0 12px}h2{font-size:21px;margin:0}h3{font-size:17px;line-height:1.35;margin:0;flex:1}
+.sub,.hint,.layer-note{color:var(--muted)}.sub{margin:0}.summary{display:flex;gap:18px;flex-wrap:wrap;margin-top:22px}.summary>div{min-width:165px;padding:12px 16px;background:var(--wash);border-left:3px solid var(--red)}
+.summary strong{display:block;font-size:19px}.summary small{color:var(--muted)}.reasons{margin:16px 0 0;color:#7b3036}.pdf-button{background:transparent;border:0;color:var(--red);font-size:15px;padding:0 10px 0 0;text-align:left}
+.layer-stats{display:flex;gap:16px;flex-wrap:wrap;margin-top:16px;color:var(--muted);font-size:13px;font-variant-numeric:tabular-nums}.machine-state{display:inline-block;border-radius:4px;padding:3px 9px}.machine-state.pass{background:#eaf4ed;color:#225a35}.machine-state.fail{background:#faebec;color:var(--red)}.machine-state.na{background:#eef0f3;color:#56616f}.machine-note{font-size:13px;color:var(--muted);margin-top:10px!important}
+.machine-issues{font-size:13px;margin-top:12px}.machine-issues summary{cursor:pointer;font-weight:700}.machine-issues li{margin:7px 0}
+.panel,.layer{background:var(--paper);margin-top:22px;padding:25px 30px;border:1px solid var(--line)}.panel h2{margin-bottom:8px}.panel p{margin-top:0}
+label{display:block;font-weight:650}input,textarea,select{display:block;width:100%;margin-top:6px;padding:10px 12px;border:1px solid #bdc6d0;border-radius:5px;background:#fff;color:var(--ink);font:inherit}textarea{resize:vertical;min-height:82px}
+input:focus,textarea:focus,select:focus{outline:2px solid #bd6c72;outline-offset:1px}.meta-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}.actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:18px}
+button,.button-label{border:1px solid var(--red);background:var(--red);color:white;border-radius:5px;padding:9px 16px;font:inherit;font-weight:650;cursor:pointer}.secondary{color:var(--red);background:white}.button-label input{display:none}
+button:hover,.button-label:hover{filter:brightness(.93)}.status{margin-left:auto;color:var(--muted);font-size:13px}.status.error{color:#a51e29}.progress{font-variant-numeric:tabular-nums}
+.review-toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:20px;padding:0 5px}.review-toolbar label{display:flex;align-items:center;gap:7px;margin-right:auto;font-size:13px}.review-toolbar input{width:auto;margin:0}.review-toolbar button{padding:7px 12px;background:#fff;color:var(--red)}body.only-fail .review-item.clear{display:none}
+.layer{padding-top:23px}.layer h2{border-left:4px solid var(--red);padding-left:13px}.layer-note{font-size:13px;margin:4px 0 18px 17px}.review-item{border-top:1px solid var(--line);padding:0}.review-item:first-of-type{border-top:0}.review-item.clear summary{color:#596575}.item-body{padding:0 0 21px}
+.item-top{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;cursor:pointer;list-style:none;padding:17px 0}.item-top::-webkit-details-marker{display:none}.item-top::before{content:'▸';color:var(--red);font-size:17px;line-height:1}.review-item[open] .item-top::before{content:'▾'}.item-top:hover h3{text-decoration:underline;text-decoration-color:#bd8d92}.item-id{font-size:12px;font-weight:750;color:var(--red);min-width:55px}.baseline,.points{font-size:12px;border-radius:3px;padding:2px 7px;white-space:nowrap}.baseline.ok{background:#eaf4ed;color:#225a35}.baseline.bad{background:#faebec;color:#a51e29}.points{background:#eff1f5;color:#52606f}
+.criterion,.example{margin:9px 0 0 65px}.example{font-size:13px;color:var(--muted)}.finding{margin:14px 0 0 65px;padding:11px 14px;background:#f4f6f8;border-left:2px solid #a7b2bf}.finding p{margin:3px 0}.field-label{display:inline-block;color:#52606f;font-size:12px;font-weight:700;margin-right:9px}.evidence{overflow-wrap:anywhere}
+.decision-group{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin:16px 0 0 65px}.decision-prompt{display:block;width:100%;font-weight:700}.decision-group button{background:#fff;color:var(--ink);border-color:#bbc5d0;padding:8px 14px}.decision-group button[aria-pressed="true"]{background:var(--red);border-color:var(--red);color:#fff}.decision-group button.quiet{color:var(--muted)}.followup{margin:14px 0 0 65px;padding:15px;background:#faf5f5;border-left:3px solid var(--red)}.followup[hidden]{display:none}.followup label{font-size:13px}.followup label+label{margin-top:12px}
+.item-note{margin:10px 0 0 65px;font-size:13px;color:var(--muted)}.footnote{margin-top:24px;font-size:13px;color:var(--muted)}
+.pdf-viewer{position:fixed;inset:0;z-index:20;background:rgba(20,27,35,.88);padding:2vh 3vw;display:flex;flex-direction:column}.pdf-viewer[hidden]{display:none}.pdf-toolbar{display:flex;justify-content:space-between;align-items:center;color:#fff;padding-bottom:10px;font-weight:700}.pdf-toolbar button{background:#fff;color:var(--red)}.pdf-viewer iframe{flex:1;width:100%;border:0;background:#fff}
+@media(max-width:700px){main{padding:0 0 55px}header,.panel,.layer{padding:20px 16px}.panel,.layer{margin-top:12px}h1{font-size:25px}.meta-grid{grid-template-columns:1fr}.criterion,.example,.finding,.decision-group,.followup,.item-note{margin-left:0}.status{width:100%;margin-left:0}.review-toolbar{padding:0 16px}}
+@media print{body{background:#fff}main{padding:0;max-width:none}.panel,.layer,header{border-left:0;border-right:0;break-inside:avoid}.actions{display:none}}
+</style>
+</head>
+<body>
+<main>
+<header>
+  <div class="eyebrow">FinAgent / 人工质检页 / __RUBRIC_VERSION__</div>
+  <h1>__COMPANY__ · 研报质检</h1>
+  <p class="sub">输入为一份研报 PDF。人工只复核模型标出的问题；其余 __CLEARED_COUNT__ 项默认沿用原判定，未经过人工核验。</p>
+  <div class="summary"><div><small>原评总分</small><strong>__BASELINE_TOTAL__</strong></div><div><small>原评状态</small><strong>__BASELINE_STATUS__</strong></div><div><small>被评文件</small><strong style="font-size:15px">__PDF_LINK__</strong></div></div>
+  <p class="reasons">原评未达标原因：__BASELINE_REASONS__</p>
+  <div class="layer-stats">__LAYER_STATS__</div>
+</header>
+<section class="panel"><h2>Excel 机器核对</h2>__MACHINE_EXCEL__</section>
+<section class="panel" aria-labelledby="reviewer-title">
+  <h2 id="reviewer-title">人工复核 __FLAGGED_COUNT__ 个问题</h2>
+  <p class="hint">直接点“对”或“错”。对：可留修改建议；错：补误判原因和 PDF 证据。拿不准可点“待核查”。</p>
+  <div class="meta-grid"><label>质检员姓名或代号<input id="reviewer" autocomplete="name" maxlength="100" placeholder="必填，导出时使用"></label>
+    <label>复核进度<input id="progress" class="progress" value="0 / 0 条已复核" readonly aria-live="polite"></label></div>
+  <label style="margin-top:18px">整体意见<textarea id="overall-comment" rows="3" maxlength="10000" placeholder="只写需要团队采取行动的结论或待核查事项"></textarea></label>
+  <div class="actions"><button id="export" type="button">导出质检 JSON</button><label class="button-label secondary">导入先前 JSON<input id="import" type="file" accept=".json,application/json"></label><span class="status" id="status" role="status" aria-live="polite">草稿尚未保存</span></div>
+</section>
+<div class="review-toolbar" aria-label="明细显示控制">
+  <label><input type="checkbox" id="onlyfail">明细只看未过／命中的条目</label>
+  <button type="button" id="collapse-all">一键折叠</button>
+  <button type="button" id="expand-all">全部展开</button>
+</div>
+__SECTIONS__
+<p class="footnote">JSON 仅供当前 report/rubric 研发迭代，不自动重算交付分数。单人复核；多人汇总字段已预留但未启用。</p>
+</main>
+<div class="pdf-viewer" id="pdf-viewer" role="dialog" aria-modal="true" aria-label="原始研报 PDF" hidden>
+  <div class="pdf-toolbar"><span>原始研报 PDF</span><button id="close-pdf" type="button">关闭预览</button></div>
+  <iframe id="pdf-frame" title="原始研报 PDF 预览"></iframe>
+</div>
+<script type="application/json" id="pack-data">__PACK_DATA__</script>
+<script type="application/octet-stream" id="report-pdf">__PDF_DATA__</script>
+<script>
+(() => {
+  'use strict';
+  const pack = JSON.parse(document.getElementById('pack-data').textContent);
+  const allItems = Array.from(document.querySelectorAll('.review-item'));
+  const rows = allItems.filter(row => row.dataset.reviewable === 'true');
+  const reviewer = document.getElementById('reviewer');
+  const overall = document.getElementById('overall-comment');
+  const status = document.getElementById('status');
+  const progress = document.getElementById('progress');
+  const storageKey = `finagent-review-v2:${pack.company}:${pack.source_sha256}`;
+  const decisions = new Set(['unreviewed', 'confirmed_issue', 'false_alarm', 'needs_check']);
+  let reviewId = `single-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+
+  function setStatus(message, error = false) {
+    status.textContent = message;
+    status.classList.toggle('error', error);
+  }
+  function values() {
+    return rows.map(row => ({
+      item_id: row.dataset.itemId,
+      decision: row.dataset.decision || 'unreviewed',
+      feedback: {
+        fix: row.querySelector('[data-field="fix"]').value.trim(),
+        reason: row.querySelector('[data-field="reason"]').value.trim(),
+        evidence: row.querySelector('[data-field="evidence"]').value.trim(),
+        pending: row.querySelector('[data-field="pending"]').value.trim()
+      }
+    }));
+  }
+  function updateProgress() {
+    const entered = values();
+    const done = entered.filter(x => ['confirmed_issue', 'false_alarm'].includes(x.decision)).length;
+    const pending = entered.filter(x => x.decision === 'needs_check').length;
+    progress.value = `${done} / ${rows.length} 个问题已判定${pending ? `，${pending} 个待核查` : ''}`;
+  }
+  function save() {
+    updateProgress();
+    try {
+      localStorage.setItem(storageKey, JSON.stringify({id: reviewId, reviewer: reviewer.value,
+        overall_comment: overall.value, items: values()}));
+      setStatus('草稿已保存在本机浏览器');
+    } catch (_) {
+      setStatus('此浏览器无法自动保存；请及时导出 JSON', true);
+    }
+  }
+  function setDecision(row, decision) {
+    row.dataset.decision = decisions.has(decision) ? decision : 'unreviewed';
+    for (const button of row.querySelectorAll('[data-decision]')) {
+      button.setAttribute('aria-pressed', String(button.dataset.decision === row.dataset.decision));
+    }
+    for (const panel of row.querySelectorAll('[data-panel]')) {
+      panel.hidden = panel.dataset.panel !== row.dataset.decision;
+    }
+  }
+  function fill(data) {
+    reviewId = data.id || reviewId;
+    reviewer.value = data.reviewer || '';
+    overall.value = data.overall_comment || '';
+    const byId = new Map((data.items || []).map(x => [x.item_id, x]));
+    for (const row of rows) {
+      const item = byId.get(row.dataset.itemId) || {};
+      setDecision(row, item.decision);
+      for (const field of ['fix', 'reason', 'evidence', 'pending']) {
+        row.querySelector(`[data-field="${field}"]`).value = item.feedback?.[field] || '';
+      }
+    }
+    updateProgress();
+  }
+  try {
+    const draft = localStorage.getItem(storageKey);
+    if (draft) { fill(JSON.parse(draft)); setStatus('已恢复本机草稿'); }
+    else updateProgress();
+  } catch (_) { updateProgress(); setStatus('本机草稿不可用；仍可导出 JSON', true); }
+  document.addEventListener('input', event => {
+    if (event.target.matches('#reviewer,#overall-comment,textarea')) save();
+  });
+  document.addEventListener('click', event => {
+    const button = event.target.closest('[data-decision]');
+    if (!button) return;
+    const row = button.closest('.review-item');
+    setDecision(row, button.dataset.decision);
+    save();
+  });
+  document.getElementById('onlyfail').addEventListener('change', event => {
+    document.body.classList.toggle('only-fail', event.target.checked);
+  });
+  document.getElementById('collapse-all').addEventListener('click', () => {
+    for (const item of allItems) item.open = false;
+  });
+  document.getElementById('expand-all').addEventListener('click', () => {
+    for (const item of allItems) item.open = true;
+  });
+
+  document.getElementById('export').addEventListener('click', () => {
+    const name = reviewer.value.trim();
+    if (!name) { reviewer.focus(); setStatus('先填写质检员姓名或代号', true); return; }
+    const entered = new Map(values().map(x => [x.item_id, x]));
+    for (const row of rows) {
+      const x = entered.get(row.dataset.itemId);
+      const required = x.decision === 'false_alarm' ? ['reason', 'evidence'] :
+        x.decision === 'needs_check' ? ['pending'] : [];
+      const missing = required.find(field => !x.feedback[field]);
+      if (missing) {
+        row.querySelector(`[data-field="${missing}"]`).focus();
+        setStatus(`${x.item_id} 需要填写${missing === 'reason' ? '误判原因' : missing === 'evidence' ? 'PDF 证据' : '待核查事项'}`, true);
+        return;
+      }
+    }
+    const items = pack.items.map(base => {
+      const entry = entered.get(base.item_id) || {decision: base.machine_only ? 'machine_only' : 'assumed_ok', feedback: {}};
+      return {
+        item_id: base.item_id, layer: base.layer, baseline_passed: base.baseline_passed,
+        model_flagged: base.model_flagged, human_queue: base.flagged, human_verdict: entry.decision,
+        human_reviewed: ['confirmed_issue', 'false_alarm'].includes(entry.decision),
+        effective_passed: entry.decision === 'false_alarm' ? !base.baseline_passed :
+          ['confirmed_issue', 'assumed_ok', 'machine_only'].includes(entry.decision) ? base.baseline_passed : null,
+        feedback: entry.feedback
+      };
+    });
+    const payload = {
+      schema_version: 'finagent.manual_review.v2', purpose: 'refine_report_and_rubric', provisional: true,
+      company: pack.company, selection_policy: 'model_flagged_only',
+      rubric_version: pack.rubric_version, source_sha256: pack.source_sha256,
+      baseline_total: pack.baseline_total, baseline_deliverable: pack.baseline_deliverable,
+      machine_excel: pack.machine_excel, flagged_count: pack.flagged_count,
+      assumed_ok_count: pack.items.filter(x => !x.model_flagged).length,
+      complete: items.filter(x => x.human_queue).every(x => x.human_reviewed),
+      review_sessions: [{id: reviewId, reviewer: name, exported_at: new Date().toISOString(),
+        overall_comment: overall.value.trim(), items}],
+      aggregation: null
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2) + '\n'], {type: 'application/json;charset=utf-8'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${pack.company}_人工质检_${new Date().toISOString().slice(0, 10)}.json`;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    setStatus(payload.complete ? '已导出复核 JSON' : '已导出草稿 JSON（仍有未决问题）');
+  });
+
+  document.getElementById('import').addEventListener('change', async event => {
+    const file = event.target.files[0];
+    if (!file) return;
+    try {
+      const data = JSON.parse(await file.text());
+      const expected = new Set(pack.items.map(x => x.item_id));
+      const sessions = data.review_sessions;
+      const items = Array.isArray(sessions) && sessions.length === 1 ? sessions[0].items : null;
+      if (data.schema_version !== 'finagent.manual_review.v2' || data.company !== pack.company ||
+          data.rubric_version !== pack.rubric_version || data.source_sha256 !== pack.source_sha256 ||
+          !Array.isArray(items) || items.length !== expected.size ||
+          new Set(items.map(x => x.item_id)).size !== expected.size ||
+          items.some(x => !expected.has(x.item_id) ||
+            !((pack.items.find(y => y.item_id === x.item_id).flagged && decisions.has(x.human_verdict)) ||
+              (pack.items.find(y => y.item_id === x.item_id).machine_only && x.human_verdict === 'machine_only') ||
+              (!pack.items.find(y => y.item_id === x.item_id).model_flagged && x.human_verdict === 'assumed_ok')))) {
+        throw new Error('文件版本、公司、来源或条目不匹配');
+      }
+      const session = sessions[0];
+      fill({id: session.id, reviewer: session.reviewer, overall_comment: session.overall_comment,
+        items: items.map(x => ({item_id: x.item_id, decision: x.human_verdict, feedback: x.feedback}))});
+      save(); setStatus('已导入这份质检页的 JSON');
+    } catch (error) { setStatus(`导入失败：${error.message}`, true); }
+    finally { event.target.value = ''; }
+  });
+  let pdfUrl = null;
+  function getPdfUrl() {
+    if (pdfUrl) return pdfUrl;
+    const binary = atob(document.getElementById('report-pdf').textContent.trim());
+    const bytes = Uint8Array.from(binary, x => x.charCodeAt(0));
+    pdfUrl = URL.createObjectURL(new Blob([bytes], {type: 'application/pdf'}));
+    return pdfUrl;
+  }
+  const viewPdf = document.getElementById('view-pdf');
+  if (viewPdf) viewPdf.addEventListener('click', () => {
+    try {
+      document.getElementById('pdf-frame').src = getPdfUrl();
+      document.getElementById('pdf-viewer').hidden = false;
+      document.getElementById('close-pdf').focus();
+    } catch (error) { setStatus(`PDF 预览失败：${error.message}`, true); }
+  });
+  document.getElementById('close-pdf').addEventListener('click', () => {
+    document.getElementById('pdf-viewer').hidden = true;
+    if (viewPdf) viewPdf.focus();
+  });
+  document.addEventListener('keydown', event => {
+    if (event.key === 'Escape') document.getElementById('pdf-viewer').hidden = true;
+  });
+  const pdfButton = document.getElementById('download-pdf');
+  if (pdfButton) pdfButton.addEventListener('click', () => {
+    try {
+      const a = document.createElement('a');
+      a.href = getPdfUrl(); a.download = `${pack.company}_原始研报.pdf`;
+      document.body.appendChild(a); a.click(); a.remove();
+      setStatus('已下载内嵌原始研报 PDF');
+    } catch (error) { setStatus(`PDF 下载失败：${error.message}`, true); }
+  });
+  window.addEventListener('pagehide', () => { if (pdfUrl) URL.revokeObjectURL(pdfUrl); });
+})();
+</script>
+</body>
+</html>

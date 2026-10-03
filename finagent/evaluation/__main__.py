@@ -5,6 +5,7 @@
   python -m finagent.evaluation score   --result eval/results/<目录> [--rubric 改过权重的标准]   # 不重跑评审，只重算分
   python -m finagent.evaluation compare --result <A> --result <B> [--out 对比.md]
   python -m finagent.evaluation pack    --result <A> --result <B> --out <文件夹>   # 质检查看包：PDF + 评分标准 + 打分结果 + index.html
+  python -m finagent.evaluation review-docs --pack eval/review_pack/v0 --out eval/review_pack/demo  # 独立人工质检页
 
 run 的结果目录：checks.json（程序判定）、judgments.json（评审判定）、score.json、scorecard.md（逐条表）、
 issues.json / issues.md（未通过条目转成的问题单，不含条目原文与分值，供 refine loop 回传给生成与复核）。
@@ -142,6 +143,9 @@ def main(argv: list[str] | None = None) -> int:
     k.add_argument("--out", required=True)
     k.add_argument("--rubric")
     k.add_argument("--title", default="研报质检")
+    d = sub.add_parser("review-docs", help="从已封存查看包生成逐公司人工质检页；不重跑评审")
+    d.add_argument("--pack", default=str(PROJECT_ROOT / "eval" / "review_pack" / "v0"))
+    d.add_argument("--out", required=True)
     args = ap.parse_args(argv)
 
     if args.cmd == "run":
@@ -156,6 +160,11 @@ def main(argv: list[str] | None = None) -> int:
     elif args.cmd == "pack":
         from .pack import build_pack
         print(build_pack([Path(d) for d in args.result], Path(args.out), args.rubric, args.title))
+        return 0
+    elif args.cmd == "review-docs":
+        from .review_docs import build_review_docs
+        for path in build_review_docs(Path(args.pack), Path(args.out)):
+            print(path)
         return 0
     elif args.cmd == "score":
         out = Path(args.result)
