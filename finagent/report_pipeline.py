@@ -60,10 +60,11 @@ REVIEW_PROMPT = ("你是本工作区研报的复核编辑，没有参与写作�
 
 # 工作区内允许的操作。未被信任的目录里 Claude Code 会忽略 settings.json 的 allow（deny 照常生效），
 # 所以无头执行时同一份清单再经 --allowedTools 传入，不去改用户的全局信任配置
-ALLOWED_TOOLS = (f"Bash({PY_WRAPPER} -m finagent:*)", f"Bash({PY_WRAPPER} -m finagent.report_pipeline status:*)",
-                 f"Bash({PY_WRAPPER} data/extractions/:*)", f"Bash({PY_WRAPPER} -c:*)",
-                 "Bash(cp .claude/skills/finagent-report/templates/:*)", "Bash(cp data/extractions/:*)",
-                 "Bash(ls:*)", "Bash(mkdir -p data/:*)",
+# 规则用通配写法：旧式 `前缀:*` 只在词边界匹配，`data/extractions/:*` 匹配不到 `data/extractions/<公司>/...`。
+# 模板不用 cp 从 .claude/ 复制（Claude Code 会拒绝从配置目录复制），改用 report_pipeline template。
+ALLOWED_TOOLS = (f"Bash({PY_WRAPPER} -m finagent *)", f"Bash({PY_WRAPPER} -m finagent.report_pipeline *)",
+                 f"Bash({PY_WRAPPER} data/extractions/*)", f"Bash({PY_WRAPPER} -c *)",
+                 "Bash(cp data/extractions/*)", "Bash(ls *)", "Bash(mkdir -p data/*)",
                  "Read", "Write(./data/**)", "Edit(./data/**)", "WebSearch", "WebFetch")
 # 资料搜集闸门：各类别都要覆盖、检索量下限、近 RECENT_DAYS 天内发布的来源下限；补充调研的问题数下限
 MIN_COLLECT_QUERIES, MIN_RECENT_SOURCES, RECENT_DAYS, MIN_FOLLOWUP = 20, 3, 90, 3
@@ -359,9 +360,9 @@ skill 全文在 `.claude/skills/`（`.agents/skills/` 下只是指向它的入�
 | 5 | 经营数据 | 按驱动清单逐格抄表到 `{work}/extras.json`，派生比率写 `ratios` | `references/extraction.md`“补充表格” | `PY -m finagent verify-extra --input {pdf} --extras {work}/extras.json` 为 `ok: true` |
 | 6 | 估值假设 | 起草 `{work}/valuation_assumptions.json`：`status` 写明“观点/假设”，股价取 `inputs/market.json`（没有则取资料搜集登记的最新收盘价），每项假设写依据；**预测首年要与资料包里年报之后的最新业绩衔接**，依据里引用 `[S编号]` | `finagent-research/SKILL.md` 第 5 步“估值口径”，`data/samples/valuation_assumptions.json`（格式） | 文件存在，有 `current_price` 与 `price_source`，依据中引用了资料搜集的 `[S编号]` |
 | 7 | 估值运行 | `PY -m finagent valuation --input {pdf} --year {y} --company {c} --assumptions {work}/valuation_assumptions.json --facts {work}/facts.json --extras {work}/extras.json --llm off`{" --peers inputs/peers.csv" if "peers" in meta["inputs"] else f" --peers {work}/research/peers.csv（资料搜集写了可比公司表时）"} | — | 最新运行目录成功，且晚于 facts / extras / 假设 / 可比公司表的修改，并带上了它们 |
-| 8 | 文稿 | `cp .claude/skills/finagent-report/templates/narrative.md {work}/report/narrative.md`，写完全部分析，年报之后的最新进展要写进去；`PY -m finagent guard --run-dir runs/<run_id> --text {work}/report/narrative.md --sources {work}/research/sources.json` | `references/sections.md`，`finagent-research/references/writing.md` | 最新运行目录的 guard 为 `ok: true`（数字与外部来源），且核对的就是当前文稿。**写作会话到此停止** |
+| 8 | 文稿 | `PY -m finagent.report_pipeline template narrative.md {work}/report/narrative.md`，写完全部分析，年报之后的最新进展要写进去；`PY -m finagent guard --run-dir runs/<run_id> --text {work}/report/narrative.md --sources {work}/research/sources.json` | `references/sections.md`，`finagent-research/references/writing.md` | 最新运行目录的 guard 为 `ok: true`（数字与外部来源），且核对的就是当前文稿。**写作会话到此停止** |
 | 9 | 复核改写（独立会话） | 按 `finagent-review` skill：备份初稿为 `{work}/report/narrative.draft.md`，以编辑身份通读改写，写 `{work}/report/edit_log.md` 与复核清单 `{work}/report/review.md`；`PY -m finagent numlock --before {work}/report/narrative.draft.md --after {work}/report/narrative.md`，再重跑阶段 8 的 guard | `finagent-review/SKILL.md` | 三个文件都存在，数字锁通过，guard 对改写稿通过 |
-| 10 | 排版 | `cp .claude/skills/finagent-report/templates/build_report.py {work}/report/build_report.py`，`Config.output_name` 设为 `{c}{datetime.now():%m%d}.pdf`；`PY {work}/report/build_report.py --run-dir runs/<run_id>`，看 `preview/sheet*.png` 自检 | `finagent-research/references/html-report.md` | PDF 晚于文稿和编排脚本 |
+| 10 | 排版 | `PY -m finagent.report_pipeline template build_report.py {work}/report/build_report.py`，`Config.output_name` 设为 `{c}{datetime.now():%m%d}.pdf`；`PY {work}/report/build_report.py --run-dir runs/<run_id>`，看 `preview/sheet*.png` 自检 | `finagent-research/references/html-report.md` | PDF 晚于文稿和编排脚本 |
 | 11 | 交付说明 | 写 `{work}/report/delivery.md`：PDF 路径、页数与图表数、核心结论、评级（取程序结果）、哪些是假设或外部数据、复核清单要点 | — | 文件存在 |
 
 改了前面阶段的文件（如补抄 extras），status 会把后面的阶段标为过期：重跑估值、guard、排版。
@@ -963,6 +964,24 @@ def _workspace(arg: str | None) -> Path:
     return ws
 
 
+TEMPLATES = Path(".claude") / "skills" / "finagent-report" / "templates"
+
+
+def copy_template(ws: Path, name: str, dest: str, *, force: bool = False) -> Path:
+    """把 finagent-report 的模板复制到工作区 data/ 下（模型不能用 cp 从 .claude/ 复制）。已存在不覆盖。"""
+    src = ws / TEMPLATES / name
+    if not src.is_file() or src.parent.resolve() != (ws / TEMPLATES).resolve():
+        raise SystemExit(f"没有模板 {name}；可用：{'、'.join(sorted(p.name for p in (ws / TEMPLATES).iterdir()))}")
+    target = (ws / dest).resolve()
+    if (ws / "data").resolve() not in target.parents:
+        raise SystemExit("模板只能复制到 data/ 下")
+    if target.exists() and not force:
+        raise SystemExit(f"{dest} 已存在，未覆盖（确需重来加 --force）")
+    target.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(src, target)
+    return target
+
+
 def _in_workspace(cmd: str) -> None:
     if (PROJECT_ROOT / META).is_file():
         raise SystemExit(f"当前在工作区内，{cmd} 要在仓库里运行")
@@ -1009,6 +1028,10 @@ def main(argv: list[str] | None = None) -> int:
     sc.add_argument("--json", action="store_true")
     sc.add_argument("--out", help="Markdown 表格另存路径")
     sub.add_parser("sync-skills", help="按 .claude/skills 更新仓库 .agents/skills 入口（Codex 等用）")
+    tp = sub.add_parser("template", help="工作区内：把 finagent-report 模板复制到 data/ 下")
+    tp.add_argument("name", help="模板文件名，如 narrative.md、build_report.py")
+    tp.add_argument("dest", help="目标路径（相对工作区，须在 data/ 下）")
+    tp.add_argument("--force", action="store_true")
     args = ap.parse_args(argv)
 
     if args.cmd == "build":
@@ -1033,6 +1056,9 @@ def main(argv: list[str] | None = None) -> int:
         if args.out:
             Path(args.out).write_text(text, encoding="utf-8")
         print(text)
+        return 0
+    if args.cmd == "template":
+        print(copy_template(_workspace(None), args.name, args.dest, force=args.force))
         return 0
     ws = _workspace(args.workspace)
     if args.cmd == "status":

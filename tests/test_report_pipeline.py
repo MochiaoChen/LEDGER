@@ -208,3 +208,14 @@ def test_extras_cache_without_verifier_fingerprint_is_rechecked(ws, monkeypatch)
     monkeypatch.setattr(extra_module, "verify_extras", lambda *args: {"tables": [], "rejected": []})
     checked = rp._extras_check(ws, json.loads((ws / "sample.json").read_text(encoding="utf-8")), extras)
     assert checked["ok"] and checked["rejected"] == 0 and checked["verifier_sha256"]
+
+
+def test_copy_template_only_into_data(ws):
+    out = rp.copy_template(ws, "narrative.md", "data/extractions/贵州茅台_2025/report/narrative.md")
+    assert out.is_file() and "section" in out.read_text(encoding="utf-8")
+    with pytest.raises(SystemExit, match="已存在"):
+        rp.copy_template(ws, "narrative.md", "data/extractions/贵州茅台_2025/report/narrative.md")
+    with pytest.raises(SystemExit, match="data/"):
+        rp.copy_template(ws, "narrative.md", "finagent/x.md")
+    with pytest.raises(SystemExit, match="没有模板"):
+        rp.copy_template(ws, "../SKILL.md", "data/x.md")
