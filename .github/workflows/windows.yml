@@ -24,3 +24,16 @@ jobs:
         run: python -m pytest -q tests
       - name: Run evaluation
         run: python eval/run_eval.py
+      - name: Smoke-test Windows workspace wrapper
+        shell: pwsh
+        run: |
+          python -m finagent.report_pipeline build --company 贵州茅台 --year 2025 --dest "$env:RUNNER_TEMP\finagent-sample" --price 1500 --price-source "CI 示例行情"
+          $workspace = Join-Path $env:RUNNER_TEMP 'finagent-sample\贵州茅台_2025'
+          Push-Location $workspace
+          try {
+            & .\py.cmd -m finagent.report_pipeline status
+            # 新工作区闸门未通过，status 应返回 1
+            if ($LASTEXITCODE -ne 1) { throw "py.cmd status expected incomplete exit 1, got: $LASTEXITCODE" }
+          } finally {
+            Pop-Location
+          }

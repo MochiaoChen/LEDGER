@@ -15,7 +15,7 @@ from pathlib import Path
 from matplotlib.lines import Line2D
 from matplotlib.patches import Patch
 
-from .core import (BRICK, FULL, GOLD, GRID, HALF, INK, LIGHT, LIGHT2, MUTED, NAVY, NAVY2, NEUTRAL, PALETTE, SLATE,
+from .core import (BRICK, FULL, GOLD, GRID, HALF, INK, LIGHT, LIGHT2, MUTED, NAVY, NAVY2, NEUTRAL, PALE_BLUE, PALETTE, SLATE,
                    Run, clean, fig_size, fmt_of, hgrid, labels, legend_below, note_above, save, subtitle)
 
 QS = ["Q1", "Q2", "Q3", "Q4"]
@@ -276,14 +276,14 @@ def cover(run: Run, out: Path) -> str:
     x = range(len(ys))
     act = [s.endswith("A") for s in lab]
     ax.bar([i - 0.2 for i in x], rev, 0.38, color=[NAVY if a else LIGHT for a in act])
-    ax.bar([i + 0.2 for i in x], npp, 0.38, color=[SLATE if a else LIGHT2 for a in act])
+    ax.bar([i + 0.2 for i in x], npp, 0.38, color=[SLATE if a else PALE_BLUE for a in act])
     ax.set_xticks(list(x), lab, fontsize=6.2)
     clean(ax)
     ax.set_ylim(0, max(rev) * 1.12)
-    ax.legend(handles=[Patch(color=NAVY, label="营业收入"), Patch(color=SLATE, label="归母净利润"),
-                       Patch(color=LIGHT, label="预测值")],
-              frameon=False, loc="upper left", ncol=3, fontsize=5.8, handlelength=0.8, columnspacing=0.6,
-              bbox_to_anchor=(0, 1.16))
+    ax.legend(handles=[Patch(color=NAVY, label="收入·实际"), Patch(color=LIGHT, label="收入·预测"),
+                       Patch(color=SLATE, label="归母净利·实际"), Patch(color=PALE_BLUE, label="归母净利·预测")],
+              frameon=False, loc="upper left", ncol=2, fontsize=5.5, handlelength=0.8, columnspacing=0.45,
+              bbox_to_anchor=(0, 1.22))
     return save(fig, out / "cover.svg")
 
 

@@ -8,3 +8,4 @@ runs/*
 .venv/
 # 评测事件流（含 PDF 内容，体积大）只留在本地；评审结论在 judgments.json / scorecard.md
 eval/results/*/judge.jsonl
+.DS_Store

@@ -67,6 +67,8 @@ def truth_values(run: Path) -> list[float]:
         if p.exists():
             data = json.loads(p.read_text(encoding="utf-8"))
             _numbers(data, vals)
+            if rel == "financials/extras.json":
+                _extras_scaled_numbers(data, vals)
             if rel.startswith("valuation/"):
                 _mm_numbers(data, vals)
     seg = run / "valuation" / "segment_forecast.json"
@@ -87,6 +89,21 @@ def truth_values(run: Path) -> list[float]:
         for f in json.loads(findings.read_text(encoding="utf-8"))["findings"]:
             _numbers(f.get("truth_display", ""), vals)  # 只取正确值；suggestion 会引用研报的错误数字
     return vals
+
+
+def _extras_scaled_numbers(extras: dict[str, Any], out: list[float]) -> None:
+    """经营数据表按列单位存数（如 8,162 万吨存成 8162），这里按“亿/万”换算回基本单位，供带单位的正文数字比对。"""
+    for table in extras.get("tables", []):
+        columns = table.get("columns", [])
+        for row in table.get("rows", []):
+            for column, value in zip(columns, row.get("values", [])):
+                if not isinstance(value, (int, float)) or isinstance(value, bool):
+                    continue
+                unit = str(column.get("unit") or "")
+                if unit.startswith("亿"):
+                    out.append(float(value) * 1e8)
+                elif unit.startswith("万"):
+                    out.append(float(value) * 1e4)
 
 
 def _decimals(s: str) -> int:
@@ -124,12 +141,33 @@ def check_binding(text: str, run: Path, source: str = "commentary.md") -> list[d
     year = int(str(analysis["period"])[:4])
     doc = Document(source, "", _parse_markdown(text, source))
     claims = extract_claims(doc, default_year=year, llm=None)
-    findings = verify_claims(claims, analysis["truth_table"])["findings"]
     segment = _segment_values(run)
+    claims = [c for c in claims if _binding_candidate(c, year, segment, _sentence(text, c["quote"]))]
+    findings = verify_claims(claims, analysis["truth_table"])["findings"]
     return [{"quote": f["quote"], "verdict": f["verdict"], "truth": f["truth_display"], "explanation": f["explanation"]}
             for f in findings
             if f["verdict"] not in ("正确", "无法核实") and not _is_segment_claim(_context(text, f["quote"]), segment)
             and not _is_forecast(_sentence(text, f["quote"]), year)]
+
+
+def _binding_candidate(claim: dict[str, Any], year: int, segment: dict[str, list[float]],
+                       paragraph: str = "") -> bool:
+    """只对口径明确的断言用年度合并真值表核对：预测、季度、跨年序列、分部、现金流明细等一律不比，
+    以免把分部或季度数字误判为与全年合并值不符（这些数字仍要过出处核对）。"""
+    sentence = claim.get("sentence", "")
+    if claim.get("is_forecast") or _is_forecast(sentence, year):
+        return False
+    if re.search(r"(?:Q[1-4]|[一二三四]季度|第[一二三四]季度|上半年|前三季度)", sentence):
+        return False
+    if len(set(re.findall(r"20\d{2}", paragraph or sentence))) > 1:
+        return False
+    if re.search(r"\d[\d,.]*\s*(?:亿元|万元|元|%)\s*、\s*\d", sentence):
+        return False
+    if any(label and len(label) >= 2 and label in sentence for label in segment):
+        return False
+    if re.search(r"购建|支付的现金|收回的现金|折旧|所得税影响|客户|供应商|母公司|扣非|单箱|上年|非流动性资产处置|营业外收入|分部净利润|归母净利率|假设|逐年|由\s*[\d,.]+\s*(?:亿元|万元|%)\s*(?:升)?至", sentence):
+        return False
+    return True
 
 
 def _sentence(text: str, quote: str) -> str:

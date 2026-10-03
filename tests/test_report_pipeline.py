@@ -18,7 +18,6 @@ def test_workspace_contains_only_skills_engine_and_one_company(ws):
     assert (ws / ".claude/skills/finagent-research/SKILL.md").is_file()
     assert (ws / ".claude/skills/finagent-report/reportkit/core.py").is_file()
     assert (ws / "finagent/__main__.py").is_file()
-    assert not (ws / "finagent/deepseek_harness.py").exists()
     assert not list(ws.rglob("__pycache__"))
     pdfs = list(ws.rglob("*.pdf"))
     assert [p.relative_to(ws).as_posix() for p in pdfs] == ["report/resources/贵州茅台/600519_贵州茅台_2025_年度报告.pdf"]
@@ -165,3 +164,20 @@ def test_run_agent_chains_write_then_review(ws, monkeypatch):
     calls.clear()
     rp.run_agent(ws, "claude")
     assert calls == ["review"]
+
+
+def test_extras_cache_without_verifier_fingerprint_is_rechecked(ws, monkeypatch):
+    from finagent.parsing import document
+    from finagent.tasks.financials import extras as extra_module
+
+    work = ws / "data/extractions/贵州茅台_2025"
+    extras = work / "extras.json"
+    extras.write_text('{"tables":[]}', encoding="utf-8")
+    cache = ws / ".pipeline/extras_check.json"
+    cache.parent.mkdir(exist_ok=True)
+    cache.write_text(json.dumps({"sha256": rp._sha256(extras), "ok": False, "rejected": 8,
+                                 "tables": 1, "cells": 0}), encoding="utf-8")
+    monkeypatch.setattr(document, "load_document", lambda *args: object())
+    monkeypatch.setattr(extra_module, "verify_extras", lambda *args: {"tables": [], "rejected": []})
+    checked = rp._extras_check(ws, json.loads((ws / "sample.json").read_text(encoding="utf-8")), extras)
+    assert checked["ok"] and checked["rejected"] == 0 and checked["verifier_sha256"]

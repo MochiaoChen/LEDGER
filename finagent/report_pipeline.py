@@ -33,27 +33,28 @@ from .core.config import PROJECT_ROOT
 SKILLS = ("finagent-research", "finagent-report", "finagent-review")
 # 引擎里与研报无关的模块不进工作区
 # evaluation 是质检（评分标准与评审提示），对生成方不可见
-ENGINE_EXCLUDE = {"__pycache__", "deepseek_harness.py", "evaluation"}
+ENGINE_EXCLUDE = {"__pycache__", "evaluation"}
 # skill 文档引用的格式样例（虚构公司，只作字段格式参考）
 FORMAT_SAMPLES = ("data/samples/valuation_assumptions.json", "data/samples/peers.csv")
 META = "sample.json"
 STATE_DIR = ".pipeline"
 AGENT_SKILLS = Path(".agents") / "skills"  # Codex 等读 .agents/skills 与 AGENTS.md
 # Claude 执行时的默认分工：生成用 Opus，复核与质检用 Sonnet
+PY_WRAPPER = "py.cmd" if os.name == "nt" else "./py"
 GEN_MODEL = os.getenv("FINAGENT_GEN_MODEL", "claude-opus-5-5")
 QC_MODEL = os.getenv("FINAGENT_QC_MODEL", "claude-sonnet-5-5")
-TASK_PROMPT = ("按本工作区 AGENTS.md 的流水线完成研报阶段 1～7：每个阶段结束运行 ./py -m finagent.report_pipeline status，"
-               "文稿 guard 通过后停止并汇报（阶段 8 起由独立的复核会话完成）。命令直接以 ./py 开头，不加 cd、不串联。")
+TASK_PROMPT = (f"按本工作区 AGENTS.md 的流水线完成研报阶段 1～7：每个阶段结束运行 {PY_WRAPPER} -m finagent.report_pipeline status，"
+               f"文稿 guard 通过后停止并汇报（阶段 8 起由独立的复核会话完成）。命令直接以 {PY_WRAPPER} 开头，不加 cd、不串联。")
 # 复核会话：不继承写作会话的上下文，以编辑身份读稿（finagent-review skill），再完成排版与交付
 REVIEW_PROMPT = ("你是本工作区研报的复核编辑，没有参与写作。先读 .claude/skills/finagent-review/SKILL.md，"
-                 "按它完成 AGENTS.md 阶段 8（复核改写），再完成阶段 9～10；每个阶段结束运行 "
-                 "./py -m finagent.report_pipeline status，全部闸门通过后停止并汇报。命令直接以 ./py 开头，不加 cd、不串联。")
+                 f"按它完成 AGENTS.md 阶段 8（复核改写），再完成阶段 9～10；每个阶段结束运行 "
+                 f"{PY_WRAPPER} -m finagent.report_pipeline status，全部闸门通过后停止并汇报。命令直接以 {PY_WRAPPER} 开头，不加 cd、不串联。")
 
 
 # 工作区内允许的操作。未被信任的目录里 Claude Code 会忽略 settings.json 的 allow（deny 照常生效），
 # 所以无头执行时同一份清单再经 --allowedTools 传入，不去改用户的全局信任配置
-ALLOWED_TOOLS = ("Bash(./py -m finagent:*)", "Bash(./py -m finagent.report_pipeline status:*)",
-                 "Bash(./py data/extractions/:*)", "Bash(./py -c:*)",
+ALLOWED_TOOLS = (f"Bash({PY_WRAPPER} -m finagent:*)", f"Bash({PY_WRAPPER} -m finagent.report_pipeline status:*)",
+                 f"Bash({PY_WRAPPER} data/extractions/:*)", f"Bash({PY_WRAPPER} -c:*)",
                  "Bash(cp .claude/skills/finagent-report/templates/:*)", "Bash(cp data/extractions/:*)",
                  "Bash(ls:*)", "Bash(mkdir -p data/:*)",
                  "Read", "Write(./data/**)", "Edit(./data/**)", "WebSearch", "WebFetch")
@@ -228,6 +229,11 @@ def build(company: str, year: int, dest: Path | None = None, *, pdf: str | None 
                            'export MPLCONFIGDIR="$HERE/.pipeline/mpl"\n'
                            f'exec "{sys.executable}" "$@"\n', encoding="utf-8")
     (ws / "py").chmod(0o755)
+    # Windows cmd.exe / PowerShell 不识别无扩展名的 POSIX 包装器。
+    (ws / "py.cmd").write_text(
+        "@echo off\r\n"
+        "set \"MPLCONFIGDIR=%~dp0.pipeline\\mpl\"\r\n"
+        f'"{sys.executable}" %*\r\n', encoding="utf-8")
     (ws / "AGENTS.md").write_text(render_guide(meta), encoding="utf-8")
     (ws / "CLAUDE.md").write_text("@AGENTS.md\n", encoding="utf-8")
     (ws / "TASK.md").write_text(TASK_PROMPT + "\n", encoding="utf-8")
@@ -248,7 +254,7 @@ def _git_head(root: Path) -> str | None:
 def settings(meta: dict[str, Any], root: Path) -> dict[str, Any]:
     """工作区权限：引擎与 skill 只读；仓库及其上级目录（原插件、其他公司产物）不可读。"""
     fence = root.resolve().parent.as_posix()
-    locked = ("finagent/**", ".claude/**", ".agents/**", "report/**", META, "py", "CLAUDE.md", "AGENTS.md")
+    locked = ("finagent/**", ".claude/**", ".agents/**", "report/**", META, "py", "py.cmd", "CLAUDE.md", "AGENTS.md")
     return {"permissions": {
         "allow": list(ALLOWED_TOOLS),
         "deny": [f"Read(/{fence}/**)",
@@ -279,8 +285,9 @@ def render_guide(meta: dict[str, Any]) -> str:
 
 它逐项核对闸门并告诉你下一步做什么、读哪份文档。上下文被压缩或中途接手时，**先跑 status，不要重读已完成阶段的文件**。
 
-下文 `PY` = `./py`（包装了本机虚拟环境的 Python）。**当前目录就是工作区**：命令直接以 `./py` 开头，
+下文 `PY` = macOS/Linux 的 `./py`，Windows 的 `py.cmd`（均包装本机 Python）。**当前目录就是工作区**：命令直接以 `./py` 开头，
 不要加 `cd`、不要写绝对路径、不要用 `&&` / 管道串联多条命令，否则无头执行时权限匹配不上会被拒。
+在 Windows 上执行本页示例命令时，把 `./py` 替换成 `py.cmd`。
 
 ## 输入
 
@@ -382,16 +389,21 @@ def _has_arg(argv: list[str], rel: str) -> bool:
 
 
 def _extras_check(ws: Path, meta: dict, extras: Path) -> dict:
-    """verify-extra 结果按 extras 内容哈希缓存，避免每次 status 都重新解析整份 PDF。"""
+    """verify-extra 结果按 extras、年报与校验代码的哈希缓存：三者都没变才复用，避免每次 status 都重新解析整份 PDF。"""
+    import hashlib
+    from .parsing import document
+    from .tasks.financials import external, extras as extra_module
+
     cache = ws / STATE_DIR / "extras_check.json"
     digest = _sha256(extras)
-    if cache.is_file() and (c := _load(cache)).get("sha256") == digest:
+    code_hash = hashlib.sha256(b"".join(Path(p).read_bytes() for p in
+                                    (document.__file__, external.__file__, extra_module.__file__, __file__))).hexdigest()
+    if (cache.is_file() and (c := _load(cache)).get("sha256") == digest
+            and c.get("pdf_sha256") == meta["pdf_sha256"] and c.get("verifier_sha256") == code_hash):
         return c
-    from .parsing.document import load_document
-    from .tasks.financials.extras import verify_extras
-
-    res = verify_extras(load_document(str(ws / meta["pdf"])), _load(extras))
-    out = {"sha256": digest, "ok": not res["rejected"], "rejected": len(res["rejected"]),
+    res = extra_module.verify_extras(document.load_document(str(ws / meta["pdf"])), _load(extras))
+    out = {"sha256": digest, "pdf_sha256": meta["pdf_sha256"], "verifier_sha256": code_hash,
+           "ok": not res["rejected"], "rejected": len(res["rejected"]),
            "tables": len(res["tables"]),
            "cells": sum(1 for t in res["tables"] for row in t["rows"] for v in row["values"] if v is not None)}
     cache.parent.mkdir(exist_ok=True)
@@ -609,12 +621,23 @@ def _session(ws: Path, agent: str, model: str | None, role: str, prompt: str) ->
     started = datetime.now()
     log = logs / f"{started:%Y%m%d-%H%M%S}-{agent}-{role}.jsonl"
     with log.open("w", encoding="utf-8") as f:
-        proc = subprocess.Popen(cmd, cwd=ws, stdout=subprocess.PIPE, text=True, encoding="utf-8")
-        for line in proc.stdout:  # 边跑边落盘，中途中断也有记录
-            f.write(line)
-            f.flush()
-            print(_event_brief(line), end="", flush=True)
-        code = proc.wait()
+        proc = subprocess.Popen(cmd, cwd=ws, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                                text=True, encoding="utf-8", errors="replace")
+        try:
+            for line in proc.stdout:  # 边跑边落盘，中途中断也有记录
+                f.write(line)
+                f.flush()
+                print(_event_brief(line), end="", flush=True)
+            code = proc.wait()
+        except KeyboardInterrupt:
+            proc.terminate()
+            try:
+                proc.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                proc.kill()
+                proc.wait()
+            code = 130
+            print("[中断] 已停止执行模型，工作区进度保留\n", flush=True)
     record = {"agent": agent, "model": model, "role": role, "started_at": started.isoformat(timespec="seconds"),
               "elapsed_sec": round((datetime.now() - started).total_seconds(), 1), "exit_code": code,
               "log": log.relative_to(ws).as_posix(), **_usage(log, agent)}
