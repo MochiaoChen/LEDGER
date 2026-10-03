@@ -615,7 +615,7 @@ def collect(ws: Path, *, label: str = "", overwrite: bool = False, force: bool =
             name = " ".join(x for x in (datetime.now().strftime("%m%d"), meta["company"], label) if x)
             dst = root / "report" / "交付" / name
             dst.mkdir(parents=True, exist_ok=True)
-            shutil.copy2(pdf, dst / "report.pdf")
+            shutil.copy2(pdf, dst / f"{meta['company']}{datetime.now():%m%d}.pdf")  # 公司名 + 日期，如 宇树科技1003.pdf
             if xlsx.is_file():
                 shutil.copy2(xlsx, dst / "sheet.xlsx")
             review = src_work / "report" / "review.md"
