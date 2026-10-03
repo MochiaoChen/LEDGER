@@ -261,7 +261,8 @@ def _git_head(root: Path) -> str | None:
 def settings(meta: dict[str, Any], root: Path) -> dict[str, Any]:
     """工作区权限：引擎与 skill 只读；仓库及其上级目录（原插件、其他公司产物）不可读。"""
     fence = root.resolve().parent.as_posix()
-    locked = ("finagent/**", ".claude/**", ".agents/**", "report/**", META, "py", "py.cmd", "CLAUDE.md", "AGENTS.md")
+    # report/resources/ 是年报原件；不能写成 report/**，否则会连带拦住 data/extractions/<公司>/report/（框架与文稿）
+    locked = ("finagent/**", ".claude/**", ".agents/**", "report/resources/**", META, "py", "py.cmd", "CLAUDE.md", "AGENTS.md")
     return {"permissions": {
         "allow": list(ALLOWED_TOOLS),
         "deny": [f"Read(/{fence}/**)",
@@ -850,6 +851,10 @@ def refine(ws: Path, *, max_rounds: int = 3, min_gain: float = 2.0, gen_model: s
 
         rdir = eroot / f"r{n}"
         st = status(ws)
+        if not st["done"]:  # 交付物不全时盲评没有意义：停下，把卡住的闸门交给人
+            state["stopped"] = f"第 {n} 轮闸门未通过：{st['next']}"
+            print(state["stopped"])
+            break
         sc = evaluate(bundle_from_workspace(ws), rdir / "eval", rubric_path=rubric, model=qc_model,
                       blind_dir=rdir / "blind")
         issues = json.loads((rdir / "eval" / "issues.json").read_text(encoding="utf-8"))
@@ -866,6 +871,9 @@ def refine(ws: Path, *, max_rounds: int = 3, min_gain: float = 2.0, gen_model: s
             state["stopped"] = reason
             break
 
+    if not state["rounds"]:
+        path.write_text(json.dumps(state, ensure_ascii=False, indent=2), encoding="utf-8")
+        return state
     best = next(r for r in state["rounds"] if r["round"] == state["best"])
     last = state["rounds"][-1]
     if best is not last:
