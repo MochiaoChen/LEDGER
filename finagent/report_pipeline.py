@@ -43,11 +43,18 @@ AGENT_SKILLS = Path(".agents") / "skills"  # Codex 等读 .agents/skills 与 AGE
 PY_WRAPPER = "py.cmd" if os.name == "nt" else "./py"
 GEN_MODEL = os.getenv("FINAGENT_GEN_MODEL", "claude-opus-5-5")
 QC_MODEL = os.getenv("FINAGENT_QC_MODEL", "claude-sonnet-5-5")
-TASK_PROMPT = (f"按本工作区 AGENTS.md 的流水线完成研报阶段 1～7：每个阶段结束运行 {PY_WRAPPER} -m finagent.report_pipeline status，"
-               f"文稿 guard 通过后停止并汇报（阶段 8 起由独立的复核会话完成）。命令直接以 {PY_WRAPPER} 开头，不加 cd、不串联。")
+# 资料搜集会话：先于一切分析，联网把年报之后的最新信息搜齐，写成资料包交给写作会话
+RESEARCH_PROMPT = ("你是本工作区的研究助理，只做 AGENTS.md 阶段 1（资料搜集）：先读 "
+                   ".claude/skills/finagent-report/references/research.md 第一部分，用 WebSearch / WebFetch 把年报之后的"
+                   "最新信息搜齐，登记 sources.json 并写资料包 dossier.md。不做财务抽取、不写分析框架。"
+                   f"结束运行 {PY_WRAPPER} -m finagent.report_pipeline status，阶段 1 通过后停止并汇报。"
+                   f"命令直接以 {PY_WRAPPER} 开头，不加 cd、不串联。")
+TASK_PROMPT = ("按本工作区 AGENTS.md 的流水线完成研报阶段 2～8（阶段 1 资料搜集已由研究助理完成，先读它写的 dossier.md）："
+               f"每个阶段结束运行 {PY_WRAPPER} -m finagent.report_pipeline status，"
+               f"文稿 guard 通过后停止并汇报（阶段 9 起由独立的复核会话完成）。命令直接以 {PY_WRAPPER} 开头，不加 cd、不串联。")
 # 复核会话：不继承写作会话的上下文，以编辑身份读稿（finagent-review skill），再完成排版与交付
 REVIEW_PROMPT = ("你是本工作区研报的复核编辑，没有参与写作。先读 .claude/skills/finagent-review/SKILL.md，"
-                 f"按它完成 AGENTS.md 阶段 8（复核改写），再完成阶段 9～10；每个阶段结束运行 "
+                 f"按它完成 AGENTS.md 阶段 9（复核改写），再完成阶段 10～11；每个阶段结束运行 "
                  f"{PY_WRAPPER} -m finagent.report_pipeline status，全部闸门通过后停止并汇报。命令直接以 {PY_WRAPPER} 开头，不加 cd、不串联。")
 
 
@@ -58,8 +65,8 @@ ALLOWED_TOOLS = (f"Bash({PY_WRAPPER} -m finagent:*)", f"Bash({PY_WRAPPER} -m fin
                  "Bash(cp .claude/skills/finagent-report/templates/:*)", "Bash(cp data/extractions/:*)",
                  "Bash(ls:*)", "Bash(mkdir -p data/:*)",
                  "Read", "Write(./data/**)", "Edit(./data/**)", "WebSearch", "WebFetch")
-# 最低检索量：调研问题数与检索次数（外部调研闸门）
-MIN_QUESTIONS, MIN_QUERIES = 6, 12
+# 资料搜集闸门：各类别都要覆盖、检索量下限、近 RECENT_DAYS 天内发布的来源下限；补充调研的问题数下限
+MIN_COLLECT_QUERIES, MIN_RECENT_SOURCES, RECENT_DAYS, MIN_FOLLOWUP = 20, 3, 90, 3
 
 
 def agent_command(agent: str, model: str | None = None, prompt: str = TASK_PROMPT) -> list[str]:
@@ -221,7 +228,7 @@ def build(company: str, year: int, dest: Path | None = None, *, pdf: str | None 
             "pdf_sha256": src["sha256"], "verified_source": src["verified"], "ticker": src["ticker"],
             "exchange": src["exchange"], "tag": tag, "inputs": inputs, "python": sys.executable,
             "repo": str(root.resolve()), "repo_commit": _git_head(root),
-            "created_at": datetime.now().isoformat(timespec="seconds")}
+            "created_at": datetime.now().isoformat(timespec="seconds"), "as_of": f"{datetime.now():%Y-%m-%d}"}
     (ws / META).write_text(json.dumps(meta, ensure_ascii=False, indent=2), encoding="utf-8")
     # 解释器包一层 ./py：命令短，路径里的空格也不影响 Bash 权限前缀匹配；
     # matplotlib 缓存放进工作区，Codex 等沙箱只允许写工作区时也能画图
@@ -268,12 +275,15 @@ def render_guide(meta: dict[str, Any]) -> str:
     market = meta["inputs"].get("market")
     price_line = (f"`inputs/market.json`：当前股价 {market['current_price']} 元，来源：{market['price_source']}"
                   f"（外部数据，写进假设文件的 `current_price` / `price_source`）"
-                  if market else "**未提供股价。** 外部调研阶段检索最近一个交易日收盘价，登记进 `sources.json`"
+                  if market else "**未提供股价。** 资料搜集阶段检索最近一个交易日收盘价，登记进 `sources.json`"
                   "（摘句含价格与日期），`price_source` 写“<发布方> <日期> 收盘，[S编号]”；查不到就停下写进交付说明，不能凭记忆填。")
     peers_line = ("`inputs/peers.csv`：可比公司（外部数据），估值命令加 `--peers inputs/peers.csv`"
                   if "peers" in meta["inputs"] else "未提供可比公司，不做相对估值。")
     source_line = ("已核验（`manifest.json` 有记录，SHA-256 一致）" if meta["verified_source"]
                    else "**未核验来源**（项目成员提供，官方链接与版本未核对），交付说明里要写明")
+    if "招股" in Path(pdf).name:
+        source_line += ("。**这是招股说明书，不是年报**：财务数据在“财务会计信息与管理层分析”一节，单位多为万元，"
+                        "报告期为最近三年；公司是否已上市、最新股价与上市后的定期报告以资料搜集结果为准")
     return f"""# {c} {y} 年报深度研报 · 工作区流水线
 
 本工作区由 `python -m finagent.report_pipeline build` 生成，只为 **{c} {y}** 一家公司出一份卖方体例深度研报（PDF）
@@ -300,23 +310,28 @@ def render_guide(meta: dict[str, Any]) -> str:
 
 skill 全文在 `.claude/skills/`（`.agents/skills/` 下只是指向它的入口），下文的 skill 文档路径都相对 `.claude/skills/`。
 
-你的全部产出写在 `{work}/`（抽取、假设、框架、外部调研、文稿、编排脚本、复核清单、交付说明），程序运行目录在 `runs/`。
+你的全部产出写在 `{work}/`（资料包、抽取、假设、框架、外部调研、文稿、编排脚本、复核清单、交付说明），程序运行目录在 `runs/`。
 
-## 年报之外的信息：必须联网检索，不能用记忆
+## 先搜集、后分析：年报之外的信息必须联网检索，不能用记忆
+
+今天是 {meta.get("as_of") or meta["created_at"][:10]}，年报反映的是过去。**动笔分析之前先把最新信息搜齐**（阶段 1，由研究助理会话完成）：
+年报之后的定期报告与业绩、股价与市值、卖方一致预期、可比公司估值、行业景气、竞争格局、近三个月的公司事件。
+搜到的东西写进 `{work}/research/dossier.md`（资料包）与 `{work}/research/sources.json`，后面的分析框架、预测假设、
+估值和文稿都要建立在资料包之上：例如最新半年报已经披露，预测首年就要与之衔接，不能只外推年报。
 
 行业规模与增速、竞争格局与排名、产品价格与行业价格指数、同行数据、年报披露日之后的公司公告与事件、政策……
 这些年报里没有的内容，**一律用 WebSearch / WebFetch 现查**，登记进 `{work}/research/sources.json` 才能写进研报。
 你记忆里的数字和事件可能过时或记错，即使你很确定，也先去搜；搜不到的不写。
 
-- 检索什么：framework.md 的“外部调研清单”逐题检索（方法见 `finagent-report/references/research.md`）。
+- 检索什么：阶段 1 按 `finagent-report/references/research.md` 第一部分的类别搜集；阶段 4 按 framework.md 的“外部调研清单”补充检索。
 - 来源优先级：交易所与公司公告 > 政府与行业协会统计 > 知名研究机构与行业数据商 > 主流财经媒体；自媒体、论坛不用。
 - 正文引用外部数字或判断时，句末加 `[S编号]`（guard 会核对外部数字带没带编号）；排名、份额、“龙头”“领先”这类判断没有来源就删掉。
 
 ## 文风由独立复核会话把关
 
 写作前读 `finagent-research/references/writing.md`（分析链条、改写示例、优秀研报学习记录）。文稿写完、guard 通过后，
-**由另一个会话按 `finagent-review` skill 做复核与可读性改写**（阶段 8）：它没有参与写作，以读者的眼光通读全文，
-删去自证、圆场和机器腔，只删改措辞、不碰数字（数字锁）。执行写作的会话做到阶段 7 就停下。
+**由另一个会话按 `finagent-review` skill 做复核与可读性改写**（阶段 9）：它没有参与写作，以读者的眼光通读全文，
+删去自证、圆场和机器腔，只删改措辞、不碰数字（数字锁）。执行写作的会话做到阶段 8 就停下。
 
 **拿不准的内容怎么处理**：能自己判断的直接判断；拿不准又不重要的不写；拿不准但影响结论的（口径疑问、
 外部数据矛盾、关键假设缺依据），写进 `{work}/report/review.md` 复核清单交给人工核对，**不要写进正文**。
@@ -336,16 +351,17 @@ skill 全文在 `.claude/skills/`（`.agents/skills/` 下只是指向它的入�
 
 | # | 阶段 | 做什么 | 这时才读 | 闸门（status 检查） |
 |---|---|---|---|---|
-| 1 | 财务抽取 | 按 locate 读三大报表、主要会计数据、分季度、股本页，写 `{work}/facts.json` | `finagent-research/SKILL.md` 第 1–3 步，`references/extraction.md` | `PY -m finagent verify-facts --input {pdf} --year {y} --facts {work}/facts.json` 为 `ok: true` |
-| 2 | 分析框架 | 通读管理层讨论与分析，写 `{work}/report/framework.md`（投资主线、驱动清单、外部调研清单、披露局限、章节结构） | `finagent-report/SKILL.md` 一～三，`references/analysis.md` | 文件存在，含“外部调研清单” |
-| 3 | 外部调研 | 按外部调研清单逐题 WebSearch / WebFetch，登记到 `{work}/research/sources.json`；`PY -m finagent verify-sources --sources {work}/research/sources.json` | `finagent-report/references/research.md` | verify-sources 为 `ok: true`，至少 {MIN_QUESTIONS} 个问题、{MIN_QUERIES} 次检索 |
-| 4 | 经营数据 | 按驱动清单逐格抄表到 `{work}/extras.json`，派生比率写 `ratios` | `references/extraction.md`“补充表格” | `PY -m finagent verify-extra --input {pdf} --extras {work}/extras.json` 为 `ok: true` |
-| 5 | 估值假设 | 起草 `{work}/valuation_assumptions.json`：`status` 写明“观点/假设”，股价取 `inputs/market.json`（没有则取外部调研登记的收盘价），每项假设写依据（可引用外部调研） | `finagent-research/SKILL.md` 第 5 步“估值口径”，`data/samples/valuation_assumptions.json`（格式） | 文件存在，有 `current_price` 与 `price_source` |
-| 6 | 估值运行 | `PY -m finagent valuation --input {pdf} --year {y} --company {c} --assumptions {work}/valuation_assumptions.json --facts {work}/facts.json --extras {work}/extras.json --llm off`{" --peers inputs/peers.csv" if "peers" in meta["inputs"] else ""} | — | 最新运行目录成功，且晚于 facts / extras / 假设的修改 |
-| 7 | 文稿 | `cp .claude/skills/finagent-report/templates/narrative.md {work}/report/narrative.md`，写完全部分析；`PY -m finagent guard --run-dir runs/<run_id> --text {work}/report/narrative.md --sources {work}/research/sources.json` | `references/sections.md`，`finagent-research/references/writing.md` | 最新运行目录的 guard 为 `ok: true`（数字与外部来源），且核对的就是当前文稿。**写作会话到此停止** |
-| 8 | 复核改写（独立会话） | 按 `finagent-review` skill：备份初稿为 `{work}/report/narrative.draft.md`，以编辑身份通读改写，写 `{work}/report/edit_log.md` 与复核清单 `{work}/report/review.md`；`PY -m finagent numlock --before {work}/report/narrative.draft.md --after {work}/report/narrative.md`，再重跑阶段 7 的 guard | `finagent-review/SKILL.md` | 三个文件都存在，数字锁通过，guard 对改写稿通过 |
-| 9 | 排版 | `cp .claude/skills/finagent-report/templates/build_report.py {work}/report/build_report.py`，`Config.output_name` 设为 `{c}{datetime.now():%m%d}.pdf`；`PY {work}/report/build_report.py --run-dir runs/<run_id>`，看 `preview/sheet*.png` 自检 | `finagent-research/references/html-report.md` | PDF 晚于文稿和编排脚本 |
-| 10 | 交付说明 | 写 `{work}/report/delivery.md`：PDF 路径、页数与图表数、核心结论、评级（取程序结果）、哪些是假设或外部数据、复核清单要点 | — | 文件存在 |
+| 1 | 资料搜集（研究助理会话） | 先读年报首页与管理层讨论与分析的目录了解公司，再按 research.md 第一部分的七个类别联网搜集，登记 `{work}/research/sources.json`（问题标 `phase: collect` 与 `category`），写资料包 `{work}/research/dossier.md`；可比公司倍数齐全时按 `data/samples/peers.csv` 的列写 `{work}/research/peers.csv`；`PY -m finagent verify-sources --sources {work}/research/sources.json` | `finagent-report/references/research.md` 第一部分 | dossier.md 存在；verify-sources 为 `ok: true`；七个类别都覆盖；资料搜集检索 ≥ {MIN_COLLECT_QUERIES} 次；近 {RECENT_DAYS} 天内发布的来源 ≥ {MIN_RECENT_SOURCES} 个。**研究助理会话到此停止** |
+| 2 | 财务抽取 | 先读 dossier.md。按 locate 读三大报表、主要会计数据、分季度、股本页，写 `{work}/facts.json` | `finagent-research/SKILL.md` 第 1–3 步，`references/extraction.md` | `PY -m finagent verify-facts --input {pdf} --year {y} --facts {work}/facts.json` 为 `ok: true` |
+| 3 | 分析框架 | 通读管理层讨论与分析，结合 dossier.md 写 `{work}/report/framework.md`（投资主线、驱动清单、年报之后的变化、外部调研清单、披露局限、章节结构） | `finagent-report/SKILL.md` 一～三，`references/analysis.md` | 文件存在，含“外部调研清单” |
+| 4 | 补充调研 | 资料包没回答、框架又需要的问题，按外部调研清单逐题检索，追加到同一个 sources.json（`phase: followup`）；verify-sources | `finagent-report/references/research.md` 第二部分 | verify-sources 为 `ok: true`，补充问题 ≥ {MIN_FOLLOWUP} 个 |
+| 5 | 经营数据 | 按驱动清单逐格抄表到 `{work}/extras.json`，派生比率写 `ratios` | `references/extraction.md`“补充表格” | `PY -m finagent verify-extra --input {pdf} --extras {work}/extras.json` 为 `ok: true` |
+| 6 | 估值假设 | 起草 `{work}/valuation_assumptions.json`：`status` 写明“观点/假设”，股价取 `inputs/market.json`（没有则取资料搜集登记的最新收盘价），每项假设写依据；**预测首年要与资料包里年报之后的最新业绩衔接**，依据里引用 `[S编号]` | `finagent-research/SKILL.md` 第 5 步“估值口径”，`data/samples/valuation_assumptions.json`（格式） | 文件存在，有 `current_price` 与 `price_source`，依据中引用了资料搜集的 `[S编号]` |
+| 7 | 估值运行 | `PY -m finagent valuation --input {pdf} --year {y} --company {c} --assumptions {work}/valuation_assumptions.json --facts {work}/facts.json --extras {work}/extras.json --llm off`{" --peers inputs/peers.csv" if "peers" in meta["inputs"] else f" --peers {work}/research/peers.csv（资料搜集写了可比公司表时）"} | — | 最新运行目录成功，且晚于 facts / extras / 假设 / 可比公司表的修改，并带上了它们 |
+| 8 | 文稿 | `cp .claude/skills/finagent-report/templates/narrative.md {work}/report/narrative.md`，写完全部分析，年报之后的最新进展要写进去；`PY -m finagent guard --run-dir runs/<run_id> --text {work}/report/narrative.md --sources {work}/research/sources.json` | `references/sections.md`，`finagent-research/references/writing.md` | 最新运行目录的 guard 为 `ok: true`（数字与外部来源），且核对的就是当前文稿。**写作会话到此停止** |
+| 9 | 复核改写（独立会话） | 按 `finagent-review` skill：备份初稿为 `{work}/report/narrative.draft.md`，以编辑身份通读改写，写 `{work}/report/edit_log.md` 与复核清单 `{work}/report/review.md`；`PY -m finagent numlock --before {work}/report/narrative.draft.md --after {work}/report/narrative.md`，再重跑阶段 8 的 guard | `finagent-review/SKILL.md` | 三个文件都存在，数字锁通过，guard 对改写稿通过 |
+| 10 | 排版 | `cp .claude/skills/finagent-report/templates/build_report.py {work}/report/build_report.py`，`Config.output_name` 设为 `{c}{datetime.now():%m%d}.pdf`；`PY {work}/report/build_report.py --run-dir runs/<run_id>`，看 `preview/sheet*.png` 自检 | `finagent-research/references/html-report.md` | PDF 晚于文稿和编排脚本 |
+| 11 | 交付说明 | 写 `{work}/report/delivery.md`：PDF 路径、页数与图表数、核心结论、评级（取程序结果）、哪些是假设或外部数据、复核清单要点 | — | 文件存在 |
 
 改了前面阶段的文件（如补抄 extras），status 会把后面的阶段标为过期：重跑估值、guard、排版。
 
@@ -356,7 +372,7 @@ skill 全文在 `.claude/skills/`（`.agents/skills/` 下只是指向它的入�
    年报之外的事实不凭记忆写，先检索、登记、再引用。
 3. 估值参数是你起草的观点/假设，必须标明；股价是外部数据，必须注明来源；评级取 `forecast_summary.rating`。
 4. 校验 3 轮仍不过的问题不硬改数字，写进交付说明。
-5. 写作会话做到阶段 7 停止；复核会话做阶段 8～10，全部闸门通过后停止，汇报 status 输出和交付说明，不要做额外的事。
+5. 研究助理会话只做阶段 1；写作会话做阶段 2～8；复核会话做阶段 9～11，全部闸门通过后停止，汇报 status 输出和交付说明，不要做额外的事。
 """
 
 
@@ -420,70 +436,95 @@ def status(ws: Path) -> dict[str, Any]:
     narrative, script, delivery = w / "report" / "narrative.md", w / "report" / "build_report.py", w / "report" / "delivery.md"
     sources, review = w / "research" / "sources.json", w / "report" / "review.md"
     draft, edit_log = w / "report" / "narrative.draft.md", w / "report" / "edit_log.md"
+    dossier, peers_csv = w / "research" / "dossier.md", w / "research" / "peers.csv"
     stages: list[dict[str, Any]] = []
 
     def add(name: str, ok: bool, detail: str, todo: str) -> bool:
         stages.append({"stage": name, "ok": ok, "detail": detail, "next": "" if ok else todo})
         return ok
 
-    # 1 财务抽取
+    from .output.sources import coverage, verify_sources
+    src_data = _load(sources) if sources.is_file() else {}
+    vs = verify_sources(src_data) if src_data else None
+    cov = coverage(src_data, meta.get("as_of") or meta["created_at"][:10], RECENT_DAYS) if src_data else None
+    # 1 资料搜集（先搜集、后分析）
+    if not sources.is_file() or not dossier.is_file():
+        add("1 资料搜集", False, "缺 " + "、".join(p.name for p in (sources, dossier) if not p.is_file()),
+            "读 finagent-report/references/research.md 第一部分，按七个类别联网搜集，登记 sources.json、写 dossier.md")
+    else:
+        short = []
+        if cov["missing"]:
+            short.append("未覆盖 " + "、".join(cov["missing"]))
+        if cov["n_collect_queries"] < MIN_COLLECT_QUERIES:
+            short.append(f"检索 {cov['n_collect_queries']} 次 < {MIN_COLLECT_QUERIES}")
+        if len(cov["recent"]) < MIN_RECENT_SOURCES:
+            short.append(f"近 {RECENT_DAYS} 天来源 {len(cov['recent'])} 个 < {MIN_RECENT_SOURCES}")
+        if not vs["ok"]:
+            short.append(f"verify-sources {len(vs['problems'])} 处问题")
+        add("1 资料搜集", not short, f"{cov['n_collect']} 个问题、{cov['n_collect_queries']} 次检索、"
+            f"近 {RECENT_DAYS} 天来源 {len(cov['recent'])} 个" + ("；" + "；".join(short) if short else ""),
+            "补齐：" + "；".join(short) if short else "")
+    # 2 财务抽取
     if not facts.is_file():
-        add("1 财务抽取", False, "facts.json 不存在",
+        add("2 财务抽取", False, "facts.json 不存在",
             "读 finagent-research/SKILL.md 第 1–3 步与 references/extraction.md，按 locate.json 读页抽取")
     elif not verified.is_file() or _mtime(verified) < _mtime(facts):
-        add("1 财务抽取", False, "facts.json 修改后未重新校验", "运行 verify-facts")
+        add("2 财务抽取", False, "facts.json 修改后未重新校验", "运行 verify-facts")
     else:
         chk = _load(verified).get("check", {})
-        add("1 财务抽取", bool(chk.get("ok")),
+        add("2 财务抽取", bool(chk.get("ok")),
             f"rejected {len(chk.get('rejected', []))}，conflicts {len(chk.get('conflicts', []))}，"
             f"勾稽失败 {len(chk.get('tieout_failures', []))}", "按 verify-facts 输出回原文修正（最多 3 轮）")
-    # 2 分析框架
+    # 3 分析框架
     fw_text = framework.read_text(encoding="utf-8") if framework.is_file() else ""
-    add("2 分析框架", "外部调研清单" in fw_text,
+    add("3 分析框架", "外部调研清单" in fw_text,
         "framework.md " + ("已写" if "外部调研清单" in fw_text else "缺“外部调研清单”" if fw_text else "不存在"),
         "读 finagent-report/SKILL.md 一～三与 references/analysis.md，通读管理层讨论与分析后写 framework.md")
-    # 3 外部调研
-    if not sources.is_file():
-        add("3 外部调研", False, "research/sources.json 不存在",
-            "读 references/research.md，按外部调研清单逐题联网检索并登记")
+    # 4 补充调研（框架之后，针对资料包没回答的问题）
+    if vs is None:
+        add("4 补充调研", False, "research/sources.json 不存在", "先完成资料搜集")
     else:
-        from .output.sources import verify_sources
-        sc = verify_sources(_load(sources))
-        few = sc["n_questions"] < MIN_QUESTIONS or sc["n_queries"] < MIN_QUERIES
-        add("3 外部调研", sc["ok"] and not few,
-            f"{sc['n_questions']} 个问题、{sc['n_queries']} 次检索、{sc['n_sources']} 个来源"
-            + (f"，{len(sc['problems'])} 处问题" if sc["problems"] else "") + ("（检索量不足）" if few else ""),
-            "运行 verify-sources 修正；问题与检索不足时补充检索")
-    # 4 经营数据
+        stale = _mtime(sources) < _mtime(framework)
+        few = cov["n_followup"] < MIN_FOLLOWUP
+        add("4 补充调研", vs["ok"] and not few and not stale,
+            f"补充问题 {cov['n_followup']} 个，共 {vs['n_sources']} 个来源"
+            + ("（不足）" if few else "") + ("（早于 framework.md，未按外部调研清单补查）" if stale else ""),
+            "按 framework.md 的外部调研清单补充检索，问题标 phase: followup，追加进 sources.json")
+    # 5 经营数据
     if not extras.is_file():
-        add("4 经营数据", False, "extras.json 不存在", "按 framework.md 驱动清单抄表，读 extraction.md“补充表格”")
+        add("5 经营数据", False, "extras.json 不存在", "按 framework.md 驱动清单抄表，读 extraction.md“补充表格”")
     else:
         ec = _extras_check(ws, meta, extras)
-        add("4 经营数据", ec["ok"], f"{ec['tables']} 张表，拒收 {ec['rejected']} 格", "运行 verify-extra 并修正拒收项")
-    # 4 估值假设
+        add("5 经营数据", ec["ok"], f"{ec['tables']} 张表，拒收 {ec['rejected']} 格", "运行 verify-extra 并修正拒收项")
+    # 6 估值假设
     if not assumptions.is_file():
-        add("5 估值假设", False, "valuation_assumptions.json 不存在", "读 SKILL.md 第 5 步估值口径，按样例格式起草")
+        add("6 估值假设", False, "valuation_assumptions.json 不存在", "读 SKILL.md 第 5 步估值口径，按样例格式起草")
     else:
         a = _load(assumptions)
         miss = [k for k in ("current_price", "price_source") if a.get(k) in (None, "")]
-        add("5 估值假设", not miss, "缺 " + "、".join(miss) if miss else "已起草",
-            "股价取 inputs/market.json；没有就停下并写进交付说明")
-    # 5 估值运行
+        if not re.search(r"\[S\d+\]", assumptions.read_text(encoding="utf-8")):
+            miss.append("依据中的资料搜集引用 [S编号]")
+        add("6 估值假设", not miss, "缺 " + "、".join(miss) if miss else "已起草，依据引用了资料包",
+            "股价取 inputs/market.json 或资料搜集登记的收盘价；预测首年与年报之后的最新业绩衔接，依据里写 [S编号]")
+    # 7 估值运行
     run, man = _latest_run(ws, work)
-    inputs_mtime = max(_mtime(facts), _mtime(extras), _mtime(assumptions))
+    inputs_mtime = max(_mtime(facts), _mtime(extras), _mtime(assumptions), _mtime(peers_csv))
     if run is None:
-        add("6 估值运行", False, "没有成功的 valuation 运行", "按 AGENTS.md 阶段 6 的命令运行")
+        add("7 估值运行", False, "没有成功的 valuation 运行", "按 AGENTS.md 阶段 7 的命令运行")
     else:
         started = datetime.fromisoformat(man["started_at"]).timestamp()
         argv = man["config"]["argv"]
         stale = started < inputs_mtime
         no_extras = extras.is_file() and not _has_arg(argv, f"{work}/extras.json")
-        add("6 估值运行", not (stale or no_extras), f"runs/{run.name}"
-            + ("（早于输入文件修改，已过期）" if stale else "") + ("（未带 --extras）" if no_extras else ""),
+        no_peers = (peers_csv.is_file() and "peers" not in meta["inputs"]
+                    and not _has_arg(argv, f"{work}/research/peers.csv"))
+        add("7 估值运行", not (stale or no_extras or no_peers), f"runs/{run.name}"
+            + ("（早于输入文件修改，已过期）" if stale else "") + ("（未带 --extras）" if no_extras else "")
+            + ("（未带资料搜集的可比公司表 --peers）" if no_peers else ""),
             "重跑估值，后续阶段都用新的运行目录")
-    # 7 文稿
+    # 8 文稿
     if not narrative.is_file() or run is None:
-        add("7 文稿", False, "narrative.md 不存在" if not narrative.is_file() else "缺运行目录",
+        add("8 文稿", False, "narrative.md 不存在" if not narrative.is_file() else "缺运行目录",
             "复制 templates/narrative.md，读 references/sections.md 与 writing.md 后写作")
     else:
         g, cm = run / "commentary_guard.json", run / "commentary.md"
@@ -495,32 +536,32 @@ def status(ws: Path) -> dict[str, Any]:
                   else f"当前文稿未对 runs/{run.name} 跑 guard")
         if gr and same and not with_sources:
             detail = "guard 未带 --sources"
-        add("7 文稿", bool(ok), detail, f"PY -m finagent guard --run-dir runs/{run.name} --text {work}/report/narrative.md"
+        add("8 文稿", bool(ok), detail, f"PY -m finagent guard --run-dir runs/{run.name} --text {work}/report/narrative.md"
             f" --sources {work}/research/sources.json")
-    # 8 复核改写（独立会话）
+    # 9 复核改写（独立会话）
     missing = [p.name for p in (draft, edit_log, review) if not p.is_file()]
     if missing:
-        add("8 复核改写", False, "缺 " + "、".join(missing),
+        add("9 复核改写", False, "缺 " + "、".join(missing),
             "另开会话（REVIEW.md），按 finagent-review skill 复核改写")
     else:
         from .output.numlock import numlock
         lock = numlock(draft.read_text(encoding="utf-8"), narrative.read_text(encoding="utf-8"))
-        add("8 复核改写", lock["ok"], f"数字锁{'通过' if lock['ok'] else '未通过'}，删去数字 {lock['removed']} 个"
+        add("9 复核改写", lock["ok"], f"数字锁{'通过' if lock['ok'] else '未通过'}，删去数字 {lock['removed']} 个"
             + (f"，新增 {'、'.join(lock['added'] + lock['new_sources'])}" if not lock["ok"] else ""),
             f"改写不得新增或改动数字：PY -m finagent numlock --before {work}/report/narrative.draft.md "
             f"--after {work}/report/narrative.md")
-    # 9 排版
+    # 10 排版
     pdf = run / "report" / "report.pdf" if run else None
     if pdf is None or not pdf.is_file():
-        add("9 排版", False, "PDF 不存在", "复制 templates/build_report.py，读 references/html-report.md，渲染后看 preview")
+        add("10 排版", False, "PDF 不存在", "复制 templates/build_report.py，读 references/html-report.md，渲染后看 preview")
     else:
         fresh = _mtime(pdf) >= max(_mtime(narrative), _mtime(script))
         named = [p.name for p in pdf.parent.glob("*.pdf") if p.name != "report.pdf"]
-        add("9 排版", fresh and bool(named), f"runs/{run.name}/report/{named[0] if named else 'report.pdf'}"
+        add("10 排版", fresh and bool(named), f"runs/{run.name}/report/{named[0] if named else 'report.pdf'}"
             + ("" if fresh else "（早于文稿或脚本修改）") + ("" if named else "（未设 output_name）"),
             "重新渲染；Config.output_name 设为公司名+日期")
-    # 10 交付说明
-    add("10 交付说明", delivery.is_file(), "delivery.md " + ("已写" if delivery.is_file() else "不存在"),
+    # 11 交付说明
+    add("11 交付说明", delivery.is_file(), "delivery.md " + ("已写" if delivery.is_file() else "不存在"),
         "写交付说明：结论、评级、假设与外部数据、复核清单要点")
 
     # 前一阶段未过，后面的“通过”不可信
@@ -583,7 +624,12 @@ def collect(ws: Path, *, label: str = "", overwrite: bool = False, force: bool =
 
 
 # ------------------------------------------------------------------ run（无头）
-WRITE_STAGES = 7  # 阶段 1～7 由写作会话完成，之后交给独立的复核会话
+RESEARCH_STAGES = 1  # 阶段 1 由研究助理会话完成（先搜集、后分析）
+WRITE_STAGES = 8  # 阶段 2～8 由写作会话完成，之后交给独立的复核会话
+
+
+def _research_done(ws: Path) -> bool:
+    return all(st["ok"] for st in status(ws)["stages"][:RESEARCH_STAGES])
 
 
 def _writing_done(ws: Path) -> bool:
@@ -592,15 +638,20 @@ def _writing_done(ws: Path) -> bool:
 
 def _role_model(agent: str, role: str, model: str | None, review_model: str | None = None) -> str | None:
     """Claude 默认分工：写作用 GEN_MODEL，复核用 QC_MODEL；显式指定的模型优先。其他 agent 用其默认模型。"""
-    if role == "write":
+    if role in ("research", "write"):
         return model or (GEN_MODEL if agent == "claude" else None)
     return review_model or model or (QC_MODEL if agent == "claude" else None)
 
 
 def run_agent(ws: Path, agent: str, model: str | None = None, review_model: str | None = None) -> int:
-    """无头执行两个会话：写作会话（阶段 1～7）→ 复核会话（阶段 8～10，不继承写作上下文）。
-    已完成的部分不重跑：写作阶段都通过时直接进入复核会话。"""
+    """无头执行三个会话，彼此不继承上下文：研究助理（阶段 1 资料搜集）→ 写作（阶段 2～8）→ 复核（阶段 9～11）。
+    已完成的部分不重跑。"""
     code = 0
+    if not _research_done(ws):
+        code = _session(ws, agent, _role_model(agent, "research", model), "research", RESEARCH_PROMPT)
+        if not _research_done(ws):
+            print("资料搜集未通过，不进入写作会话；运行 status 查看缺什么。")
+            return code or 1
     if not _writing_done(ws):
         code = _session(ws, agent, _role_model(agent, "write", model), "write", TASK_PROMPT)
         if not _writing_done(ws):
@@ -688,11 +739,11 @@ def _usage(log: Path, agent: str) -> dict[str, Any]:
 # ------------------------------------------------------------------ refine（生成 → 复核 → 质检循环）
 FIX_PROMPT = ("上一轮质检发现了需要回到写作阶段处理的问题，见 {issues}。按本工作区 AGENTS.md 修改对应阶段的产物"
               "（需要补数据、改假设就重跑估值，文稿改完重跑 guard）；处理不了的写进 {work}/report/review.md 并说明原因。"
-              "阶段 1～7 全部通过后停止并汇报，阶段 8 起由复核会话完成。命令直接以 ./py 开头，不加 cd、不串联。")
+              "阶段 1～8 全部通过后停止并汇报，阶段 9 起由复核会话完成。命令直接以 ./py 开头，不加 cd、不串联。")
 REVISE_PROMPT = ("你是本工作区研报的复核编辑，没有参与写作。先读 .claude/skills/finagent-review/SKILL.md，再读质检问题单 "
                  "{issues} 逐条处理：只改措辞、结构与编排，数字锁照常（{work}/report/narrative.draft.md 是初稿，不要覆盖）；"
-                 "需要补数字或改结论的写进 {work}/report/review.md。改完重跑 guard 与数字锁，重新渲染 PDF（阶段 9），"
-                 "更新交付说明（阶段 10）；每个阶段结束运行 ./py -m finagent.report_pipeline status，全部闸门通过后停止。"
+                 "需要补数字或改结论的写进 {work}/report/review.md。改完重跑 guard 与数字锁，重新渲染 PDF（阶段 10），"
+                 "更新交付说明（阶段 11）；每个阶段结束运行 ./py -m finagent.report_pipeline status，全部闸门通过后停止。"
                  "命令直接以 ./py 开头，不加 cd、不串联。")
 SNAPSHOT_FILES = ("narrative.md", "narrative.draft.md", "edit_log.md", "review.md", "delivery.md")
 
@@ -878,7 +929,7 @@ def scorecard(ws: Path) -> dict[str, Any]:
     return row
 
 
-SCORE_COLUMNS = [("workspace", "工作区"), ("agent", "执行"), ("model", "模型"), ("stages_passed", "闸门/10"),
+SCORE_COLUMNS = [("workspace", "工作区"), ("agent", "执行"), ("model", "模型"), ("stages_passed", "闸门/11"),
                  ("facts", "财务事实"), ("extras_cells", "经营数据格"), ("valuation_runs", "估值运行次数"),
                  ("web_queries", "检索次数"), ("web_sources", "外部来源"), ("citations", "正文引用来源"),
                  ("guard_ok", "guard"), ("draft_chars", "初稿字数"), ("narrative_chars", "终稿字数"), ("pages", "页数"), ("figures", "图表"),

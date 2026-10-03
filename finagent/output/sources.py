@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import json
 import re
+from datetime import date
 from pathlib import Path
 from typing import Any
 
@@ -144,3 +145,35 @@ def run_guard(run: Path, text: str, sources: str | Path | None = None) -> dict[s
     return {"ok": not (unverified or mismatched or citations),
             "unverified_numbers": unverified, "mismatched_claims": mismatched, "uncited_external": citations}
 
+
+# 资料搜集阶段（先搜集、后分析）必须覆盖的方面：每个公司都适用的通用类别，不预设行业内容
+CATEGORIES = {
+    "latest": "年报（或招股书）之后的最新定期报告、业绩预告、经营数据",
+    "market": "最新股价、市值与近期走势",
+    "consensus": "卖方一致预期、评级与目标价",
+    "peers": "可比公司及其估值倍数",
+    "industry": "行业规模、增速、价格与景气指标",
+    "competition": "竞争格局、份额与主要对手动态",
+    "events": "近三个月公司重大事件、公告与新闻",
+}
+
+
+def _date(s: Any) -> date | None:
+    m = re.match(r"^(\d{4})-(\d{2})(?:-(\d{2}))?$", str(s or ""))
+    return date(int(m[1]), int(m[2]), int(m[3] or 1)) if m else None
+
+
+def coverage(data: dict[str, Any], as_of: str | None = None, recent_days: int = 90) -> dict[str, Any]:
+    """资料搜集的覆盖与时效。questions 的 phase 为 collect（资料搜集）或 followup（框架之后的补充调研，缺省视为此类）。
+    每个类别至少一个 collect 问题：found，或 not_found 但换过两个以上检索词。时效按 as_of 往前 recent_days 天计。"""
+    qs = data.get("questions") or []
+    collect = [q for q in qs if q.get("phase") == "collect"]
+    covered = {q.get("category") for q in collect
+               if q.get("status") == "found" or (q.get("status") == "not_found" and len(q.get("queries") or []) >= 2)}
+    ref = _date(as_of) or date.today()
+    recent = [s["id"] for s in data.get("sources") or []
+              if (d := _date(s.get("published"))) and 0 <= (ref - d).days <= recent_days]
+    return {"missing": [c for c in CATEGORIES if c not in covered],
+            "unknown": sorted({str(q.get("category")) for q in collect} - set(CATEGORIES)),
+            "n_collect": len(collect), "n_collect_queries": sum(len(q.get("queries") or []) for q in collect),
+            "n_followup": sum(q.get("phase") != "collect" for q in qs), "recent": recent}

@@ -21,7 +21,7 @@ description: 研报复核与可读性改写：以没有参与写作的研究所�
   PY -m finagent numlock --before <work>/report/narrative.draft.md --after <work>/report/narrative.md
   ```
 
-  它允许数字减少，不允许出现初稿里没有的数字或来源编号。再重跑 guard（命令见工作区 AGENTS.md 阶段 7）。
+  它允许数字减少，不允许出现初稿里没有的数字或来源编号。再重跑 guard（命令见工作区 AGENTS.md 阶段 8）。
 - **不改分析结论、评级和估值。** 你觉得结论站不住，写进复核清单，说明理由。
 - **保留** `<!-- section: 名称 -->` 分节标记（编排脚本按节名取用）、`### ` 小标题格式、`**加粗**`、`[S编号]` 引用。
 - 开始前把初稿原样复制一份：`cp <work>/report/narrative.md <work>/report/narrative.draft.md`（已存在就不要覆盖）。
