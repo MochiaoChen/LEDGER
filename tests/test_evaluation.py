@@ -181,8 +181,8 @@ def test_refine_loop_routes_issues_and_restores_best(tmp_path, monkeypatch):
     assert [r["total"] for r in state["rounds"]] == [60, 55, 58] and state["best"] == 1
     assert state["stopped"] == "达到最大轮数 3" and state["restored"]
     roles = [c[0] for c in calls]
-    assert roles == ["run", "fix", "review", "revise"]  # 第 2 轮有生成类问题：先修再复核；第 3 轮只有复核类
-    assert calls[0][1:] == (rp.GEN_MODEL, rp.QC_MODEL) and calls[1][1] == rp.GEN_MODEL and calls[3][1] == rp.QC_MODEL
+    assert roles == ["run", "fix", "review", "run", "revise"]  # 第 2 轮：先修、复核问题单，再按闸门续做；第 3 轮只有复核类
+    assert calls[0][1:] == (rp.GEN_MODEL, rp.QC_MODEL) and calls[1][1] == rp.GEN_MODEL and calls[4][1] == rp.QC_MODEL
     assert "issues-generator.md" in calls[1][2] and "issues-reviewer.md" in calls[2][2]
     # 问题单在工作区里，评测结果（含分值）不在
     assert (ws / ".pipeline/rounds/1/issues-generator.md").is_file()

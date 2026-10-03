@@ -99,6 +99,15 @@ class Doc:
         self.secs.append((str(n), title))
         return f'<h2><span class="num">{html.escape(str(n))}</span>{html.escape(title)}</h2>'
 
+    def sec(self, title: str) -> str:
+        """自动编号的章节标题：接着已有章节往下编，章节可增删而不必手改编号。"""
+        return self.h2(len(self.secs) + 1, title)
+
+    def part(self, title: str, lead: str = "") -> str:
+        """“第一部分 / 第二部分”分隔：主题色通栏，可带一句导语。"""
+        sub = f'<div class="part-lead">{inline(lead)}</div>' if lead else ""
+        return f'<div class="part"><div class="part-t">{html.escape(title)}</div>{sub}</div>'
+
 
 def two(a: str, b: str) -> str:
     """两个半栏图表并排。"""

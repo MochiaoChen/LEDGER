@@ -127,16 +127,26 @@ def test_status_gates_and_collect(ws, tmp_path):
     (work / "report/framework.md").write_text("# 框架", encoding="utf-8")
     stages = {s["stage"]: s for s in rp.status(ws)["stages"]}
     assert stages["2 财务抽取"]["ok"] and not stages["3 分析框架"]["ok"]  # 缺外部调研清单
-    (work / "report/framework.md").write_text("# 框架\n\n## 外部调研清单\n", encoding="utf-8")
+    (work / "report/framework.md").write_text("# 框架\n\n## 外部调研清单\n\n## 深度专题\n1. 甲\n", encoding="utf-8")
     stages = {s["stage"]: s for s in rp.status(ws)["stages"]}
-    assert stages["3 分析框架"]["ok"] and not stages["4 补充调研"]["ok"]
-    # 补充调研：框架之后追加 phase=followup 的问题
+    assert not stages["3 分析框架"]["ok"] and "深度专题" in stages["3 分析框架"]["detail"]
+    (work / "report/framework.md").write_text(
+        "# 框架\n\n## 外部调研清单\n\n## 深度专题\n1. 甲\n2. 乙\n3. 丙\n\n## 章节结构\n", encoding="utf-8")
+    stages = {s["stage"]: s for s in rp.status(ws)["stages"]}
+    assert stages["3 分析框架"]["ok"] and not stages["4 深度调研"]["ok"]
+    # 深度调研：每个专题一份有分量的笔记，补充检索追加 phase=followup 的问题
+    (work / "research/topics").mkdir()
+    for i in range(rp.MIN_TOPICS):
+        (work / f"research/topics/t{i}.md").write_text("专题" * 800 + " [S1][S2][S3]", encoding="utf-8")
     data = _collect_sources()
     data["questions"] += [{"id": f"F{i}", "phase": "followup", "question": "q", "status": "not_found",
                            "queries": ["a", "b"]} for i in range(rp.MIN_FOLLOWUP)]
     (work / "research/sources.json").write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
     stages = {s["stage"]: s for s in rp.status(ws)["stages"]}
-    assert stages["4 补充调研"]["ok"] and not stages["5 经营数据"]["ok"]
+    assert stages["4 深度调研"]["ok"] and not stages["5 经营数据"]["ok"]
+    (work / "research/topics/t0.md").write_text("太薄 [S1]", encoding="utf-8")
+    assert "笔记太薄" in rp.status(ws)["stages"][3]["detail"]
+    (work / "research/topics/t0.md").write_text("专题" * 800 + " [S1][S2][S3]", encoding="utf-8")
     # 估值假设必须引用资料包
     (work / "valuation_assumptions.json").write_text(json.dumps({"current_price": 1500, "price_source": "x"}),
                                                    encoding="utf-8")
@@ -180,17 +190,20 @@ def test_review_stage_numlock(ws):
 
 
 def test_run_agent_chains_write_then_review(ws, monkeypatch):
-    """先起研究助理会话做资料搜集，未通过不进写作；写作未完成不进复核；三个会话互不继承上下文。"""
+    """五个会话按阶段接力：前一个没做完就停下；复核用质检模型，其余用生成模型。"""
     calls = []
     monkeypatch.setattr(rp, "_session", lambda ws_, agent, model, role, prompt: calls.append((role, model)) or 0)
     assert rp.run_agent(ws, "claude") == 1 and calls == [("research", rp.GEN_MODEL)]
-    monkeypatch.setattr(rp, "_research_done", lambda ws_: True)
+    done = {"upto": 7}
+    monkeypatch.setattr(rp, "_done", lambda ws_, upto: upto <= done["upto"])
     calls.clear()
     assert rp.run_agent(ws, "claude") == 1 and calls == [("write", rp.GEN_MODEL)]
-    monkeypatch.setattr(rp, "_writing_done", lambda ws_: True)
+    done["upto"] = 9
     calls.clear()
-    rp.run_agent(ws, "claude")
-    assert calls == [("review", rp.QC_MODEL)]
+    assert rp.run_agent(ws, "claude") == 1 and calls == [("layout", rp.GEN_MODEL)]
+    done["upto"] = 8
+    calls.clear()
+    assert rp.run_agent(ws, "claude") == 1 and calls == [("review", rp.QC_MODEL)]
 
 
 def test_extras_cache_without_verifier_fingerprint_is_rechecked(ws, monkeypatch):
