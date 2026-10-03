@@ -207,6 +207,64 @@ def signed(out: Path, name: str, cats: list[str], series: list[tuple[str, list[f
     return save(fig, out / f"{name}.svg")
 
 
+# ------------------------------------------------------------------ 非数据图：时间轴、链条示意
+def _wrap(text: str, n: int) -> str:
+    """中文按字数折行（matplotlib 不会自动折行）。"""
+    lines = []
+    for para in str(text).split("\n"):
+        lines += [para[i:i + n] for i in range(0, len(para), n)] or [""]
+    return "\n".join(lines)
+
+
+def timeline(out: Path, name: str, events: list[tuple[str, str, str]], *, w=FULL, h=38, wrap=9) -> str:
+    """发展历程 / 产品推出时间轴。events = [(时间, 事件标题, 一句说明)]，按时间顺序传入，标题上下交错排布。
+    事件来自年报“公司简介和主要财务指标”“经营情况讨论”或 sources.json，图注写明来源。"""
+    fig, ax = fig_size(w, h)
+    n = len(events)
+    ax.axhline(0, color=NAVY, lw=1.2, zorder=1)
+    ax.annotate("", xy=(n - 0.3, 0), xytext=(n - 0.6, 0), arrowprops=dict(arrowstyle="-|>", color=NAVY, lw=1.2))
+    for i, (when, head, desc) in enumerate(events):
+        up = i % 2 == 0
+        ax.plot(i, 0, "o", ms=4.5, color=NAVY, zorder=2)
+        ax.text(i, -0.12 if up else 0.12, when, ha="center", va="top" if up else "bottom", fontsize=6.6,
+                fontweight=600, color=INK)
+        y = 0.22 if up else -0.22
+        ax.plot([i, i], [0, y * 0.8], color=GRID, lw=0.6, zorder=0)
+        body = f"{_wrap(head, wrap)}" + (f"\n{_wrap(desc, wrap)}" if desc else "")
+        ax.text(i, y, body, ha="center", va="bottom" if up else "top", fontsize=6.0, color=INK, linespacing=1.35)
+    ax.set_xlim(-0.6, n - 0.3)
+    ax.set_ylim(-0.62, 0.62)
+    ax.axis("off")
+    return save(fig, out / f"{name}.svg")
+
+
+def flow(out: Path, name: str, stages: list[tuple[str, list[str]]], *, highlight: int | None = None, w=FULL, h=40,
+         wrap=11) -> str:
+    """产业链 / 业务模式 / 收入驱动的链条示意：stages = [(环节名, [要点…])]，环节之间画箭头；
+    highlight 为公司所处环节的下标（深色填充）。要点只写定性内容或已核对的数字。"""
+    from matplotlib.patches import FancyBboxPatch
+
+    fig, ax = fig_size(w, h)
+    n = len(stages)
+    bw, gap = 1.0, 0.32
+    for i, (head, points) in enumerate(stages):
+        x = i * (bw + gap)
+        on = i == highlight
+        ax.add_patch(FancyBboxPatch((x, 0), bw, 1, boxstyle="round,pad=0,rounding_size=0.04",
+                                    fc=NAVY if on else LIGHT2, ec=NAVY, lw=0.8))
+        ax.text(x + bw / 2, 0.9, head, ha="center", va="top", fontsize=7, fontweight=700,
+                color="white" if on else NAVY)
+        ax.text(x + bw / 2, 0.72, "\n".join(_wrap(p, wrap) for p in points), ha="center", va="top", fontsize=5.9,
+                color="white" if on else INK, linespacing=1.4)
+        if i < n - 1:
+            ax.annotate("", xy=(x + bw + gap - 0.04, 0.5), xytext=(x + bw + 0.04, 0.5),
+                        arrowprops=dict(arrowstyle="-|>", color=MUTED, lw=1))
+    ax.set_xlim(-0.05, n * bw + (n - 1) * gap + 0.05)
+    ax.set_ylim(-0.05, 1.05)
+    ax.axis("off")
+    return save(fig, out / f"{name}.svg")
+
+
 # ================================================================== 标准图（直接读产物）
 def cover(run: Run, out: Path) -> str:
     """首页侧栏：营业收入与归母净利润（实际 + 预测）。"""

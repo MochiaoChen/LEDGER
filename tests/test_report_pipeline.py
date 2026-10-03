@@ -48,6 +48,10 @@ def test_workspace_guide_and_permissions(ws):
     assert f"Read(/{ROOT.parent.as_posix()}/**)" in perms["deny"]
     assert "Edit(./finagent/**)" in perms["deny"] and "Write(./.claude/**)" in perms["deny"]
     assert "Edit(./AGENTS.md)" in perms["deny"]
+    # 外部信息必须联网检索：工作区放开 WebSearch / WebFetch，说明里写明不能凭记忆
+    assert "WebSearch" in perms["allow"] and "WebSearch" not in perms["deny"] and "WebFetch" not in perms["deny"]
+    assert "不能用记忆" in guide and "sources.json" in guide and "review.md" in guide and "finagent-review" in guide
+    assert (ws / ".claude/skills/finagent-review/SKILL.md").is_file() and (ws / "REVIEW.md").is_file()
     assert "MPLCONFIGDIR" in (ws / "py").read_text(encoding="utf-8")
 
 
@@ -64,6 +68,8 @@ def test_agent_commands_and_usage(tmp_path):
     assert claude[:2] == ["claude", "-p"] and "stream-json" in claude and claude[-2:] == ["--model", "opus"]
     codex = rp.agent_command("codex")
     assert codex[:2] == ["codex", "exec"] and "--skip-git-repo-check" in codex and codex[-1] == rp.TASK_PROMPT
+    assert "tools.web_search=true" in codex and "WebSearch" in claude
+    assert rp.agent_command("claude", None, rp.REVIEW_PROMPT)[2] == rp.REVIEW_PROMPT
     log = tmp_path / "c.jsonl"
     log.write_text("\n".join(json.dumps(e) for e in [
         {"type": "assistant", "message": {"content": [{"type": "text", "text": "开始"}]}},
@@ -97,8 +103,22 @@ def test_status_gates_and_collect(ws, tmp_path):
     (work / "facts.verified.json").write_text(json.dumps({"check": {"ok": True}}), encoding="utf-8")
     (work / "report/framework.md").write_text("# 框架", encoding="utf-8")
     stages = {s["stage"]: s for s in rp.status(ws)["stages"]}
-    assert stages["1 财务抽取"]["ok"] and stages["2 分析框架"]["ok"]
-    assert not stages["3 经营数据"]["ok"]
+    assert stages["1 财务抽取"]["ok"] and not stages["2 分析框架"]["ok"]  # 缺外部调研清单
+    (work / "report/framework.md").write_text("# 框架\n\n## 外部调研清单\n", encoding="utf-8")
+    stages = {s["stage"]: s for s in rp.status(ws)["stages"]}
+    assert stages["2 分析框架"]["ok"] and not stages["3 外部调研"]["ok"]
+    # 检索量不足不算通过
+    (work / "research").mkdir()
+    one = {"questions": [{"id": "Q1", "question": "行业增速", "status": "not_found", "queries": ["白酒 行业 增速"]}],
+           "sources": []}
+    (work / "research/sources.json").write_text(json.dumps(one, ensure_ascii=False), encoding="utf-8")
+    stages = {s["stage"]: s for s in rp.status(ws)["stages"]}
+    assert not stages["3 外部调研"]["ok"] and "检索量不足" in stages["3 外部调研"]["detail"]
+    many = {"questions": [{"id": f"Q{i}", "question": "q", "status": "not_found", "queries": ["a", "b"]}
+                          for i in range(rp.MIN_QUESTIONS)], "sources": []}
+    (work / "research/sources.json").write_text(json.dumps(many, ensure_ascii=False), encoding="utf-8")
+    stages = {s["stage"]: s for s in rp.status(ws)["stages"]}
+    assert stages["3 外部调研"]["ok"] and not stages["4 经营数据"]["ok"]
     # 修改 facts 后校验结果过期
     os.utime(work / "facts.json", (2e9, 2e9))
     assert not rp.status(ws)["stages"][0]["ok"]
@@ -116,6 +136,32 @@ def test_status_gates_and_collect(ws, tmp_path):
     assert "extractions" not in rp.collect(ws, root=root, force=True, delivery_only=True)
 
     row = rp.scorecard(ws)
+    assert row["web_queries"] == 2 * rp.MIN_QUESTIONS and row["web_sources"] == 0
     assert row["stages_passed"] == 0 and not row["done"] and row["valuation_runs"] == 0
     table = rp.scorecard_markdown([row])
-    assert "闸门/8" in table and "未完成" in table and "不代表研报质量" in table
+    assert "闸门/10" in table and "未完成" in table and "不代表研报质量" in table
+
+
+def test_review_stage_numlock(ws):
+    """复核改写阶段：初稿、编辑日志、复核清单都要有，改写稿不得新增数字。"""
+    rep_dir = ws / "data/extractions/贵州茅台_2025/report"
+    stage = lambda: next(st for st in rp.status(ws)["stages"] if st["stage"] == "8 复核改写")  # noqa: E731
+    assert "缺" in stage()["detail"]
+    (rep_dir / "narrative.draft.md").write_text("营业收入 58.62 亿元。不过，年报未披露。", encoding="utf-8")
+    (rep_dir / "narrative.md").write_text("营业收入 58.62 亿元，同比增长 9.99%。", encoding="utf-8")
+    (rep_dir / "edit_log.md").write_text("删去自证", encoding="utf-8")
+    (rep_dir / "review.md").write_text("无", encoding="utf-8")
+    assert "数字锁未通过" in stage()["detail"] and "9.99%" in stage()["detail"]
+    (rep_dir / "narrative.md").write_text("营业收入 58.62 亿元。", encoding="utf-8")
+    assert "数字锁通过" in stage()["detail"]
+
+
+def test_run_agent_chains_write_then_review(ws, monkeypatch):
+    """写作阶段未完成时只起写作会话且不进复核；写作完成后起不继承上下文的复核会话。"""
+    calls = []
+    monkeypatch.setattr(rp, "_session", lambda ws_, agent, model, role, prompt: calls.append(role) or 0)
+    assert rp.run_agent(ws, "claude") == 1 and calls == ["write"]
+    monkeypatch.setattr(rp, "_writing_done", lambda ws_: True)
+    calls.clear()
+    rp.run_agent(ws, "claude")
+    assert calls == ["review"]

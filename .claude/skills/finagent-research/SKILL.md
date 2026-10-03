@@ -124,12 +124,13 @@ PY -m finagent all --input <年报.pdf> --year <年度> --company <公司> \
 PY -m finagent guard --run-dir runs/<run_id> --text <解读.md>
 ```
 
-`guard` 做两道检查，`ok: true` 才算通过：
+`guard` 做以下检查，`ok: true` 才算通过：
 
 - `unverified_numbers`：数字按单位和展示精度（“58.62 亿元”对应真值 ÷1e8 保留两位）在本次运行的结论性产物里
   找不到出处。改成产物里的数字，或删掉。研报草稿里的数字不算出处。
 - `mismatched_claims`：能识别的“指标 + 数字”表述（如“营业成本 35.22 亿元”）按指标和期间核对真值表后不符，
   附正确值与原因（口径/期间/单位/数值）。按正确值改写。
+- `uncited_external`：带 `--sources` 时，只能在外部资料里找到出处的数字所在句子须带 `[S编号]`。
 
 护栏只能核对程序能识别的表述，不能替代你对“数字配对了正确的指标和期间”的自查。通过后解读会存入运行目录的
 `commentary.md`。

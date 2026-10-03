@@ -101,6 +101,10 @@ figcaption {
 figure img { display: block; max-width: 100%; }
 .src { font-family: var(--sans); font-size: 6.7pt; color: #9CA3AF; margin-top: 1.3mm; text-align: left; line-height: 1.4; }
 .src code { white-space: nowrap; }
+sup.cite { font-family: var(--sans); font-size: 5.6pt; color: var(--muted); margin-left: 0.3mm; }
+table.text td { text-align: left; vertical-align: top; line-height: 1.45; }
+table.text td:first-child { font-weight: 600; white-space: nowrap; }
+.sources td { font-size: 6.6pt; word-break: break-all; }
 .two { display: grid; grid-template-columns: 1fr 1fr; gap: 6mm; align-items: start; }
 .two figure { margin-top: 1mm; }
 
