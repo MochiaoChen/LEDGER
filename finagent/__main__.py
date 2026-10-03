@@ -13,7 +13,9 @@ Skill 版本（Claude Code 读 PDF，本程序负责定位、校验与计算，�
   python -m finagent schema                                        # 可抽取指标清单
   python -m finagent verify-facts --input 年报.pdf --year 2024 --facts extracted.json [--supplement 三季报.pdf]
   python -m finagent all ... --facts extracted.json [--claims claims.json] [--supplement 三季报.pdf]
-  python -m finagent guard        --run-dir runs/<id> --text 解读.md  # 解读数字护栏
+  python -m finagent guard        --run-dir runs/<id> --text 解读.md [--sources sources.json]  # 数字与外部来源护栏
+  python -m finagent numlock      --before 初稿.md --after 改写稿.md  # 数字锁：改写不得新增或改动数字
+  python -m finagent verify-sources --sources research/sources.json  # 外部检索登记检查
 """
 
 from __future__ import annotations
@@ -34,7 +36,7 @@ from . import pipelines
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(prog="finagent", description="金融投研智能体")
     ap.add_argument("task", choices=["financials", "valuation", "check", "all", "ask",
-                                     "locate", "schema", "verify-facts", "verify-extra", "guard"])
+                                     "locate", "schema", "verify-facts", "verify-extra", "guard", "verify-sources", "numlock"])
     ap.add_argument("instruction", nargs="?", help="ask 模式的自然语言指令")
     ap.add_argument("--input", help="财报文件（PDF / MD）")
     ap.add_argument("--year", type=int, help="主报告期年份，如 2024")
@@ -56,6 +58,9 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--out", help="verify-facts 校验结果输出路径")
     ap.add_argument("--run-dir", help="guard：已完成的运行目录")
     ap.add_argument("--text", help="guard：待检查的文字解读（Markdown）")
+    ap.add_argument("--sources", help="guard / verify-sources：外部资料登记 research/sources.json")
+    ap.add_argument("--before", help="numlock：改写前的文稿")
+    ap.add_argument("--after", help="numlock：改写后的文稿")
     args = ap.parse_args(argv)
 
     if args.task in HELPERS:
@@ -163,22 +168,40 @@ def cmd_verify_facts(args: argparse.Namespace, ap: argparse.ArgumentParser) -> i
 
 
 def cmd_guard(args: argparse.Namespace, ap: argparse.ArgumentParser) -> int:
-    """解读数字护栏（见 output/guard.py）：
-    1. 每个数字按单位与展示精度，必须出自本次运行的结论性产物；
-    2. 能识别的“指标 + 数字”表述，用研报核查引擎按指标与期间核对真值表。"""
-    from .output.guard import check_binding, check_text, truth_values
+    """解读护栏（见 output/guard.py、sources.py）：
+    1. 每个数字按单位与展示精度，必须出自本次运行的结论性产物或 sources.json 登记的外部资料；
+    2. 能识别的“指标 + 数字”表述，用研报核查引擎按指标与期间核对真值表；
+    3. 只能在外部资料里找到出处的数字，句中须带 [S编号]。"""
+    from .output.sources import run_guard
 
     _need(ap, args, "run-dir", "text")
     run = Path(args.run_dir)
     text = Path(args.text).read_text(encoding="utf-8")
-    unverified = check_text(text, truth_values(run))
-    mismatched = check_binding(text, run)
-    result = {"ok": not (unverified or mismatched), "unverified_numbers": unverified,
-              "mismatched_claims": mismatched, "text": str(args.text)}
+    result = {**run_guard(run, text, args.sources), "text": str(args.text), "sources": args.sources}
     (run / "commentary.md").write_text(text, encoding="utf-8")
     (run / "commentary_guard.json").write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8")
     _print(result)
     return 0 if result["ok"] else 1
+
+
+def cmd_numlock(args: argparse.Namespace, ap: argparse.ArgumentParser) -> int:
+    """数字锁（见 output/numlock.py）：改写稿里的每个数字都必须原样出现在改写前的文稿里。"""
+    from .output.numlock import numlock
+
+    _need(ap, args, "before", "after")
+    res = numlock(Path(args.before).read_text(encoding="utf-8"), Path(args.after).read_text(encoding="utf-8"))
+    _print(res)
+    return 0 if res["ok"] else 1
+
+
+def cmd_verify_sources(args: argparse.Namespace, ap: argparse.ArgumentParser) -> int:
+    """外部检索登记检查：每个调研问题有检索记录，每条来源有网址与日期，数字出现在原文摘句里。"""
+    from .output.sources import load, verify_sources
+
+    _need(ap, args, "sources")
+    res = verify_sources(load(args.sources))
+    _print(res)
+    return 0 if res["ok"] else 1
 
 
 def cmd_verify_extra(args: argparse.Namespace, ap: argparse.ArgumentParser) -> int:
@@ -194,7 +217,8 @@ def cmd_verify_extra(args: argparse.Namespace, ap: argparse.ArgumentParser) -> i
 
 
 HELPERS = {"locate": cmd_locate, "schema": cmd_schema, "verify-facts": cmd_verify_facts,
-           "verify-extra": cmd_verify_extra, "guard": cmd_guard}
+           "verify-extra": cmd_verify_extra, "guard": cmd_guard,
+           "verify-sources": cmd_verify_sources, "numlock": cmd_numlock}
 
 
 if __name__ == "__main__":

@@ -4,6 +4,7 @@
   python -m finagent.report_pipeline run       --workspace <工作区> --agent claude|codex [--model ...] [--dry-run]
   python -m finagent.report_pipeline status    [--workspace <工作区>]           # 阶段闸门（工作区内可省略参数）
   python -m finagent.report_pipeline collect   --workspace <工作区> [--label Opus]  # 产物收回仓库
+  python -m finagent.report_pipeline refine    --workspace <工作区> [--max-rounds 3]  # 生成 → 复核 → 质检循环，达标才交付
   python -m finagent.report_pipeline scorecard --workspace <A> --workspace <B>   # 测评：多个工作区并排比较
   python -m finagent.report_pipeline sync-skills                                 # 更新仓库 .agents/skills 入口
 
@@ -29,36 +30,48 @@ from typing import Any
 
 from .core.config import PROJECT_ROOT
 
-SKILLS = ("finagent-research", "finagent-report")
+SKILLS = ("finagent-research", "finagent-report", "finagent-review")
 # 引擎里与研报无关的模块不进工作区
-ENGINE_EXCLUDE = {"__pycache__", "deepseek_harness.py"}
+# evaluation 是质检（评分标准与评审提示），对生成方不可见
+ENGINE_EXCLUDE = {"__pycache__", "deepseek_harness.py", "evaluation"}
 # skill 文档引用的格式样例（虚构公司，只作字段格式参考）
 FORMAT_SAMPLES = ("data/samples/valuation_assumptions.json", "data/samples/peers.csv")
 META = "sample.json"
 STATE_DIR = ".pipeline"
 AGENT_SKILLS = Path(".agents") / "skills"  # Codex 等读 .agents/skills 与 AGENTS.md
-TASK_PROMPT = ("按本工作区 AGENTS.md 的流水线完成研报：每个阶段结束运行 ./py -m finagent.report_pipeline status，"
-               "全部闸门通过后停止并汇报。命令直接以 ./py 开头，不加 cd、不串联。")
+# Claude 执行时的默认分工：生成用 Opus，复核与质检用 Sonnet
+GEN_MODEL = os.getenv("FINAGENT_GEN_MODEL", "claude-opus-5-5")
+QC_MODEL = os.getenv("FINAGENT_QC_MODEL", "claude-sonnet-5-5")
+TASK_PROMPT = ("按本工作区 AGENTS.md 的流水线完成研报阶段 1～7：每个阶段结束运行 ./py -m finagent.report_pipeline status，"
+               "文稿 guard 通过后停止并汇报（阶段 8 起由独立的复核会话完成）。命令直接以 ./py 开头，不加 cd、不串联。")
+# 复核会话：不继承写作会话的上下文，以编辑身份读稿（finagent-review skill），再完成排版与交付
+REVIEW_PROMPT = ("你是本工作区研报的复核编辑，没有参与写作。先读 .claude/skills/finagent-review/SKILL.md，"
+                 "按它完成 AGENTS.md 阶段 8（复核改写），再完成阶段 9～10；每个阶段结束运行 "
+                 "./py -m finagent.report_pipeline status，全部闸门通过后停止并汇报。命令直接以 ./py 开头，不加 cd、不串联。")
 
 
 # 工作区内允许的操作。未被信任的目录里 Claude Code 会忽略 settings.json 的 allow（deny 照常生效），
 # 所以无头执行时同一份清单再经 --allowedTools 传入，不去改用户的全局信任配置
 ALLOWED_TOOLS = ("Bash(./py -m finagent:*)", "Bash(./py -m finagent.report_pipeline status:*)",
                  "Bash(./py data/extractions/:*)", "Bash(./py -c:*)",
-                 "Bash(cp .claude/skills/finagent-report/templates/:*)", "Bash(ls:*)", "Bash(mkdir -p data/:*)",
-                 "Read", "Write(./data/**)", "Edit(./data/**)")
+                 "Bash(cp .claude/skills/finagent-report/templates/:*)", "Bash(cp data/extractions/:*)",
+                 "Bash(ls:*)", "Bash(mkdir -p data/:*)",
+                 "Read", "Write(./data/**)", "Edit(./data/**)", "WebSearch", "WebFetch")
+# 最低检索量：调研问题数与检索次数（外部调研闸门）
+MIN_QUESTIONS, MIN_QUERIES = 6, 12
 
 
-def agent_command(agent: str, model: str | None = None) -> list[str]:
+def agent_command(agent: str, model: str | None = None, prompt: str = TASK_PROMPT) -> list[str]:
     """无头执行命令。输出都是 JSONL 事件流，存进 .pipeline/agents/ 供测评读取用量。"""
     if agent == "claude":
-        return ["claude", "-p", TASK_PROMPT, "--permission-mode", "acceptEdits",
+        return ["claude", "-p", prompt, "--permission-mode", "acceptEdits",
                 "--allowedTools", *ALLOWED_TOOLS, "--output-format", "stream-json", "--verbose",
                 *(["--model", model] if model else [])]
     if agent == "codex":
         # 工作区不是 git 仓库；workspace-write 沙箱只允许写工作区与临时目录
-        return ["codex", "exec", "--full-auto", "--skip-git-repo-check", "--json",
-                *(["-m", model] if model else []), TASK_PROMPT]
+        # tools.web_search 打开 Codex 的联网检索（外部调研阶段需要）
+        return ["codex", "exec", "--full-auto", "--skip-git-repo-check", "--json", "-c", "tools.web_search=true",
+                *(["-m", model] if model else []), prompt]
     raise SystemExit(f"不支持的 agent：{agent}")
 
 
@@ -218,6 +231,7 @@ def build(company: str, year: int, dest: Path | None = None, *, pdf: str | None 
     (ws / "AGENTS.md").write_text(render_guide(meta), encoding="utf-8")
     (ws / "CLAUDE.md").write_text("@AGENTS.md\n", encoding="utf-8")
     (ws / "TASK.md").write_text(TASK_PROMPT + "\n", encoding="utf-8")
+    (ws / "REVIEW.md").write_text(REVIEW_PROMPT + "\n", encoding="utf-8")
     (ws / ".claude" / "settings.json").write_text(
         json.dumps(settings(meta, root), ensure_ascii=False, indent=2), encoding="utf-8")
     return ws
@@ -237,7 +251,7 @@ def settings(meta: dict[str, Any], root: Path) -> dict[str, Any]:
     locked = ("finagent/**", ".claude/**", ".agents/**", "report/**", META, "py", "CLAUDE.md", "AGENTS.md")
     return {"permissions": {
         "allow": list(ALLOWED_TOOLS),
-        "deny": [f"Read(/{fence}/**)", "WebFetch", "WebSearch",
+        "deny": [f"Read(/{fence}/**)",
                  *(f"{tool}(./{p})" for p in locked for tool in ("Edit", "Write"))]}}
 
 
@@ -248,7 +262,8 @@ def render_guide(meta: dict[str, Any]) -> str:
     market = meta["inputs"].get("market")
     price_line = (f"`inputs/market.json`：当前股价 {market['current_price']} 元，来源：{market['price_source']}"
                   f"（外部数据，写进假设文件的 `current_price` / `price_source`）"
-                  if market else "**未提供股价。** 估值阶段停下，在交付说明里写明缺股价，不要自己找或编。")
+                  if market else "**未提供股价。** 外部调研阶段检索最近一个交易日收盘价，登记进 `sources.json`"
+                  "（摘句含价格与日期），`price_source` 写“<发布方> <日期> 收盘，[S编号]”；查不到就停下写进交付说明，不能凭记忆填。")
     peers_line = ("`inputs/peers.csv`：可比公司（外部数据），估值命令加 `--peers inputs/peers.csv`"
                   if "peers" in meta["inputs"] else "未提供可比公司，不做相对估值。")
     source_line = ("已核验（`manifest.json` 有记录，SHA-256 一致）" if meta["verified_source"]
@@ -267,7 +282,7 @@ def render_guide(meta: dict[str, Any]) -> str:
 下文 `PY` = `./py`（包装了本机虚拟环境的 Python）。**当前目录就是工作区**：命令直接以 `./py` 开头，
 不要加 `cd`、不要写绝对路径、不要用 `&&` / 管道串联多条命令，否则无头执行时权限匹配不上会被拒。
 
-## 输入（只有这些）
+## 输入
 
 | 文件 | 说明 |
 |---|---|
@@ -278,13 +293,32 @@ def render_guide(meta: dict[str, Any]) -> str:
 
 skill 全文在 `.claude/skills/`（`.agents/skills/` 下只是指向它的入口），下文的 skill 文档路径都相对 `.claude/skills/`。
 
-你的全部产出写在 `{work}/`（抽取、假设、框架、文稿、编排脚本、交付说明），程序运行目录在 `runs/`。
+你的全部产出写在 `{work}/`（抽取、假设、框架、外部调研、文稿、编排脚本、复核清单、交付说明），程序运行目录在 `runs/`。
+
+## 年报之外的信息：必须联网检索，不能用记忆
+
+行业规模与增速、竞争格局与排名、产品价格与行业价格指数、同行数据、年报披露日之后的公司公告与事件、政策……
+这些年报里没有的内容，**一律用 WebSearch / WebFetch 现查**，登记进 `{work}/research/sources.json` 才能写进研报。
+你记忆里的数字和事件可能过时或记错，即使你很确定，也先去搜；搜不到的不写。
+
+- 检索什么：framework.md 的“外部调研清单”逐题检索（方法见 `finagent-report/references/research.md`）。
+- 来源优先级：交易所与公司公告 > 政府与行业协会统计 > 知名研究机构与行业数据商 > 主流财经媒体；自媒体、论坛不用。
+- 正文引用外部数字或判断时，句末加 `[S编号]`（guard 会核对外部数字带没带编号）；排名、份额、“龙头”“领先”这类判断没有来源就删掉。
+
+## 文风由独立复核会话把关
+
+写作前读 `finagent-research/references/writing.md`（分析链条、改写示例、优秀研报学习记录）。文稿写完、guard 通过后，
+**由另一个会话按 `finagent-review` skill 做复核与可读性改写**（阶段 8）：它没有参与写作，以读者的眼光通读全文，
+删去自证、圆场和机器腔，只删改措辞、不碰数字（数字锁）。执行写作的会话做到阶段 7 就停下。
+
+**拿不准的内容怎么处理**：能自己判断的直接判断；拿不准又不重要的不写；拿不准但影响结论的（口径疑问、
+外部数据矛盾、关键假设缺依据），写进 `{work}/report/review.md` 复核清单交给人工核对，**不要写进正文**。
 
 ## 读取边界（防止上下文浪费和信息污染）
 
 - **不读**：`finagent/` 引擎源码（用命令和 `schema`，不看实现）、`data/samples/` 以外的样例（这里也没有）、
   `runs/` 下 JSON 的全文（用 `PY -c` 取需要的字段，或在编排脚本里用 `reportkit.core.Run` 读）、
-  `preview/` 以外的渲染中间文件。工作区之外的任何目录都不要读，也不要联网查公司信息：本报告只用年报和上面的输入。
+  `preview/` 以外的渲染中间文件。工作区之外的任何目录都不要读。
 - **skill 文档按阶段读**（见下表），不要一开始全部读完。skill 里提到的茅台样例、`tests/`、`data/extractions/贵州茅台_2025/`
   不在本工作区，不用找；`references/claims.md`、`commentary.md` 与本任务无关（不核查研报草稿，解读即研报正文）。
 - **PDF 按页读**，每次不超过 20 页，只读 `locate.json` 的 `suggested_reads`、管理层讨论与分析、framework 需要的附注页。
@@ -296,23 +330,26 @@ skill 全文在 `.claude/skills/`（`.agents/skills/` 下只是指向它的入�
 | # | 阶段 | 做什么 | 这时才读 | 闸门（status 检查） |
 |---|---|---|---|---|
 | 1 | 财务抽取 | 按 locate 读三大报表、主要会计数据、分季度、股本页，写 `{work}/facts.json` | `finagent-research/SKILL.md` 第 1–3 步，`references/extraction.md` | `PY -m finagent verify-facts --input {pdf} --year {y} --facts {work}/facts.json` 为 `ok: true` |
-| 2 | 分析框架 | 通读管理层讨论与分析，写 `{work}/report/framework.md`（投资主线、驱动清单、披露局限、章节结构） | `finagent-report/SKILL.md` 一～三，`references/analysis.md` | 文件存在且不是模板 |
-| 3 | 经营数据 | 按驱动清单逐格抄表到 `{work}/extras.json`，派生比率写 `ratios` | `references/extraction.md`“补充表格” | `PY -m finagent verify-extra --input {pdf} --extras {work}/extras.json` 为 `ok: true` |
-| 4 | 估值假设 | 起草 `{work}/valuation_assumptions.json`：`status` 写明“观点/假设”，股价取 `inputs/market.json`，每项假设写依据 | `finagent-research/SKILL.md` 第 5 步“估值口径”，`data/samples/valuation_assumptions.json`（格式） | 文件存在，有 `current_price` 与 `price_source` |
-| 5 | 估值运行 | `PY -m finagent valuation --input {pdf} --year {y} --company {c} --assumptions {work}/valuation_assumptions.json --facts {work}/facts.json --extras {work}/extras.json --llm off`{" --peers inputs/peers.csv" if "peers" in meta["inputs"] else ""} | — | 最新运行目录成功，且晚于 facts / extras / 假设的修改 |
-| 6 | 文稿 | `cp .claude/skills/finagent-report/templates/narrative.md {work}/report/narrative.md`，写完全部分析；`PY -m finagent guard --run-dir runs/<run_id> --text {work}/report/narrative.md` | `references/sections.md`，`finagent-research/references/writing.md` | 最新运行目录的 guard 为 `ok: true`，且核对的就是当前文稿 |
-| 7 | 排版 | `cp .claude/skills/finagent-report/templates/build_report.py {work}/report/build_report.py`，`Config.output_name` 设为 `{c}{datetime.now():%m%d}.pdf`；`PY {work}/report/build_report.py --run-dir runs/<run_id>`，看 `preview/sheet*.png` 自检 | `finagent-research/references/html-report.md` | PDF 晚于文稿和编排脚本 |
-| 8 | 交付说明 | 写 `{work}/report/delivery.md`：PDF 路径、页数与图表数、核心结论、评级（取程序结果）、哪些是假设或外部数据、未解决的校验问题 | — | 文件存在 |
+| 2 | 分析框架 | 通读管理层讨论与分析，写 `{work}/report/framework.md`（投资主线、驱动清单、外部调研清单、披露局限、章节结构） | `finagent-report/SKILL.md` 一～三，`references/analysis.md` | 文件存在，含“外部调研清单” |
+| 3 | 外部调研 | 按外部调研清单逐题 WebSearch / WebFetch，登记到 `{work}/research/sources.json`；`PY -m finagent verify-sources --sources {work}/research/sources.json` | `finagent-report/references/research.md` | verify-sources 为 `ok: true`，至少 {MIN_QUESTIONS} 个问题、{MIN_QUERIES} 次检索 |
+| 4 | 经营数据 | 按驱动清单逐格抄表到 `{work}/extras.json`，派生比率写 `ratios` | `references/extraction.md`“补充表格” | `PY -m finagent verify-extra --input {pdf} --extras {work}/extras.json` 为 `ok: true` |
+| 5 | 估值假设 | 起草 `{work}/valuation_assumptions.json`：`status` 写明“观点/假设”，股价取 `inputs/market.json`（没有则取外部调研登记的收盘价），每项假设写依据（可引用外部调研） | `finagent-research/SKILL.md` 第 5 步“估值口径”，`data/samples/valuation_assumptions.json`（格式） | 文件存在，有 `current_price` 与 `price_source` |
+| 6 | 估值运行 | `PY -m finagent valuation --input {pdf} --year {y} --company {c} --assumptions {work}/valuation_assumptions.json --facts {work}/facts.json --extras {work}/extras.json --llm off`{" --peers inputs/peers.csv" if "peers" in meta["inputs"] else ""} | — | 最新运行目录成功，且晚于 facts / extras / 假设的修改 |
+| 7 | 文稿 | `cp .claude/skills/finagent-report/templates/narrative.md {work}/report/narrative.md`，写完全部分析；`PY -m finagent guard --run-dir runs/<run_id> --text {work}/report/narrative.md --sources {work}/research/sources.json` | `references/sections.md`，`finagent-research/references/writing.md` | 最新运行目录的 guard 为 `ok: true`（数字与外部来源），且核对的就是当前文稿。**写作会话到此停止** |
+| 8 | 复核改写（独立会话） | 按 `finagent-review` skill：备份初稿为 `{work}/report/narrative.draft.md`，以编辑身份通读改写，写 `{work}/report/edit_log.md` 与复核清单 `{work}/report/review.md`；`PY -m finagent numlock --before {work}/report/narrative.draft.md --after {work}/report/narrative.md`，再重跑阶段 7 的 guard | `finagent-review/SKILL.md` | 三个文件都存在，数字锁通过，guard 对改写稿通过 |
+| 9 | 排版 | `cp .claude/skills/finagent-report/templates/build_report.py {work}/report/build_report.py`，`Config.output_name` 设为 `{c}{datetime.now():%m%d}.pdf`；`PY {work}/report/build_report.py --run-dir runs/<run_id>`，看 `preview/sheet*.png` 自检 | `finagent-research/references/html-report.md` | PDF 晚于文稿和编排脚本 |
+| 10 | 交付说明 | 写 `{work}/report/delivery.md`：PDF 路径、页数与图表数、核心结论、评级（取程序结果）、哪些是假设或外部数据、复核清单要点 | — | 文件存在 |
 
 改了前面阶段的文件（如补抄 extras），status 会把后面的阶段标为过期：重跑估值、guard、排版。
 
 ## 底线（违反就返工）
 
 1. 你不做算术：增速、占比、差值、估值都由程序算，正文照产物展示值抄。
-2. 每个数字来自年报原文（带页码）或运行产物；正文必须过 guard。
+2. 每个数字来自年报原文（带页码）、运行产物或 `sources.json` 登记的外部资料；正文必须过 guard。
+   年报之外的事实不凭记忆写，先检索、登记、再引用。
 3. 估值参数是你起草的观点/假设，必须标明；股价是外部数据，必须注明来源；评级取 `forecast_summary.rating`。
 4. 校验 3 轮仍不过的问题不硬改数字，写进交付说明。
-5. 全部闸门通过后停止，汇报 status 输出和交付说明，不要做额外的事。
+5. 写作会话做到阶段 7 停止；复核会话做阶段 8～10，全部闸门通过后停止，汇报 status 输出和交付说明，不要做额外的事。
 """
 
 
@@ -369,6 +406,8 @@ def status(ws: Path) -> dict[str, Any]:
     facts, verified, extras = w / "facts.json", w / "facts.verified.json", w / "extras.json"
     assumptions, framework = w / "valuation_assumptions.json", w / "report" / "framework.md"
     narrative, script, delivery = w / "report" / "narrative.md", w / "report" / "build_report.py", w / "report" / "delivery.md"
+    sources, review = w / "research" / "sources.json", w / "report" / "review.md"
+    draft, edit_log = w / "report" / "narrative.draft.md", w / "report" / "edit_log.md"
     stages: list[dict[str, Any]] = []
 
     def add(name: str, ok: bool, detail: str, todo: str) -> bool:
@@ -387,60 +426,90 @@ def status(ws: Path) -> dict[str, Any]:
             f"rejected {len(chk.get('rejected', []))}，conflicts {len(chk.get('conflicts', []))}，"
             f"勾稽失败 {len(chk.get('tieout_failures', []))}", "按 verify-facts 输出回原文修正（最多 3 轮）")
     # 2 分析框架
-    add("2 分析框架", framework.is_file() and framework.stat().st_size > 0,
-        "framework.md " + ("已写" if framework.is_file() else "不存在"),
+    fw_text = framework.read_text(encoding="utf-8") if framework.is_file() else ""
+    add("2 分析框架", "外部调研清单" in fw_text,
+        "framework.md " + ("已写" if "外部调研清单" in fw_text else "缺“外部调研清单”" if fw_text else "不存在"),
         "读 finagent-report/SKILL.md 一～三与 references/analysis.md，通读管理层讨论与分析后写 framework.md")
-    # 3 经营数据
+    # 3 外部调研
+    if not sources.is_file():
+        add("3 外部调研", False, "research/sources.json 不存在",
+            "读 references/research.md，按外部调研清单逐题联网检索并登记")
+    else:
+        from .output.sources import verify_sources
+        sc = verify_sources(_load(sources))
+        few = sc["n_questions"] < MIN_QUESTIONS or sc["n_queries"] < MIN_QUERIES
+        add("3 外部调研", sc["ok"] and not few,
+            f"{sc['n_questions']} 个问题、{sc['n_queries']} 次检索、{sc['n_sources']} 个来源"
+            + (f"，{len(sc['problems'])} 处问题" if sc["problems"] else "") + ("（检索量不足）" if few else ""),
+            "运行 verify-sources 修正；问题与检索不足时补充检索")
+    # 4 经营数据
     if not extras.is_file():
-        add("3 经营数据", False, "extras.json 不存在", "按 framework.md 驱动清单抄表，读 extraction.md“补充表格”")
+        add("4 经营数据", False, "extras.json 不存在", "按 framework.md 驱动清单抄表，读 extraction.md“补充表格”")
     else:
         ec = _extras_check(ws, meta, extras)
-        add("3 经营数据", ec["ok"], f"{ec['tables']} 张表，拒收 {ec['rejected']} 格", "运行 verify-extra 并修正拒收项")
+        add("4 经营数据", ec["ok"], f"{ec['tables']} 张表，拒收 {ec['rejected']} 格", "运行 verify-extra 并修正拒收项")
     # 4 估值假设
     if not assumptions.is_file():
-        add("4 估值假设", False, "valuation_assumptions.json 不存在", "读 SKILL.md 第 5 步估值口径，按样例格式起草")
+        add("5 估值假设", False, "valuation_assumptions.json 不存在", "读 SKILL.md 第 5 步估值口径，按样例格式起草")
     else:
         a = _load(assumptions)
         miss = [k for k in ("current_price", "price_source") if a.get(k) in (None, "")]
-        add("4 估值假设", not miss, "缺 " + "、".join(miss) if miss else "已起草",
+        add("5 估值假设", not miss, "缺 " + "、".join(miss) if miss else "已起草",
             "股价取 inputs/market.json；没有就停下并写进交付说明")
     # 5 估值运行
     run, man = _latest_run(ws, work)
     inputs_mtime = max(_mtime(facts), _mtime(extras), _mtime(assumptions))
     if run is None:
-        add("5 估值运行", False, "没有成功的 valuation 运行", "按 CLAUDE.md 阶段 5 的命令运行")
+        add("6 估值运行", False, "没有成功的 valuation 运行", "按 AGENTS.md 阶段 6 的命令运行")
     else:
         started = datetime.fromisoformat(man["started_at"]).timestamp()
         argv = man["config"]["argv"]
         stale = started < inputs_mtime
         no_extras = extras.is_file() and not _has_arg(argv, f"{work}/extras.json")
-        add("5 估值运行", not (stale or no_extras), f"runs/{run.name}"
+        add("6 估值运行", not (stale or no_extras), f"runs/{run.name}"
             + ("（早于输入文件修改，已过期）" if stale else "") + ("（未带 --extras）" if no_extras else ""),
             "重跑估值，后续阶段都用新的运行目录")
-    # 6 文稿
+    # 7 文稿
     if not narrative.is_file() or run is None:
-        add("6 文稿", False, "narrative.md 不存在" if not narrative.is_file() else "缺运行目录",
+        add("7 文稿", False, "narrative.md 不存在" if not narrative.is_file() else "缺运行目录",
             "复制 templates/narrative.md，读 references/sections.md 与 writing.md 后写作")
     else:
         g, cm = run / "commentary_guard.json", run / "commentary.md"
         same = cm.is_file() and cm.read_text(encoding="utf-8") == narrative.read_text(encoding="utf-8")
-        ok = g.is_file() and _load(g).get("ok") and same
-        detail = ("guard 通过" if ok else "guard 未通过" if g.is_file() and same
+        gr = _load(g) if g.is_file() else {}
+        with_sources = bool(gr.get("sources")) or not sources.is_file()
+        ok = gr.get("ok") and same and with_sources and _mtime(g) >= _mtime(sources)
+        detail = ("guard 通过" if ok else "guard 未通过" if gr and same
                   else f"当前文稿未对 runs/{run.name} 跑 guard")
-        add("6 文稿", bool(ok), detail, f"PY -m finagent guard --run-dir runs/{run.name} --text {work}/report/narrative.md")
-    # 7 排版
+        if gr and same and not with_sources:
+            detail = "guard 未带 --sources"
+        add("7 文稿", bool(ok), detail, f"PY -m finagent guard --run-dir runs/{run.name} --text {work}/report/narrative.md"
+            f" --sources {work}/research/sources.json")
+    # 8 复核改写（独立会话）
+    missing = [p.name for p in (draft, edit_log, review) if not p.is_file()]
+    if missing:
+        add("8 复核改写", False, "缺 " + "、".join(missing),
+            "另开会话（REVIEW.md），按 finagent-review skill 复核改写")
+    else:
+        from .output.numlock import numlock
+        lock = numlock(draft.read_text(encoding="utf-8"), narrative.read_text(encoding="utf-8"))
+        add("8 复核改写", lock["ok"], f"数字锁{'通过' if lock['ok'] else '未通过'}，删去数字 {lock['removed']} 个"
+            + (f"，新增 {'、'.join(lock['added'] + lock['new_sources'])}" if not lock["ok"] else ""),
+            f"改写不得新增或改动数字：PY -m finagent numlock --before {work}/report/narrative.draft.md "
+            f"--after {work}/report/narrative.md")
+    # 9 排版
     pdf = run / "report" / "report.pdf" if run else None
     if pdf is None or not pdf.is_file():
-        add("7 排版", False, "PDF 不存在", "复制 templates/build_report.py，读 references/html-report.md，渲染后看 preview")
+        add("9 排版", False, "PDF 不存在", "复制 templates/build_report.py，读 references/html-report.md，渲染后看 preview")
     else:
         fresh = _mtime(pdf) >= max(_mtime(narrative), _mtime(script))
         named = [p.name for p in pdf.parent.glob("*.pdf") if p.name != "report.pdf"]
-        add("7 排版", fresh and bool(named), f"runs/{run.name}/report/{named[0] if named else 'report.pdf'}"
+        add("9 排版", fresh and bool(named), f"runs/{run.name}/report/{named[0] if named else 'report.pdf'}"
             + ("" if fresh else "（早于文稿或脚本修改）") + ("" if named else "（未设 output_name）"),
             "重新渲染；Config.output_name 设为公司名+日期")
-    # 8 交付说明
-    add("8 交付说明", delivery.is_file(), "delivery.md " + ("已写" if delivery.is_file() else "不存在"),
-        "写交付说明：结论、评级、假设与外部数据、未解决问题")
+    # 10 交付说明
+    add("10 交付说明", delivery.is_file(), "delivery.md " + ("已写" if delivery.is_file() else "不存在"),
+        "写交付说明：结论、评级、假设与外部数据、复核清单要点")
 
     # 前一阶段未过，后面的“通过”不可信
     blocked = False
@@ -494,20 +563,51 @@ def collect(ws: Path, *, label: str = "", overwrite: bool = False, force: bool =
             shutil.copy2(pdf, dst / "report.pdf")
             if xlsx.is_file():
                 shutil.copy2(xlsx, dst / "sheet.xlsx")
+            review = src_work / "report" / "review.md"
+            if review.is_file():
+                shutil.copy2(review, dst / "复核清单.md")
             out["delivery"] = str(dst.relative_to(root))
     return out
 
 
 # ------------------------------------------------------------------ run（无头）
-def run_agent(ws: Path, agent: str, model: str | None = None) -> int:
-    """在工作区里无头执行；事件流原样存 .pipeline/agents/<时间>-<agent>.jsonl，运行记录追加到 agent_runs.json。"""
-    cmd = agent_command(agent, model)
+WRITE_STAGES = 7  # 阶段 1～7 由写作会话完成，之后交给独立的复核会话
+
+
+def _writing_done(ws: Path) -> bool:
+    return all(st["ok"] for st in status(ws)["stages"][:WRITE_STAGES])
+
+
+def _role_model(agent: str, role: str, model: str | None, review_model: str | None = None) -> str | None:
+    """Claude 默认分工：写作用 GEN_MODEL，复核用 QC_MODEL；显式指定的模型优先。其他 agent 用其默认模型。"""
+    if role == "write":
+        return model or (GEN_MODEL if agent == "claude" else None)
+    return review_model or model or (QC_MODEL if agent == "claude" else None)
+
+
+def run_agent(ws: Path, agent: str, model: str | None = None, review_model: str | None = None) -> int:
+    """无头执行两个会话：写作会话（阶段 1～7）→ 复核会话（阶段 8～10，不继承写作上下文）。
+    已完成的部分不重跑：写作阶段都通过时直接进入复核会话。"""
+    code = 0
+    if not _writing_done(ws):
+        code = _session(ws, agent, _role_model(agent, "write", model), "write", TASK_PROMPT)
+        if not _writing_done(ws):
+            print("写作阶段未全部通过，不进入复核会话；运行 status 查看卡在哪一步。")
+            return code or 1
+    if not status(ws)["done"]:
+        code = _session(ws, agent, _role_model(agent, "review", model, review_model), "review", REVIEW_PROMPT)
+    return code
+
+
+def _session(ws: Path, agent: str, model: str | None, role: str, prompt: str) -> int:
+    """在工作区里无头执行一个会话；事件流原样存 .pipeline/agents/<时间>-<agent>-<role>.jsonl，运行记录追加到 agent_runs.json。"""
+    cmd = agent_command(agent, model, prompt)
     if shutil.which(cmd[0]) is None:
         raise SystemExit(f"找不到 {cmd[0]} 命令行，先安装并登录")
     logs = ws / STATE_DIR / "agents"
     logs.mkdir(parents=True, exist_ok=True)
     started = datetime.now()
-    log = logs / f"{started:%Y%m%d-%H%M%S}-{agent}.jsonl"
+    log = logs / f"{started:%Y%m%d-%H%M%S}-{agent}-{role}.jsonl"
     with log.open("w", encoding="utf-8") as f:
         proc = subprocess.Popen(cmd, cwd=ws, stdout=subprocess.PIPE, text=True, encoding="utf-8")
         for line in proc.stdout:  # 边跑边落盘，中途中断也有记录
@@ -515,7 +615,7 @@ def run_agent(ws: Path, agent: str, model: str | None = None) -> int:
             f.flush()
             print(_event_brief(line), end="", flush=True)
         code = proc.wait()
-    record = {"agent": agent, "model": model, "started_at": started.isoformat(timespec="seconds"),
+    record = {"agent": agent, "model": model, "role": role, "started_at": started.isoformat(timespec="seconds"),
               "elapsed_sec": round((datetime.now() - started).total_seconds(), 1), "exit_code": code,
               "log": log.relative_to(ws).as_posix(), **_usage(log, agent)}
     runs = ws / STATE_DIR / "agent_runs.json"
@@ -562,6 +662,150 @@ def _usage(log: Path, agent: str) -> dict[str, Any]:
     return {**out, **tokens}
 
 
+# ------------------------------------------------------------------ refine（生成 → 复核 → 质检循环）
+FIX_PROMPT = ("上一轮质检发现了需要回到写作阶段处理的问题，见 {issues}。按本工作区 AGENTS.md 修改对应阶段的产物"
+              "（需要补数据、改假设就重跑估值，文稿改完重跑 guard）；处理不了的写进 {work}/report/review.md 并说明原因。"
+              "阶段 1～7 全部通过后停止并汇报，阶段 8 起由复核会话完成。命令直接以 ./py 开头，不加 cd、不串联。")
+REVISE_PROMPT = ("你是本工作区研报的复核编辑，没有参与写作。先读 .claude/skills/finagent-review/SKILL.md，再读质检问题单 "
+                 "{issues} 逐条处理：只改措辞、结构与编排，数字锁照常（{work}/report/narrative.draft.md 是初稿，不要覆盖）；"
+                 "需要补数字或改结论的写进 {work}/report/review.md。改完重跑 guard 与数字锁，重新渲染 PDF（阶段 9），"
+                 "更新交付说明（阶段 10）；每个阶段结束运行 ./py -m finagent.report_pipeline status，全部闸门通过后停止。"
+                 "命令直接以 ./py 开头，不加 cd、不串联。")
+SNAPSHOT_FILES = ("narrative.md", "narrative.draft.md", "edit_log.md", "review.md", "delivery.md")
+
+
+def _rounds_dir(ws: Path) -> Path:
+    return ws / STATE_DIR / "rounds"
+
+
+def _snapshot(ws: Path, n: int) -> dict[str, Any]:
+    """本轮交付物存档（文稿、复核文件、PDF），供回滚到最佳一轮。"""
+    meta, st = _load(ws / META), status(ws)
+    report = ws / "data" / "extractions" / meta["key"] / "report"
+    snap = _rounds_dir(ws) / str(n) / "snapshot"
+    snap.mkdir(parents=True, exist_ok=True)
+    for name in SNAPSHOT_FILES:
+        if (report / name).is_file():
+            shutil.copy2(report / name, snap / name)
+    pdfs = []
+    if st["run_dir"] and (ws / st["run_dir"] / "report").is_dir():
+        for pdf in (ws / st["run_dir"] / "report").glob("*.pdf"):
+            shutil.copy2(pdf, snap / pdf.name)
+            pdfs.append(pdf.name)
+    return {"run_dir": st["run_dir"], "pdfs": pdfs,
+            "narrative_sha256": _sha256(report / "narrative.md") if (report / "narrative.md").is_file() else None}
+
+
+def _restore(ws: Path, n: int, info: dict[str, Any]) -> bool:
+    """回滚到第 n 轮。估值运行目录变了（中间重跑过估值）就不回滚，只在 loop.json 里指明最佳一轮。"""
+    st = status(ws)
+    if st["run_dir"] != info["run_dir"]:
+        return False
+    meta = _load(ws / META)
+    report = ws / "data" / "extractions" / meta["key"] / "report"
+    snap = _rounds_dir(ws) / str(n) / "snapshot"
+    for name in SNAPSHOT_FILES:
+        if (snap / name).is_file():
+            shutil.copy2(snap / name, report / name)
+    for name in info["pdfs"]:  # PDF 最后复制，保持“PDF 晚于文稿”
+        shutil.copy2(snap / name, ws / info["run_dir"] / "report" / name)
+    return True
+
+
+def _stop_reason(rounds: list[dict[str, Any]], max_rounds: int, min_gain: float) -> str | None:
+    last = rounds[-1]
+    if last["deliverable"]:
+        return "达到交付标准"
+    if len(rounds) >= max_rounds:
+        return f"达到最大轮数 {max_rounds}"
+    totals = [r["total"] for r in rounds]
+    if len(totals) >= 3 and totals[-1] - totals[-2] < min_gain and totals[-2] - totals[-3] < min_gain:
+        return f"连续两轮提升不足 {min_gain} 分"
+    if not last["issues"]["generator"] and not last["issues"]["reviewer"]:
+        return "没有可回传的问题"
+    return None
+
+
+def refine(ws: Path, *, max_rounds: int = 3, min_gain: float = 2.0, gen_model: str | None = None,
+           qc_model: str | None = None, rubric: str | None = None) -> dict[str, Any]:
+    """多 Agent 循环：Generator（写作会话）→ Reviewer（复核会话）→ Evaluator（盲评会话）。
+    三者都是独立的 Claude Code 会话，只靠文件交接。未达交付标准时，问题单按路由回传：
+    数据与假设类回到 Generator（重跑写作阶段，复核从头再来），措辞与结构类交给 Reviewer 修订。
+    每轮存档；结束时回滚到得分最高的一轮。问题单只含理由与证据，评分标准对生成方不可见。"""
+    from .evaluation import judge
+    from .evaluation.__main__ import evaluate, issues_markdown
+    from .evaluation.rubric import bundle_from_workspace
+
+    gen_model, qc_model = gen_model or GEN_MODEL, qc_model or QC_MODEL
+    meta = _load(ws / META)
+    work = f"data/extractions/{meta['key']}"
+    # 评测结果（含条目与分值）放在工作区之外，生成方读不到；回传给它的只有问题单
+    eroot = judge.default_root() / ws.name
+    eroot.mkdir(parents=True, exist_ok=True)
+    path = eroot / "loop.json"
+    state = _load(path) if path.is_file() else {"rounds": [], "best": None, "stopped": None}
+    state.update(max_rounds=max_rounds, min_gain=min_gain, gen_model=gen_model, qc_model=qc_model)
+    if state["rounds"] and (reason := _stop_reason(state["rounds"], max_rounds, min_gain)):
+        state["stopped"] = reason
+        return state
+
+    for n in range(len(state["rounds"]) + 1, max_rounds + 1):
+        if n == 1:
+            run_agent(ws, "claude", gen_model, qc_model)
+        else:
+            prev = _rounds_dir(ws) / str(n - 1)
+            prev.mkdir(parents=True, exist_ok=True)
+            issues = json.loads((eroot / f"r{n - 1}" / "eval" / "issues.json").read_text(encoding="utf-8"))
+            to_gen = [i for i in issues if i["route"] == "generator"]
+            to_rev = [i for i in issues if i["route"] == "reviewer"]
+            rev_file = prev / "issues-reviewer.md"
+            rev_file.write_text(issues_markdown(to_rev), encoding="utf-8")
+            rev_rel = rev_file.relative_to(ws).as_posix()
+            if to_gen:
+                gen_file = prev / "issues-generator.md"
+                gen_file.write_text(issues_markdown(to_gen), encoding="utf-8")
+                for name in ("narrative.draft.md", "edit_log.md"):  # 文稿要重写，复核从头再来
+                    (ws / work / "report" / name).unlink(missing_ok=True)
+                _session(ws, "claude", gen_model, "fix",
+                         FIX_PROMPT.format(issues=gen_file.relative_to(ws).as_posix(), work=work))
+                if _writing_done(ws):
+                    prompt = REVIEW_PROMPT + (f"另读质检问题单 {rev_rel} 逐条处理。" if to_rev else "")
+                    _session(ws, "claude", qc_model, "review", prompt)
+            else:
+                _session(ws, "claude", qc_model, "revise", REVISE_PROMPT.format(issues=rev_rel, work=work))
+
+        rdir = eroot / f"r{n}"
+        st = status(ws)
+        sc = evaluate(bundle_from_workspace(ws), rdir / "eval", rubric_path=rubric, model=qc_model,
+                      blind_dir=rdir / "blind")
+        issues = json.loads((rdir / "eval" / "issues.json").read_text(encoding="utf-8"))
+        state["rounds"].append({
+            "round": n, "total": sc["total"], "deliverable": sc["deliverable"],
+            "not_deliverable_reasons": sc["not_deliverable_reasons"],
+            "stages_passed": sum(s["ok"] for s in st["stages"]),
+            "issues": {r: sum(i["route"] == r for i in issues) for r in ("generator", "reviewer")},
+            "snapshot": _snapshot(ws, n), "finished_at": datetime.now().isoformat(timespec="seconds")})
+        state["best"] = max(state["rounds"], key=lambda r: r["total"])["round"]
+        path.write_text(json.dumps(state, ensure_ascii=False, indent=2), encoding="utf-8")
+        print(f"第 {n} 轮：总分 {sc['total']}，{'达到' if sc['deliverable'] else '未达'}交付标准")
+        if reason := _stop_reason(state["rounds"], max_rounds, min_gain):
+            state["stopped"] = reason
+            break
+
+    best = next(r for r in state["rounds"] if r["round"] == state["best"])
+    last = state["rounds"][-1]
+    if best is not last:
+        state["restored"] = _restore(ws, best["round"], best["snapshot"])
+    if not best["deliverable"]:  # 未达标也交付最佳版本，未解决的问题交给人工
+        review = ws / work / "report" / "review.md"
+        issues_md = (eroot / f"r{best['round']}" / "eval" / "issues.md").read_text(encoding="utf-8")
+        with review.open("a", encoding="utf-8") as f:
+            f.write(f"\n\n## 质检循环未达交付标准（最佳第 {best['round']} 轮，总分 {best['total']}）\n\n"
+                    + issues_md.split("\n", 4)[-1])
+    path.write_text(json.dumps(state, ensure_ascii=False, indent=2), encoding="utf-8")
+    return state
+
+
 # ------------------------------------------------------------------ scorecard（测评）
 def scorecard(ws: Path) -> dict[str, Any]:
     """一个工作区的客观指标：闸门、抽取规模、迭代次数、研报篇幅、估值结论、模型用量。不打总分。"""
@@ -584,8 +828,17 @@ def scorecard(ws: Path) -> dict[str, Any]:
         ec = _load(ws / STATE_DIR / "extras_check.json")
         row.update(extras_tables=ec["tables"], extras_cells=ec.get("cells"))
     row["valuation_runs"] = sum(1 for d in (ws / "runs").glob("*-valuation") if (d / "summary.json").is_file())
+    if (work / "research" / "sources.json").is_file():
+        from .output.sources import verify_sources
+        sc = verify_sources(_load(work / "research" / "sources.json"))
+        row.update(web_queries=sc["n_queries"], web_sources=sc["n_sources"])
     if (work / "report" / "narrative.md").is_file():
-        row["narrative_chars"] = len(re.sub(r"\s|<!--.*?-->", "", (work / "report" / "narrative.md").read_text(encoding="utf-8"), flags=re.S))
+        text = (work / "report" / "narrative.md").read_text(encoding="utf-8")
+        row["narrative_chars"] = len(re.sub(r"\s|<!--.*?-->", "", text, flags=re.S))
+        draft = work / "report" / "narrative.draft.md"
+        if draft.is_file():  # 复核会话删改的篇幅：初稿与终稿字数差
+            row["draft_chars"] = len(re.sub(r"\s|<!--.*?-->", "", draft.read_text(encoding="utf-8"), flags=re.S))
+        row["citations"] = len(set(re.findall(r"\[S\d+\]", text)))
     if res["run_dir"]:
         run = ws / res["run_dir"]
         g = run / "commentary_guard.json"
@@ -602,9 +855,10 @@ def scorecard(ws: Path) -> dict[str, Any]:
     return row
 
 
-SCORE_COLUMNS = [("workspace", "工作区"), ("agent", "执行"), ("model", "模型"), ("stages_passed", "闸门/8"),
+SCORE_COLUMNS = [("workspace", "工作区"), ("agent", "执行"), ("model", "模型"), ("stages_passed", "闸门/10"),
                  ("facts", "财务事实"), ("extras_cells", "经营数据格"), ("valuation_runs", "估值运行次数"),
-                 ("guard_ok", "guard"), ("narrative_chars", "正文字数"), ("pages", "页数"), ("figures", "图表"),
+                 ("web_queries", "检索次数"), ("web_sources", "外部来源"), ("citations", "正文引用来源"),
+                 ("guard_ok", "guard"), ("draft_chars", "初稿字数"), ("narrative_chars", "终稿字数"), ("pages", "页数"), ("figures", "图表"),
                  ("rating", "评级"), ("dcf_base", "DCF 基准（元/股）"), ("elapsed_min", "耗时（分）"),
                  ("cost_usd", "费用（美元）"), ("input_tokens", "输入 token"), ("output_tokens", "输出 token")]
 
@@ -647,20 +901,27 @@ def main(argv: list[str] | None = None) -> int:
     b.add_argument("--peers", help="可比公司 CSV（外部数据）")
     b.add_argument("--allow-unverified", action="store_true", help="允许使用未进 manifest.json 的年报")
     b.add_argument("--force", action="store_true", help="工作区已存在时删除重建")
-    for name in ("status", "run", "collect"):
+    for name in ("status", "run", "collect", "refine"):
         p = sub.add_parser(name)
         p.add_argument("--workspace", help="工作区目录（在工作区内运行可省略）")
         if name == "status":
             p.add_argument("--json", action="store_true")
         if name == "run":
             p.add_argument("--agent", choices=["claude", "codex"], default="claude")
-            p.add_argument("--model", help="透传给 agent 的模型名")
+            p.add_argument("--model", help=f"透传给 agent 的模型名；Claude 默认写作 {GEN_MODEL}、复核 {QC_MODEL}")
+            p.add_argument("--review-model", help="复核会话单独指定模型")
             p.add_argument("--dry-run", action="store_true", help="只打印命令")
         if name == "collect":
             p.add_argument("--label", help="交付目录后缀，默认取工作区 tag")
             p.add_argument("--overwrite", action="store_true", help="覆盖仓库里已有的同名抽取目录")
             p.add_argument("--delivery-only", action="store_true", help="只收 PDF 与模型（测评对照时用，不覆盖抽取文件）")
             p.add_argument("--force", action="store_true", help="闸门未通过也收回")
+        if name == "refine":
+            p.add_argument("--max-rounds", type=int, default=3)
+            p.add_argument("--min-gain", type=float, default=2.0, help="连续两轮提升都低于此分数即停止")
+            p.add_argument("--gen-model", help=f"生成模型，默认 {GEN_MODEL}（FINAGENT_GEN_MODEL）")
+            p.add_argument("--qc-model", help=f"复核与质检模型，默认 {QC_MODEL}（FINAGENT_QC_MODEL）")
+            p.add_argument("--rubric", help="评分标准，默认 eval/rubrics/report_v0.json")
     sc = sub.add_parser("scorecard", help="测评：多个工作区并排比较")
     sc.add_argument("--workspace", action="append", required=True, help="可多次指定")
     sc.add_argument("--json", action="store_true")
@@ -676,7 +937,8 @@ def main(argv: list[str] | None = None) -> int:
         print(f"工作区：{ws}")
         print("下一步：python -m finagent.report_pipeline run --agent claude --workspace "
               + json.dumps(str(ws), ensure_ascii=False)
-              + "（或在 Claude Code / Codex 中打开该目录，把 TASK.md 的内容作为第一条消息）")
+              + "（或在 Claude Code / Codex 中打开该目录，把 TASK.md 的内容作为第一条消息；"
+              "写作完成后另开一个新会话，把 REVIEW.md 的内容作为第一条消息）")
         return 0
     if args.cmd == "sync-skills":
         _in_workspace("sync-skills")
@@ -697,10 +959,19 @@ def main(argv: list[str] | None = None) -> int:
         return 0 if res["done"] else 1
     if args.cmd == "run":
         _in_workspace("run")
-        cmd = agent_command(args.agent, args.model)
-        print("cd " + json.dumps(str(ws), ensure_ascii=False) + " && "
-              + " ".join(json.dumps(x, ensure_ascii=False) for x in cmd))
-        return 0 if args.dry_run else run_agent(ws, args.agent, args.model)
+        for role, key, prompt in (("写作会话", "write", TASK_PROMPT), ("复核会话", "review", REVIEW_PROMPT)):
+            cmd = agent_command(args.agent, _role_model(args.agent, key, args.model, args.review_model), prompt)
+            print(f"# {role}\ncd " + json.dumps(str(ws), ensure_ascii=False) + " && "
+                  + " ".join(json.dumps(x, ensure_ascii=False) for x in cmd))
+        return 0 if args.dry_run else run_agent(ws, args.agent, args.model, args.review_model)
+    if args.cmd == "refine":
+        _in_workspace("refine")
+        state = refine(ws, max_rounds=args.max_rounds, min_gain=args.min_gain, gen_model=args.gen_model,
+                       qc_model=args.qc_model, rubric=args.rubric)
+        print(json.dumps({k: state.get(k) for k in ("best", "stopped", "restored")}
+                         | {"rounds": [{k: r[k] for k in ("round", "total", "deliverable", "issues")}
+                                       for r in state["rounds"]]}, ensure_ascii=False, indent=2))
+        return 0
     _in_workspace("collect")
     label = args.label if args.label is not None else (_load(ws / META).get("tag") or "")
     print(json.dumps(collect(ws, label=label, overwrite=args.overwrite, force=args.force,

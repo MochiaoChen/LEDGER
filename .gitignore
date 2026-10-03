@@ -6,3 +6,5 @@ runs/*
 !runs/.gitkeep
 # 注意：.cache/llm/ 需要随代码提交，供评审 replay 复现
 .venv/
+# 评测事件流（含 PDF 内容，体积大）只留在本地；评审结论在 judgments.json / scorecard.md
+eval/results/*/judge.jsonl
