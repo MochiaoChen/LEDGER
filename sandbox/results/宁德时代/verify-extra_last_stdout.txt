@@ -1,6 +1,0 @@
-{
-  "ok": true,
-  "tables": 9,
-  "verified_cells": 114,
-  "rejected": []
-}

@@ -88,15 +88,11 @@ def truth_values(run: Path) -> list[float]:
     if findings.exists():
         for f in json.loads(findings.read_text(encoding="utf-8"))["findings"]:
             _numbers(f.get("truth_display", ""), vals)  # 只取正确值；suggestion 会引用研报的错误数字
-    # Original annual-report pages cited by the research framework are a lower
-    # provenance tier than verified tables: a direct printed number can pass the
-    # existence screen, while binding and independent review still check meaning.
-    vals.extend(_cited_original_values(run))
     return vals
 
 
 def _extras_scaled_numbers(extras: dict[str, Any], out: list[float]) -> None:
-    """Operating tables often store 8,162 with a column unit of 万吨, not 81,620,000."""
+    """经营数据表按列单位存数（如 8,162 万吨存成 8162），这里按“亿/万”换算回基本单位，供带单位的正文数字比对。"""
     for table in extras.get("tables", []):
         columns = table.get("columns", [])
         for row in table.get("rows", []):
@@ -108,29 +104,6 @@ def _extras_scaled_numbers(extras: dict[str, Any], out: list[float]) -> None:
                     out.append(float(value) * 1e8)
                 elif unit.startswith("万"):
                     out.append(float(value) * 1e4)
-
-
-def _cited_original_values(run: Path) -> list[float]:
-    from ..report_evidence import annual_excerpts
-
-    ws = run.parent.parent
-    meta_file = ws / "sample.json"
-    if not meta_file.is_file():
-        return []
-    meta = json.loads(meta_file.read_text(encoding="utf-8"))
-    framework = ws / "data/extractions" / meta["key"] / "report/framework.md"
-    extras = run / "financials/extras.json"
-    if not framework.is_file() or not extras.is_file():
-        return []
-    pages = annual_excerpts(ws, meta, framework.read_text(encoding="utf-8"),
-                            json.loads(extras.read_text(encoding="utf-8")).get("tables", []))
-    out: list[float] = []
-    for page in pages.values():
-        for match in NUM_UNIT_RE.finditer(page):
-            raw, unit = match.group(1), match.group(2)
-            if unit:
-                out.append(float(raw.replace(",", "")) * SCALE.get(unit, 1.0))
-    return out
 
 
 def _decimals(s: str) -> int:
@@ -179,12 +152,8 @@ def check_binding(text: str, run: Path, source: str = "commentary.md") -> list[d
 
 def _binding_candidate(claim: dict[str, Any], year: int, segment: dict[str, list[float]],
                        paragraph: str = "") -> bool:
-    """Only use the historical truth table when the rule extractor has a clear caliber.
-
-    A false annual-company comparison against a segment, quarterly period or a
-    cash-flow line is worse than a narrowed check: numbers still face source-value
-    screening and the fresh-context editorial review.
-    """
+    """只对口径明确的断言用年度合并真值表核对：预测、季度、跨年序列、分部、现金流明细等一律不比，
+    以免把分部或季度数字误判为与全年合并值不符（这些数字仍要过出处核对）。"""
     sentence = claim.get("sentence", "")
     if claim.get("is_forecast") or _is_forecast(sentence, year):
         return False

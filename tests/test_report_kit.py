@@ -123,37 +123,6 @@ def test_red_palette(sample_run, tmp_path):
     assert "#a21316" in svg.lower()
 
 
-def test_safe_report_renders_html_without_model_python(sample_run, tmp_path):
-    """Declarative DeepSeek layout reaches the real reportkit without executing authored scripts."""
-    from finagent.safe_report import render
-
-    ws = tmp_path / "isolated"
-    kit = ws / ".claude/skills/finagent-report"
-    kit.parent.mkdir(parents=True)
-    shutil.copytree(KIT, kit, ignore=shutil.ignore_patterns("__pycache__"))
-    run = ws / "runs" / sample_run.name
-    shutil.copytree(sample_run, run, ignore=shutil.ignore_patterns("report"))
-    report = ws / "data/extractions/星河智造_2024/report"
-    report.mkdir(parents=True)
-    (ws / "sample.json").write_text(json.dumps({"company": "星河智造", "ticker": "600000",
-                                                "exchange": "SSE"}, ensure_ascii=False), encoding="utf-8")
-    sections = ("title", "subtitle", "summary", "thesis", "overview", "performance", "business",
-                "profitability", "balance", "cashflow", "forecast", "valuation", "recommendation", "risks")
-    narrative = report / "narrative.md"
-    narrative.write_text("\n".join(f"<!-- section: {s} -->\n" + ("样例结论" if s != "summary" else
-                         "收入 1 亿元，利润 1 亿元，DCF 1 元，当前股价 1 元。风险提示：需求变化。")
-                         for s in sections), encoding="utf-8")
-    layout = report / "layout.json"
-    heads = ["投资逻辑", "公司概况", "业绩回顾", "经营分析", "盈利能力", "资产负债与现金流",
-             "盈利预测", "估值", "投资建议", "风险提示"]
-    layout.write_text(json.dumps({"sector": "制造业", "headings": [h + "：样例" for h in heads],
-                                  "extra_tables": [], "assumption_basis": {}, "method_note": "样例口径。"},
-                                 ensure_ascii=False), encoding="utf-8")
-    assert render(run, narrative, layout, ws / "sample.json", no_pdf=True) == 0
-    html = (run / "report/report.html").read_text(encoding="utf-8")
-    assert "投资逻辑：样例" in html and "免责声明" in html and "公司公告" in html
-
-
 def test_equity_bridge_reconciles(sample_run):
     """股权价值桥表逐项加总 = 股权价值；与估值结果、非经营性资产合计口径一致（正文描述汇总数构成前的对账依据）。"""
     from reportkit import tables as T
@@ -165,3 +134,27 @@ def test_equity_bridge_reconciles(sample_run):
     assert ev + sum(items) == pytest.approx(equity, abs=0.02)
     br = run.valuation["bridge_base"]
     assert equity == pytest.approx(br["equity_value"] / 100, abs=0.01)
+
+
+def test_non_data_primitives_and_citations(tmp_path):
+    """时间轴、链条示意、文字对比表、[S编号] 上标与附录外部资料来源。"""
+    from reportkit import charts as C, tables as T
+    from reportkit.core import md
+    from reportkit.layout import Config, sources_html
+    t = C.timeline(tmp_path, "tl", [("2008", "公司成立", "专注高速光模块"), ("2017", "重组上市", ""),
+                                    ("2025", "1.6T 量产", "进入放量期")])
+    f = C.flow(tmp_path, "fl", [("上游", ["芯片", "光器件"]), ("中游", ["光模块"]), ("下游", ["云厂商"])], highlight=1)
+    for name in (t, f):
+        assert (tmp_path / name).stat().st_size > 1000
+    html = T.text_table(["公司", "品牌层次"], [["甲", "高端 [S1]"]])
+    assert 'class="data text"' in html and '<sup class="cite">S1</sup>' in html
+    assert '<sup class="cite">S2</sup>' in md("运力增长 2.1% [S2]。")
+    research = tmp_path / "research"
+    research.mkdir()
+    (research / "sources.json").write_text(json.dumps({"sources": [
+        {"id": "S1", "publisher": "Clarksons", "title": "展望", "url": "https://example.com", "accessed": "2026-10-02"}]}),
+        encoding="utf-8")
+    cfg = Config(company="甲", ticker="000001.SZ", sector="x", date="d", narrative=tmp_path / "report" / "narrative.md")
+    out = sources_html(cfg)
+    assert "外部资料来源" in out and "Clarksons" in out and "https://example.com" in out
+    assert sources_html(Config(company="甲", ticker="t", sector="x", date="d", narrative=tmp_path / "x" / "y" / "n.md")) == ""

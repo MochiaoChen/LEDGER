@@ -17,7 +17,7 @@ from typing import Callable
 
 from . import charts as C
 from . import tables as T
-from .core import Run, dec, inline, load_sections, md, mm, neg, num, pct
+from .core import Run, dec, inline, load_sections, load_sources, md, mm, neg, num, pct
 
 KIT = Path(__file__).resolve().parent
 CHROME_CANDIDATES = [
@@ -67,6 +67,7 @@ class Config:
     method_note: str = ""             # 附录“估值方法说明”追加的公司口径说明
     rating_note: str = "（首次）"
     output_name: str = ""             # PDF 另存名（如“贵州茅台0929.pdf”），留空只输出 report.pdf
+    sources: Path | None = None       # 外部调研登记；留空时取 narrative 同级目录上一层的 research/sources.json
 
 
 # ------------------------------------------------------------------ 图表编号与目录
@@ -80,13 +81,14 @@ class Doc:
         self.secs: list[tuple[str, str]] = []
         self.nonop_shown = False  # 正文已展示非经营性资产明细时，附录不再重复
 
-    def fig(self, title: str, body: str, note: str = "", cls: str = "") -> str:
-        """图表外框：编号、标题、来源行。note 追加在来源之后（口径说明、“基准情景”等）；cls 可取 half / split。"""
+    def fig(self, title: str, body: str, note: str = "", cls: str = "", src: str = "公司公告，FinAgent") -> str:
+        """图表外框：编号、标题、来源行。note 追加在来源之后（口径说明、“基准情景”等）；cls 可取 half / split。
+        src 换成外部资料时写发布方并带编号，如 src="Clarksons [S2]，FinAgent 整理"。"""
         self.n += 1
         self.figs.append((self.n, title))
         extra = f"；{note}" if note else ""
         return (f'<figure class="{cls}"><figcaption><span class="fno">图表 {self.n}</span>{html.escape(title)}</figcaption>'
-                f'{body}<div class="src">资料来源：公司公告，FinAgent{extra}</div></figure>')
+                f'{body}<div class="src">资料来源：{inline(src)}{extra}</div></figure>')
 
     def img(self, fn: Callable | str, width_mm: int = 83, *args, **kw) -> str:
         """fn 为标准图函数（传入 run 与输出目录）或已生成的 SVG 文件名。"""
@@ -314,10 +316,26 @@ def appendix_notes(run: Run, cfg: Config, forecast_secs: str) -> str:
 预测值依据第 7 节的分析师假设。表内单价、占比、增速按已披露数据计算。
 当前股价为外部行情数据（{run.fs.get("market", {}).get("price_date", "—")} 收盘）。</p>
 <table class="data slim mono"><thead><tr><th>输入文件（运行 {m['run_id']}）</th><th>SHA-256</th></tr></thead><tbody>{inputs}</tbody></table>
+{sources_html(cfg)}
 <h3>内容说明</h3>
 <p class="small">经营归因、盈利预测、估值及评级依赖{forecast_secs}所列假设，请结合敏感性分析与风险提示使用。</p>
 <h3>投资评级说明</h3>
 <p class="small">评级依据{rt['basis']}：{rt['rule']}。</p>"""
+
+
+def sources_html(cfg: Config) -> str:
+    """附录“外部资料来源”：正文 [S编号] 对应的检索来源（发布方、标题、日期、网址）。"""
+    path = cfg.sources or Path(cfg.narrative).parent.parent / "research" / "sources.json"
+    src = load_sources(path).get("sources") or []
+    if not src:
+        return ""
+    rows = "".join(f"<tr><td>{html.escape(s['id'])}</td><td>{html.escape(s.get('publisher', ''))}</td>"
+                   f"<td>{html.escape(s.get('title', ''))}</td><td>{html.escape(s.get('published') or '—')}</td>"
+                   f"<td>{html.escape(s.get('url', ''))}</td></tr>" for s in src)
+    return ("<h3>外部资料来源</h3><p class=\"small\">正文与图表中标注 S 编号的内容来自以下公开资料，检索与访问日期、"
+            "原文摘句见 research/sources.json。</p>"
+            f'<table class="data slim sources"><thead><tr><th>编号</th><th>发布方</th><th>标题</th><th>发布日期</th>'
+            f"<th>网址</th></tr></thead><tbody>{rows}</tbody></table>")
 
 
 def appendix(doc: Doc, cfg: Config, forecast_secs: str = "盈利预测与估值章节") -> str:

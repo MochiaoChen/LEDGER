@@ -23,11 +23,17 @@ description: 为 A 股公司生成卖方体例的深度研报 PDF（约 20 页�
 1. **数字只来自运行产物。** 正文数字必须过 `guard`；图表数字由脚本从产物 JSON 读出，脚本只做单位换算与格式化。
    增速、占比、差值、单价这类派生数**不要自己算**（包括心算约数，如“约三倍”“超过四成”），写成 extras 的 `ratios`
    让程序算（`op: growth / diff`，见 extraction.md）。
-2. **年报之外的输入要标明。** 股价是外部数据，估值参数是分析师假设，在出现处注明。
+2. **年报之外的信息要检索、登记、标明来源，不能凭记忆。** 行业数据、排名、价格、竞争对手、年报后的事件，
+   用 WebSearch / WebFetch 现查，登记进 `research/sources.json`，正文句末加 `[S编号]`（方法见 `references/research.md`）。
+   股价是外部数据，估值参数是分析师假设，在出现处注明。
 3. **措辞区分事实、推论、观点**：事实直接陈述；推论用“主要系”“反映”；观点用“我们认为”“我们预计”。
    公司没披露、产物也算不出的判断（“行业最强”“首次”），要么找数据支撑，要么改成观点措辞，要么删掉。
-4. **评级取程序结果**（`forecast_summary.rating`），不自己定。“不构成投资建议”只出现在免责声明里。
-5. **字体与免责声明共用**：正文 Times New Roman + 楷体；表格、图表的数字用 Helvetica，汉字用楷体。
+4. **写给投资者看，不是写给审核者看。** 不写否定对照（“不是……而是”“而非”）、自证圆场（“佐证”“与……一致”
+   “年报未披露”“属分析师假设”）、程序口吻（“程序预测”）和口语套话（“不过”“具体来看”），规则与改写示例见
+   `writing.md`。拿不准但重要的内容写进 `report/review.md` 复核清单，不进正文；拿不准又不重要的不写。
+   文稿写完后由独立会话按 `finagent-review` skill 复核改写（只改措辞与结构，数字锁保证不碰数字）。
+5. **评级取程序结果**（`forecast_summary.rating`），不自己定。“不构成投资建议”只出现在免责声明里。
+6. **字体与免责声明共用**：正文 Times New Roman + 楷体；表格、图表的数字用 Helvetica，汉字用楷体。
    免责声明用 `reportkit/disclaimer.md`，不要逐份改写。交付前确认 PDF 里没有意外嵌入其他中文字体。
    配色统一用红色主题（`core.py` 颜色常量 + `report.css`），不再提供主题切换；公司脚本画图取 `core` 的颜色常量，不写死色值。
 
@@ -53,20 +59,25 @@ description: 为 A 股公司生成卖方体例的深度研报 PDF（约 20 页�
 1. **读年报、推导框架。** 通读管理层讨论与分析、经营性信息和相关附注，按 `references/analysis.md` 写出
    `framework.md`：投资主线（3～4 条核心观点，也是首页“投资要点”和第 1 节的骨架）、驱动清单（年报位置 → extras →
    报告章节 → 预测参数）、披露局限、章节结构。
-2. **补数据。** 按驱动清单把要用的表格逐格抄进 `extras.json`（原文写法、带页码），派生比率写进 `ratios`，行和比率可加 `alias`
+2. **外部调研。** 按 framework.md 的外部调研清单逐题联网检索，登记到 `research/sources.json`，
+   `PY -m finagent verify-sources --sources .../research/sources.json` 到 `ok: true`（见 `references/research.md`）。
+3. **补数据。** 按驱动清单把要用的表格逐格抄进 `extras.json`（原文写法、带页码），派生比率写进 `ratios`，行和比率可加 `alias`
    （正文里的简称）。`PY -m finagent verify-extra ...` 到 `ok: true`，再重跑 `valuation --extras ...` 生成新的运行目录。
-3. **写文稿**（`narrative.md`，从 `templates/narrative.md` 复制）。先写完全部分析，再排版。写完跑
-   `PY -m finagent guard --run-dir runs/<run_id> --text narrative.md`，直到 `ok: true`；护栏不认识的正确表述，
+4. **写文稿**（`narrative.md`，从 `templates/narrative.md` 复制）。先写完全部分析，再排版。写完跑
+   `PY -m finagent guard --run-dir runs/<run_id> --text narrative.md --sources ../research/sources.json`，
+   直到 `ok: true`（数字与外部来源）；护栏不认识的正确表述，
    先检查措辞（见下面“常见坑”），确属护栏局限再考虑给 extras 行加 alias 或改进 guard。
    过了护栏还要自查：数字配对的指标和期间对不对，推论有没有超出披露。
-4. **写编排脚本**（从 `templates/build_report.py` 复制）。标准图表直接调用 reportkit；公司专属图表从 `run.cell()` /
+   然后交给 **finagent-review**（另开会话最好）：备份初稿、编辑改写、数字锁 `numlock`、重跑 guard。
+5. **写编排脚本**（从 `templates/build_report.py` 复制）。标准图表直接调用 reportkit；公司专属图表从 `run.cell()` /
    `run.ratios` 取数后调用原语。关键假设表的“依据”列要写明对应正文第几节。
-5. **渲染与自检。** `PY data/extractions/<公司>_<年度>/report/build_report.py --run-dir runs/<run_id>`，
+6. **渲染与自检。** `PY data/extractions/<公司>_<年度>/report/build_report.py --run-dir runs/<run_id>`，
    脚本会两遍打印（回填目录页码），输出逐页预览和每 8 页一张的缩略图 `preview/sheet*.png`。
    先看缩略图找大块留白、孤立标题、只溢出一两行的页；再逐页看图表文字是否重叠、数字是否清楚。
    留白多时：缩小图高、调整图文顺序、给长表格加 `cls="split"` 允许跨页。
-6. **交付。** `Config.output_name` 设成用户要的文件名（如“贵州茅台0929.pdf”）。向用户报告：PDF 路径、页数与图表数、
-   核心结论、哪些输入是假设或外部数据、还没解决的问题。
+7. **交付。** 确认 `report/review.md` 复核清单已写（finagent-review 产出），
+   `Config.output_name` 设成用户要的文件名（如“贵州茅台0929.pdf”）。向用户报告：PDF 路径、页数与图表数、
+   核心结论、哪些输入是假设或外部数据、复核清单。
 
 ## 四、reportkit 速查
 
@@ -76,11 +87,11 @@ description: 为 A 股公司生成卖方体例的深度研报 PDF（约 20 页�
 |---|---|
 | `core` | `Run`（`v(指标, 期间)`、`cell(表, 行, 列)`、`ratios`、`rows(表)`、`has(表…)`、`yoy(指标)`）；格式化 `yi / pct / pp / num / mm`；`md / md_parts`（按 `### ` 拆块）；配色常量 |
 | `charts` 标准图 | `cover` `history` `quality` `quarterly` `cash_quarterly` `bridge` `segment_forecast` `margins` `scenarios` `ev_bridge` `football`（参数 `run, out`，传给 `doc.img(C.xxx, 宽度mm)`） |
-| `charts` 原语 | `grouped`（分组柱，可标同比）`stacked`（堆叠柱）`signed`（正负柱）`hbars`（横条）`donuts`（环形）`progress`（进度条）`panels`（并排小柱）`composition`（单根构成条）；返回 SVG 文件名，用 `doc.img(文件名, 宽度)` 嵌入 |
-| `tables` 标准表 | `forecast` `three_year` `core` `quarterly` `balance` `assumptions` `segment_forecast` `wacc` `fcff` `scenario_table` `sensitivity(i)` `comps` `comps_implied` `nonop`；拼装工具 `table / tr / td / grp` |
+| `charts` 原语 | `grouped`（分组柱，可标同比）`stacked`（堆叠柱）`signed`（正负柱）`hbars`（横条）`donuts`（环形）`progress`（进度条）`panels`（并排小柱）`composition`（单根构成条）；非数据图 `timeline`（时间轴）`flow`（产业链/链条示意）；返回 SVG 文件名，用 `doc.img(文件名, 宽度)` 嵌入 |
+| `tables` 标准表 | `forecast` `three_year` `core` `quarterly` `balance` `assumptions` `segment_forecast` `wacc` `fcff` `scenario_table` `sensitivity(i)` `comps` `comps_implied` `nonop`；文字对比表 `text_table`；拼装工具 `table / tr / td / grp` |
 | `layout` | `Config`（公司、代码、行业、日期、`side_rows`、`method_note`、`output_name`）；`Doc`（`fig` 自动编号、`img`、`h2`）；`two`（半栏并排）；`valuation_ranges(doc)`（估值区间图 + 产物里全部敏感性矩阵；有 `--peers` 时追加可比公司表）；`appendix`（报表预测、方法说明、免责声明）；`main(CFG, body)` |
 
-半栏图宽 83mm、通栏 172mm。`doc.fig(标题, 内容, 注释, cls)`：注释追加在“资料来源”后；`cls="split"` 允许长表跨页，
+半栏图宽 83mm、通栏 172mm。`doc.fig(标题, 内容, 注释, cls, src)`：注释追加在“资料来源”后，`src` 换成外部资料的发布方与 `[S编号]`；`cls="split"` 允许长表跨页，
 `cls="half"` 占半栏宽。
 
 数字精度按数量级自动取（`core.dec`）：金额或每股价值 ≥ 100 取整，否则两位小数，低价股、小公司不会被取整。
@@ -123,5 +134,6 @@ description: 为 A 股公司生成卖方体例的深度研报 PDF（约 20 页�
   templates/build_report.py    编排脚本模板（标准章节已接好，公司专属部分留 TODO）
   templates/narrative.md       文稿模板（分节与写作提示）
   references/analysis.md       从年报推导分析框架的方法（framework.md 写法；茅台推导示例）
-  references/sections.md       常见章节、现成图表、需要的数据
+  references/sections.md       常见章节、现成图表（含非数据图表）、需要的数据
+  references/research.md       外部调研：检索清单、来源优先级、sources.json 登记与引用
 ```

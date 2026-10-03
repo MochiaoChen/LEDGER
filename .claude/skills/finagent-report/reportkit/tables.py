@@ -32,6 +32,15 @@ def grp(title: str, span: int) -> str:
     return f'<tr class="grp"><td colspan="{span}">{html.escape(title)}</td></tr>'
 
 
+def text_table(head: list[str], rows: list[list[str]]) -> str:
+    """文字对比表（同行定性对比、产品矩阵、管理层履历、政策梳理）：单元格是短句，左对齐，首列加粗。
+    外部内容在单元格里带 [S编号]。"""
+    from .core import inline
+    body = "".join("<tr>" + "".join(f"<td>{inline(c)}</td>" for c in r) + "</tr>" for r in rows)
+    th = "".join(f"<th>{html.escape(h)}</th>" for h in head)
+    return f'<table class="data text"><thead><tr>{th}</tr></thead><tbody>{body}</tbody></table>'
+
+
 def fmt(v, kind):
     if v is None:
         return "—"

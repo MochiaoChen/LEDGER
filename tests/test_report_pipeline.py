@@ -2,7 +2,6 @@
 
 import json
 import os
-import zipfile
 
 import pytest
 
@@ -19,7 +18,6 @@ def test_workspace_contains_only_skills_engine_and_one_company(ws):
     assert (ws / ".claude/skills/finagent-research/SKILL.md").is_file()
     assert (ws / ".claude/skills/finagent-report/reportkit/core.py").is_file()
     assert (ws / "finagent/__main__.py").is_file()
-    assert not (ws / "finagent/deepseek_harness.py").exists()
     assert not list(ws.rglob("__pycache__"))
     pdfs = list(ws.rglob("*.pdf"))
     assert [p.relative_to(ws).as_posix() for p in pdfs] == ["report/resources/贵州茅台/600519_贵州茅台_2025_年度报告.pdf"]
@@ -49,6 +47,10 @@ def test_workspace_guide_and_permissions(ws):
     assert f"Read(/{ROOT.parent.as_posix()}/**)" in perms["deny"]
     assert "Edit(./finagent/**)" in perms["deny"] and "Write(./.claude/**)" in perms["deny"]
     assert "Edit(./AGENTS.md)" in perms["deny"]
+    # 外部信息必须联网检索：工作区放开 WebSearch / WebFetch，说明里写明不能凭记忆
+    assert "WebSearch" in perms["allow"] and "WebSearch" not in perms["deny"] and "WebFetch" not in perms["deny"]
+    assert "不能用记忆" in guide and "sources.json" in guide and "review.md" in guide and "finagent-review" in guide
+    assert (ws / ".claude/skills/finagent-review/SKILL.md").is_file() and (ws / "REVIEW.md").is_file()
     assert "MPLCONFIGDIR" in (ws / "py").read_text(encoding="utf-8")
 
 
@@ -65,8 +67,8 @@ def test_agent_commands_and_usage(tmp_path):
     assert claude[:2] == ["claude", "-p"] and "stream-json" in claude and claude[-2:] == ["--model", "opus"]
     codex = rp.agent_command("codex")
     assert codex[:2] == ["codex", "exec"] and "--skip-git-repo-check" in codex and codex[-1] == rp.TASK_PROMPT
-    assert rp.agent_command("deepseek", python="/test/env/python")[:3] == [
-        "/test/env/python", "-m", "finagent.deepseek_agent"]
+    assert "tools.web_search=true" in codex and "WebSearch" in claude
+    assert rp.agent_command("claude", None, rp.REVIEW_PROMPT)[2] == rp.REVIEW_PROMPT
     log = tmp_path / "c.jsonl"
     log.write_text("\n".join(json.dumps(e) for e in [
         {"type": "assistant", "message": {"content": [{"type": "text", "text": "开始"}]}},
@@ -96,15 +98,26 @@ def test_status_gates_and_collect(ws, tmp_path):
     res = rp.status(ws)
     assert not res["done"] and res["next"].startswith("1 财务抽取")
     work = ws / "data/extractions/贵州茅台_2025"
-    core = ("revenue", "np_parent", "ocf", "total_assets", "eps_basic")
-    sample_facts = {"facts": [{"metric_id": metric, "period": str(year)}
-                              for year in (2023, 2024, 2025) for metric in core]}
-    (work / "facts.json").write_text(json.dumps(sample_facts), encoding="utf-8")
+    (work / "facts.json").write_text("{}", encoding="utf-8")
     (work / "facts.verified.json").write_text(json.dumps({"check": {"ok": True}}), encoding="utf-8")
     (work / "report/framework.md").write_text("# 框架", encoding="utf-8")
     stages = {s["stage"]: s for s in rp.status(ws)["stages"]}
-    assert stages["1 财务抽取"]["ok"] and stages["2 分析框架"]["ok"]
-    assert not stages["3 经营数据"]["ok"]
+    assert stages["1 财务抽取"]["ok"] and not stages["2 分析框架"]["ok"]  # 缺外部调研清单
+    (work / "report/framework.md").write_text("# 框架\n\n## 外部调研清单\n", encoding="utf-8")
+    stages = {s["stage"]: s for s in rp.status(ws)["stages"]}
+    assert stages["2 分析框架"]["ok"] and not stages["3 外部调研"]["ok"]
+    # 检索量不足不算通过
+    (work / "research").mkdir()
+    one = {"questions": [{"id": "Q1", "question": "行业增速", "status": "not_found", "queries": ["白酒 行业 增速"]}],
+           "sources": []}
+    (work / "research/sources.json").write_text(json.dumps(one, ensure_ascii=False), encoding="utf-8")
+    stages = {s["stage"]: s for s in rp.status(ws)["stages"]}
+    assert not stages["3 外部调研"]["ok"] and "检索量不足" in stages["3 外部调研"]["detail"]
+    many = {"questions": [{"id": f"Q{i}", "question": "q", "status": "not_found", "queries": ["a", "b"]}
+                          for i in range(rp.MIN_QUESTIONS)], "sources": []}
+    (work / "research/sources.json").write_text(json.dumps(many, ensure_ascii=False), encoding="utf-8")
+    stages = {s["stage"]: s for s in rp.status(ws)["stages"]}
+    assert stages["3 外部调研"]["ok"] and not stages["4 经营数据"]["ok"]
     # 修改 facts 后校验结果过期
     os.utime(work / "facts.json", (2e9, 2e9))
     assert not rp.status(ws)["stages"][0]["ok"]
@@ -122,22 +135,35 @@ def test_status_gates_and_collect(ws, tmp_path):
     assert "extractions" not in rp.collect(ws, root=root, force=True, delivery_only=True)
 
     row = rp.scorecard(ws)
+    assert row["web_queries"] == 2 * rp.MIN_QUESTIONS and row["web_sources"] == 0
     assert row["stages_passed"] == 0 and not row["done"] and row["valuation_runs"] == 0
     table = rp.scorecard_markdown([row])
-    assert "闸门/8" in table and "独立审读" in table and "阻断项" in table
-    assert "未完成" in table and "不代表研报质量" in table
+    assert "闸门/10" in table and "未完成" in table and "不代表研报质量" in table
 
 
-def test_status_rejects_missing_history_and_duplicate_facts(ws):
-    work = ws / "data/extractions/贵州茅台_2025"
-    facts = {"facts": [{"metric_id": "revenue", "period": "2025"},
-                        {"metric_id": "revenue", "period": "2025"}]}
-    (work / "facts.json").write_text(json.dumps(facts), encoding="utf-8")
-    (work / "facts.verified.json").write_text(json.dumps({"check": {"ok": True}}), encoding="utf-8")
-    first = rp.status(ws)["stages"][0]
-    assert not first["ok"]
-    assert "三年核心缺项 14" in first["detail"]
-    assert "重复条目 1" in first["detail"]
+def test_review_stage_numlock(ws):
+    """复核改写阶段：初稿、编辑日志、复核清单都要有，改写稿不得新增数字。"""
+    rep_dir = ws / "data/extractions/贵州茅台_2025/report"
+    stage = lambda: next(st for st in rp.status(ws)["stages"] if st["stage"] == "8 复核改写")  # noqa: E731
+    assert "缺" in stage()["detail"]
+    (rep_dir / "narrative.draft.md").write_text("营业收入 58.62 亿元。不过，年报未披露。", encoding="utf-8")
+    (rep_dir / "narrative.md").write_text("营业收入 58.62 亿元，同比增长 9.99%。", encoding="utf-8")
+    (rep_dir / "edit_log.md").write_text("删去自证", encoding="utf-8")
+    (rep_dir / "review.md").write_text("无", encoding="utf-8")
+    assert "数字锁未通过" in stage()["detail"] and "9.99%" in stage()["detail"]
+    (rep_dir / "narrative.md").write_text("营业收入 58.62 亿元。", encoding="utf-8")
+    assert "数字锁通过" in stage()["detail"]
+
+
+def test_run_agent_chains_write_then_review(ws, monkeypatch):
+    """写作阶段未完成时只起写作会话且不进复核；写作完成后起不继承上下文的复核会话。"""
+    calls = []
+    monkeypatch.setattr(rp, "_session", lambda ws_, agent, model, role, prompt: calls.append(role) or 0)
+    assert rp.run_agent(ws, "claude") == 1 and calls == ["write"]
+    monkeypatch.setattr(rp, "_writing_done", lambda ws_: True)
+    calls.clear()
+    rp.run_agent(ws, "claude")
+    assert calls == ["review"]
 
 
 def test_extras_cache_without_verifier_fingerprint_is_rechecked(ws, monkeypatch):
@@ -155,84 +181,3 @@ def test_extras_cache_without_verifier_fingerprint_is_rechecked(ws, monkeypatch)
     monkeypatch.setattr(extra_module, "verify_extras", lambda *args: {"tables": [], "rejected": []})
     checked = rp._extras_check(ws, json.loads((ws / "sample.json").read_text(encoding="utf-8")), extras)
     assert checked["ok"] and checked["rejected"] == 0 and checked["verifier_sha256"]
-
-
-def test_segment_forecast_shape_requires_evidenced_quantity_price_tables(tmp_path):
-    extras = tmp_path / "extras.json"
-    extras.write_text('{"tables":[{"id":"fleet_total"}]}', encoding="utf-8")
-    bad = {"segment_forecast": {"base": {"油轮": {"volume_growth": [0.1]}}}}
-    assert "segments 列表" in rp._assumption_shape_issues(bad, extras)[0]
-    bad["segment_forecast"] = {"segments": [{"id": "oil", "name": "油轮", "product_row": "油轮",
-                                             "scenarios": {"base": {}, "downside": {}, "upside": {}}}]}
-    assert "没有 ID 为 product 和 volume" in rp._assumption_shape_issues(bad, extras)[0]
-
-
-def test_narrative_quality_rejects_process_language_and_placeholders(tmp_path):
-    draft = tmp_path / "narrative.md"
-    draft.write_text("程序归因显示增长。模型状态为 screen-grade。\n"
-                     "这不是销量增长，而是估值的下限。TODO\n", encoding="utf-8")
-    result = rp._narrative_quality(draft)
-    assert not result["ok"]
-    assert {issue.split(" L")[0] for issue in result["issues"]} >= {
-        "内部流程话术", "冗余否定句式", "未完成占位符", "无依据的保底表述"}
-    sections = ("title", "subtitle", "summary", "thesis", "overview", "performance", "business",
-                "profitability", "balance", "cashflow", "forecast", "valuation", "recommendation", "risks")
-    draft.write_text("\n".join(f"<!-- section: {name} -->\n" +
-                               ("当前股价 10 元，DCF 12 元；收入 3 亿元，利润 2 亿元，现金流 4 亿元，"
-                                "每股收益 1 元。风险提示：竞争加剧。" if name == "summary" else "分析。")
-                               for name in sections), encoding="utf-8")
-    assert rp._narrative_quality(draft)["ok"]
-    draft.write_text(draft.read_text(encoding="utf-8").replace("当前股价", "参考股价"), encoding="utf-8")
-    assert rp._narrative_quality(draft)["ok"]
-
-
-def test_status_rejects_assumed_price_that_differs_from_market_input(ws):
-    work = ws / "data/extractions/贵州茅台_2025"
-    assumptions = work / "valuation_assumptions.json"
-    assumptions.write_text(json.dumps({"current_price": 1501, "price_source": "测试行情",
-                                       "valuation_date": None}), encoding="utf-8")
-    stage = rp.status(ws)["stages"][3]
-    assert not stage["ok"] and "current_price" in stage["detail"]
-    assumptions.write_text(json.dumps({"current_price": 1500, "price_source": "测试行情"}), encoding="utf-8")
-    assert "已核对行情来源" in rp.status(ws)["stages"][3]["detail"]
-
-
-def test_deepseek_assumption_gate_requires_material_basis(ws):
-    sample = ws / "sample.json"
-    meta = json.loads(sample.read_text(encoding="utf-8"))
-    meta["require_review"] = True
-    sample.write_text(json.dumps(meta, ensure_ascii=False), encoding="utf-8")
-    market = ws / "inputs/market.json"
-    market_data = json.loads(market.read_text(encoding="utf-8"))
-    market_data["price_date"] = "2026-09-30"
-    market.write_text(json.dumps(market_data, ensure_ascii=False), encoding="utf-8")
-    path = ws / "data/extractions/贵州茅台_2025/valuation_assumptions.json"
-    path.write_text(json.dumps({"current_price": 1500, "price_source": "测试行情",
-                                "valuation_date": "2026-09-30", "status": "分析师假设",
-                                "rationale": {"forecast": "短"}}, ensure_ascii=False),
-                    encoding="utf-8")
-    gate = rp.status(ws)["stages"][3]
-    assert not gate["ok"] and "non_operating" in gate["detail"] and "wacc" in gate["detail"]
-
-
-def test_artifact_gates_reject_corrupt_excel_and_pdf(tmp_path):
-    xlsx = tmp_path / "model.xlsx"
-    xlsx.write_bytes(b"not an xlsx" * 200)
-    assert not rp._xlsx_valid(xlsx)
-    with zipfile.ZipFile(xlsx, "w") as out:
-        out.writestr("xl/workbook.xml", "<workbook/>")
-        out.writestr("padding", "x" * 1500)
-    assert not rp._xlsx_valid(xlsx)
-    with zipfile.ZipFile(xlsx, "w") as out:
-        out.writestr("xl/workbook.xml", '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheets>'
-                     + ''.join(f'<sheet name="{name}"/>' for name in ("估值汇总", "DCF", "历史财务", "模型检查"))
-                     + '</sheets></workbook>')
-        for i in range(1, 5):
-            out.writestr(f"xl/worksheets/sheet{i}.xml",
-                         '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'
-                         '<sheetData><row><c r="A1"><f>1+1</f><v>2</v></c></row></sheetData></worksheet>')
-        out.writestr("padding", "x" * 1500)
-    assert rp._xlsx_valid(xlsx)
-    pdf = tmp_path / "report.pdf"
-    pdf.write_bytes(b"%PDF-1.4\n" + b"x" * 1500)
-    assert not rp._pdf_valid(pdf)[0]

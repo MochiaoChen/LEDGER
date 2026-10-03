@@ -1,8 +1,0 @@
-{
-  "run_dir": "/Users/xubingbing/Documents/Codex/2026-09-25/https-github-com-mochiaochen-finagent-invitations/work/finagent/sandbox/results/招商轮船/runs/20261001-235938-financials",
-  "financials": {
-    "tieout_fail": 0,
-    "signals_high": 0,
-    "signals_total": 3
-  }
-}

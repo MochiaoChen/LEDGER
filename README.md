@@ -331,7 +331,7 @@ tests/           pytest；golden/ 为原插件引擎的产出快照（见 THIRD_
 
 | 手段 | 内容 | 当前结果 |
 |---|---|---|
-| 单元与集成测试 | `pytest -q tests`：流水线、Skill 与 Agent 一致性、季报拆分、三表、reportkit 在茅台 / 样例 / 亏损公司三种情形下渲染 | 本轮 110 个通过、5 个跳过；真实 DeepSeek 端到端结果另见 `sandbox/harness/`，不能由单测替代 |
+| 单元与集成测试 | `pytest -q tests`：流水线、Skill 与 Agent 一致性、季报拆分、三表、reportkit 在茅台 / 样例 / 亏损公司三种情形下渲染 | 本轮 120 个通过 |
 | 评测 | `eval/run_eval.py`：字段抽取准确率，纠错召回率、准确率、误报数、错误类型准确率 | 样例上抽取 100%（35/35），纠错召回率与准确率均 100%，误报 0 |
 | 引擎一致性 | `test_golden.py` 对比原插件引擎快照，必须完全相等；`test_parity_reference.py` 随机输入逐项对照 | 通过 |
 | 真实年报 | 三家 2025 年报：facts 与 extras 校验 `ok: true`，文稿 guard `ok: true` | 见下表 |
@@ -348,7 +348,6 @@ tests/           pytest；golden/ 为原插件引擎的产出快照（见 THIRD_
 
 估值参数均为起草的假设，股价为外部数据，结论高度依赖假设，不构成投资建议。
 宁德时代和招商轮船的 Opus 正式版 PDF 与模型保存在 `report/交付/`；它们使用统一的红色研报主题。
-`report/benchmarks/deepseek-v41-flash/` 另存 DeepSeek Flash 的原始试跑稿，仅用于模型对照，不经过真值表、数字护栏、估值建模和红色 PDF 排版流程，不能替代上述正式版。
 
 ---
 
@@ -425,11 +424,10 @@ python -m finagent.report_pipeline collect --workspace ~/finagent-samples/恒瑞
   排版 → 交付说明），每个阶段写明这时才读哪份 skill 文档、闸门是什么；明确不读引擎源码、运行产物全文和工作区外的内容。
   `.claude/settings.json` 禁止读仓库及上级目录、禁止改引擎和 skill。
 - `status`（工作区内 `./py -m finagent.report_pipeline status`）逐阶段核对闸门：verify-facts / verify-extra 通过、
-  最近三年核心财务指标不缺失且同一指标/期间不重复、
-  估值运行晚于输入文件、guard 核对的是当前文稿、文稿无已知内部流程话术或占位符、PDF 晚于文稿与脚本。改了前面的文件，后面的阶段自动标为过期。
+  外部调研登记通过、估值运行晚于输入文件、guard 核对的是当前文稿、复核改写过数字锁、PDF 晚于文稿与脚本。改了前面的文件，后面的阶段自动标为过期。
   上下文被压缩后模型先跑它，不必重读已完成阶段。
-- `run --agent claude|codex|deepseek [--model ...]` 在工作区里无头执行（`claude -p` / `codex exec` / DeepSeek API），事件流存 `.pipeline/agents/`，
-  耗时、token、费用（DeepSeek 暂不估价）记在 `.pipeline/agent_runs.json`；也可以在 Claude Code 或 Codex 里直接打开工作区，把 `TASK.md` 作为第一条消息。
+- `run --agent claude|codex [--model ...]` 在工作区里无头执行（`claude -p` / `codex exec`；Claude 默认写作 Opus、复核 Sonnet），事件流存 `.pipeline/agents/`，
+  耗时、token、费用记在 `.pipeline/agent_runs.json`；也可以在 Claude Code 或 Codex 里直接打开工作区，把 `TASK.md` 作为第一条消息。
   Claude Code 在未信任目录里会忽略 settings 的 allow，`run` 用 `--allowedTools` 传入同一份清单；deny 照常生效。
 - `collect` 在闸门全部通过后把抽取与文稿收回 `data/extractions/<公司>_<年度>/`、运行目录收回 `runs/`、
   PDF 与估值模型放到 `report/交付/<MMDD> <公司> <label>/`。
@@ -442,29 +440,9 @@ python -m finagent.report_pipeline collect --workspace ~/finagent-samples/恒瑞
   仓库根目录 `AGENTS.md` 指向 CLAUDE.md。
 - 已知限制：Codex 路径未实测（本机无 Codex CLI）；Codex 沙箱只允许写工作区，无头 Chrome 打印 PDF 需要写用户目录，
   可能在排版阶段失败，届时在沙箱外补跑 `build_report.py`。
-
-#### DeepSeek harness（macOS / Windows）
-
-仓库根目录被 Git 忽略的 `.env` 中配置 `DEEPSEEK_API_KEY`，不要把密钥放入工作区、命令行参数或提交。
-先用与 Claude/Codex **相同的年报、股价及来源** `build --tag deepseek`，再执行：
-
-```bash
-python -m finagent.report_pipeline run --workspace <工作区> --agent deepseek
-python -m finagent.report_pipeline status --workspace <工作区>
-python -m finagent.report_pipeline scorecard --workspace <工作区> --json
-```
-
-`deepseek-flash` 是默认模型；工具调用按阶段读取两个原版 skill、本公司 PDF 物理页和外部输入，只能写本公司抽取目录，
-校验、估值、数字护栏和状态闸门仍由 FinAgent 程序执行。模型生成的报告脚本只在排版工具里运行，
-不会继承 API Key。工作区需要在仓库目录树之外；它是**内容隔离，不是操作系统级安全沙箱**。
-DeepSeek 执行器会沿用工作区 `build` 时选定的 Python 解释器；该解释器须安装项目依赖（包括 `pdfplumber`、`matplotlib`），
-否则不能将“模型完成写作”误判为 PDF 排版通过。新增的文稿检查仅拦截已知写法，不等于核实了投资推断，
-最终对比还需审读事实链、假设合理性及 PDF 图表。
-工作区内 macOS/Linux 使用 `./py`，Windows 使用 `py.cmd`；建议在目标系统本机执行 `build`，不要把另一台机器生成的解释器包装器直接搬过去。
-事件流、调用次数和 token 留在 `.pipeline/`；单次运行最多 80 次 API 调用，输入 100 万 token、输出 15 万 token，
-达到上限保留进度并停止。短程联调可设 `FINAGENT_DEEPSEEK_MAX_CALLS=1`（范围 1–80）；
-需要重新 `build` 工作区才能带入最新执行器代码。未通过 8 个闸门不能作为最终研报；测评记录放仓库 `sandbox/`，
-实运行工作区仍留在仓库外。
+- **质检循环**：`refine --workspace <工作区>` 串起生成 → 复核 → 盲评质检，未达交付标准把问题单回传重做；
+  质检单独可用 `python -m finagent.evaluation run / score / compare / pack`，评分标准见 `eval/rubrics/`。
+  环境准备 `bash scripts/setup.sh`（Windows `scripts/setup.ps1`），自检 `python -m finagent.doctor`。
 
 ### Agent 版本（国产大模型）
 
@@ -485,12 +463,6 @@ python -m finagent ask "分析 data/samples/annual_report_2024.md（2024年报�
 ```
 
 评审复现：`--llm replay` 只读 `.cache/llm/` 缓存，不访问网络，缺缓存直接报错。
-
-### DeepSeek Flash 双公司对照测试（非正式研报）
-
-先运行 `python -m finagent.deepseek_harness prepare`，从仓库内宁德时代、招商轮船年报抽取带 PDF 物理页码的证据包，并核对文件 SHA-256 和页数。要真实调用 DeepSeek 官方 API，在被 Git 忽略的 `.env` 中填写 `DEEPSEEK_API_KEY`，再运行 `python -m finagent.deepseek_harness run`。程序固定使用 `deepseek-flash`，启用 thinking / high reasoning effort；不会改动 Agent 版本的默认模型。
-
-输出保存在 `runs/deepseek-v41-flash/`，包括证据包、分析框架、Markdown 初稿、基本引用检查及运行元数据。本次试跑的两份原始稿和具体人工复核问题在 `report/benchmarks/deepseek-v41-flash/`。自动检查只覆盖页码范围、数字段落引用和明显编辑占位符；它不能证明事实正确，也不生成红色主题 PDF。原始稿保留模型缺陷以便与 Opus 版对照，发布前必须回到真值表和年报逐项复核。
 
 ### 测试与评测
 

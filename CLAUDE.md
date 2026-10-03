@@ -55,7 +55,17 @@
   建在仓库目录树之外），工作区 CLAUDE.md 按阶段规定读什么、闸门是什么；`status` 逐阶段核对（含过期检测）；
   `run --agent claude|codex` 无头执行；`collect` 把产物收回仓库；`scorecard` 多工作区对比测评。
   入口 skill `finagent-pipeline`；`.agents/skills/` 是 Codex 用的入口（`sync-skills` 生成）。新公司出研报走这条流水线。
-- 104 个测试通过。
+- 研报质量（2026-10-02，针对非 Claude 模型的机器腔与凭记忆写外部信息）：外部调研阶段联网检索并登记
+  `research/sources.json`（`verify-sources`），正文外部数字须带 `[S编号]`；文风**不做程序拦截**（用户明确反对），
+  由独立会话按 `finagent-review` skill 复核改写，`numlock` 数字锁保证改写不新增、不改动数字；
+  拿不准但重要的事项写 `report/review.md` 复核清单，随交付物给人工核对。reportkit 新增 `timeline`、`flow`、`text_table`。
+- 研报质检与多 Agent 循环（2026-10-03，设计稿 `docs/design/2026-10-03-multi-agent-eval.md`）：评分标准
+  `eval/rubrics/report_v0.json` 四层（L0 硬闸门 / L1 数据闭合由程序判，L2 分析质量 / L3 表达与合规 / 负向条目由 Sonnet
+  在仓库与工作区之外的盲评目录里判），`finagent/evaluation/` 计分；`report_pipeline refine` 串起生成（Opus 5.5）→
+  复核（Sonnet）→ 质检（Sonnet）循环，问题单按路由回传，评分标准对生成方不可见（工作区不复制 `finagent/evaluation/`）。
+  三家 Opus 研报 v0 得分 46～49（`eval/results/`），用户会据此调权重。环境：`scripts/setup.sh` / `setup.ps1` +
+  `python -m finagent.doctor`。
+- 120 个测试通过。
 
 **按优先级待做**：
 1. **真实 A 股年报联调**（两个版本都要测）：茅台已跑通 Skill 版本；规则通道仍取不到跨页表格续页（续页无表头），
@@ -110,6 +120,14 @@ python -m finagent all --input data/samples/annual_report_2024.md --year 2024 --
 
 ```bash
 python -m finagent.report_pipeline build --company <公司> --year 2025 --price <股价> --price-source "<来源>"
+```
+
+```bash
+python -m finagent.report_pipeline refine --workspace <工作区>
+```
+
+```bash
+python -m finagent.evaluation run --company <公司> --run-dir runs/<id> --work data/extractions/<公司>_<年度>
 ```
 
 ```bash

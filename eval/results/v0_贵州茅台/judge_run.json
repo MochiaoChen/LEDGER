@@ -1,0 +1,11 @@
+{
+  "model": "claude-sonnet-5-5",
+  "exit_code": 0,
+  "started_at": "2026-10-03T11:04:14",
+  "elapsed_sec": 194.6,
+  "turns": 11,
+  "cost_usd": 0.9530752,
+  "input_tokens": 1029108,
+  "output_tokens": 15233,
+  "blind_dir": "/Users/mochiaochen/finagent-evals/贵州茅台_20261003-110414"
+}

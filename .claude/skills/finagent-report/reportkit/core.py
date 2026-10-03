@@ -138,7 +138,14 @@ def load_sections(path: Path) -> dict[str, str]:
 
 
 def inline(s: str) -> str:
-    return re.sub(r"\*\*(.+?)\*\*", r"<strong>\1</strong>", html.escape(s))
+    """**加粗**；外部资料引用 [S3] 排成上标，对应附录“外部资料来源”。"""
+    s = re.sub(r"\*\*(.+?)\*\*", r"<strong>\1</strong>", html.escape(s))
+    return re.sub(r"\s*\[(S\d+)\]", r'<sup class="cite">\1</sup>', s)
+
+
+def load_sources(path: Path | None) -> dict:
+    """research/sources.json（外部调研登记）；没有则为空。"""
+    return json.loads(Path(path).read_text(encoding="utf-8")) if path and Path(path).is_file() else {}
 
 
 def md(text: str) -> str:
