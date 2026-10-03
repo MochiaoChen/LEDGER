@@ -67,6 +67,8 @@ def truth_values(run: Path) -> list[float]:
         if p.exists():
             data = json.loads(p.read_text(encoding="utf-8"))
             _numbers(data, vals)
+            if rel == "financials/extras.json":
+                _extras_scaled_numbers(data, vals)
             if rel.startswith("valuation/"):
                 _mm_numbers(data, vals)
     seg = run / "valuation" / "segment_forecast.json"
@@ -86,7 +88,49 @@ def truth_values(run: Path) -> list[float]:
     if findings.exists():
         for f in json.loads(findings.read_text(encoding="utf-8"))["findings"]:
             _numbers(f.get("truth_display", ""), vals)  # 只取正确值；suggestion 会引用研报的错误数字
+    # Original annual-report pages cited by the research framework are a lower
+    # provenance tier than verified tables: a direct printed number can pass the
+    # existence screen, while binding and independent review still check meaning.
+    vals.extend(_cited_original_values(run))
     return vals
+
+
+def _extras_scaled_numbers(extras: dict[str, Any], out: list[float]) -> None:
+    """Operating tables often store 8,162 with a column unit of 万吨, not 81,620,000."""
+    for table in extras.get("tables", []):
+        columns = table.get("columns", [])
+        for row in table.get("rows", []):
+            for column, value in zip(columns, row.get("values", [])):
+                if not isinstance(value, (int, float)) or isinstance(value, bool):
+                    continue
+                unit = str(column.get("unit") or "")
+                if unit.startswith("亿"):
+                    out.append(float(value) * 1e8)
+                elif unit.startswith("万"):
+                    out.append(float(value) * 1e4)
+
+
+def _cited_original_values(run: Path) -> list[float]:
+    from ..report_evidence import annual_excerpts
+
+    ws = run.parent.parent
+    meta_file = ws / "sample.json"
+    if not meta_file.is_file():
+        return []
+    meta = json.loads(meta_file.read_text(encoding="utf-8"))
+    framework = ws / "data/extractions" / meta["key"] / "report/framework.md"
+    extras = run / "financials/extras.json"
+    if not framework.is_file() or not extras.is_file():
+        return []
+    pages = annual_excerpts(ws, meta, framework.read_text(encoding="utf-8"),
+                            json.loads(extras.read_text(encoding="utf-8")).get("tables", []))
+    out: list[float] = []
+    for page in pages.values():
+        for match in NUM_UNIT_RE.finditer(page):
+            raw, unit = match.group(1), match.group(2)
+            if unit:
+                out.append(float(raw.replace(",", "")) * SCALE.get(unit, 1.0))
+    return out
 
 
 def _decimals(s: str) -> int:
@@ -124,12 +168,37 @@ def check_binding(text: str, run: Path, source: str = "commentary.md") -> list[d
     year = int(str(analysis["period"])[:4])
     doc = Document(source, "", _parse_markdown(text, source))
     claims = extract_claims(doc, default_year=year, llm=None)
-    findings = verify_claims(claims, analysis["truth_table"])["findings"]
     segment = _segment_values(run)
+    claims = [c for c in claims if _binding_candidate(c, year, segment, _sentence(text, c["quote"]))]
+    findings = verify_claims(claims, analysis["truth_table"])["findings"]
     return [{"quote": f["quote"], "verdict": f["verdict"], "truth": f["truth_display"], "explanation": f["explanation"]}
             for f in findings
             if f["verdict"] not in ("正确", "无法核实") and not _is_segment_claim(_context(text, f["quote"]), segment)
             and not _is_forecast(_sentence(text, f["quote"]), year)]
+
+
+def _binding_candidate(claim: dict[str, Any], year: int, segment: dict[str, list[float]],
+                       paragraph: str = "") -> bool:
+    """Only use the historical truth table when the rule extractor has a clear caliber.
+
+    A false annual-company comparison against a segment, quarterly period or a
+    cash-flow line is worse than a narrowed check: numbers still face source-value
+    screening and the fresh-context editorial review.
+    """
+    sentence = claim.get("sentence", "")
+    if claim.get("is_forecast") or _is_forecast(sentence, year):
+        return False
+    if re.search(r"(?:Q[1-4]|[一二三四]季度|第[一二三四]季度|上半年|前三季度)", sentence):
+        return False
+    if len(set(re.findall(r"20\d{2}", paragraph or sentence))) > 1:
+        return False
+    if re.search(r"\d[\d,.]*\s*(?:亿元|万元|元|%)\s*、\s*\d", sentence):
+        return False
+    if any(label and len(label) >= 2 and label in sentence for label in segment):
+        return False
+    if re.search(r"购建|支付的现金|收回的现金|折旧|所得税影响|客户|供应商|母公司|扣非|单箱|上年|非流动性资产处置|营业外收入|分部净利润|归母净利率|假设|逐年|由\s*[\d,.]+\s*(?:亿元|万元|%)\s*(?:升)?至", sentence):
+        return False
+    return True
 
 
 def _sentence(text: str, quote: str) -> str:

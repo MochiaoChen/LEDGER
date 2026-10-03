@@ -24,8 +24,10 @@ MM = 1 / 25.4
 FULL, HALF = 172, 83  # 通栏、半栏宽度（mm）
 
 plt.rcParams.update({
-    # 数字与西文用 Helvetica，汉字回退楷体（非 macOS：Arial / KaiTi，见 SKILL.md“字体”）
-    "font.family": ["Helvetica Neue", "Arial", "Kaiti SC", "KaiTi", "STKaiti"],
+    # Matplotlib 的多字体回退在 SVG path 输出中会漏掉汉字；把可用的 CJK 字体放在前面。
+    # 顺序覆盖常见 Linux / Windows / macOS，最后才回退西文字体。
+    "font.family": ["Noto Sans CJK SC", "Microsoft YaHei", "PingFang SC", "Heiti SC",
+                    "Kaiti SC", "KaiTi", "STKaiti", "Helvetica Neue", "Arial"],
     "font.size": 7.5, "axes.titlesize": 7.5, "axes.labelsize": 7, "xtick.labelsize": 7, "ytick.labelsize": 7,
     "legend.fontsize": 7, "axes.edgecolor": MUTED, "axes.linewidth": 0.6, "axes.unicode_minus": False,
     "axes.spines.top": False, "axes.spines.right": False, "svg.fonttype": "path",

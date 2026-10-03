@@ -1,4 +1,4 @@
-"""外部抽取结果接入（Skill 版本：由 Claude Code 中的模型直接读 PDF 抽取）。
+"""外部抽取结果接入（Skill 版本：由 Claude/Codex/DeepSeek 等执行模型读 PDF 抽取）。
 
 外部模型交来的每条数字都要过确定性校验后才进入真值表：
   1. 指标、期间、数值格式合法；只接受合并报表口径（母公司报表直接拒绝）；
@@ -14,6 +14,7 @@
 from __future__ import annotations
 
 import re
+import os
 from pathlib import Path
 from typing import Any
 
@@ -27,7 +28,7 @@ PERIOD_RE = re.compile(r"^20\d{2}(H1|Q[1-4]|Q1-3)?$")
 CORE_METRICS = ["revenue", "operating_cost", "operating_profit", "total_profit", "net_profit", "np_parent",
                 "np_parent_deducted", "total_assets", "total_liabilities", "total_equity", "cash", "ocf", "capex",
                 "eps_basic"]
-EXTRACTOR = "claude-code-skill"
+EXTRACTOR = os.getenv("FINAGENT_EXTRACTOR", "claude-code-skill")
 
 
 def metric_catalog() -> list[dict[str, str]]:
@@ -46,7 +47,9 @@ def _num_pattern(raw: str) -> re.Pattern[str] | None:
 
 
 def _norm(text: str) -> str:
-    return text.replace(",", "").replace("，", "").replace(" ", "")
+    # Keep cell/word whitespace: deleting it can concatenate adjacent table
+    # numbers ("235 3884.59" -> "2353884.59") and falsely reject both.
+    return text.replace(",", "").replace("，", "")
 
 
 def find_evidence(doc: Document, page: int, raw: str) -> Chunk | None:

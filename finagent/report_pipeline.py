@@ -1,7 +1,7 @@
 """研报生成流水线：为一家公司搭建隔离工作区（sample），让模型在里面直接产出研报。
 
   python -m finagent.report_pipeline build     --company 恒瑞医药 --year 2025 [--tag opus] [--price 45.6 --price-source "..."]
-  python -m finagent.report_pipeline run       --workspace <工作区> --agent claude|codex [--model ...] [--dry-run]
+  python -m finagent.report_pipeline run       --workspace <工作区> --agent claude|codex|deepseek [--model ...] [--dry-run]
   python -m finagent.report_pipeline status    [--workspace <工作区>]           # 阶段闸门（工作区内可省略参数）
   python -m finagent.report_pipeline collect   --workspace <工作区> [--label Opus]  # 产物收回仓库
   python -m finagent.report_pipeline scorecard --workspace <A> --workspace <B>   # 测评：多个工作区并排比较
@@ -16,6 +16,7 @@ CLAUDE.md、原插件代码）。工作区说明写在 AGENTS.md（Codex 等直�
 from __future__ import annotations
 
 import argparse
+from collections import Counter
 import hashlib
 import json
 import os
@@ -23,6 +24,7 @@ import re
 import shutil
 import subprocess
 import sys
+import zipfile
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -37,19 +39,20 @@ FORMAT_SAMPLES = ("data/samples/valuation_assumptions.json", "data/samples/peers
 META = "sample.json"
 STATE_DIR = ".pipeline"
 AGENT_SKILLS = Path(".agents") / "skills"  # Codex 等读 .agents/skills 与 AGENTS.md
-TASK_PROMPT = ("按本工作区 AGENTS.md 的流水线完成研报：每个阶段结束运行 ./py -m finagent.report_pipeline status，"
-               "全部闸门通过后停止并汇报。命令直接以 ./py 开头，不加 cd、不串联。")
+PY_WRAPPER = "py.cmd" if os.name == "nt" else "./py"
+TASK_PROMPT = (f"按本工作区 AGENTS.md 的流水线完成研报：每个阶段结束运行 {PY_WRAPPER} -m finagent.report_pipeline status，"
+               f"全部闸门通过后停止并汇报。命令直接以 {PY_WRAPPER} 开头，不加 cd、不串联。")
 
 
 # 工作区内允许的操作。未被信任的目录里 Claude Code 会忽略 settings.json 的 allow（deny 照常生效），
 # 所以无头执行时同一份清单再经 --allowedTools 传入，不去改用户的全局信任配置
-ALLOWED_TOOLS = ("Bash(./py -m finagent:*)", "Bash(./py -m finagent.report_pipeline status:*)",
-                 "Bash(./py data/extractions/:*)", "Bash(./py -c:*)",
+ALLOWED_TOOLS = (f"Bash({PY_WRAPPER} -m finagent:*)", f"Bash({PY_WRAPPER} -m finagent.report_pipeline status:*)",
+                 f"Bash({PY_WRAPPER} data/extractions/:*)", f"Bash({PY_WRAPPER} -c:*)",
                  "Bash(cp .claude/skills/finagent-report/templates/:*)", "Bash(ls:*)", "Bash(mkdir -p data/:*)",
                  "Read", "Write(./data/**)", "Edit(./data/**)")
 
 
-def agent_command(agent: str, model: str | None = None) -> list[str]:
+def agent_command(agent: str, model: str | None = None, *, python: str | None = None) -> list[str]:
     """无头执行命令。输出都是 JSONL 事件流，存进 .pipeline/agents/ 供测评读取用量。"""
     if agent == "claude":
         return ["claude", "-p", TASK_PROMPT, "--permission-mode", "acceptEdits",
@@ -59,6 +62,9 @@ def agent_command(agent: str, model: str | None = None) -> list[str]:
         # 工作区不是 git 仓库；workspace-write 沙箱只允许写工作区与临时目录
         return ["codex", "exec", "--full-auto", "--skip-git-repo-check", "--json",
                 *(["-m", model] if model else []), TASK_PROMPT]
+    if agent == "deepseek":
+        return [python or sys.executable, "-m", "finagent.deepseek_agent",
+                *(["--model", model] if model else [])]
     raise SystemExit(f"不支持的 agent：{agent}")
 
 
@@ -215,6 +221,11 @@ def build(company: str, year: int, dest: Path | None = None, *, pdf: str | None 
                            'export MPLCONFIGDIR="$HERE/.pipeline/mpl"\n'
                            f'exec "{sys.executable}" "$@"\n', encoding="utf-8")
     (ws / "py").chmod(0o755)
+    # Windows cmd.exe / PowerShell 不识别无扩展名的 POSIX 包装器。
+    (ws / "py.cmd").write_text(
+        "@echo off\r\n"
+        "set \"MPLCONFIGDIR=%~dp0.pipeline\\mpl\"\r\n"
+        f'"{sys.executable}" %*\r\n', encoding="utf-8")
     (ws / "AGENTS.md").write_text(render_guide(meta), encoding="utf-8")
     (ws / "CLAUDE.md").write_text("@AGENTS.md\n", encoding="utf-8")
     (ws / "TASK.md").write_text(TASK_PROMPT + "\n", encoding="utf-8")
@@ -234,7 +245,7 @@ def _git_head(root: Path) -> str | None:
 def settings(meta: dict[str, Any], root: Path) -> dict[str, Any]:
     """工作区权限：引擎与 skill 只读；仓库及其上级目录（原插件、其他公司产物）不可读。"""
     fence = root.resolve().parent.as_posix()
-    locked = ("finagent/**", ".claude/**", ".agents/**", "report/**", META, "py", "CLAUDE.md", "AGENTS.md")
+    locked = ("finagent/**", ".claude/**", ".agents/**", "report/**", META, "py", "py.cmd", "CLAUDE.md", "AGENTS.md")
     return {"permissions": {
         "allow": list(ALLOWED_TOOLS),
         "deny": [f"Read(/{fence}/**)", "WebFetch", "WebSearch",
@@ -264,8 +275,10 @@ def render_guide(meta: dict[str, Any]) -> str:
 
 它逐项核对闸门并告诉你下一步做什么、读哪份文档。上下文被压缩或中途接手时，**先跑 status，不要重读已完成阶段的文件**。
 
-下文 `PY` = `./py`（包装了本机虚拟环境的 Python）。**当前目录就是工作区**：命令直接以 `./py` 开头，
+下文 `PY` = macOS/Linux 的 `./py`，Windows 的 `py.cmd`（均包装本机 Python）。DeepSeek harness
+通过受限工具执行，不自行拼 shell 命令。**当前目录就是工作区**：命令直接以 `./py` 开头，
 不要加 `cd`、不要写绝对路径、不要用 `&&` / 管道串联多条命令，否则无头执行时权限匹配不上会被拒。
+在 Windows 上执行本页示例命令时，把 `./py` 替换成 `py.cmd`。
 
 ## 输入（只有这些）
 
@@ -278,7 +291,7 @@ def render_guide(meta: dict[str, Any]) -> str:
 
 skill 全文在 `.claude/skills/`（`.agents/skills/` 下只是指向它的入口），下文的 skill 文档路径都相对 `.claude/skills/`。
 
-你的全部产出写在 `{work}/`（抽取、假设、框架、文稿、编排脚本、交付说明），程序运行目录在 `runs/`。
+你的全部产出写在 `{work}/`（抽取、假设、框架、文稿、声明式排版配置、交付说明），程序运行目录在 `runs/`。
 
 ## 读取边界（防止上下文浪费和信息污染）
 
@@ -289,19 +302,19 @@ skill 全文在 `.claude/skills/`（`.agents/skills/` 下只是指向它的入�
   不在本工作区，不用找；`references/claims.md`、`commentary.md` 与本任务无关（不核查研报草稿，解读即研报正文）。
 - **PDF 按页读**，每次不超过 20 页，只读 `locate.json` 的 `suggested_reads`、管理层讨论与分析、framework 需要的附注页。
   已抄进 facts / extras 的页不要再读。
-- **不改** `finagent/`、`.claude/`、`report/`：引擎或 reportkit 不够用时，在公司编排脚本里绕开，并在交付说明里写明需要仓库改什么。
+- **不改** `finagent/`、`.claude/`、`report/`；也不编写可执行的报告脚本。排版引擎不够用时在交付说明列明，交由代码审查修复。
 
 ## 阶段
 
 | # | 阶段 | 做什么 | 这时才读 | 闸门（status 检查） |
 |---|---|---|---|---|
-| 1 | 财务抽取 | 按 locate 读三大报表、主要会计数据、分季度、股本页，写 `{work}/facts.json` | `finagent-research/SKILL.md` 第 1–3 步，`references/extraction.md` | `PY -m finagent verify-facts --input {pdf} --year {y} --facts {work}/facts.json` 为 `ok: true` |
+| 1 | 财务抽取 | 按 locate 读三大报表、最近三年主要会计数据、分季度、股本页，写 `{work}/facts.json`；同一指标/期间只留一条 | `finagent-research/SKILL.md` 第 1–3 步，`references/extraction.md` | `verify-facts` 为 `ok: true`，且最近三年收入、归母、经营现金流、总资产、基本 EPS 无缺项/重复 |
 | 2 | 分析框架 | 通读管理层讨论与分析，写 `{work}/report/framework.md`（投资主线、驱动清单、披露局限、章节结构） | `finagent-report/SKILL.md` 一～三，`references/analysis.md` | 文件存在且不是模板 |
 | 3 | 经营数据 | 按驱动清单逐格抄表到 `{work}/extras.json`，派生比率写 `ratios` | `references/extraction.md`“补充表格” | `PY -m finagent verify-extra --input {pdf} --extras {work}/extras.json` 为 `ok: true` |
-| 4 | 估值假设 | 起草 `{work}/valuation_assumptions.json`：`status` 写明“观点/假设”，股价取 `inputs/market.json`，每项假设写依据 | `finagent-research/SKILL.md` 第 5 步“估值口径”，`data/samples/valuation_assumptions.json`（格式） | 文件存在，有 `current_price` 与 `price_source` |
+| 4 | 估值假设 | 起草 `{work}/valuation_assumptions.json`：`status` 写明“观点/假设”，股价取 `inputs/market.json`；`rationale` 至少说明 `forecast`、`wacc`、`terminal_value`、`non_operating`，对剔除投资收益与公允价值变动的资产处理必须说明是否加回股权桥，不能默默删去 | `finagent-research/SKILL.md` 第 5 步“估值口径”，`data/samples/valuation_assumptions.json`（格式） | 股价/来源/日期与输入一致，关键假设有依据 |
 | 5 | 估值运行 | `PY -m finagent valuation --input {pdf} --year {y} --company {c} --assumptions {work}/valuation_assumptions.json --facts {work}/facts.json --extras {work}/extras.json --llm off`{" --peers inputs/peers.csv" if "peers" in meta["inputs"] else ""} | — | 最新运行目录成功，且晚于 facts / extras / 假设的修改 |
-| 6 | 文稿 | `cp .claude/skills/finagent-report/templates/narrative.md {work}/report/narrative.md`，写完全部分析；`PY -m finagent guard --run-dir runs/<run_id> --text {work}/report/narrative.md` | `references/sections.md`，`finagent-research/references/writing.md` | 最新运行目录的 guard 为 `ok: true`，且核对的就是当前文稿 |
-| 7 | 排版 | `cp .claude/skills/finagent-report/templates/build_report.py {work}/report/build_report.py`，`Config.output_name` 设为 `{c}{datetime.now():%m%d}.pdf`；`PY {work}/report/build_report.py --run-dir runs/<run_id>`，看 `preview/sheet*.png` 自检 | `finagent-research/references/html-report.md` | PDF 晚于文稿和编排脚本 |
+| 6 | 文稿 | `cp .claude/skills/finagent-report/templates/narrative.md {work}/report/narrative.md`，写完全部分析；DeepSeek 执行器调用 `run_finagent(auto_review)`，先过数字护栏，再在最多五轮内以全新上下文对照事实、经营表、估值假设与产物独立审读并作唯一匹配的局部修订。护栏有错或第五轮仍有 blocker 则停下，不得强制交付 | `references/sections.md`，`finagent-research/references/writing.md` | guard 对应当前文稿、机械文风检查通过；DeepSeek 独立审读无 blocker |
+| 7 | 排版 | 写 `{work}/report/layout.json`，只含 `sector`（行业）、`headings`（按投资逻辑、公司概况、业绩回顾、经营分析、盈利能力、资产负债与现金流、盈利预测、估值、投资建议、风险提示顺序的十条结论式标题）、`extra_tables`（从已核验 extras 选 1–8 个 ID）、`assumption_basis`（每一项分部销量增速/单价增速/毛利率、销售费用率、其他费用率和现金分红率的具体依据，键名与“关键假设与依据”表一致）、`method_note`（估值口径说明）。运行 `PY -m finagent.safe_report --run-dir runs/<run_id> --narrative {work}/report/narrative.md --layout {work}/report/layout.json`；看 `preview/sheet*.png` 逐页检查 | `finagent-research/references/html-report.md` | PDF 晚于文稿和配置、完整且有逐页预览 |
 | 8 | 交付说明 | 写 `{work}/report/delivery.md`：PDF 路径、页数与图表数、核心结论、评级（取程序结果）、哪些是假设或外部数据、未解决的校验问题 | — | 文件存在 |
 
 改了前面阶段的文件（如补抄 extras），status 会把后面的阶段标为过期：重跑估值、guard、排版。
@@ -311,8 +324,11 @@ skill 全文在 `.claude/skills/`（`.agents/skills/` 下只是指向它的入�
 1. 你不做算术：增速、占比、差值、估值都由程序算，正文照产物展示值抄。
 2. 每个数字来自年报原文（带页码）或运行产物；正文必须过 guard。
 3. 估值参数是你起草的观点/假设，必须标明；股价是外部数据，必须注明来源；评级取 `forecast_summary.rating`。
-4. 校验 3 轮仍不过的问题不硬改数字，写进交付说明。
-5. 全部闸门通过后停止，汇报 status 输出和交付说明，不要做额外的事。
+4. 给投资研究读者写结论：先给 2–3 环关键数字的推导，再写判断；行业分母和公司口径不一致时不能推出份额变化。
+   不写“程序归因”“模型状态”等内部流程，不用“不是……而是……”“而非”凑转折，不把现金或分红宣称为估值下限。
+   拿不准且非关键的内容删去；关键但证据不足的判断放在交付说明的待核清单，不在正文自我辩解。
+5. 校验 3 轮仍不过的问题不硬改数字，写进交付说明。
+6. 全部闸门通过后停止，汇报 status 输出和交付说明，不要做额外的事。
 """
 
 
@@ -345,21 +361,151 @@ def _has_arg(argv: list[str], rel: str) -> bool:
 
 
 def _extras_check(ws: Path, meta: dict, extras: Path) -> dict:
-    """verify-extra 结果按 extras 内容哈希缓存，避免每次 status 都重新解析整份 PDF。"""
+    """Cache evidence checks only while both inputs and verifier code are unchanged."""
+    import hashlib
+    from .parsing import document
+    from .tasks.financials import external, extras as extra_module
+
     cache = ws / STATE_DIR / "extras_check.json"
     digest = _sha256(extras)
-    if cache.is_file() and (c := _load(cache)).get("sha256") == digest:
+    code_hash = hashlib.sha256(b"".join(Path(p).read_bytes() for p in
+                                    (document.__file__, external.__file__, extra_module.__file__, __file__))).hexdigest()
+    if (cache.is_file() and (c := _load(cache)).get("sha256") == digest
+            and c.get("pdf_sha256") == meta["pdf_sha256"] and c.get("verifier_sha256") == code_hash):
         return c
-    from .parsing.document import load_document
-    from .tasks.financials.extras import verify_extras
-
-    res = verify_extras(load_document(str(ws / meta["pdf"])), _load(extras))
-    out = {"sha256": digest, "ok": not res["rejected"], "rejected": len(res["rejected"]),
+    res = extra_module.verify_extras(document.load_document(str(ws / meta["pdf"])), _load(extras))
+    out = {"sha256": digest, "pdf_sha256": meta["pdf_sha256"], "verifier_sha256": code_hash,
+           "ok": not res["rejected"], "rejected": len(res["rejected"]),
            "tables": len(res["tables"]),
            "cells": sum(1 for t in res["tables"] for row in t["rows"] for v in row["values"] if v is not None)}
     cache.parent.mkdir(exist_ok=True)
     cache.write_text(json.dumps(out, ensure_ascii=False, indent=2), encoding="utf-8")
     return out
+
+
+def _facts_quality(path: Path, year: int) -> dict[str, Any]:
+    """抽取完整性下限：防止 verify-facts 只验证已有数字，却放过漏抄与重复条目。"""
+    data = _load(path)
+    entries = data.get("facts") if isinstance(data, dict) else None
+    if not isinstance(entries, list):
+        return {"ok": False, "missing": ["facts 数组"], "duplicates": []}
+    pairs = [(str(item.get("metric_id")), str(item.get("period"))) for item in entries if isinstance(item, dict)]
+    counts = Counter(pairs)
+    duplicates = sorted(f"{metric}/{period}" for (metric, period), n in counts.items() if n > 1)
+    # A 股年报“主要会计数据和财务指标”覆盖最近三年；这些是三表、盈利质量与报告首页的最低输入。
+    core = ("revenue", "np_parent", "ocf", "total_assets", "eps_basic")
+    missing = sorted(f"{metric}/{period}" for period in range(year - 2, year + 1)
+                     for metric in core if (metric, str(period)) not in counts)
+    return {"ok": not (missing or duplicates), "missing": missing, "duplicates": duplicates}
+
+
+def _assumption_shape_issues(assumptions: dict[str, Any], extras: Path) -> list[str]:
+    """Reject segment forecasts the valuation engine cannot build or evidence-link."""
+    spec = assumptions.get("segment_forecast")
+    if spec is None:
+        return []
+    if not isinstance(spec, dict) or not isinstance(spec.get("segments"), list) or not spec["segments"]:
+        return ["segment_forecast 须含 segments 列表；若无同口径产品收入及销量表，应移除该字段，改用合并三表预测"]
+    ids = {t.get("id") for t in _load(extras).get("tables", [])} if extras.is_file() else set()
+    if not {"product", "volume"} <= ids:
+        return ["经营表没有 ID 为 product 和 volume 的可核验量价数据；移除 segment_forecast，按合并收入及利润率驱动三表"]
+    errors = []
+    for segment in spec["segments"]:
+        if not isinstance(segment, dict) or not all(isinstance(segment.get(k), str) and segment[k]
+                                                     for k in ("id", "name", "product_row")):
+            errors.append("segment_forecast.segments 每项须有 id/name/product_row")
+            continue
+        scenarios = segment.get("scenarios")
+        if not isinstance(scenarios, dict) or not {"base", "downside", "upside"} <= set(scenarios):
+            errors.append(f"{segment['id']} 缺 base/downside/upside 三情景")
+            continue
+        for key in ("base", "downside", "upside"):
+            setting = scenarios[key]
+            if not isinstance(setting, dict) or not all(k in setting for k in ("volume_growth", "price_growth")):
+                errors.append(f"{segment['id']}.{key} 缺 volume_growth/price_growth")
+    return errors[:8]
+
+
+def _narrative_quality(path: Path) -> dict[str, Any]:
+    """机械拦截已知劣质写法；不代替事实与投资判断审核。"""
+    body = path.read_text(encoding="utf-8")
+    checks = {
+        "内部流程话术": r"程序(?:未|据|归因|评级)|按程序|模型状态|senior-review-ready|screen-grade",
+        "冗余否定句式": r"不是[^。；\n]{0,60}而是|而非|而不是",
+        "未完成占位符": r"(?i:TODO|TBD|FIXME)|待(?:核查|补充|确认|完善)",
+        "无依据的保底表述": r"(?:估值|股价)(?:的)?下限|构成估值的下限",
+        "报告制作过程暴露": r"(?:年报佐证|程序预测|程序计算|模型未披露|无法(?:核验|验证)|口径边界必须强调|属分析师假设)[^。\n]{0,20}",
+        "口语化连接": r"(?:^|[，。；])(?:不过|具体来看|其实|值得注意的是)[，：]?",
+    }
+    issues: list[str] = []
+    for label, pattern in checks.items():
+        for match in list(re.finditer(pattern, body))[:5]:
+            line = body.count("\n", 0, match.start()) + 1
+            issues.append(f"{label} L{line}: {match.group(0)}")
+    from .safe_report import SECTIONS
+    # 首页结论须先有量化证据链，不能只堆定性判断。
+    parts = re.split(r"<!--\s*section:\s*(\w+)\s*-->", body)
+    sections = {parts[i]: re.sub(r"<!--.*?-->", "", parts[i + 1], flags=re.S).strip()
+                for i in range(1, len(parts), 2)}
+    missing = [key for key in ("title", "subtitle", "summary", *SECTIONS) if not sections.get(key, "").strip()]
+    if missing:
+        issues.append("缺少正文段落：" + ", ".join(missing))
+    summary = sections.get("summary", "")
+    if len(re.findall(r"\d[\d,.]*\s*(?:亿元|亿股|元|%|个百分点|GWh|倍)", summary)) < 6:
+        issues.append("首页投资要点缺少至少六项带单位的量化证据")
+    if not ("DCF" in summary and ("当前股价" in summary or "参考股价" in summary) and "风险提示" in summary):
+        issues.append("首页缺 DCF / 股价基准 / 风险提示中的至少一项")
+    return {"ok": not issues, "issues": issues}
+
+
+def _xlsx_valid(path: Path) -> bool:
+    if not path.is_file() or path.stat().st_size < 1000:
+        return False
+    try:
+        import xml.etree.ElementTree as ET
+        ns = {"x": "http://schemas.openxmlformats.org/spreadsheetml/2006/main"}
+        with zipfile.ZipFile(path) as package:
+            names = package.namelist()
+            if "xl/workbook.xml" not in names or package.testzip() is not None:
+                return False
+            book = ET.fromstring(package.read("xl/workbook.xml"))
+            sheets = {s.attrib.get("name") for s in book.findall(".//x:sheet", ns)}
+            if not {"估值汇总", "DCF", "历史财务", "模型检查"} <= sheets:
+                return False
+            worksheets = [n for n in names if re.fullmatch(r"xl/worksheets/sheet\d+\.xml", n)]
+            if len(worksheets) < 4:
+                return False
+            formulas = 0
+            for name in worksheets:
+                root = ET.fromstring(package.read(name))
+                for cell in root.findall(".//x:c", ns):
+                    if cell.attrib.get("t") == "e":
+                        return False
+                    f = cell.find("x:f", ns)
+                    if f is not None:
+                        formulas += 1
+                        if not f.text or "#REF!" in f.text:
+                            return False
+            return formulas > 0
+    except (OSError, zipfile.BadZipFile, ET.ParseError):
+        return False
+
+
+def _pdf_valid(path: Path) -> tuple[bool, int]:
+    if not path.is_file() or path.stat().st_size < 1000:
+        return False, 0
+    try:
+        import pdfplumber
+        from pdfplumber.utils.exceptions import PdfminerException
+        with pdfplumber.open(path) as doc:
+            texts = [(page.extract_text() or "") for page in doc.pages]
+            combined = "\n".join(texts)
+            valid = (bool(texts) and all(len(t.strip()) >= 20 for t in texts)
+                     and not any(bad in combined for bad in ("\ufffd", "\u25a1", "#NAME?", "TODO", "TBD"))
+                     and "免责声明" in combined)
+            return valid, len(texts)
+    except (OSError, ValueError, TypeError, PdfminerException):
+        return False, 0
 
 
 def status(ws: Path) -> dict[str, Any]:
@@ -368,7 +514,7 @@ def status(ws: Path) -> dict[str, Any]:
     w = ws / work
     facts, verified, extras = w / "facts.json", w / "facts.verified.json", w / "extras.json"
     assumptions, framework = w / "valuation_assumptions.json", w / "report" / "framework.md"
-    narrative, script, delivery = w / "report" / "narrative.md", w / "report" / "build_report.py", w / "report" / "delivery.md"
+    narrative, layout_file, delivery = w / "report" / "narrative.md", w / "report" / "layout.json", w / "report" / "delivery.md"
     stages: list[dict[str, Any]] = []
 
     def add(name: str, ok: bool, detail: str, todo: str) -> bool:
@@ -383,9 +529,13 @@ def status(ws: Path) -> dict[str, Any]:
         add("1 财务抽取", False, "facts.json 修改后未重新校验", "运行 verify-facts")
     else:
         chk = _load(verified).get("check", {})
-        add("1 财务抽取", bool(chk.get("ok")),
+        fq = _facts_quality(facts, y)
+        add("1 财务抽取", bool(chk.get("ok")) and fq["ok"],
             f"rejected {len(chk.get('rejected', []))}，conflicts {len(chk.get('conflicts', []))}，"
-            f"勾稽失败 {len(chk.get('tieout_failures', []))}", "按 verify-facts 输出回原文修正（最多 3 轮）")
+            f"勾稽失败 {len(chk.get('tieout_failures', []))}，"
+            f"三年核心缺项 {len(fq['missing'])}，重复条目 {len(fq['duplicates'])}",
+            "按 verify-facts 与三年核心完整性清单回原文修正："
+            + ", ".join((fq["missing"] + fq["duplicates"])[:12]))
     # 2 分析框架
     add("2 分析框架", framework.is_file() and framework.stat().st_size > 0,
         "framework.md " + ("已写" if framework.is_file() else "不存在"),
@@ -397,13 +547,35 @@ def status(ws: Path) -> dict[str, Any]:
         ec = _extras_check(ws, meta, extras)
         add("3 经营数据", ec["ok"], f"{ec['tables']} 张表，拒收 {ec['rejected']} 格", "运行 verify-extra 并修正拒收项")
     # 4 估值假设
+    market = ws / "inputs" / "market.json"
     if not assumptions.is_file():
         add("4 估值假设", False, "valuation_assumptions.json 不存在", "读 SKILL.md 第 5 步估值口径，按样例格式起草")
     else:
         a = _load(assumptions)
+        market_data = _load(market) if market.is_file() else {}
         miss = [k for k in ("current_price", "price_source") if a.get(k) in (None, "")]
-        add("4 估值假设", not miss, "缺 " + "、".join(miss) if miss else "已起草",
-            "股价取 inputs/market.json；没有就停下并写进交付说明")
+        if meta.get("require_review") and not market_data.get("price_date"):
+            miss.append("inputs/market.json.price_date")
+        mismatch = [k for k in ("current_price", "price_source") if market_data and a.get(k) != market_data.get(k)]
+        if market_data.get("price_date") and a.get("valuation_date") != market_data["price_date"]:
+            mismatch.append("valuation_date")
+        rationale_missing: list[str] = []
+        if meta.get("require_review"):
+            rationale = a.get("rationale") if isinstance(a.get("rationale"), dict) else {}
+            rationale_missing = [k for k in ("forecast", "wacc", "terminal_value", "non_operating")
+                                 if not isinstance(rationale.get(k), str) or len(rationale[k].strip()) < 30]
+            if not isinstance(a.get("status"), str) or "假设" not in a["status"]:
+                rationale_missing.append("status（分析师假设标识）")
+            if not isinstance(a.get("non_operating_assets"), list):
+                rationale_missing.append("non_operating_assets（须显式列出或留空并解释）")
+            rationale_missing.extend(_assumption_shape_issues(a, extras))
+        add("4 估值假设", not (miss or mismatch or rationale_missing or not market_data),
+            "缺行情输入" if not market_data else "缺 " + "、".join(miss) if miss else
+            "与 inputs/market.json 不一致：" + "、".join(mismatch) if mismatch else
+            "关键假设依据缺失：" + "、".join(rationale_missing) if rationale_missing else "已核对行情来源、日期与关键假设依据",
+            "修正：" + "；".join((miss + mismatch + rationale_missing)[:5])
+            if (miss or mismatch or rationale_missing) else
+            "股价取 inputs/market.json；预测、WACC、终值和非经营性资产处理均须说明依据")
     # 5 估值运行
     run, man = _latest_run(ws, work)
     inputs_mtime = max(_mtime(facts), _mtime(extras), _mtime(assumptions))
@@ -414,8 +586,10 @@ def status(ws: Path) -> dict[str, Any]:
         argv = man["config"]["argv"]
         stale = started < inputs_mtime
         no_extras = extras.is_file() and not _has_arg(argv, f"{work}/extras.json")
-        add("5 估值运行", not (stale or no_extras), f"runs/{run.name}"
-            + ("（早于输入文件修改，已过期）" if stale else "") + ("（未带 --extras）" if no_extras else ""),
+        model_ok = _xlsx_valid(run / "valuation" / "model.xlsx")
+        add("5 估值运行", not (stale or no_extras) and model_ok, f"runs/{run.name}"
+            + ("（早于输入文件修改，已过期）" if stale else "") + ("（未带 --extras）" if no_extras else "")
+            + ("（估值 Excel 缺失或损坏）" if not model_ok else ""),
             "重跑估值，后续阶段都用新的运行目录")
     # 6 文稿
     if not narrative.is_file() or run is None:
@@ -424,20 +598,56 @@ def status(ws: Path) -> dict[str, Any]:
     else:
         g, cm = run / "commentary_guard.json", run / "commentary.md"
         same = cm.is_file() and cm.read_text(encoding="utf-8") == narrative.read_text(encoding="utf-8")
-        ok = g.is_file() and _load(g).get("ok") and same
-        detail = ("guard 通过" if ok else "guard 未通过" if g.is_file() and same
+        quality = _narrative_quality(narrative)
+        review_ok = True
+        if meta.get("require_review"):
+            import hashlib
+            from .report_review import validate_review
+            review_file = w / "report/review.json"
+            try:
+                digest = hashlib.sha256(narrative.read_bytes()).hexdigest()
+                review_data = validate_review(_load(review_file), digest, run.name)
+                review_ok = bool(review_data["pass"])
+                review_detail = "独立审读通过" if review_ok else f"独立审读有 {sum(x['severity'] == 'blocker' for x in review_data['issues'])} 个 blocker"
+            except (OSError, ValueError, KeyError, TypeError, json.JSONDecodeError):
+                review_ok, review_detail = False, "独立审读缺失、过期或格式无效"
+        else:
+            review_detail = ""
+        ok = g.is_file() and _load(g).get("ok") and same and quality["ok"] and review_ok
+        detail = ("guard 与文稿检查通过" if ok else "文稿检查未通过：" + "；".join(quality["issues"][:8])
+                  if g.is_file() and _load(g).get("ok") and same and not quality["ok"] else "guard 未通过" if g.is_file() and same
                   else f"当前文稿未对 runs/{run.name} 跑 guard")
-        add("6 文稿", bool(ok), detail, f"PY -m finagent guard --run-dir runs/{run.name} --text {work}/report/narrative.md")
+        if meta.get("require_review") and g.is_file() and _load(g).get("ok") and same and quality["ok"]:
+            detail = review_detail
+        add("6 文稿", bool(ok), detail, f"对 runs/{run.name} 先跑 guard 再跑独立 review；有 blocker 则修正文稿")
     # 7 排版
     pdf = run / "report" / "report.pdf" if run else None
     if pdf is None or not pdf.is_file():
-        add("7 排版", False, "PDF 不存在", "复制 templates/build_report.py，读 references/html-report.md，渲染后看 preview")
+        add("7 排版", False, "PDF 不存在", "写 layout.json，运行 finagent.safe_report 并逐页看 preview")
     else:
-        fresh = _mtime(pdf) >= max(_mtime(narrative), _mtime(script))
+        from .safe_report import required_basis_keys, validate_layout
+        try:
+            table_ids = {t["id"] for t in _load(run / "financials/extras.json").get("tables", [])}
+            seg_path, detail_path = run / "valuation/segment_forecast.json", run / "valuation/three_statement_detail.json"
+            validate_layout(_load(layout_file), table_ids,
+                            required_basis_keys(_load(seg_path) if seg_path.is_file() else {},
+                                                _load(detail_path) if detail_path.is_file() else {}))
+            layout_ok = True
+        except (OSError, ValueError, KeyError, TypeError, json.JSONDecodeError):
+            layout_ok = False
+        fresh = _mtime(pdf) >= max(_mtime(narrative), _mtime(layout_file))
         named = [p.name for p in pdf.parent.glob("*.pdf") if p.name != "report.pdf"]
-        add("7 排版", fresh and bool(named), f"runs/{run.name}/report/{named[0] if named else 'report.pdf'}"
-            + ("" if fresh else "（早于文稿或脚本修改）") + ("" if named else "（未设 output_name）"),
-            "重新渲染；Config.output_name 设为公司名+日期")
+        readable, pages = _pdf_valid(pdf)
+        previews = sorted((pdf.parent / "preview").glob("page*.png"))
+        same_named = bool(named) and all(_sha256(pdf.parent / name) == _sha256(pdf) for name in named)
+        add("7 排版", layout_ok and fresh and same_named and readable and len(previews) == pages,
+            f"runs/{run.name}/report/{named[0] if named else 'report.pdf'}"
+            + ("（layout.json 无效）" if not layout_ok else "")
+            + ("" if fresh else "（早于文稿或配置修改）")
+            + ("" if same_named else "（另存 PDF 缺失或与主文件不一致）")
+            + ("" if readable else "（PDF 损坏、缺字或含占位符）")
+            + ("" if len(previews) == pages else "（逐页预览与 PDF 页数不符）"),
+            "修正 layout.json 并重新渲染，逐页核对预览")
     # 8 交付说明
     add("8 交付说明", delivery.is_file(), "delivery.md " + ("已写" if delivery.is_file() else "不存在"),
         "写交付说明：结论、评级、假设与外部数据、未解决问题")
@@ -501,7 +711,7 @@ def collect(ws: Path, *, label: str = "", overwrite: bool = False, force: bool =
 # ------------------------------------------------------------------ run（无头）
 def run_agent(ws: Path, agent: str, model: str | None = None) -> int:
     """在工作区里无头执行；事件流原样存 .pipeline/agents/<时间>-<agent>.jsonl，运行记录追加到 agent_runs.json。"""
-    cmd = agent_command(agent, model)
+    cmd = agent_command(agent, model, python=_load(ws / META)["python"])
     if shutil.which(cmd[0]) is None:
         raise SystemExit(f"找不到 {cmd[0]} 命令行，先安装并登录")
     logs = ws / STATE_DIR / "agents"
@@ -509,13 +719,25 @@ def run_agent(ws: Path, agent: str, model: str | None = None) -> int:
     started = datetime.now()
     log = logs / f"{started:%Y%m%d-%H%M%S}-{agent}.jsonl"
     with log.open("w", encoding="utf-8") as f:
-        proc = subprocess.Popen(cmd, cwd=ws, stdout=subprocess.PIPE, text=True, encoding="utf-8")
-        for line in proc.stdout:  # 边跑边落盘，中途中断也有记录
-            f.write(line)
-            f.flush()
-            print(_event_brief(line), end="", flush=True)
-        code = proc.wait()
-    record = {"agent": agent, "model": model, "started_at": started.isoformat(timespec="seconds"),
+        proc = subprocess.Popen(cmd, cwd=ws, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                                text=True, encoding="utf-8", errors="replace")
+        try:
+            for line in proc.stdout:  # 边跑边落盘，中途中断也有记录
+                f.write(line)
+                f.flush()
+                print(_event_brief(line), end="", flush=True)
+            code = proc.wait()
+        except KeyboardInterrupt:
+            proc.terminate()
+            try:
+                proc.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                proc.kill()
+                proc.wait()
+            code = 130
+            print("[中断] 已停止执行模型，工作区进度保留\n", flush=True)
+    record = {"agent": agent, "model": model or ("deepseek-flash" if agent == "deepseek" else None),
+              "started_at": started.isoformat(timespec="seconds"),
               "elapsed_sec": round((datetime.now() - started).total_seconds(), 1), "exit_code": code,
               "log": log.relative_to(ws).as_posix(), **_usage(log, agent)}
     runs = ws / STATE_DIR / "agent_runs.json"
@@ -538,6 +760,10 @@ def _event_brief(line: str) -> str:
         return "".join(f"· {t.strip()[:200]}\n" for t in texts if t.strip())
     if kind == "item.completed" and ev.get("item", {}).get("type") == "agent_message":
         return f"· {ev['item'].get('text', '').strip()[:200]}\n"
+    if kind == "deepseek.stage":
+        return f"· {ev.get('stage', '')}：{ev.get('detail', '')[:200]}\n"
+    if kind == "deepseek.error":
+        return f"[错误] {ev.get('detail', '')[:300]}\n"
     return ""
 
 
@@ -559,6 +785,10 @@ def _usage(log: Path, agent: str) -> dict[str, Any]:
             u = ev.get("usage") or {}
             tokens["input_tokens"] += u.get("input_tokens", 0)
             tokens["output_tokens"] += u.get("output_tokens", 0)
+        if agent == "deepseek" and ev.get("type") == "deepseek.usage":
+            u = ev.get("usage") or {}
+            tokens["input_tokens"] += u.get("prompt_tokens", 0)
+            tokens["output_tokens"] += u.get("completion_tokens", 0)
     return {**out, **tokens}
 
 
@@ -590,6 +820,18 @@ def scorecard(ws: Path) -> dict[str, Any]:
         run = ws / res["run_dir"]
         g = run / "commentary_guard.json"
         row["guard_ok"] = bool(g.is_file() and _load(g).get("ok"))
+        review_file = work / "report" / "review.json"
+        narrative_file = work / "report" / "narrative.md"
+        if meta.get("require_review"):
+            from .report_review import validate_review
+            try:
+                import hashlib
+                review_data = validate_review(_load(review_file), hashlib.sha256(narrative_file.read_bytes()).hexdigest(), run.name)
+                row["review_pass"] = bool(review_data["pass"])
+                row["review_blockers"] = sum(x["severity"] == "blocker" for x in review_data["issues"])
+                row["review_warnings"] = sum(x["severity"] == "warning" for x in review_data["issues"])
+            except (OSError, ValueError, KeyError, TypeError, json.JSONDecodeError):
+                row.update(review_pass=False, review_blockers=None, review_warnings=None)
         fs = run / "valuation" / "forecast_summary.json"
         if fs.is_file():
             row["rating"] = (_load(fs).get("rating") or {}).get("rating")
@@ -599,12 +841,16 @@ def scorecard(ws: Path) -> dict[str, Any]:
         if html_path.is_file():
             row["figures"] = len(re.findall(r'fno">图表 \d+', html_path.read_text(encoding="utf-8")))
             row["pages"] = len(list((run / "report" / "preview").glob("page*.png"))) or None
+        if (run / "report/report.pdf").is_file():
+            row["pdf_valid"], row["pdf_pages"] = _pdf_valid(run / "report/report.pdf")
     return row
 
 
 SCORE_COLUMNS = [("workspace", "工作区"), ("agent", "执行"), ("model", "模型"), ("stages_passed", "闸门/8"),
                  ("facts", "财务事实"), ("extras_cells", "经营数据格"), ("valuation_runs", "估值运行次数"),
-                 ("guard_ok", "guard"), ("narrative_chars", "正文字数"), ("pages", "页数"), ("figures", "图表"),
+                 ("guard_ok", "guard"), ("review_pass", "独立审读"), ("review_blockers", "阻断项"),
+                 ("review_warnings", "提醒项"), ("pdf_valid", "PDF 结构"),
+                 ("narrative_chars", "正文字数"), ("pages", "页数"), ("figures", "图表"),
                  ("rating", "评级"), ("dcf_base", "DCF 基准（元/股）"), ("elapsed_min", "耗时（分）"),
                  ("cost_usd", "费用（美元）"), ("input_tokens", "输入 token"), ("output_tokens", "输出 token")]
 
@@ -653,7 +899,7 @@ def main(argv: list[str] | None = None) -> int:
         if name == "status":
             p.add_argument("--json", action="store_true")
         if name == "run":
-            p.add_argument("--agent", choices=["claude", "codex"], default="claude")
+            p.add_argument("--agent", choices=["claude", "codex", "deepseek"], default="claude")
             p.add_argument("--model", help="透传给 agent 的模型名")
             p.add_argument("--dry-run", action="store_true", help="只打印命令")
         if name == "collect":
@@ -674,7 +920,7 @@ def main(argv: list[str] | None = None) -> int:
                    price=args.price, price_source=args.price_source, price_date=args.price_date, peers=args.peers,
                    tag=args.tag, allow_unverified=args.allow_unverified, force=args.force)
         print(f"工作区：{ws}")
-        print("下一步：python -m finagent.report_pipeline run --agent claude --workspace "
+        print("下一步：python -m finagent.report_pipeline run --agent claude|codex|deepseek --workspace "
               + json.dumps(str(ws), ensure_ascii=False)
               + "（或在 Claude Code / Codex 中打开该目录，把 TASK.md 的内容作为第一条消息）")
         return 0
@@ -697,7 +943,7 @@ def main(argv: list[str] | None = None) -> int:
         return 0 if res["done"] else 1
     if args.cmd == "run":
         _in_workspace("run")
-        cmd = agent_command(args.agent, args.model)
+        cmd = agent_command(args.agent, args.model, python=_load(ws / META)["python"])
         print("cd " + json.dumps(str(ws), ensure_ascii=False) + " && "
               + " ".join(json.dumps(x, ensure_ascii=False) for x in cmd))
         return 0 if args.dry_run else run_agent(ws, args.agent, args.model)

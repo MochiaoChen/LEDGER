@@ -2,6 +2,7 @@
 
 import json
 import os
+import zipfile
 
 import pytest
 
@@ -64,6 +65,8 @@ def test_agent_commands_and_usage(tmp_path):
     assert claude[:2] == ["claude", "-p"] and "stream-json" in claude and claude[-2:] == ["--model", "opus"]
     codex = rp.agent_command("codex")
     assert codex[:2] == ["codex", "exec"] and "--skip-git-repo-check" in codex and codex[-1] == rp.TASK_PROMPT
+    assert rp.agent_command("deepseek", python="/test/env/python")[:3] == [
+        "/test/env/python", "-m", "finagent.deepseek_agent"]
     log = tmp_path / "c.jsonl"
     log.write_text("\n".join(json.dumps(e) for e in [
         {"type": "assistant", "message": {"content": [{"type": "text", "text": "开始"}]}},
@@ -93,7 +96,10 @@ def test_status_gates_and_collect(ws, tmp_path):
     res = rp.status(ws)
     assert not res["done"] and res["next"].startswith("1 财务抽取")
     work = ws / "data/extractions/贵州茅台_2025"
-    (work / "facts.json").write_text("{}", encoding="utf-8")
+    core = ("revenue", "np_parent", "ocf", "total_assets", "eps_basic")
+    sample_facts = {"facts": [{"metric_id": metric, "period": str(year)}
+                              for year in (2023, 2024, 2025) for metric in core]}
+    (work / "facts.json").write_text(json.dumps(sample_facts), encoding="utf-8")
     (work / "facts.verified.json").write_text(json.dumps({"check": {"ok": True}}), encoding="utf-8")
     (work / "report/framework.md").write_text("# 框架", encoding="utf-8")
     stages = {s["stage"]: s for s in rp.status(ws)["stages"]}
@@ -118,4 +124,115 @@ def test_status_gates_and_collect(ws, tmp_path):
     row = rp.scorecard(ws)
     assert row["stages_passed"] == 0 and not row["done"] and row["valuation_runs"] == 0
     table = rp.scorecard_markdown([row])
-    assert "闸门/8" in table and "未完成" in table and "不代表研报质量" in table
+    assert "闸门/8" in table and "独立审读" in table and "阻断项" in table
+    assert "未完成" in table and "不代表研报质量" in table
+
+
+def test_status_rejects_missing_history_and_duplicate_facts(ws):
+    work = ws / "data/extractions/贵州茅台_2025"
+    facts = {"facts": [{"metric_id": "revenue", "period": "2025"},
+                        {"metric_id": "revenue", "period": "2025"}]}
+    (work / "facts.json").write_text(json.dumps(facts), encoding="utf-8")
+    (work / "facts.verified.json").write_text(json.dumps({"check": {"ok": True}}), encoding="utf-8")
+    first = rp.status(ws)["stages"][0]
+    assert not first["ok"]
+    assert "三年核心缺项 14" in first["detail"]
+    assert "重复条目 1" in first["detail"]
+
+
+def test_extras_cache_without_verifier_fingerprint_is_rechecked(ws, monkeypatch):
+    from finagent.parsing import document
+    from finagent.tasks.financials import extras as extra_module
+
+    work = ws / "data/extractions/贵州茅台_2025"
+    extras = work / "extras.json"
+    extras.write_text('{"tables":[]}', encoding="utf-8")
+    cache = ws / ".pipeline/extras_check.json"
+    cache.parent.mkdir(exist_ok=True)
+    cache.write_text(json.dumps({"sha256": rp._sha256(extras), "ok": False, "rejected": 8,
+                                 "tables": 1, "cells": 0}), encoding="utf-8")
+    monkeypatch.setattr(document, "load_document", lambda *args: object())
+    monkeypatch.setattr(extra_module, "verify_extras", lambda *args: {"tables": [], "rejected": []})
+    checked = rp._extras_check(ws, json.loads((ws / "sample.json").read_text(encoding="utf-8")), extras)
+    assert checked["ok"] and checked["rejected"] == 0 and checked["verifier_sha256"]
+
+
+def test_segment_forecast_shape_requires_evidenced_quantity_price_tables(tmp_path):
+    extras = tmp_path / "extras.json"
+    extras.write_text('{"tables":[{"id":"fleet_total"}]}', encoding="utf-8")
+    bad = {"segment_forecast": {"base": {"油轮": {"volume_growth": [0.1]}}}}
+    assert "segments 列表" in rp._assumption_shape_issues(bad, extras)[0]
+    bad["segment_forecast"] = {"segments": [{"id": "oil", "name": "油轮", "product_row": "油轮",
+                                             "scenarios": {"base": {}, "downside": {}, "upside": {}}}]}
+    assert "没有 ID 为 product 和 volume" in rp._assumption_shape_issues(bad, extras)[0]
+
+
+def test_narrative_quality_rejects_process_language_and_placeholders(tmp_path):
+    draft = tmp_path / "narrative.md"
+    draft.write_text("程序归因显示增长。模型状态为 screen-grade。\n"
+                     "这不是销量增长，而是估值的下限。TODO\n", encoding="utf-8")
+    result = rp._narrative_quality(draft)
+    assert not result["ok"]
+    assert {issue.split(" L")[0] for issue in result["issues"]} >= {
+        "内部流程话术", "冗余否定句式", "未完成占位符", "无依据的保底表述"}
+    sections = ("title", "subtitle", "summary", "thesis", "overview", "performance", "business",
+                "profitability", "balance", "cashflow", "forecast", "valuation", "recommendation", "risks")
+    draft.write_text("\n".join(f"<!-- section: {name} -->\n" +
+                               ("当前股价 10 元，DCF 12 元；收入 3 亿元，利润 2 亿元，现金流 4 亿元，"
+                                "每股收益 1 元。风险提示：竞争加剧。" if name == "summary" else "分析。")
+                               for name in sections), encoding="utf-8")
+    assert rp._narrative_quality(draft)["ok"]
+    draft.write_text(draft.read_text(encoding="utf-8").replace("当前股价", "参考股价"), encoding="utf-8")
+    assert rp._narrative_quality(draft)["ok"]
+
+
+def test_status_rejects_assumed_price_that_differs_from_market_input(ws):
+    work = ws / "data/extractions/贵州茅台_2025"
+    assumptions = work / "valuation_assumptions.json"
+    assumptions.write_text(json.dumps({"current_price": 1501, "price_source": "测试行情",
+                                       "valuation_date": None}), encoding="utf-8")
+    stage = rp.status(ws)["stages"][3]
+    assert not stage["ok"] and "current_price" in stage["detail"]
+    assumptions.write_text(json.dumps({"current_price": 1500, "price_source": "测试行情"}), encoding="utf-8")
+    assert "已核对行情来源" in rp.status(ws)["stages"][3]["detail"]
+
+
+def test_deepseek_assumption_gate_requires_material_basis(ws):
+    sample = ws / "sample.json"
+    meta = json.loads(sample.read_text(encoding="utf-8"))
+    meta["require_review"] = True
+    sample.write_text(json.dumps(meta, ensure_ascii=False), encoding="utf-8")
+    market = ws / "inputs/market.json"
+    market_data = json.loads(market.read_text(encoding="utf-8"))
+    market_data["price_date"] = "2026-09-30"
+    market.write_text(json.dumps(market_data, ensure_ascii=False), encoding="utf-8")
+    path = ws / "data/extractions/贵州茅台_2025/valuation_assumptions.json"
+    path.write_text(json.dumps({"current_price": 1500, "price_source": "测试行情",
+                                "valuation_date": "2026-09-30", "status": "分析师假设",
+                                "rationale": {"forecast": "短"}}, ensure_ascii=False),
+                    encoding="utf-8")
+    gate = rp.status(ws)["stages"][3]
+    assert not gate["ok"] and "non_operating" in gate["detail"] and "wacc" in gate["detail"]
+
+
+def test_artifact_gates_reject_corrupt_excel_and_pdf(tmp_path):
+    xlsx = tmp_path / "model.xlsx"
+    xlsx.write_bytes(b"not an xlsx" * 200)
+    assert not rp._xlsx_valid(xlsx)
+    with zipfile.ZipFile(xlsx, "w") as out:
+        out.writestr("xl/workbook.xml", "<workbook/>")
+        out.writestr("padding", "x" * 1500)
+    assert not rp._xlsx_valid(xlsx)
+    with zipfile.ZipFile(xlsx, "w") as out:
+        out.writestr("xl/workbook.xml", '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheets>'
+                     + ''.join(f'<sheet name="{name}"/>' for name in ("估值汇总", "DCF", "历史财务", "模型检查"))
+                     + '</sheets></workbook>')
+        for i in range(1, 5):
+            out.writestr(f"xl/worksheets/sheet{i}.xml",
+                         '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'
+                         '<sheetData><row><c r="A1"><f>1+1</f><v>2</v></c></row></sheetData></worksheet>')
+        out.writestr("padding", "x" * 1500)
+    assert rp._xlsx_valid(xlsx)
+    pdf = tmp_path / "report.pdf"
+    pdf.write_bytes(b"%PDF-1.4\n" + b"x" * 1500)
+    assert not rp._pdf_valid(pdf)[0]
