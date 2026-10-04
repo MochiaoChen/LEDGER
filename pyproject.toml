@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "finagent"
+version = "0.4.0"
+description = "金融投研智能体：A 股财报分析、估值建模与研报纠错"
+requires-python = ">=3.12"
+dependencies = ["pdfplumber>=0.11"]
+
+[project.optional-dependencies]
+report = ["matplotlib>=3.8", "pillow>=10"]
+tui = ["textual>=1.0"]
+dev = ["pytest>=8.0", "fpdf2>=2.8"]
+
+[project.scripts]
+finagent = "finagent.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["finagent*", "finagent_tui*"]
+
+[tool.setuptools.package-data]
+finagent = ["prompts/*.md", "evaluation/*.html"]
+finagent_tui = ["*.tcss"]

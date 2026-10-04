@@ -222,4 +222,5 @@ HELPERS = {"locate": cmd_locate, "schema": cmd_schema, "verify-facts": cmd_verif
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    from .cli import main as cli_main  # 统一入口：python -m finagent report|eval|tui… 与旧的任务名都走这里
+    raise SystemExit(cli_main())

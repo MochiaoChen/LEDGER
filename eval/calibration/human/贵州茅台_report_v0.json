@@ -1,0 +1,539 @@
+{
+  "schema_version": "finagent.manual_review.v2",
+  "purpose": "refine_report_and_rubric",
+  "provisional": true,
+  "company": "贵州茅台",
+  "selection_policy": "model_flagged_only",
+  "rubric_version": "report_v0",
+  "source_sha256": "af627e6c533777f74ac846a30ab5500c08ead23c6b9d766fbecf685064a6e8f8",
+  "baseline_total": 48,
+  "baseline_deliverable": false,
+  "machine_excel": {
+    "status": "not_run",
+    "reason": "未找到与被评 PDF 完全匹配的配套 sheet.xlsx"
+  },
+  "flagged_count": 14,
+  "assumed_ok_count": 26,
+  "complete": false,
+  "review_sessions": [
+    {
+      "id": "single-1791029018845-iz74xrcm",
+      "reviewer": "zqc",
+      "exported_at": "2026-10-03T13:55:21.636Z",
+      "overall_comment": "我觉得L1这些列出来的东西都有个共同问题就是通过有无相关JSON来判断，但是没有根据“是否真的落实了这件事”来判断，会不会造成空有其JSON但是并未检验？",
+      "items": [
+        {
+          "item_id": "L0-01",
+          "layer": "L0",
+          "baseline_passed": true,
+          "model_flagged": false,
+          "human_queue": false,
+          "human_verdict": "assumed_ok",
+          "human_reviewed": false,
+          "effective_passed": true,
+          "feedback": {}
+        },
+        {
+          "item_id": "L0-02",
+          "layer": "L0",
+          "baseline_passed": true,
+          "model_flagged": false,
+          "human_queue": false,
+          "human_verdict": "assumed_ok",
+          "human_reviewed": false,
+          "effective_passed": true,
+          "feedback": {}
+        },
+        {
+          "item_id": "L0-03",
+          "layer": "L0",
+          "baseline_passed": true,
+          "model_flagged": false,
+          "human_queue": false,
+          "human_verdict": "assumed_ok",
+          "human_reviewed": false,
+          "effective_passed": true,
+          "feedback": {}
+        },
+        {
+          "item_id": "L0-04",
+          "layer": "L0",
+          "baseline_passed": true,
+          "model_flagged": false,
+          "human_queue": false,
+          "human_verdict": "assumed_ok",
+          "human_reviewed": false,
+          "effective_passed": true,
+          "feedback": {}
+        },
+        {
+          "item_id": "L0-05",
+          "layer": "L0",
+          "baseline_passed": true,
+          "model_flagged": false,
+          "human_queue": false,
+          "human_verdict": "assumed_ok",
+          "human_reviewed": false,
+          "effective_passed": true,
+          "feedback": {}
+        },
+        {
+          "item_id": "L1-01",
+          "layer": "L1",
+          "baseline_passed": true,
+          "model_flagged": false,
+          "human_queue": false,
+          "human_verdict": "assumed_ok",
+          "human_reviewed": false,
+          "effective_passed": true,
+          "feedback": {}
+        },
+        {
+          "item_id": "L1-02",
+          "layer": "L1",
+          "baseline_passed": true,
+          "model_flagged": false,
+          "human_queue": false,
+          "human_verdict": "assumed_ok",
+          "human_reviewed": false,
+          "effective_passed": true,
+          "feedback": {}
+        },
+        {
+          "item_id": "L1-03",
+          "layer": "L1",
+          "baseline_passed": true,
+          "model_flagged": false,
+          "human_queue": false,
+          "human_verdict": "assumed_ok",
+          "human_reviewed": false,
+          "effective_passed": true,
+          "feedback": {}
+        },
+        {
+          "item_id": "L1-04",
+          "layer": "L1",
+          "baseline_passed": true,
+          "model_flagged": false,
+          "human_queue": false,
+          "human_verdict": "assumed_ok",
+          "human_reviewed": false,
+          "effective_passed": true,
+          "feedback": {}
+        },
+        {
+          "item_id": "L1-05",
+          "layer": "L1",
+          "baseline_passed": true,
+          "model_flagged": false,
+          "human_queue": false,
+          "human_verdict": "assumed_ok",
+          "human_reviewed": false,
+          "effective_passed": true,
+          "feedback": {}
+        },
+        {
+          "item_id": "L1-06",
+          "layer": "L1",
+          "baseline_passed": true,
+          "model_flagged": false,
+          "human_queue": false,
+          "human_verdict": "assumed_ok",
+          "human_reviewed": false,
+          "effective_passed": true,
+          "feedback": {}
+        },
+        {
+          "item_id": "L1-07",
+          "layer": "L1",
+          "baseline_passed": true,
+          "model_flagged": false,
+          "human_queue": false,
+          "human_verdict": "assumed_ok",
+          "human_reviewed": false,
+          "effective_passed": true,
+          "feedback": {}
+        },
+        {
+          "item_id": "L1-08",
+          "layer": "L1",
+          "baseline_passed": true,
+          "model_flagged": false,
+          "human_queue": false,
+          "human_verdict": "assumed_ok",
+          "human_reviewed": false,
+          "effective_passed": true,
+          "feedback": {}
+        },
+        {
+          "item_id": "L1-09",
+          "layer": "L1",
+          "baseline_passed": true,
+          "model_flagged": false,
+          "human_queue": false,
+          "human_verdict": "assumed_ok",
+          "human_reviewed": false,
+          "effective_passed": true,
+          "feedback": {}
+        },
+        {
+          "item_id": "L1-10",
+          "layer": "L1",
+          "baseline_passed": false,
+          "model_flagged": true,
+          "human_queue": true,
+          "human_verdict": "needs_check",
+          "human_reviewed": false,
+          "effective_passed": null,
+          "feedback": {
+            "fix": "",
+            "reason": "",
+            "evidence": "",
+            "pending": "这个玩意，我们本来也没让人家正文带编号啊，这样的判断方法完全不准确。\n我们是不是可以生成两份报告，一份有交叉引用有备注用于给我们自己核验，一份没有这些东西，比较纯净，作为成品。"
+          }
+        },
+        {
+          "item_id": "L1-11",
+          "layer": "L1",
+          "baseline_passed": true,
+          "model_flagged": false,
+          "human_queue": false,
+          "human_verdict": "assumed_ok",
+          "human_reviewed": false,
+          "effective_passed": true,
+          "feedback": {}
+        },
+        {
+          "item_id": "L1-12",
+          "layer": "L1",
+          "baseline_passed": false,
+          "model_flagged": true,
+          "human_queue": true,
+          "human_verdict": "needs_check",
+          "human_reviewed": false,
+          "effective_passed": null,
+          "feedback": {
+            "fix": "",
+            "reason": "",
+            "evidence": "",
+            "pending": "无"
+          }
+        },
+        {
+          "item_id": "L1-13",
+          "layer": "L1",
+          "baseline_passed": false,
+          "model_flagged": true,
+          "human_queue": true,
+          "human_verdict": "unreviewed",
+          "human_reviewed": false,
+          "effective_passed": null,
+          "feedback": {
+            "fix": "",
+            "reason": "",
+            "evidence": "",
+            "pending": ""
+          }
+        },
+        {
+          "item_id": "L2-01",
+          "layer": "L2",
+          "baseline_passed": false,
+          "model_flagged": true,
+          "human_queue": true,
+          "human_verdict": "confirmed_issue",
+          "human_reviewed": true,
+          "effective_passed": false,
+          "feedback": {
+            "fix": "无",
+            "reason": "",
+            "evidence": "",
+            "pending": ""
+          }
+        },
+        {
+          "item_id": "L2-02",
+          "layer": "L2",
+          "baseline_passed": false,
+          "model_flagged": true,
+          "human_queue": true,
+          "human_verdict": "false_alarm",
+          "human_reviewed": true,
+          "effective_passed": true,
+          "feedback": {
+            "fix": "",
+            "reason": "没看懂模型判断的一句是啥意思",
+            "evidence": "P3下面不是说了市场关注的问题和我们的判断吗，不是说了我们为啥认为不是吗。但是确实可以精修一下这里，感觉因果关系写的逻辑不够清晰",
+            "pending": ""
+          }
+        },
+        {
+          "item_id": "L2-03",
+          "layer": "L2",
+          "baseline_passed": true,
+          "model_flagged": false,
+          "human_queue": false,
+          "human_verdict": "assumed_ok",
+          "human_reviewed": false,
+          "effective_passed": true,
+          "feedback": {}
+        },
+        {
+          "item_id": "L2-04",
+          "layer": "L2",
+          "baseline_passed": true,
+          "model_flagged": false,
+          "human_queue": false,
+          "human_verdict": "assumed_ok",
+          "human_reviewed": false,
+          "effective_passed": true,
+          "feedback": {}
+        },
+        {
+          "item_id": "L2-05",
+          "layer": "L2",
+          "baseline_passed": true,
+          "model_flagged": false,
+          "human_queue": false,
+          "human_verdict": "assumed_ok",
+          "human_reviewed": false,
+          "effective_passed": true,
+          "feedback": {}
+        },
+        {
+          "item_id": "L2-06",
+          "layer": "L2",
+          "baseline_passed": false,
+          "model_flagged": true,
+          "human_queue": true,
+          "human_verdict": "confirmed_issue",
+          "human_reviewed": true,
+          "effective_passed": false,
+          "feedback": {
+            "fix": "对！这个理由写的非常充分，报告如果能把这快改掉将会往深度报告的路上大跃进",
+            "reason": "",
+            "evidence": "",
+            "pending": ""
+          }
+        },
+        {
+          "item_id": "L2-07",
+          "layer": "L2",
+          "baseline_passed": false,
+          "model_flagged": true,
+          "human_queue": true,
+          "human_verdict": "false_alarm",
+          "human_reviewed": true,
+          "effective_passed": true,
+          "feedback": {
+            "fix": "",
+            "reason": "感觉原文写的挺对的吧？？这个不能判断成定性吧",
+            "evidence": "P14下面",
+            "pending": ""
+          }
+        },
+        {
+          "item_id": "L2-08",
+          "layer": "L2",
+          "baseline_passed": false,
+          "model_flagged": true,
+          "human_queue": true,
+          "human_verdict": "needs_check",
+          "human_reviewed": false,
+          "effective_passed": null,
+          "feedback": {
+            "fix": "",
+            "reason": "",
+            "evidence": "",
+            "pending": "这玩意还需要解释为啥要用这种估值方法吗？除了特别特殊的行业，后面还需要看看别的研报核查一下"
+          }
+        },
+        {
+          "item_id": "L2-09",
+          "layer": "L2",
+          "baseline_passed": false,
+          "model_flagged": true,
+          "human_queue": true,
+          "human_verdict": "confirmed_issue",
+          "human_reviewed": true,
+          "effective_passed": false,
+          "feedback": {
+            "fix": "",
+            "reason": "",
+            "evidence": "",
+            "pending": ""
+          }
+        },
+        {
+          "item_id": "L2-10",
+          "layer": "L2",
+          "baseline_passed": true,
+          "model_flagged": false,
+          "human_queue": false,
+          "human_verdict": "assumed_ok",
+          "human_reviewed": false,
+          "effective_passed": true,
+          "feedback": {}
+        },
+        {
+          "item_id": "L2-11",
+          "layer": "L2",
+          "baseline_passed": true,
+          "model_flagged": false,
+          "human_queue": false,
+          "human_verdict": "assumed_ok",
+          "human_reviewed": false,
+          "effective_passed": true,
+          "feedback": {}
+        },
+        {
+          "item_id": "L2-12",
+          "layer": "L2",
+          "baseline_passed": false,
+          "model_flagged": true,
+          "human_queue": true,
+          "human_verdict": "confirmed_issue",
+          "human_reviewed": true,
+          "effective_passed": false,
+          "feedback": {
+            "fix": "",
+            "reason": "",
+            "evidence": "",
+            "pending": ""
+          }
+        },
+        {
+          "item_id": "L3-01",
+          "layer": "L3",
+          "baseline_passed": false,
+          "model_flagged": true,
+          "human_queue": true,
+          "human_verdict": "confirmed_issue",
+          "human_reviewed": true,
+          "effective_passed": false,
+          "feedback": {
+            "fix": "这也是不像深度报告的重要原因之一，没有故事线，没有衷心的为这个公司服务，长期调研的感觉，只像一个短期的锐评",
+            "reason": "",
+            "evidence": "",
+            "pending": ""
+          }
+        },
+        {
+          "item_id": "L3-02",
+          "layer": "L3",
+          "baseline_passed": true,
+          "model_flagged": false,
+          "human_queue": false,
+          "human_verdict": "assumed_ok",
+          "human_reviewed": false,
+          "effective_passed": true,
+          "feedback": {}
+        },
+        {
+          "item_id": "L3-03",
+          "layer": "L3",
+          "baseline_passed": true,
+          "model_flagged": false,
+          "human_queue": false,
+          "human_verdict": "assumed_ok",
+          "human_reviewed": false,
+          "effective_passed": true,
+          "feedback": {}
+        },
+        {
+          "item_id": "L3-04",
+          "layer": "L3",
+          "baseline_passed": false,
+          "model_flagged": true,
+          "human_queue": true,
+          "human_verdict": "needs_check",
+          "human_reviewed": false,
+          "effective_passed": null,
+          "feedback": {
+            "fix": "",
+            "reason": "",
+            "evidence": "",
+            "pending": "这个  同类三次以上就判断不行 有点太苛刻了吧，我觉得限制一下特定类型的机器腔不出现即可，比如“不是。。而是..”"
+          }
+        },
+        {
+          "item_id": "L3-05",
+          "layer": "L3",
+          "baseline_passed": false,
+          "model_flagged": true,
+          "human_queue": true,
+          "human_verdict": "false_alarm",
+          "human_reviewed": true,
+          "effective_passed": true,
+          "feedback": {
+            "fix": "",
+            "reason": "这个数据加百分比不算数据堆砌吧，我觉得这个判断标准有点不对。而且似乎我们的PDF不是很有数据堆砌的问题，只是没有突出到重点",
+            "evidence": "无",
+            "pending": ""
+          }
+        },
+        {
+          "item_id": "L3-06",
+          "layer": "L3",
+          "baseline_passed": true,
+          "model_flagged": false,
+          "human_queue": false,
+          "human_verdict": "assumed_ok",
+          "human_reviewed": false,
+          "effective_passed": true,
+          "feedback": {}
+        },
+        {
+          "item_id": "L3-07",
+          "layer": "L3",
+          "baseline_passed": true,
+          "model_flagged": false,
+          "human_queue": false,
+          "human_verdict": "assumed_ok",
+          "human_reviewed": false,
+          "effective_passed": true,
+          "feedback": {}
+        },
+        {
+          "item_id": "N-01",
+          "layer": "N",
+          "baseline_passed": false,
+          "model_flagged": false,
+          "human_queue": false,
+          "human_verdict": "assumed_ok",
+          "human_reviewed": false,
+          "effective_passed": false,
+          "feedback": {}
+        },
+        {
+          "item_id": "N-02",
+          "layer": "N",
+          "baseline_passed": true,
+          "model_flagged": true,
+          "human_queue": true,
+          "human_verdict": "confirmed_issue",
+          "human_reviewed": true,
+          "effective_passed": true,
+          "feedback": {
+            "fix": "无",
+            "reason": "",
+            "evidence": "",
+            "pending": ""
+          }
+        },
+        {
+          "item_id": "N-03",
+          "layer": "N",
+          "baseline_passed": false,
+          "model_flagged": false,
+          "human_queue": false,
+          "human_verdict": "assumed_ok",
+          "human_reviewed": false,
+          "effective_passed": false,
+          "feedback": {}
+        }
+      ]
+    }
+  ],
+  "aggregation": null
+}

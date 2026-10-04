@@ -1,0 +1,92 @@
+{
+  "L0-01": {
+    "passed": true,
+    "detail": "无出处数字 0，指标期间不符 0，外部数字缺引用 0",
+    "evidence": ""
+  },
+  "L0-02": {
+    "passed": true,
+    "detail": "6 项勾稽，失败 0，硬性失败 0",
+    "evidence": ""
+  },
+  "L0-03": {
+    "passed": true,
+    "detail": "核对 revenue、ebit、da、capex、nwc，最大偏差 7.275957614183426e-12 百万元",
+    "evidence": ""
+  },
+  "L0-04": {
+    "passed": true,
+    "detail": "见 report.html",
+    "evidence": "不构成投资建议"
+  },
+  "L0-05": {
+    "passed": true,
+    "detail": "评级 卖出，上行空间 -35.5%，按规则应为 卖出",
+    "evidence": "买入：≥20%；增持：≥5%；中性：≥-5%；减持：≥-20%；卖出：其余"
+  },
+  "L1-01": {
+    "passed": true,
+    "detail": "拒收 0，冲突 0，勾稽失败 0",
+    "evidence": ""
+  },
+  "L1-02": {
+    "passed": true,
+    "detail": "分部合计 38,239.94 vs 营业收入 38,239.94 百万元，差 0.00",
+    "evidence": ""
+  },
+  "L1-03": {
+    "passed": true,
+    "detail": "加回 13,055.21、扣减 3,526.37 百万元，3 个情景",
+    "evidence": ""
+  },
+  "L1-04": {
+    "passed": true,
+    "detail": "总股本 1,111,118,334 股",
+    "evidence": ""
+  },
+  "L1-05": {
+    "passed": true,
+    "detail": "悲观 185.77 / 基准 521.72 / 乐观 918.06",
+    "evidence": ""
+  },
+  "L1-06": {
+    "passed": true,
+    "detail": "15 项，失败 0",
+    "evidence": ""
+  },
+  "L1-07": {
+    "passed": true,
+    "detail": "终值占 EV 77.1%（阈值 80%）",
+    "evidence": ""
+  },
+  "L1-08": {
+    "passed": false,
+    "detail": "2025A→2026E：毛利率变动 4.29pct（阈值 5），收入增速变动 71.00pct（阈值 30）",
+    "evidence": ""
+  },
+  "L1-09": {
+    "passed": true,
+    "detail": "基准每股价值 521.72 元：正文写作 521.72；评级 卖出：正文已写",
+    "evidence": ""
+  },
+  "L1-10": {
+    "passed": true,
+    "detail": "31 个问题、61 次检索、51 个来源，正文引用 241 处；5 个来源未在正文引用",
+    "evidence": ""
+  },
+  "L1-11": {
+    "passed": true,
+    "detail": "808.44 元，2026-10-03",
+    "evidence": "新浪财经 2026-09-30 收盘，[S6]（智通财经 AH 统计 [S7] 交叉印证）"
+  },
+  "L1-12": {
+    "passed": true,
+    "detail": "删去数字 25 个",
+    "evidence": ""
+  },
+  "L1-13": {
+    "passed": true,
+    "detail": "review.md 8 条完整事项",
+    "evidence": ""
+  }
+}

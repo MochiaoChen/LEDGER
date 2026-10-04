@@ -1,0 +1,8 @@
+{
+  "kind": "no_cross_check",
+  "rep": 1,
+  "targets": [
+    "L2-09"
+  ],
+  "desc": "删掉相对估值与交叉验证小节"
+}

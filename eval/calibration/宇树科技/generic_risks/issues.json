@@ -1,0 +1,34 @@
+[
+  {
+    "id": "I01",
+    "route": "generator",
+    "stage": "6 估值假设",
+    "severity": "minor",
+    "description": "没有分部驱动预测（segment_forecast.json）",
+    "evidence": ""
+  },
+  {
+    "id": "I02",
+    "route": "generator",
+    "stage": "6 估值假设",
+    "severity": "minor",
+    "description": "2025A→2026E：毛利率变动 4.44pct（阈值 5），收入增速变动 294.64pct（阈值 30）",
+    "evidence": ""
+  },
+  {
+    "id": "I03",
+    "route": "generator",
+    "stage": "8 文稿",
+    "severity": "major",
+    "description": "风险提示只有四条通用一行模板，没有对应到具体预测假设（如增速、毛利率），也没有量化对每股价值或利润的影响。",
+    "evidence": "宏观经济波动风险。行业竞争加剧风险。政策变化风险。技术迭代风险。（第19节风险提示）"
+  },
+  {
+    "id": "I04",
+    "route": "reviewer",
+    "stage": "9 复核改写",
+    "severity": "minor",
+    "description": "竞争与专题三的几个段落在一句话里串联多个互不相关的数据点，读者看不出该段最关键的一两个数，有念表的倾向；需要每段点明一个判断依据。",
+    "evidence": "竞争格局与专题三：同一段连续列出份额、出货量、均价、订单规模等多个数据点（深度竞争、专题三）"
+  }
+]

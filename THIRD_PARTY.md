@@ -31,10 +31,12 @@
 | pdfplumber | ≥0.11 | MIT | PDF 文本与表格抽取 |
 | pytest | ≥8.0 | MIT | 测试 |
 | fpdf2 | 2.8 | LGPL-3.0 | 仅开发时：`data/samples/build_pdf.py` 生成样例 PDF，不是运行依赖 |
+| Textual | ≥1.0（开发时 8.2.8） | MIT | 仅终端界面 `finagent_tui/`（`finagent tui`），可选；`finagent/` 引擎不依赖 |
+| Rich | 随 Textual 安装（开发时 15.0.0） | MIT | 终端界面中的表格、文本渲染 |
 
 样例 PDF（`data/samples/annual_report_2024.pdf`）内嵌 macOS 系统字体 Arial Unicode 的字形子集，仅用于显示样例数据。
 
-`finagent/` 其余部分仅使用 Python 标准库（含 xlsx 写出）。
+`finagent/` 其余部分仅使用 Python 标准库（含 xlsx 写出）；终端界面单独成包 `finagent_tui/`。
 
 ## 3. 大语言模型
 

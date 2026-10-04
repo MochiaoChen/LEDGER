@@ -1,0 +1,6 @@
+#!/bin/sh
+# FinAgent 命令行（免安装）：优先用仓库 .venv 的解释器。也可 pip install -e . 后直接用 finagent。
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+PY="$ROOT/.venv/bin/python"
+[ -x "$PY" ] || PY="$(command -v python3 || command -v python)"
+PYTHONPATH="$ROOT${PYTHONPATH:+:$PYTHONPATH}" exec "$PY" -m finagent "$@"

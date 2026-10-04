@@ -1,0 +1,42 @@
+[
+  {
+    "id": "I01",
+    "route": "generator",
+    "stage": "6 估值假设",
+    "severity": "minor",
+    "description": "没有分部驱动预测（segment_forecast.json）",
+    "evidence": ""
+  },
+  {
+    "id": "I02",
+    "route": "generator",
+    "stage": "6 估值假设",
+    "severity": "minor",
+    "description": "2025A→2026E：毛利率变动 4.44pct（阈值 5），收入增速变动 294.64pct（阈值 30）",
+    "evidence": ""
+  },
+  {
+    "id": "I03",
+    "route": "reviewer",
+    "stage": "9 复核改写",
+    "severity": "minor",
+    "description": "「2026 年以来」「主要对手逐一对标」两处一句话串起多个互不相关的科目、季度和公司的金额与增速，像在念表，读者看不出每段最该记的一两个数。",
+    "evidence": "2026 年第一季度营业收入 4.23 亿元，同比增长 68.49%，扣非归母净利润 4025.36 万元……（PDF 第 9 页）"
+  },
+  {
+    "id": "I04",
+    "route": "reviewer",
+    "stage": "10 排版",
+    "severity": "minor",
+    "description": "正文有关键假设汇总和 DCF 参数，但没有说明每股价值按发行前约 3.64 亿股计算、不含 60.99 亿元募资，也没有说明毛利率、增速的口径混用（综合对主营，营业收入对主营收入）这些简化。这些只在作者的 review.md 里，读者在研报里看不到模型适用范围和未纳入项。",
+    "evidence": "无"
+  },
+  {
+    "id": "I05",
+    "route": "generator",
+    "stage": "8 文稿",
+    "severity": "blocker",
+    "description": "核心观点说增速逐年放缓，关键假设却是 2027 年 40%，高于 2026 年的 38%，结论互相冲突。另外，「毛利率比同行高出 16.00 个百分点」后面接的 60.13% 和 44.44% 只差 15.69，16.00 来自综合口径 60.44%。",
+    "evidence": "我们据此假设收入增速逐年放缓，2026 年为 38%。（核心观点第一）"
+  }
+]

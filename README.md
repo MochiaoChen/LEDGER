@@ -373,6 +373,20 @@ py -3.12 -m venv .venv
 研报打印会自动查找 Chrome / Edge；安装位置非默认时设置 `FINAGENT_CHROME`。样例 PDF 找不到中文字体时设置
 `FINAGENT_CJK_FONT`（如 `C:\Windows\Fonts\simkai.ttf`）。
 
+### 统一命令行与终端界面
+
+安装成命令（可选）：`.venv/bin/python -m pip install -e ".[tui]"`，之后直接用 `finagent`；不安装时用 `bin/finagent`
+（Windows `bin\finagent.cmd`），或照旧 `python -m finagent`。
+
+| 命令 | 作用 |
+|---|---|
+| `finagent research <任务>` | 财报分析 / 估值 / 纠错与 Skill 辅助命令（旧写法 `finagent all …` 仍可用） |
+| `finagent report <子命令>` | 研报流水线（原 `python -m finagent.report_pipeline`） |
+| `finagent eval` / `finagent calibrate` | 研报评测 / 评审校准 |
+| `finagent bench` / `finagent test` / `finagent doctor` | 样例评测集 / 全部测试 / 环境自检 |
+| `finagent ls` | 列出研报工作区与运行目录 |
+| `finagent tui` | 终端界面：闸门、真值表点数字看来源页码、估值热力表、质检逐条、追溯回放、Agent 日志、在界面里跑命令 |
+
 ### 样例一键运行（无需 API Key）
 
 ```bash

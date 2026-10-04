@@ -123,9 +123,12 @@ def extract_rule(doc: Document, fiscal_year: int | None = None) -> tuple[list[Fa
     issues: list[Issue] = []
     for ch in doc.tables():
         hdr = _header(ch.rows, fiscal_year)
+        start = hdr[0] + 1 if hdr else 0
+        if hdr is None and ch.header_rows:  # 跨页续表：本页无表头，沿用首页表头的期间列，从第一行起都是数据
+            hdr = _header(ch.header_rows, fiscal_year)
         if hdr is None:
             continue
-        hidx, periods = hdr
+        periods = hdr[1]
         if "skip" in periods:
             issues.append(Issue("medium", "追溯调整",
                                 "表格同时列示“调整前/调整后”数据，存在会计政策变更或追溯重述，同比口径需使用调整后数据。",
@@ -135,7 +138,7 @@ def extract_rule(doc: Document, fiscal_year: int | None = None) -> tuple[list[Fa
         unit = ch.unit_hint or "元"
         # 同表既有“营业总收入”又有“营业收入”时（含金融子公司利息收入等），营业收入口径取后者
         has_op_rev = any(row and "营业收入" in row[0] and "营业总收入" not in row[0] for row in ch.rows)
-        for r, row in enumerate(ch.rows[hidx + 1 :], hidx + 1):
+        for r, row in enumerate(ch.rows[start:], start):
             if not row:
                 continue
             metric_id = match_label(row[0], ch.caption)
@@ -186,7 +189,10 @@ def _unit_label(kind: str, unit: str) -> str:
 
 
 def _loc(ch: Chunk, **extra: Any) -> dict[str, Any]:
-    return {"source": ch.source, "page": ch.page, "chunk_id": ch.chunk_id, "caption": ch.caption, **extra}
+    loc = {"source": ch.source, "page": ch.page, "chunk_id": ch.chunk_id, "caption": ch.caption, **extra}
+    if ch.continued_from:
+        loc["continued_from"] = ch.continued_from
+    return loc
 
 
 # ------------------------------------------------------------------ llm channel

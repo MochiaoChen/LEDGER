@@ -1,0 +1,8 @@
+{
+  "kind": "generic_risks",
+  "rep": 1,
+  "targets": [
+    "L2-11"
+  ],
+  "desc": "风险提示换成不对应任何假设的通用模板"
+}
