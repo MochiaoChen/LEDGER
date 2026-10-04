@@ -72,7 +72,7 @@
 - 评审校准（2026-10-04，`finagent/evaluation/calibrate.py`，结果 `eval/calibration/report.md`）：原稿重复盲评看稳定性；
   七种程序劣化（删交叉验证、删预期差、风险泛化、删跟踪指标、无来源数字、前后矛盾、机器腔）重新排版后盲评看命中与连带改判；
   人工质检导出（`eval/calibration/human/`）算评审判“不通过”的精确率（人工只复核了判不通过的条目，漏判靠劣化命中补）。
-  现状：原稿重复盲评已完成（宇树、中际各 3 次）；劣化变体因 Claude 周额度用尽（10-07 05:00 重置）作废，存档于 `~/finagent-evals/calibration/_invalid_20261004/`，需重跑 `calibrate run --workspace ~/finagent-samples/<公司>_2025`。
+  结果（宇树、中际各 3 次原稿 + 7 个劣化）：重复评审逐条一致 86%～91%、总分极差 7～8；无来源数字、机器腔、评级矛盾能判出；整节删除类（交叉验证、预期差、跟踪指标、风险泛化）多数未判出，评审理由显示同一论点在专题与图表里仍在（图表由排版脚本生成，删文稿删不掉），属劣化不彻底；要测真漏判需改成跨全文删句子并同步删图表。人工一致：判出问题精确率 84%。
 - 已拍板（2026-10-04）：模型全部用 Claude（不再接国产模型 live）；导师风格改写不做；计划书按顶会论文体例写（中文，
   方案 `docs/design/2026-10-04-proposal-paper.md`）；前端倾向 Textual TUI（调研 `docs/design/2026-10-04-frontend-tui.md`）。
 - 统一命令行与终端界面（2026-10-04）：`finagent <research|report|eval|calibrate|bench|test|doctor|ls|tui>`（`finagent/cli.py`，

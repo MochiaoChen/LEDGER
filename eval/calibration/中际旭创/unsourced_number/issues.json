@@ -1,0 +1,42 @@
+[
+  {
+    "id": "I01",
+    "route": "generator",
+    "stage": "8 文稿",
+    "severity": "blocker",
+    "description": "无出处数字 1，指标期间不符 0，外部数字缺引用 0",
+    "evidence": "4,800亿元"
+  },
+  {
+    "id": "I02",
+    "route": "generator",
+    "stage": "6 估值假设",
+    "severity": "minor",
+    "description": "2025A→2026E：毛利率变动 4.29pct（阈值 5），收入增速变动 71.00pct（阈值 30）",
+    "evidence": ""
+  },
+  {
+    "id": "I03",
+    "route": "reviewer",
+    "stage": "9 复核改写",
+    "severity": "minor",
+    "description": "删去数字 11 个，新增 45%、4800亿元、62%",
+    "evidence": ""
+  },
+  {
+    "id": "I04",
+    "route": "reviewer",
+    "stage": "9 复核改写",
+    "severity": "minor",
+    "description": "需求链条、资本运作等段落在一句或一段里连续报出多个互不相关的金额和增速，像在念表，读者看不出哪一两个数最关键。应该只突出一两个关键数，其余放进图表。",
+    "evidence": "2026 年资本开支指引再度上调……S&P Global 预测六大云厂商 2027 年资本开支 1.3 trillion 美元……（专题一，PDF p.15）"
+  },
+  {
+    "id": "I05",
+    "route": "generator",
+    "stage": "1 资料搜集",
+    "severity": "blocker",
+    "description": "这是具体的外部市场规模、增速和占比数字，既无 [S] 编号，也不是公司年报披露的内容，命中。此外 review.md 第 6 条承认有若干无来源的护城河判断。",
+    "evidence": "据行业测算，2030 年全球市场规模将达到 4,800 亿元，2025—2030 年复合增速约 62%，其中中国市场占比约 45%（需求链条，PDF p.10）"
+  }
+]

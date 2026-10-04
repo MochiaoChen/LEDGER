@@ -265,10 +265,15 @@ def summarize_company(d: Path) -> dict[str, Any] | None:
         hits = {t: v.get(t, False) for t in meta["targets"]}
         base_flagged = {t: majority.get(t, False) for t in meta["targets"]}
         collateral = [i for i in items if i not in meta["targets"] and v[i] != majority[i]]
+        judged = (json.loads((p / "judgments.json").read_text(encoding="utf-8")).get("items", [])
+                  if (p / "judgments.json").is_file() else [])
+        reasons = {x["id"]: {"evidence": x.get("evidence", ""), "reason": x.get("reason", "")}
+                   for x in judged if x.get("id") in meta["targets"]}
         variants.append({"variant": name, "desc": meta["desc"], "targets": meta["targets"],
                          "clean_flagged": base_flagged, "hit": hits,
                          "valid": not any(base_flagged.values()),  # 原稿已被判出该问题时，命中不说明问题
                          "collateral": collateral, "collateral_rate": round(len(collateral) / len(items), 3),
+                         "judge_reasons": reasons,
                          "total": _total(p), "clean_total_mean": round(sum(totals) / len(totals), 1)})
     valid = [x for x in variants if x["valid"]]
     hit = sum(all(x["hit"].values()) for x in valid)
@@ -330,6 +335,9 @@ def _markdown(s: dict[str, Any]) -> str:
         L += ["", "## 2. 劣化命中：程序制造已知缺陷，看评审能否判出", "",
               "“原稿已判出”的变体不计入命中率（原稿就被判有该问题，命中不说明评审灵敏）。连带改判 = 非目标条目与原稿多数判定不同，"
               "应与第 1 节的两两不一致率相当。", "",
+              "注意：整节删除类劣化（删交叉验证、删预期差、删跟踪指标、风险泛化）在深度研报里常常删不干净——同一论点会在核心观点、"
+              "深度专题和图表里重复出现，而图表由排版脚本生成、不在文稿里。这类变体未判出时，先看下方评审理由引用的内容在劣化稿里"
+              "是否确实还在；在，则是劣化不彻底，不算评审漏判。", "",
               "| 公司 | 变体 | 制造的缺陷 | 目标条目 | 原稿判定 | 劣化稿判出 | 连带改判 | 总分（原稿均值 → 劣化） |",
               "|---|---|---|---|---|---|---|---|"]
         for c in s["companies"]:
@@ -338,6 +346,12 @@ def _markdown(s: dict[str, Any]) -> str:
                          f"{'已判出' if any(v['clean_flagged'].values()) else '未判出'} | "
                          f"{'✓' if all(v['hit'].values()) else '✗'} | {len(v['collateral'])}（{'、'.join(v['collateral']) or '—'}） | "
                          f"{v['clean_total_mean']:g} → {v['total']:g} |")
+        misses = [(c["company"], v) for c in s["companies"] for v in c["variants"] if v["valid"] and not all(v["hit"].values())]
+        if misses:
+            L += ["", "未判出的变体，评审给的理由（用来区分“评审漏判”与“劣化没删干净、内容在别处仍在”）：", ""]
+            for company, v in misses:
+                for t, r in v.get("judge_reasons", {}).items():
+                    L.append(f"- **{company} {v['variant']} {t}**：{r['reason']}" + (f"（证据：{r['evidence']}）" if r["evidence"] else ""))
         L += [""] + [f"- {c['company']}：有效变体 {c['detection']['valid']} 个，判出 {c['detection']['hit']} 个"
                      + (f"（{c['detection']['rate']:.0%}）" if c['detection']['rate'] is not None else "") for c in s["companies"]]
     h = s.get("human")

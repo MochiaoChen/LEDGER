@@ -1,0 +1,8 @@
+{
+  "kind": "contradiction",
+  "rep": 1,
+  "targets": [
+    "N-02"
+  ],
+  "desc": "只把摘要里的评级改成相反方向，正文不变"
+}

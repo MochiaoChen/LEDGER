@@ -1,0 +1,66 @@
+[
+  {
+    "id": "I01",
+    "route": "generator",
+    "stage": "8 文稿",
+    "severity": "blocker",
+    "description": "无出处数字 1，指标期间不符 0，外部数字缺引用 0",
+    "evidence": "4,800亿元"
+  },
+  {
+    "id": "I02",
+    "route": "generator",
+    "stage": "6 估值假设",
+    "severity": "minor",
+    "description": "没有分部驱动预测（segment_forecast.json）",
+    "evidence": ""
+  },
+  {
+    "id": "I03",
+    "route": "generator",
+    "stage": "6 估值假设",
+    "severity": "minor",
+    "description": "2025A→2026E：毛利率变动 4.44pct（阈值 5），收入增速变动 294.64pct（阈值 30）",
+    "evidence": ""
+  },
+  {
+    "id": "I04",
+    "route": "reviewer",
+    "stage": "9 复核改写",
+    "severity": "minor",
+    "description": "删去数字 6 个，新增 18%、4800亿元、62%",
+    "evidence": ""
+  },
+  {
+    "id": "I05",
+    "route": "generator",
+    "stage": "8 文稿",
+    "severity": "major",
+    "description": "2026—2028 年增速和毛利率有依据，但 2029 年后增速的路径、费用率每年下降 1pp 为何成立、终期 EBIT 利润率 24.9% 高于历史 20.3% 都没有依据。占利润影响最大的费用率假设依据只有“研发与品牌投入前置”。",
+    "evidence": "2029—2033 年增速每年下降 5 个百分点；经营费用率此后每年下降 1 个百分点（第16节，p22）"
+  },
+  {
+    "id": "I06",
+    "route": "generator",
+    "stage": "8 文稿",
+    "severity": "minor",
+    "description": "选用 DCF 的理由（亏损同行无法用倍数）说得清，WACC 也有拆分，但无风险利率无来源，β 1.30 无可比公司或回归依据，永续增长 3.0% 和 1.0% 特定风险溢价没有论证；终值占 67.6%，这些参数依据还不够。",
+    "evidence": "无风险利率 1.8%，β 1.30（高成长科技硬件），公司特定风险溢价 1.0%，永续增长率 3.0%（第17节）"
+  },
+  {
+    "id": "I07",
+    "route": "reviewer",
+    "stage": "9 复核改写",
+    "severity": "minor",
+    "description": "年报后一节和价格锚点、市值路径两段（p20）把多个季度、多个口径的收入、利润、市值和同比连续串在一两句里，像在念表，读者要自己找每段最关键的一两个数。",
+    "evidence": "2026 年第一季度营业收入 4.23 亿元…扣非 4025.36 万元…预计上半年 10.52 亿元至 11.28 亿元…（p9）"
+  },
+  {
+    "id": "I08",
+    "route": "generator",
+    "stage": "1 资料搜集",
+    "severity": "blocker",
+    "description": "市场规模、复合增速、中国占比 45%、公司份额 18% 都没有 S 编号，也不是年报披露，sources.json 里没有对应来源。",
+    "evidence": "据行业测算，2030 年全球市场规模将达到 4,800 亿元，复合增速约 62%…公司有望占据其中 18%（第8节，p10）"
+  }
+]
