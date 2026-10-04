@@ -96,6 +96,32 @@ def test_program_checks(tmp_path, rubric):
     assert not any(r["passed"] for r in res.values())
 
 
+def test_sources_and_review_checks_need_substance(tmp_path):
+    """人工质检意见：只有文件不算数。引用要对得上登记，复核清单要有填完的事项。"""
+    b = _bundle(tmp_path, "行业规模达 812.5 亿元[S1]。")
+    src = {"questions": [{"id": "Q1", "queries": ["行业规模"], "status": "found", "sources": ["S1"]}],
+           "sources": [{"id": "S1", "url": "https://example.com", "title": "t", "publisher": "p", "accessed": "2026-10-01",
+                        "facts": [{"quote": "行业规模达 812.5 亿元", "value": 812.5, "unit": "亿元"}]}]}
+    (b.work / "research").mkdir()
+    (b.work / "research/sources.json").write_text(json.dumps(src, ensure_ascii=False), encoding="utf-8")
+    assert CHECKS["sources"](b, {})["passed"]
+    for text, why in (("行业规模达 812.5 亿元。", "外部数字没标编号"), ("行业规模达 812.5 亿元[S1]，增速见[S9]。", "引用未登记的编号"),
+                      ("行业空间广阔。", "正文没有引用")):
+        (b.work / "report/narrative.md").write_text(text, encoding="utf-8")
+        assert not CHECKS["sources"](b, {})["passed"], why
+
+    review = b.work / "report/review.md"
+    head = "# 复核清单\n\n| # | 事项 | 为什么重要 | 当前处理 | 请核对 |\n|---|---|---|---|---|\n"
+    review.write_text(head, encoding="utf-8")
+    assert not CHECKS["review_list"](b, {})["passed"]  # 只有表头
+    review.write_text(head + "| 1 | 缺分船型 TCE |  |  |  |\n", encoding="utf-8")
+    assert not CHECKS["review_list"](b, {})["passed"]  # 事项没填完
+    review.write_text(head + "| 1 | 缺分船型 TCE | 支撑利润见顶判断 | 只保留分部利润 | 是否有行业数据可补 |\n", encoding="utf-8")
+    assert CHECKS["review_list"](b, {})["passed"]
+    review.write_text("# 复核清单\n\n无\n", encoding="utf-8")
+    assert CHECKS["review_list"](b, {})["passed"]
+
+
 def test_read_judgments(tmp_path, rubric):
     path = tmp_path / "judgments.json"
     assert judge.read_judgments(path, rubric)[1] == ["评审未写出 judgments.json"]
@@ -140,7 +166,7 @@ def test_evaluate_without_judge_and_rescore(tmp_path, rubric):
 def test_workspace_excludes_evaluation(tmp_path):
     ws = rp.build("贵州茅台", 2025, tmp_path / "samples")
     assert not (ws / "finagent/evaluation").exists()
-    assert not list(ws.rglob("report_v0.json"))
+    assert not list(ws.rglob("report_v*.json"))
 
 
 def test_role_models():

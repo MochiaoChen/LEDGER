@@ -206,15 +206,23 @@ def check_text_valuation(b: Bundle, params: dict) -> dict[str, Any]:
 
 
 def check_sources(b: Bundle, params: dict) -> dict[str, Any]:
-    from ..output.sources import MARK, verify_sources
+    """不只看 sources.json 在不在：结构校验、正文确有引用、引用编号已登记、外部数字所在句带对应编号。"""
+    from ..output.guard import check_text, truth_values
+    from ..output.sources import MARK, check_citations, verify_sources
 
     if miss := _missing(b.sources):
         return miss
-    vs = verify_sources(_json(b.sources))
-    cites = len(MARK.findall(_text(b)))
-    return _res(vs["ok"] and cites > 0, f"{vs['n_questions']} 个问题、{vs['n_queries']} 次检索、{vs['n_sources']} 个来源，"
-                f"正文引用 {cites} 处" + (f"；{len(vs['problems'])} 处结构问题" if vs["problems"] else ""),
-                "；".join(vs["problems"][:3]))
+    data, text = _json(b.sources), _text(b)
+    vs = verify_sources(data)
+    cited = MARK.findall(text)
+    cite_problems = check_citations(text, data, truth_values(b.run), check_text) if text else []
+    unused = sorted({s["id"] for s in data.get("sources") or []} - set(cited))
+    detail = (f"{vs['n_questions']} 个问题、{vs['n_queries']} 次检索、{vs['n_sources']} 个来源，正文引用 {len(cited)} 处"
+              + (f"；{len(vs['problems'])} 处结构问题" if vs["problems"] else "")
+              + (f"；{len(cite_problems)} 处引用问题" if cite_problems else "")
+              + (f"；{len(unused)} 个来源未在正文引用" if unused else ""))
+    bad = vs["problems"][:3] + [f"{p['problem']}：{p['sentence']}" for p in cite_problems[:3]]
+    return _res(vs["ok"] and bool(cited) and not cite_problems, detail, "；".join(bad))
 
 
 def check_price(b: Bundle, params: dict) -> dict[str, Any]:
@@ -236,10 +244,21 @@ def check_numlock(b: Bundle, params: dict) -> dict[str, Any]:
 
 
 def check_review_list(b: Bundle, params: dict) -> dict[str, Any]:
+    """只数填写完整的事项：表格行（去掉表头与分隔行）至少四格有内容，或列表项；明确写“无”也算通过。"""
     if miss := _missing(b.review):
         return miss
-    items = [ln for ln in b.review.read_text(encoding="utf-8").splitlines() if ln.lstrip().startswith(("-", "*", "|"))]
-    return _res(bool(items), f"review.md {len(items)} 条")
+    lines = [ln.strip() for ln in b.review.read_text(encoding="utf-8").splitlines()]
+    body = [ln for ln in lines if ln and not ln.startswith("#")]
+    if body and all(re.fullmatch(r"[（(]?无[)）。]?", ln) for ln in body):
+        return _res(True, "review.md 写明无待复核事项")
+    rows = [ln for ln in body if ln.startswith("|")]
+    cells = [[c.strip() for c in ln.strip("|").split("|")] for ln in rows]
+    cells = [c for c in cells if not all(re.fullmatch(r":?-{3,}:?", x) for x in c if x)]  # 分隔行
+    need = min(4, len(cells[0])) if cells else 0
+    items = [c for c in cells[1:] if sum(bool(x) and x not in ("—", "-") for x in c) >= need]
+    bullets = [ln for ln in body if re.match(r"[-*]\s+\S", ln) and len(ln) > 8]
+    n = len(items) + len(bullets)
+    return _res(n > 0, f"review.md {n} 条完整事项" + ("" if n else "（只有表头或空项）"))
 
 
 CHECKS: dict[str, Callable[[Bundle, dict], dict[str, Any]]] = {
