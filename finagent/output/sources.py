@@ -142,8 +142,21 @@ def run_guard(run: Path, text: str, sources: str | Path | None = None) -> dict[s
     unverified = check_text(plain, truth + external)
     mismatched = check_binding(plain, run)
     citations = check_citations(text, ext, truth, check_text) if ext else []
-    return {"ok": not (unverified or mismatched or citations),
-            "unverified_numbers": unverified, "mismatched_claims": mismatched, "uncited_external": citations}
+    contradictions = _contradictions(run, plain)
+    return {"ok": not (unverified or mismatched or citations or contradictions),
+            "unverified_numbers": unverified, "mismatched_claims": mismatched, "uncited_external": citations,
+            "contradictions": contradictions}
+
+
+def _contradictions(run: Path, text: str) -> list[str]:
+    """文稿内部前后矛盾：评级、各情景每股价值、预测年度的公司整体收入与利润（report_check/consistency.py）。"""
+    from ..tasks.report_check.consistency import check, describe
+
+    a = run / "financials" / "analysis.json"
+    if not a.is_file():
+        return []
+    year = int(str(json.loads(a.read_text(encoding="utf-8"))["period"])[:4])
+    return [describe(f) for f in check(text, year)["findings"]]
 
 
 # 资料搜集阶段（先搜集、后分析）必须覆盖的方面：每个公司都适用的通用类别，不预设行业内容

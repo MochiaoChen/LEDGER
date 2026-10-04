@@ -41,7 +41,9 @@ def check_guard(b: Bundle, params: dict) -> dict[str, Any]:
     g = run_guard(b.run, _text(b), b.sources if b.sources.is_file() else None)
     bad = [*g["unverified_numbers"], *(str(x.get("quote", x)) for x in g["mismatched_claims"]),
            *(str(x.get("quote", x)) for x in g["uncited_external"])]
-    return _res(g["ok"], f"无出处数字 {len(g['unverified_numbers'])}，指标期间不符 {len(g['mismatched_claims'])}，"
+    # 前后矛盾由负向条目 N-02 单独扣分，这里不重复计入硬闸门
+    ok = not (g["unverified_numbers"] or g["mismatched_claims"] or g["uncited_external"])
+    return _res(ok, f"无出处数字 {len(g['unverified_numbers'])}，指标期间不符 {len(g['mismatched_claims'])}，"
                 f"外部数字缺引用 {len(g['uncited_external'])}", "；".join(map(str, bad[:5])))
 
 
@@ -259,6 +261,22 @@ def check_review_list(b: Bundle, params: dict) -> dict[str, Any]:
     bullets = [ln for ln in body if re.match(r"[-*]\s+\S", ln) and len(ln) > 8]
     n = len(items) + len(bullets)
     return _res(n > 0, f"review.md {n} 条完整事项" + ("" if n else "（只有表头或空项）"))
+
+
+def check_consistency(b: Bundle, params: dict) -> dict[str, Any]:
+    """负向条目：passed=True 表示命中（文稿内部数字或评级前后矛盾）。"""
+    from ..tasks.report_check.consistency import check, describe
+
+    if m := _missing(b.narrative):
+        return _res(False, m["detail"] + "，未判")
+    a = _json(b.run / "financials" / "analysis.json") or {}
+    year = int(str(a.get("period") or "0")[:4]) or None
+    if year is None:
+        return _res(False, "缺 analysis.json 报告期，未判")
+    r = check(_text(b), year)
+    found = r["findings"]
+    return _res(bool(found), f"比较 {r['compared']} 组（共 {r['mentions']} 处提及），矛盾 {len(found)} 组",
+                "；".join(describe(f) for f in found[:5]))
 
 
 CHECKS: dict[str, Callable[[Bundle, dict], dict[str, Any]]] = {

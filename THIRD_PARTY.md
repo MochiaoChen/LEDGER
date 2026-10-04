@@ -18,6 +18,7 @@
 | `comps-valuation/references/*.md`（EV 桥、倍数配对、NM、IQR 离群值、P25/P75 区间） | `finagent/tasks/valuation/comps.py` | — |
 | `comps-valuation/scripts/create_comps_template.py`（英文 comps 公式模板） | 未沿用模板；`comps.write_formula_workbook` 另行生成中文公式工作簿，数值与 `comps.json` 一致 | 公式独立重算与缓存值相等 |
 | `scenario-sensitivity-generator/references/target-backsolve-rubric.md`（“股价隐含了什么”、反解目标所需路径、可行性分档的思路） | `finagent/tasks/valuation/reverse_dcf.py`：自研单变量反向 DCF（网格扫描 + 二分求解），分档改为按基准假设与历史区间判定，未沿用原分档文字 | 仅借方法，无口径复刻；`tests/test_reverse_dcf.py` 代回正向 DCF 校验 |
+| `deck-report-qc/references/extraction-and-tieout.md`、`issue-taxonomy.md`（重复数字对账：实体、口径、期间、单位、情景都相同才算矛盾；证据强度分级） | `finagent/tasks/report_check/consistency.py`：自研研报内部一致性检查（评级、各情景每股价值、预测年度公司整体收入与利润），用于评分标准 N-02、guard 与选题 5；比较范围与判定规则自定，未使用原脚本 | 仅借方法；`tests/test_consistency.py` |
 
 校验方式：
 - `tests/golden/`：改造前用原插件引擎跑样例得到的产物快照；`tests/test_golden.py` 要求自研实现的产物与之完全相等（无需原插件即可运行）。

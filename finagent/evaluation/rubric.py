@@ -9,7 +9,7 @@ from typing import Any
 
 from ..core.config import PROJECT_ROOT
 
-DEFAULT_RUBRIC = PROJECT_ROOT / "eval" / "rubrics" / "report_v1.json"
+DEFAULT_RUBRIC = PROJECT_ROOT / "eval" / "rubrics" / "report_v2.json"
 LAYERS = ("L0", "L1", "L2", "L3", "N")
 
 

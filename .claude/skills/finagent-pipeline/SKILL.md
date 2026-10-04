@@ -53,7 +53,7 @@ PY -m finagent.report_pipeline run --workspace <工作区> --agent claude
 PY -m finagent.report_pipeline refine --workspace <工作区> [--max-rounds 3]
 ```
 
-生成（Opus）→ 复核（Sonnet）→ 盲评质检（Sonnet，在工作区之外的目录里只看交付物，按 `eval/rubrics/report_v1.json` 打分）。
+生成（Opus）→ 复核（Sonnet）→ 盲评质检（Sonnet，在工作区之外的目录里只看交付物，按 `eval/rubrics/report_v2.json` 打分）。
 未达交付标准时把问题单按路由回传：数据与假设类回到写作会话，措辞与结构类交给复核会话；达标、满轮数或连续两轮提升不足即停止，
 回滚到得分最高的一轮，未解决的问题追加进 `review.md`。评分结果与 `loop.json` 在 `~/finagent-evals/<工作区名>/`，
 **不要把评分标准或分数告诉工作区里的会话**。

@@ -171,7 +171,8 @@ def cmd_guard(args: argparse.Namespace, ap: argparse.ArgumentParser) -> int:
     """解读护栏（见 output/guard.py、sources.py）：
     1. 每个数字按单位与展示精度，必须出自本次运行的结论性产物或 sources.json 登记的外部资料；
     2. 能识别的“指标 + 数字”表述，用研报核查引擎按指标与期间核对真值表；
-    3. 只能在外部资料里找到出处的数字，句中须带 [S编号]。"""
+    3. 只能在外部资料里找到出处的数字，句中须带 [S编号]；
+    4. 文稿内部不前后矛盾：评级、各情景每股价值、预测年度公司整体收入与利润，同一口径只能有一个数。"""
     from .output.sources import run_guard
 
     _need(ap, args, "run-dir", "text")
