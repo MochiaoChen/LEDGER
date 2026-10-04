@@ -39,7 +39,8 @@ def _build_template(run_dir, tmp_path, *extra, out="report"):
     work.mkdir(parents=True)
     try:
         for f in TEMPLATE.iterdir():
-            shutil.copy(f, work / f.name)
+            if f.is_file():  # examples/ 是参考样例目录，不复制
+                shutil.copy(f, work / f.name)
         argv = sys.argv
         sys.argv = ["build_report.py", "--run-dir", str(run_dir), "--no-pdf", *extra]
         try:

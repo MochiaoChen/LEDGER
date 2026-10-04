@@ -124,6 +124,7 @@ table.data.mono td code { font-size: 6.6pt; }
 table.data.nw td:first-child { white-space: nowrap; }
 table.forecast th.est, table.forecast td.est { background: #F4F7FB; }
 table.forecast td.neg, .neg { color: var(--brick); }
+table.data td.pos, .pos { color: var(--navy); }
 
 table.heat { font-size: 7.8pt; border-top: 1pt solid var(--ink); border-bottom: 1pt solid var(--ink); }
 table.heat th { font-weight: 600; padding: 1.1mm 1mm; text-align: center; border-bottom: 0.5pt solid var(--ink); white-space: nowrap; }
@@ -202,3 +203,8 @@ table.fin th.est { background: #A21316; }
 table.data tr.grp td { color: #A21316; background: #F8F5EE; }
 .kv, table.data td, table.fin td { border-bottom-color: #E8E6E1; }
 .disclaimer-page h3 { color: #CC2931; }
+
+/* 第一部分 / 第二部分分隔：主题色通栏 */
+.part { background: var(--navy); color: #fff; padding: 2.6mm 4mm; margin: 7mm 0 3mm; break-after: avoid; }
+.part-t { font-family: var(--title); font-size: 15pt; font-weight: 700; letter-spacing: 1pt; }
+.part-lead { font-size: 9pt; margin-top: 1mm; opacity: 0.92; }

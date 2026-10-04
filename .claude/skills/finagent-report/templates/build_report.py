@@ -1,8 +1,11 @@
-"""<公司> <年度> 年报深度点评：读 FinAgent 运行产物 → 图表 → HTML → PDF。
+"""<公司> <年度> 年报点评暨深度研究：读 FinAgent 运行产物 → 图表 → HTML → PDF（目标 25～30 页、60 个以上图表）。
 
 模板用法：复制到 data/extractions/<公司>_<年度>/report/build_report.py，改 CFG，按公司的投资主线改 body()。
 标准章节（业绩、盈利能力、现金流、预测、估值）只用运行产物即可渲染；经营分析章节需要 extras.json 里的表，
 在“公司专属图表”处用 run.cell()/run.ratios 取数后调用 reportkit 原语。章节、顺序、标题都可以改，这里只是起点。
+templates/examples/ 下是三份 20 页级研报的定制脚本（参考样例，不是模板）：看它们的配图密度和写法。
+深度研究各节（文稿里 deep_ 开头的节）的图表数据来自 research/sources.json 登记的外部资料与 research/topics/。
+表格的同比、变动、上行空间列用 chg(文本, 变化量)（涨跌双色）；数值列用 td(文本, 数值)（只标负数）。
 
     .venv/bin/python data/extractions/<公司>_<年度>/report/build_report.py --run-dir runs/<run_id>
 """
@@ -47,9 +50,29 @@ CFG = Config(
 #                      title="单位：亿元；灰字为同比")
 
 
+# 深度研究各节的标题（键为文稿节名）：写结论，不写“行业分析”这类空标题
+DEEP_TITLES: dict[str, str] = {
+    "deep_industry": "行业：<一句话结论>",
+    "deep_competition": "竞争格局：<一句话结论>",
+    "deep_moat": "核心竞争力：<一句话结论>",
+    "deep_expectations": "预期差：<一句话结论>",
+}
+
+
 # 关键假设的依据：键为“<分部名>销量增速 / <分部名><单价名称>增速 / <分部名>毛利率 / 销售费用率 / 其他费用率 / 现金分红率”，
 # 值写依据并注明对应正文第几节。
 BASIS: dict[str, str] = {}
+
+
+# ================================================================== 第二部分 深度研究
+def deep_part(doc: Doc, S: dict[str, str]) -> str:
+    """文稿里 deep_ 开头的节按出现顺序成章；每章之后放该章的图表（TODO 处按专题补图）。"""
+    out = [doc.part("第二部分 深度研究", "<一句导语：这一部分要回答的核心问题>")]
+    for key in [k for k in S if k.startswith("deep_")]:
+        out.append(doc.sec(DEEP_TITLES.get(key, f"<{key}：一句话结论>")))
+        out.append(md(S[key]))
+        out.append(f"<!-- TODO：{key} 的图表（市场空间、份额、对手对标、价格与产能……） -->")
+    return "\n".join(out)
 
 
 # ================================================================== 正文编排
@@ -67,6 +90,7 @@ def body(doc: Doc, S: dict[str, str]) -> str:
   {fig(f"营业收入与归母净利润（实际与预测）", img(C.history, 172), "预测为基准情景")}
   {thesis[1]}
 
+  {doc.part("第一部分 年报点评", "<一句导语>")}
   {doc.h2(2, "公司概况：<一句话结论>")}
   {md(S.get("overview", ""))}
   {two(fig("盈利质量：ROE 与净现比", img(C.quality)), fig("近三年主要会计数据与财务指标", T.three_year(run)))}
@@ -94,7 +118,13 @@ def body(doc: Doc, S: dict[str, str]) -> str:
   {two(fig("资产负债与营运资本", T.balance(run)), fig(f"{p} 年分季度经营现金流与归母净利润", img(C.cash_quarterly)))
    if run.quarterly else fig("资产负债与营运资本", T.balance(run))}
 
-  {doc.h2(7, "盈利预测：<一句话结论>")}
+  {doc.h2(7, "年报之后：<一句话结论>")}
+  {md(S.get("latest", ""))}
+  <!-- TODO：最新季报 / 半年报对比图（外部资料登记的数值，src 写发布方与 [S编号]） -->
+
+  {deep_part(doc, S)}
+
+  {doc.sec("盈利预测：<一句话结论>")}
   {md(S.get("forecast", ""))}
   {fig("关键假设与依据", T.assumptions(run, BASIS), "假设为分析师观点") if has_seg else ""}
   {fig("分部收入预测", T.segment_forecast(run), "基准情景", cls="split") if has_seg else ""}
@@ -102,7 +132,7 @@ def body(doc: Doc, S: dict[str, str]) -> str:
    if has_seg else fig("利润率", img(C.margins), "基准情景", cls="half")}
   {fig("盈利预测", T.forecast(run, last=5), "基准情景")}
 
-  {doc.h2(8, f"估值：DCF 基准情景每股价值 {num(run.scen['base']['value_per_share'])} 元")}
+  {doc.sec(f"估值：DCF 基准情景每股价值 {num(run.scen['base']['value_per_share'])} 元")}
   {val[0]}
   {two(fig("折现参数", T.wacc(run), "参数为分析师假设"), fig("三情景营业收入", img(C.scenarios))) if has_seg
    else fig("折现参数", T.wacc(run), "参数为分析师假设", cls="half")}
@@ -113,11 +143,14 @@ def body(doc: Doc, S: dict[str, str]) -> str:
   {fig("三情景关键驱动与估值", T.scenario_table(run)) if has_seg else ""}
   {valuation_ranges(doc)}
 
-  {doc.h2(9, "投资建议")}
+  {doc.sec("投资建议")}
   {md(S.get("recommendation", ""))}
 
-  {doc.h2(10, "风险提示")}
+  {doc.sec("风险提示")}
   {md(S.get("risks", ""))}
+
+  {doc.sec("跟踪指标与结论失效条件")}
+  {md(S.get("tracking", ""))}
 </section>
 {appendix(doc, CFG, "第 7、8 节")}"""
 

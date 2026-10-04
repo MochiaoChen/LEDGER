@@ -159,6 +159,8 @@ def test_refine_loop_routes_issues_and_restores_best(tmp_path, monkeypatch):
     monkeypatch.setattr(rp, "run_agent", lambda *a, **k: calls.append(("run", a[2], a[3])) or 0)
     monkeypatch.setattr(rp, "_session", lambda ws_, agent, model, role, prompt: calls.append((role, model, prompt)) or 0)
     monkeypatch.setattr(rp, "_writing_done", lambda ws_: True)
+    real_status = rp.status
+    monkeypatch.setattr(rp, "status", lambda ws_: {**real_status(ws_), "done": True})
     import finagent.evaluation.rubric as rb
     monkeypatch.setattr(rb, "bundle_from_workspace", lambda ws_: None)
     plan = [(60, [("generator", "缺定量驱动"), ("reviewer", "机器腔")]), (55, [("reviewer", "结论不先行")]),
@@ -179,8 +181,8 @@ def test_refine_loop_routes_issues_and_restores_best(tmp_path, monkeypatch):
     assert [r["total"] for r in state["rounds"]] == [60, 55, 58] and state["best"] == 1
     assert state["stopped"] == "达到最大轮数 3" and state["restored"]
     roles = [c[0] for c in calls]
-    assert roles == ["run", "fix", "review", "revise"]  # 第 2 轮有生成类问题：先修再复核；第 3 轮只有复核类
-    assert calls[0][1:] == (rp.GEN_MODEL, rp.QC_MODEL) and calls[1][1] == rp.GEN_MODEL and calls[3][1] == rp.QC_MODEL
+    assert roles == ["run", "fix", "review", "run", "revise"]  # 第 2 轮：先修、复核问题单，再按闸门续做；第 3 轮只有复核类
+    assert calls[0][1:] == (rp.GEN_MODEL, rp.QC_MODEL) and calls[1][1] == rp.GEN_MODEL and calls[4][1] == rp.QC_MODEL
     assert "issues-generator.md" in calls[1][2] and "issues-reviewer.md" in calls[2][2]
     # 问题单在工作区里，评测结果（含分值）不在
     assert (ws / ".pipeline/rounds/1/issues-generator.md").is_file()
@@ -195,3 +197,12 @@ def test_stop_reasons():
     assert rp._stop_reason([r(50), r(51), r(52)], 5, 2).startswith("连续两轮")
     assert rp._stop_reason([r(50), r(60)], 5, 2) is None
     assert rp._stop_reason([r(50, g=0, v=0)], 5, 2) == "没有可回传的问题"
+
+
+def test_refine_stops_without_evaluating_when_gates_fail(tmp_path, monkeypatch):
+    ws = rp.build("贵州茅台", 2025, tmp_path / "samples")
+    monkeypatch.setenv("FINAGENT_EVAL_DIR", str(tmp_path / "evals"))
+    monkeypatch.setattr(rp, "run_agent", lambda *a, **k: 0)
+    monkeypatch.setattr(ev, "evaluate", lambda *a, **k: pytest.fail("闸门未通过不应评测"))
+    state = rp.refine(ws, max_rounds=2)
+    assert state["rounds"] == [] and state["stopped"].startswith("第 1 轮闸门未通过")

@@ -49,7 +49,11 @@ def check_ts_integrity(b: Bundle, params: dict) -> dict[str, Any]:
     ts = _json(b.run / "valuation" / "three_statement.json")
     if ts is None:
         return _res(False, "缺 three_statement.json")
-    failed = [c["check"] for c in ts.get("integrity", []) if c.get("status") != "pass"]
+    from ..tasks.valuation.ts_engine import TOLERANCE
+
+    # 按误差值与引擎容差判定，不依赖产物里记录的 status（旧版本用过更严的 1e-6）
+    failed = [f"{c['check']}（误差 {c['max_abs_error']:.4g} 百万元）" for c in ts.get("integrity", [])
+              if c.get("max_abs_error", 0) > TOLERANCE]
     hard = ts.get("hard_failures") or []
     return _res(not failed and not hard and bool(ts.get("integrity")),
                 f"{len(ts.get('integrity', []))} 项勾稽，失败 {len(failed)}，硬性失败 {len(hard)}",

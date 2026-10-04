@@ -1,0 +1,11 @@
+{
+  "model": "claude-sonnet-5-5",
+  "exit_code": 0,
+  "started_at": "2026-10-03T11:04:14",
+  "elapsed_sec": 225.9,
+  "turns": 13,
+  "cost_usd": 1.1693096,
+  "input_tokens": 721888,
+  "output_tokens": 17686,
+  "blind_dir": "/Users/mochiaochen/finagent-evals/宁德时代_20261003-110414"
+}

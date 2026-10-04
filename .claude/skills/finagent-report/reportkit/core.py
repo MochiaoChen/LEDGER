@@ -128,6 +128,13 @@ def neg(x):
     return ' class="neg"' if x is not None and x < 0 else ""
 
 
+def updown(x):
+    """变化量（同比、变动、上行空间）两个方向都着色：涨用主题色，跌用对比色。"""
+    if x is None or x == 0:
+        return ""
+    return ' class="pos"' if x > 0 else ' class="neg"'
+
+
 # ------------------------------------------------------------------ narrative.md → HTML
 def load_sections(path: Path) -> dict[str, str]:
     """按 <!-- section: 名称 --> 分节；HTML 注释（写作提示）去掉。"""

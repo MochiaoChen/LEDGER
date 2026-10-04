@@ -1,6 +1,6 @@
 ---
 name: finagent-report
-description: 为 A 股公司生成卖方体例的深度研报 PDF（约 20 页，图文并茂）：在 finagent-research 跑完抽取与估值之后，补抄年报经营数据、写分析文稿并过数字护栏，再用 reportkit 排版成带目录、图表目录和免责声明的 PDF。用户要为某家公司出“研报 / 深度报告 / 年报点评 PDF”时使用。
+description: 为 A 股公司生成卖方体例的年报点评暨深度研究 PDF（25～30 页、60 个以上图表）：在 finagent-research 跑完抽取与估值之后，补抄年报经营数据、写分析文稿并过数字护栏，再用 reportkit 排版成带目录、图表目录和免责声明的 PDF。用户要为某家公司出“研报 / 深度报告 / 年报点评 PDF”时使用。
 ---
 
 # finagent-report

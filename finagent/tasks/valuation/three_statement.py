@@ -210,8 +210,9 @@ def run(plan: dict[str, Any]) -> dict[str, Any]:
         {"check": "PP&E 滚动", "max_abs_error": c["max_ppe_rollforward_abs_error"]},
         {"check": "营运资本滚动", "max_abs_error": c["max_nwc_rollforward_abs_error"]},
     ]
+    # 与引擎判硬性失败的容差一致（百万元）：招股书等以万元两位小数披露的数据，期初报表本身就有 0.01 万元级的舍入差
     for it in integrity:
-        it["status"] = "pass" if it["max_abs_error"] <= 1e-6 else "fail"
+        it["status"] = "pass" if it["max_abs_error"] <= eng.TOLERANCE else "fail"
     return {
         "model_status": status,
         "periods": labels,

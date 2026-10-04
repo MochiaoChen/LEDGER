@@ -7,6 +7,7 @@ import pytest
 
 from conftest import ROOT
 from finagent import report_pipeline as rp
+from finagent.output import sources as sources_mod
 
 
 @pytest.fixture()
@@ -94,33 +95,66 @@ def test_build_guards(tmp_path):
     assert tagged.name == "贵州茅台_2025_codex" and (tagged / "data/extractions/贵州茅台_2025").is_dir()
 
 
+def _collect_sources(n_queries: int = 3, published: str = "2026-09-15") -> dict:
+    """资料搜集：七个类别各一题，近 90 天内发布的来源三个。"""
+    qs = [{"id": f"Q{i}", "phase": "collect", "category": cat, "question": cat, "status": "found",
+           "queries": [f"{cat}-{k}" for k in range(n_queries)], "sources": ["S1"]}
+          for i, cat in enumerate(sources_mod.CATEGORIES, 1)]
+    src = [{"id": f"S{i}", "title": "t", "publisher": "p", "url": "https://example.com", "published": published,
+            "accessed": "2026-10-03", "facts": [{"quote": "原文", "label": "x"}]} for i in (1, 2, 3)]
+    return {"questions": qs, "sources": src}
+
+
 def test_status_gates_and_collect(ws, tmp_path):
     res = rp.status(ws)
-    assert not res["done"] and res["next"].startswith("1 财务抽取")
+    assert not res["done"] and res["next"].startswith("1 资料搜集")
     work = ws / "data/extractions/贵州茅台_2025"
+    meta = json.loads((ws / "sample.json").read_text(encoding="utf-8"))
+    meta["as_of"] = "2026-10-03"
+    (ws / "sample.json").write_text(json.dumps(meta, ensure_ascii=False), encoding="utf-8")
+    (work / "research").mkdir()
+    # 先搜集：缺类别、检索不足、来源过旧都不算通过
+    thin = _collect_sources(n_queries=1, published="2025-01-01")
+    thin["questions"] = thin["questions"][:3]
+    (work / "research/sources.json").write_text(json.dumps(thin, ensure_ascii=False), encoding="utf-8")
+    (work / "research/dossier.md").write_text("# 资料包", encoding="utf-8")
+    first = rp.status(ws)["stages"][0]
+    assert not first["ok"] and "未覆盖" in first["detail"] and "近 90 天来源 0 个" in first["detail"]
+    (work / "research/sources.json").write_text(json.dumps(_collect_sources(), ensure_ascii=False), encoding="utf-8")
+    assert rp.status(ws)["stages"][0]["ok"]
     (work / "facts.json").write_text("{}", encoding="utf-8")
     (work / "facts.verified.json").write_text(json.dumps({"check": {"ok": True}}), encoding="utf-8")
     (work / "report/framework.md").write_text("# 框架", encoding="utf-8")
     stages = {s["stage"]: s for s in rp.status(ws)["stages"]}
-    assert stages["1 财务抽取"]["ok"] and not stages["2 分析框架"]["ok"]  # 缺外部调研清单
-    (work / "report/framework.md").write_text("# 框架\n\n## 外部调研清单\n", encoding="utf-8")
+    assert stages["2 财务抽取"]["ok"] and not stages["3 分析框架"]["ok"]  # 缺外部调研清单
+    (work / "report/framework.md").write_text("# 框架\n\n## 外部调研清单\n\n## 深度专题\n1. 甲\n", encoding="utf-8")
     stages = {s["stage"]: s for s in rp.status(ws)["stages"]}
-    assert stages["2 分析框架"]["ok"] and not stages["3 外部调研"]["ok"]
-    # 检索量不足不算通过
-    (work / "research").mkdir()
-    one = {"questions": [{"id": "Q1", "question": "行业增速", "status": "not_found", "queries": ["白酒 行业 增速"]}],
-           "sources": []}
-    (work / "research/sources.json").write_text(json.dumps(one, ensure_ascii=False), encoding="utf-8")
+    assert not stages["3 分析框架"]["ok"] and "深度专题" in stages["3 分析框架"]["detail"]
+    (work / "report/framework.md").write_text(
+        "# 框架\n\n## 外部调研清单\n\n## 深度专题\n1. 甲\n2. 乙\n3. 丙\n\n## 章节结构\n", encoding="utf-8")
     stages = {s["stage"]: s for s in rp.status(ws)["stages"]}
-    assert not stages["3 外部调研"]["ok"] and "检索量不足" in stages["3 外部调研"]["detail"]
-    many = {"questions": [{"id": f"Q{i}", "question": "q", "status": "not_found", "queries": ["a", "b"]}
-                          for i in range(rp.MIN_QUESTIONS)], "sources": []}
-    (work / "research/sources.json").write_text(json.dumps(many, ensure_ascii=False), encoding="utf-8")
+    assert stages["3 分析框架"]["ok"] and not stages["4 深度调研"]["ok"]
+    # 深度调研：每个专题一份有分量的笔记，补充检索追加 phase=followup 的问题
+    (work / "research/topics").mkdir()
+    for i in range(rp.MIN_TOPICS):
+        (work / f"research/topics/t{i}.md").write_text("专题" * 800 + " [S1][S2][S3]", encoding="utf-8")
+    data = _collect_sources()
+    data["questions"] += [{"id": f"F{i}", "phase": "followup", "question": "q", "status": "not_found",
+                           "queries": ["a", "b"]} for i in range(rp.MIN_FOLLOWUP)]
+    (work / "research/sources.json").write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
     stages = {s["stage"]: s for s in rp.status(ws)["stages"]}
-    assert stages["3 外部调研"]["ok"] and not stages["4 经营数据"]["ok"]
+    assert stages["4 深度调研"]["ok"] and not stages["5 经营数据"]["ok"]
+    (work / "research/topics/t0.md").write_text("太薄 [S1]", encoding="utf-8")
+    assert "笔记太薄" in rp.status(ws)["stages"][3]["detail"]
+    (work / "research/topics/t0.md").write_text("专题" * 800 + " [S1][S2][S3]", encoding="utf-8")
+    # 估值假设必须引用资料包
+    (work / "valuation_assumptions.json").write_text(json.dumps({"current_price": 1500, "price_source": "x"}),
+                                                   encoding="utf-8")
+    stages = {s["stage"]: s for s in rp.status(ws)["stages"]}
+    assert "[S编号]" in stages["6 估值假设"]["detail"]
     # 修改 facts 后校验结果过期
     os.utime(work / "facts.json", (2e9, 2e9))
-    assert not rp.status(ws)["stages"][0]["ok"]
+    assert not rp.status(ws)["stages"][1]["ok"]
     # 前序阶段未通过时，后续阶段即使有文件也不算通过
     (work / "report/delivery.md").write_text("说明", encoding="utf-8")
     assert not rp.status(ws)["stages"][-1]["ok"]
@@ -135,16 +169,16 @@ def test_status_gates_and_collect(ws, tmp_path):
     assert "extractions" not in rp.collect(ws, root=root, force=True, delivery_only=True)
 
     row = rp.scorecard(ws)
-    assert row["web_queries"] == 2 * rp.MIN_QUESTIONS and row["web_sources"] == 0
-    assert row["stages_passed"] == 0 and not row["done"] and row["valuation_runs"] == 0
+    assert row["web_queries"] == 7 * 3 + 2 * rp.MIN_FOLLOWUP and row["web_sources"] == 3
+    assert row["stages_passed"] == 1 and not row["done"] and row["valuation_runs"] == 0
     table = rp.scorecard_markdown([row])
-    assert "闸门/10" in table and "未完成" in table and "不代表研报质量" in table
+    assert "闸门/11" in table and "未完成" in table and "不代表研报质量" in table
 
 
 def test_review_stage_numlock(ws):
     """复核改写阶段：初稿、编辑日志、复核清单都要有，改写稿不得新增数字。"""
     rep_dir = ws / "data/extractions/贵州茅台_2025/report"
-    stage = lambda: next(st for st in rp.status(ws)["stages"] if st["stage"] == "8 复核改写")  # noqa: E731
+    stage = lambda: next(st for st in rp.status(ws)["stages"] if st["stage"] == "9 复核改写")  # noqa: E731
     assert "缺" in stage()["detail"]
     (rep_dir / "narrative.draft.md").write_text("营业收入 58.62 亿元。不过，年报未披露。", encoding="utf-8")
     (rep_dir / "narrative.md").write_text("营业收入 58.62 亿元，同比增长 9.99%。", encoding="utf-8")
@@ -156,14 +190,20 @@ def test_review_stage_numlock(ws):
 
 
 def test_run_agent_chains_write_then_review(ws, monkeypatch):
-    """写作阶段未完成时只起写作会话且不进复核；写作完成后起不继承上下文的复核会话。"""
+    """五个会话按阶段接力：前一个没做完就停下；复核用质检模型，其余用生成模型。"""
     calls = []
-    monkeypatch.setattr(rp, "_session", lambda ws_, agent, model, role, prompt: calls.append(role) or 0)
-    assert rp.run_agent(ws, "claude") == 1 and calls == ["write"]
-    monkeypatch.setattr(rp, "_writing_done", lambda ws_: True)
+    monkeypatch.setattr(rp, "_session", lambda ws_, agent, model, role, prompt: calls.append((role, model)) or 0)
+    assert rp.run_agent(ws, "claude") == 1 and calls == [("research", rp.GEN_MODEL)]
+    done = {"upto": 7}
+    monkeypatch.setattr(rp, "_done", lambda ws_, upto: upto <= done["upto"])
     calls.clear()
-    rp.run_agent(ws, "claude")
-    assert calls == ["review"]
+    assert rp.run_agent(ws, "claude") == 1 and calls == [("write", rp.GEN_MODEL)]
+    done["upto"] = 9
+    calls.clear()
+    assert rp.run_agent(ws, "claude") == 1 and calls == [("layout", rp.GEN_MODEL)]
+    done["upto"] = 8
+    calls.clear()
+    assert rp.run_agent(ws, "claude") == 1 and calls == [("review", rp.QC_MODEL)]
 
 
 def test_extras_cache_without_verifier_fingerprint_is_rechecked(ws, monkeypatch):
@@ -181,3 +221,14 @@ def test_extras_cache_without_verifier_fingerprint_is_rechecked(ws, monkeypatch)
     monkeypatch.setattr(extra_module, "verify_extras", lambda *args: {"tables": [], "rejected": []})
     checked = rp._extras_check(ws, json.loads((ws / "sample.json").read_text(encoding="utf-8")), extras)
     assert checked["ok"] and checked["rejected"] == 0 and checked["verifier_sha256"]
+
+
+def test_copy_template_only_into_data(ws):
+    out = rp.copy_template(ws, "narrative.md", "data/extractions/贵州茅台_2025/report/narrative.md")
+    assert out.is_file() and "section" in out.read_text(encoding="utf-8")
+    with pytest.raises(SystemExit, match="已存在"):
+        rp.copy_template(ws, "narrative.md", "data/extractions/贵州茅台_2025/report/narrative.md")
+    with pytest.raises(SystemExit, match="data/"):
+        rp.copy_template(ws, "narrative.md", "finagent/x.md")
+    with pytest.raises(SystemExit, match="没有模板"):
+        rp.copy_template(ws, "../SKILL.md", "data/x.md")

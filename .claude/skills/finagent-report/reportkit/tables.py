@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import html
 
-from .core import Run, dec, mm, neg, num, pct, pp, yi
+from .core import Run, dec, mm, neg, num, pct, pp, updown, yi
 
 
 # ================================================================== 拼装工具
@@ -21,6 +21,11 @@ def tr(cells: list[str], cls: str = "") -> str:
     """cells 为文字或已拼好的 <td>；cls 可取 sub（小计加粗）、grp（分组行）、base（高亮）。"""
     return f"<tr{f' class={cls}' if cls else ''}>" + "".join(
         c if c.startswith("<td") else f"<td>{c}</td>" for c in cells) + "</tr>"
+
+
+def chg(text: str, v: float | None = None) -> str:
+    """变化列（同比、变动、上行空间）：涨跌两个方向都着色。v 传变化量本身，不要传常数。"""
+    return f"<td{updown(v)}>{text}</td>"
 
 
 def td(text: str, v: float | None = None) -> str:
@@ -102,12 +107,12 @@ def core(run: Run) -> str:
         c = run.changes.get(mid) or {}
         if kind == "pp":
             a, b, d = pct(cur, sign=False), pct(prev, sign=False), c.get("yoy_change_pp")
-            chg = pp(d)
+            change = pp(d)
         else:
             a, b = (yi(cur), yi(prev)) if kind == "yi" else (num(cur), num(prev))
             d = c.get("yoy_pct")
-            chg = pct(d) if d is not None and (cur or 0) > 0 and (prev or 0) > 0 else "—"  # 负基数的同比无意义
-        rows.append(tr([label, a, b, td(chg, d if chg != "—" else None)]))
+            change = pct(d) if d is not None and (cur or 0) > 0 and (prev or 0) > 0 else "—"  # 负基数的同比无意义
+        rows.append(tr([label, a, b, chg(change, d if change != "—" else None)]))
     return table(["亿元 / %", f"{run.period}A", f"{run.prev}A", "同比"], rows)
 
 
@@ -123,7 +128,7 @@ def quarterly(run: Run, extra_rows: list[str] | None = None) -> str:
 
 def balance(run: Run, extra_rows: list[str] | None = None) -> str:
     """资产负债与营运资本（真值表）。"""
-    rows = [tr([f"{label}（亿元）", yi(run.v(mid)), yi(run.v(mid, run.prev)), td(pct(run.yoy(mid)), run.yoy(mid))])
+    rows = [tr([f"{label}（亿元）", yi(run.v(mid)), yi(run.v(mid, run.prev)), chg(pct(run.yoy(mid)), run.yoy(mid))])
             for label, mid in (("货币资金", "cash"), ("应收账款", "accounts_receivable"), ("存货", "inventory"),
                                ("合同负债", "contract_liab"), ("应付账款", "accounts_payable"), ("总资产", "total_assets"))
             if run.v(mid) is not None]
@@ -230,10 +235,10 @@ def scenario_table(run: Run, price_label: str = "单价") -> str:
     rows = []
     for k in ("downside", "base", "upside"):
         sc, s = run.seg["scenarios"][k], run.scen[k]
-        cells = [cn[k]] + [td(pct(sg["price_growth"][0] * 100, 1), sg["price_growth"][0]) for sg in sc["segments"]]
-        cells += [td(pct(sc["revenue_growth"][0] * 100, 2), sc["revenue_growth"][0]), f"{s['wacc'] * 100:.2f}%",
+        cells = [cn[k]] + [chg(pct(sg["price_growth"][0] * 100, 1), sg["price_growth"][0]) for sg in sc["segments"]]
+        cells += [chg(pct(sc["revenue_growth"][0] * 100, 2), sc["revenue_growth"][0]), f"{s['wacc'] * 100:.2f}%",
                   f"{s['terminal_growth'] * 100:.1f}%", f"{s['enterprise_value_mm'] / 100:,.0f}",
-                  f"<b>{num(s['value_per_share'])}</b>", td(f"{s['upside_vs_price'] * 100:+.1f}%", s["upside_vs_price"]),
+                  f"<b>{num(s['value_per_share'])}</b>", chg(f"{s['upside_vs_price'] * 100:+.1f}%", s["upside_vs_price"]),
                   f"{s['tv_percent_ev'] * 100:.1f}%"]
         rows.append(tr(cells, "base" if k == "base" else ""))
     head = ["情景"] + [f"{n}{price_label}（{y}）" for n in names] + [

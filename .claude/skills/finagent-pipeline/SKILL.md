@@ -23,7 +23,7 @@ description: 研报生成流水线与模型测评入口：为一家 A 股公司�
 | 输入 | 必需 | 说明 |
 |---|---|---|
 | 公司、年度 | 是 | 年报默认取 `report/resources/<公司>/` 下的 PDF，也可 `--pdf` 指定 |
-| 当前股价与来源 | 估值需要 | 外部数据，`--price` 与 `--price-source` 必须同时给；没有就不给，执行模型会在外部调研阶段联网检索收盘价并登记来源 |
+| 当前股价与来源 | 估值需要 | 外部数据，`--price` 与 `--price-source` 必须同时给；没有就不给，执行模型会在资料搜集阶段联网检索收盘价并登记来源 |
 | 可比公司 CSV | 否 | `--peers`，格式见 `data/samples/peers.csv` |
 | 未核验来源 | — | 年报不在 `report/resources/manifest.json` 里时，需用户同意后加 `--allow-unverified` |
 
@@ -67,9 +67,11 @@ PY -m finagent.report_pipeline refine --workspace <工作区> [--max-rounds 3]
 PY -m finagent.report_pipeline status --workspace <工作区>
 ```
 
-10 个阶段：财务抽取 → 分析框架 → 外部调研（联网检索，登记 `research/sources.json`）→ 经营数据 → 估值假设 → 估值运行 →
-文稿（guard：数字与外部来源）→ 复核改写 → 排版 → 交付说明。`run` 先起写作会话做到文稿，再起一个**不继承上下文**的
-复核会话（`finagent-review` skill：编辑身份通读改写、数字锁、`review.md` 复核清单），由它完成排版与交付。
+11 个阶段：**资料搜集**（先搜集、后分析：联网搜齐年报之后的最新业绩、行情、卖方预期、可比公司、行业、竞争、近期事件，
+写资料包 `research/dossier.md`）→ 财务抽取 → 分析框架 → 补充调研 → 经营数据 → 估值假设（须引用资料包）→ 估值运行 →
+文稿（guard：数字与外部来源）→ 复核改写 → 排版 → 交付说明。`run` 依次起三个**互不继承上下文**的会话：
+研究助理（Opus，阶段 1）→ 写作（Opus，阶段 2～8）→ 复核（Sonnet，`finagent-review` skill：编辑身份通读改写、数字锁、
+`review.md` 复核清单，并完成排版与交付）。
 未全部通过时，把 `下一步` 和工作区 `data/extractions/<公司>_<年度>/report/delivery.md`（如有）转告用户，
 由用户决定是再 `run` 一次（会接着已完成的阶段做）还是人工介入。不要绕过闸门。
 
