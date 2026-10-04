@@ -347,3 +347,16 @@ def comps_implied(run: Run) -> str:
     if cc:
         rows.append(tr(["DCF 基准情景", "—", "—", f(cc.get("dcf_base")), "—"], "sub"))
     return table(["方法", "样本数", "P25（元/股）", "中位数（元/股）", "P75（元/股）"], rows)
+
+
+def reverse_dcf(run: Run) -> str:
+    """反向 DCF：参考股价隐含的单变量取值、基准假设、历史区间与程序分档（valuation/reverse_dcf.json）。"""
+    def v(lever: str, x) -> str:
+        if not isinstance(x, (int, float)):
+            return "—"
+        return f"{x:.1f}x" if lever == "exit_multiple" else pct(x * 100, sign=False)
+
+    rows = [tr([r["name"], v(r["lever"], r.get("implied")), v(r["lever"], r["base"]),
+                v(r["lever"], r.get("historical_max")), v(r["lever"], r.get("historical_avg")), r["grade"]])
+            for r in run.rdcf.get("levers", [])]
+    return table(["变量", "股价隐含", "基准假设", "历史最高", "历史平均", "分档"], rows)

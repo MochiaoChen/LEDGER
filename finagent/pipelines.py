@@ -34,6 +34,7 @@ from .tasks.report_check.verify import verify_claims
 from .tasks.valuation.build_plan import build_plan, resolve_non_operating_items
 from .tasks.valuation import comps as comps_mod
 from .tasks.valuation import forecast_summary as forecast_mod
+from .tasks.valuation import reverse_dcf as reverse_mod
 from .tasks.valuation import segment_forecast as segment_mod
 from .tasks.valuation import scenarios as scenarios_mod
 from .tasks.valuation import three_statement as ts_mod
@@ -207,6 +208,17 @@ def _v_dcf(ctx: dict[str, Any]):
     return res
 
 
+@valuation_pipeline.step("reverse_dcf", "reverse_dcf")
+def _v_reverse_dcf(ctx: dict[str, Any]):
+    """参考股价隐含的收入增速、利润率、折现率与终值参数（逐个单独求解）。"""
+    if ctx["valuation"].get("status") != "ok" or not ctx["assumptions_data"].get("current_price"):
+        return None
+    hist = reverse_mod.history(ctx["analysis"]["truth_table"], ctx["analysis"]["period"])
+    out = reverse_mod.run(ctx["plan"], ctx["valuation"], ctx["assumptions_data"]["current_price"], hist)
+    _write(ctx, "valuation/reverse_dcf.json", out)
+    return out
+
+
 @valuation_pipeline.step("scenarios", "scenarios")
 def _v_scenarios(ctx: dict[str, Any]):
     if ctx["valuation"].get("status") != "ok":
@@ -253,6 +265,8 @@ def _v_report(ctx: dict[str, Any]):
         md += R.render_scenarios(ctx["scenarios"])
     if ctx.get("comps"):
         md += R.render_comps(ctx["comps"])
+    if ctx.get("reverse_dcf"):
+        md += R.render_reverse_dcf(ctx["reverse_dcf"])
     _write(ctx, "valuation/report.md", md)
     if res.get("status") == "ok" and tracing.current() is not None:
         sheets = model_sheets(ctx["company"], ctx["plan"], res, ctx.get("three_statement"), ctx.get("comps"),

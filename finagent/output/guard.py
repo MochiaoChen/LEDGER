@@ -19,7 +19,7 @@ NUM_UNIT_RE = re.compile(r"(-?\d[\d,]*(?:\.\d+)?)\s*(万元/吨|元/吨|亿元|�
 TRUTH_FILES = ("financials/analysis.json", "financials/earnings.json", "financials/facts.json",
                "financials/extras.json", "valuation/valuation.json", "valuation/comps.json",
                "valuation/non_operating_assets.json", "valuation/forecast_summary.json",
-               "valuation/segment_forecast.json")
+               "valuation/segment_forecast.json", "valuation/reverse_dcf.json")
 
 
 def _numbers(obj: Any, out: list[float]) -> None:

@@ -55,6 +55,7 @@ class Run:
         self.fs, self.non_op = j("valuation/forecast_summary.json"), j("valuation/non_operating_assets.json")
         self.seg, self.detail = j("valuation/segment_forecast.json"), j("valuation/three_statement_detail.json")
         self.comps = j("valuation/comps.json")  # 有 --peers 时才有
+        self.rdcf = j("valuation/reverse_dcf.json")  # 有参考股价时才有
         self.manifest = j("manifest.json")
         self.period = self.analysis["period"]
         self.prev = str(int(self.period) - 1)
