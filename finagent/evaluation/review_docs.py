@@ -114,7 +114,10 @@ def _document(rubric: dict[str, Any], score: dict[str, Any], company: str,
         machine_html = (f'<strong class="machine-state pass">配套 Excel 局部审计通过</strong><p>匹配配套 sheet.xlsx；'
                         f'{machine_excel["formula_count"]} 个公式有缓存，'
                         f'{len(machine_excel["checks"])} 项三表勾稽的公式引用与独立复算均通过。'
-                        f'最大差额 {machine_excel["max_abs_residual_mm"]:g} 百万元。</p>')
+                        f'最大差额 {machine_excel["max_abs_residual_mm"]:g} 百万元；各期公式写法一致。'
+                        + (f'另有 {len(machine_excel["warnings"])} 条提示（公式内写死数字或易变函数），'
+                           f'如 {escape(machine_excel["warnings"][0])}。' if machine_excel.get("warnings") else "")
+                        + '</p>')
     elif excel_status == "fail":
         machine_html = (f'<strong class="machine-state fail">机器核对未通过</strong>'
                         f'<p>{escape(str(machine_excel.get("reason") or "公式、缓存或三表勾稽存在异常"))}</p>')
