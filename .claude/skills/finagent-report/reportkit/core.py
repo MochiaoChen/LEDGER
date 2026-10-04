@@ -156,8 +156,17 @@ def load_sources(path: Path | None) -> dict:
     return json.loads(Path(path).read_text(encoding="utf-8")) if path and Path(path).is_file() else {}
 
 
+def _md_table(lines: list[str]) -> str:
+    """Markdown 表格 → 文字表（样式同 tables.text_table）：分歧表、跟踪表这类写在文稿里的表。"""
+    rows = [[c.strip() for c in ln.strip().strip("|").split("|")] for ln in lines]
+    rows = [r for r in rows if not all(re.fullmatch(r":?-{2,}:?", c) for c in r if c)]
+    th = "".join(f"<th>{inline(h)}</th>" for h in rows[0])
+    body = "".join("<tr>" + "".join(f"<td>{inline(c)}</td>" for c in r) + "</tr>" for r in rows[1:])
+    return f'<table class="data text"><thead><tr>{th}</tr></thead><tbody>{body}</tbody></table>'
+
+
 def md(text: str) -> str:
-    """段落、列表、### 小标题、**加粗**。"""
+    """段落、列表、表格、### 小标题、**加粗**。"""
     out = []
     for block in re.split(r"\n\s*\n", text.strip()):
         lines = block.strip().splitlines()
@@ -166,7 +175,9 @@ def md(text: str) -> str:
             lines = lines[1:]
             if not lines:
                 continue
-        if all(ln.startswith("- ") for ln in lines):
+        if len(lines) >= 2 and all(ln.lstrip().startswith("|") for ln in lines):
+            out.append(_md_table(lines))
+        elif all(ln.startswith("- ") for ln in lines):
             out.append("<ul>" + "".join(f"<li>{inline(ln[2:])}</li>" for ln in lines) + "</ul>")
         else:
             out.append(f"<p>{inline(' '.join(lines))}</p>")

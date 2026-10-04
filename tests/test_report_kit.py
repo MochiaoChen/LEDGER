@@ -150,6 +150,8 @@ def test_non_data_primitives_and_citations(tmp_path):
     html = T.text_table(["公司", "品牌层次"], [["甲", "高端 [S1]"]])
     assert 'class="data text"' in html and '<sup class="cite">S1</sup>' in html
     assert '<sup class="cite">S2</sup>' in md("运力增长 2.1% [S2]。")
+    tab = md("| 指标 | 证伪 |\n|---|---|\n| **毛利率** | 低于 50.00% [S2] |")  # 文稿里的分歧表、跟踪表
+    assert tab.startswith('<table class="data text">') and "<strong>毛利率</strong>" in tab and "---" not in tab
     research = tmp_path / "research"
     research.mkdir()
     (research / "sources.json").write_text(json.dumps({"sources": [

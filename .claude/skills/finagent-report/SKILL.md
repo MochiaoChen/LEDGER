@@ -65,7 +65,7 @@ description: 为 A 股公司生成卖方体例的年报点评暨深度研究 PDF
    可比公司、行业、竞争与近期事件，写成资料包 `research/dossier.md`（流水线里由独立的研究助理会话完成）。
    后面的框架、预测、估值和文稿都建立在资料包之上。
 1. **读年报、推导框架。** 先读资料包，再通读管理层讨论与分析、经营性信息和相关附注，按 `references/analysis.md` 写出
-   `framework.md`：投资主线（3～4 条核心观点，也是首页“投资要点”和第 1 节的骨架）、驱动清单（年报位置 → extras →
+   `framework.md`：投资主线（3～4 条核心观点，也是首页“投资要点”和第 1 节的骨架；每条过 analysis.md“投资主线写到什么程度”六项）、驱动清单（年报位置 → extras →
    报告章节 → 预测参数）、披露局限、章节结构。
 2. **补充调研。** 资料包没回答、框架又需要的问题，按 framework.md 的外部调研清单逐题联网检索，追加到 `research/sources.json`，
    `PY -m finagent verify-sources --sources .../research/sources.json` 到 `ok: true`（见 `references/research.md` 第二部分）。

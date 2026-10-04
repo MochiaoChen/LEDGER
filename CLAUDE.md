@@ -78,7 +78,12 @@
 - 统一命令行与终端界面（2026-10-04）：`finagent <research|report|eval|calibrate|bench|test|doctor|ls|tui>`（`finagent/cli.py`，
   旧入口保留；`pip install -e .` 或 `bin/finagent`）；`finagent/catalog.py` 读工作区与运行产物（只读）；
   终端界面 `finagent_tui/`（Textual，可选依赖，不在 `finagent/` 内）：概览 / 真值表来源回溯 / 估值热力表 / 质检逐条 / 追溯回放 / Agent 日志 / 命令。
-- 145 个测试通过。
+- 借鉴原插件方法（2026-10-05，本地参考副本 `reference/openai-pei/` 不入库，规则见其 README；对照写进 THIRD_PARTY 第 1 节）：
+  反向 DCF `valuation/reverse_dcf.json`（参考股价隐含的增速、利润率、折现率、终值参数，逐个单独求解，按基准与历史区间分档；
+  每股价值对增速不单调时报告可达最高值）；研报内部一致性 `report_check/consistency.py`（评级、各情景每股价值、预测年度公司整体
+  收入与利润，同口径才比，命中即确认），用于评分标准 v2 的 N-02（程序判，结论冲突拆为 N-04）、guard 的 `contradictions`、
+  选题 5 的 `check/consistency.json`；研报 skill 补投资主线六项要求、分歧表、跟踪三档阈值（确认 / 预警 / 证伪），`md()` 支持表格。
+- 162 个测试通过。
 
 **按优先级待做**：
 1. **计划书**（论文体例，`paper/`，XeLaTeX + ctex）：先确认大赛模板与页数要求、项目名（FinAgent 与已发表论文撞名）。
