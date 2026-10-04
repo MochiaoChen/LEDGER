@@ -132,20 +132,25 @@ def check_citations(text: str, data: dict[str, Any], truth: list[float], check_t
 
 
 def run_guard(run: Path, text: str, sources: str | Path | None = None) -> dict[str, Any]:
-    """完整的解读护栏（guard 命令与评测共用）：数字出处、指标期间绑定、外部数字的 [S编号]。只返回结果，不落盘。"""
-    from .guard import check_binding, check_text, truth_values
+    """完整的解读护栏（guard 命令与评测共用）：数字出处、指标期间绑定、外部数字的 [S编号]、前后矛盾；
+    另给出每个数字的出处类型（不影响 ok）。只返回结果，不落盘。"""
+    from .guard import check_binding, check_text, classify_text, tagged_truth_values
 
     plain = MARK.sub("", text)
-    truth = truth_values(run)
+    tagged = tagged_truth_values(run)
+    truth = [v for vs in tagged.values() for v in vs]
     ext = load(sources)
     external = [v for vs in fact_values(ext).values() for v in vs]
+    tagged["外部来源"] = tagged["外部来源"] + external
     unverified = check_text(plain, truth + external)
     mismatched = check_binding(plain, run)
     citations = check_citations(text, ext, truth, check_text) if ext else []
     contradictions = _contradictions(run, plain)
     return {"ok": not (unverified or mismatched or citations or contradictions),
             "unverified_numbers": unverified, "mismatched_claims": mismatched, "uncited_external": citations,
-            "contradictions": contradictions}
+            "contradictions": contradictions,
+            # 每个有出处的数字属于事实（报告披露、外部来源）、推论（程序计算）还是观点（模型预测、估值假设）
+            "provenance": classify_text(plain, tagged)}
 
 
 def _contradictions(run: Path, text: str) -> list[str]:

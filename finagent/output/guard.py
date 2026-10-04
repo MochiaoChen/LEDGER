@@ -60,35 +60,64 @@ def _mm_numbers(obj: Any, out: list[float], inside: bool = False) -> None:
             _mm_numbers(v, out, inside)
 
 
-def truth_values(run: Path) -> list[float]:
-    vals: list[float] = []
-    for rel in TRUTH_FILES:
+# 数字出处的类型：报告披露、外部来源是事实；程序计算是由事实推出的推论；模型预测与估值假设依赖我们的判断，属观点。
+# 同一个数能在多处找到出处时，按这里的顺序取第一个（先认事实，再认推论，最后认观点）。
+EVIDENCE = {"报告披露": "事实", "外部来源": "事实", "程序计算": "推论", "估值假设": "观点", "模型预测": "观点"}
+
+
+def tagged_truth_values(run: Path) -> dict[str, list[float]]:
+    """按出处类型分组的真值（并集即 truth_values）。财报真值表按抽取方式分披露 / 计算，其余产物按文件定类型。"""
+    tags: dict[str, list[float]] = {k: [] for k in EVIDENCE}
+
+    def j(rel: str) -> Any:
         p = run / rel
-        if p.exists():
-            data = json.loads(p.read_text(encoding="utf-8"))
-            _numbers(data, vals)
-            if rel == "financials/extras.json":
-                _extras_scaled_numbers(data, vals)
-            if rel.startswith("valuation/"):
-                _mm_numbers(data, vals)
-    seg = run / "valuation" / "segment_forecast.json"
-    if seg.exists():  # 分部预测金额以百万元计
-        sf = json.loads(seg.read_text(encoding="utf-8"))
+        return json.loads(p.read_text(encoding="utf-8")) if p.exists() else None
+
+    if (a := j("financials/analysis.json")) is not None:
+        for fact in a.get("truth_table", []):
+            _numbers(fact, tags["程序计算" if fact.get("method") == "derived" else "报告披露"])
+        _numbers({k: v for k, v in a.items() if k != "truth_table"}, tags["程序计算"])  # 同比、勾稽、信号、单季拆分
+    if (e := j("financials/earnings.json")) is not None:
+        _numbers(e, tags["程序计算"])
+    if (f := j("financials/facts.json")) is not None:
+        _numbers(f, tags["报告披露"])
+    if (x := j("financials/extras.json")) is not None:
+        _numbers({k: v for k, v in x.items() if k != "ratios"}, tags["报告披露"])
+        _numbers(x.get("ratios"), tags["程序计算"])
+        _extras_scaled_numbers(x, tags["报告披露"])
+    for rel in ("valuation/valuation.json", "valuation/forecast_summary.json", "valuation/segment_forecast.json",
+                "valuation/reverse_dcf.json"):
+        if (v := j(rel)) is not None:
+            _numbers(v, tags["模型预测"])
+            _mm_numbers(v, tags["模型预测"])
+    if (c := j("valuation/comps.json")) is not None:  # 可比公司原始数据是外部输入，倍数统计与隐含价值是计算，DCF 对照是模型
+        _numbers(c.get("rows"), tags["外部来源"])
+        _mm_numbers({"rows": c.get("rows")}, tags["外部来源"])
+        _numbers(c.get("dcf_cross_check"), tags["模型预测"])
+        _mm_numbers({"dcf_cross_check": c.get("dcf_cross_check")}, tags["模型预测"])
+        rest = {k: v for k, v in c.items() if k not in ("rows", "dcf_cross_check")}
+        _numbers(rest, tags["程序计算"])
+        _mm_numbers(rest, tags["程序计算"])
+    if (n := j("valuation/non_operating_assets.json")) is not None:  # 逐项核对过原文的非经营性资产
+        _numbers(n, tags["报告披露"])
+        _mm_numbers(n, tags["报告披露"])
+    if (sf := j("valuation/segment_forecast.json")) is not None:  # 分部预测金额以百万元计
         for block in [sf.get("base_year", {})] + list(sf.get("scenarios", {}).values()):
             for key in ("revenue", "cogs"):
-                _mm_numbers({"x_mm": block.get(key)}, vals)
+                _mm_numbers({"x_mm": block.get(key)}, tags["模型预测"])
             for sg in block.get("segments", []):
-                _mm_numbers({"x_mm": [sg.get("revenue"), sg.get("cogs")]}, vals)
-    plan = run / "valuation" / "plan.json"
-    if plan.exists():  # 估值输入假设（WACC 各参数、终值参数）也是出处
-        pl = json.loads(plan.read_text(encoding="utf-8"))
-        _numbers({k: pl.get(k) for k in ("wacc", "terminal_value")}, vals)
-        _mm_numbers({"bridge_mm": pl.get("ev_to_equity_bridge")}, vals)  # 股权价值桥各项（百万元）
-    findings = run / "check" / "findings.json"
-    if findings.exists():
-        for f in json.loads(findings.read_text(encoding="utf-8"))["findings"]:
-            _numbers(f.get("truth_display", ""), vals)  # 只取正确值；suggestion 会引用研报的错误数字
-    return vals
+                _mm_numbers({"x_mm": [sg.get("revenue"), sg.get("cogs")]}, tags["模型预测"])
+    if (pl := j("valuation/plan.json")) is not None:  # 估值输入假设（WACC 各参数、终值参数）也是出处
+        _numbers({k: pl.get(k) for k in ("wacc", "terminal_value")}, tags["估值假设"])
+        _mm_numbers({"bridge_mm": pl.get("ev_to_equity_bridge")}, tags["报告披露"])  # 股权价值桥各项（百万元）
+    if (fd := j("check/findings.json")) is not None:
+        for item in fd["findings"]:
+            _numbers(item.get("truth_display", ""), tags["报告披露"])  # 只取正确值；suggestion 会引用研报的错误数字
+    return tags
+
+
+def truth_values(run: Path) -> list[float]:
+    return [v for vs in tagged_truth_values(run).values() for v in vs]
 
 
 def _extras_scaled_numbers(extras: dict[str, Any], out: list[float]) -> None:
@@ -110,10 +139,8 @@ def _decimals(s: str) -> int:
     return len(s.split(".", 1)[1]) if "." in s else 0
 
 
-def check_text(text: str, values: list[float]) -> list[str]:
-    """返回找不到出处的数字（带单位原样）。年份、一位整数序号、页码不检查。"""
-    absv = sorted({abs(v) for v in values})
-    bad: list[str] = []
+def _text_numbers(text: str):
+    """正文里要核对的数字：(原文, 单位)。年份、一位整数序号、页码不检查。"""
     for m in NUM_UNIT_RE.finditer(text):
         raw, unit = m.group(1), m.group(2) or ""
         if not unit and re.fullmatch(r"(19|20)\d{2}|\d", raw):
@@ -121,13 +148,34 @@ def check_text(text: str, values: list[float]) -> list[str]:
         before, after = text[:m.start()].rstrip()[-1:], text[m.end():].lstrip()[:1]
         if not unit and (before == "第" or after in ("页", "年", "月", "日", "节")):
             continue
-        x = abs(float(raw.replace(",", "")))
-        tol = 0.5 * 10 ** -_decimals(raw) * (1 + 1e-9) + 1e-12
-        # 金额按 亿/万 换算；百分数也可来自以小数存储的比例（如 1.28 → 128%）
-        factors = [1 / SCALE[unit]] if unit in SCALE else ([1.0, 100.0] if unit in ("%", "个百分点") else [1.0])
-        if not any(abs(v * f - x) <= tol for v in absv for f in factors):
-            bad.append(raw + unit)
-    return sorted(set(bad))
+        yield raw, unit
+
+
+def _found(raw: str, unit: str, absv: list[float]) -> bool:
+    x = abs(float(raw.replace(",", "")))
+    tol = 0.5 * 10 ** -_decimals(raw) * (1 + 1e-9) + 1e-12
+    # 金额按 亿/万 换算；百分数也可来自以小数存储的比例（如 1.28 → 128%）
+    factors = [1 / SCALE[unit]] if unit in SCALE else ([1.0, 100.0] if unit in ("%", "个百分点") else [1.0])
+    return any(abs(v * f - x) <= tol for v in absv for f in factors)
+
+
+def check_text(text: str, values: list[float]) -> list[str]:
+    """返回找不到出处的数字（带单位原样）。年份、一位整数序号、页码不检查。"""
+    absv = sorted({abs(v) for v in values})
+    return sorted({raw + unit for raw, unit in _text_numbers(text) if not _found(raw, unit, absv)})
+
+
+def classify_text(text: str, tagged: dict[str, list[float]]) -> dict[str, Any]:
+    """正文每个数字的出处类型（EVIDENCE 顺序取第一个能找到出处的）与事实 / 推论 / 观点计数。找不到出处的不计。"""
+    pools = [(label, sorted({abs(v) for v in tagged.get(label, [])})) for label in EVIDENCE]
+    numbers, counts = [], {"事实": 0, "推论": 0, "观点": 0}
+    for raw, unit in _text_numbers(text):
+        label = next((lb for lb, pool in pools if _found(raw, unit, pool)), None)
+        if label is None:
+            continue
+        numbers.append({"number": raw + unit, "evidence": label, "class": EVIDENCE[label]})
+        counts[EVIDENCE[label]] += 1
+    return {"counts": counts, "numbers": numbers}
 
 
 def check_binding(text: str, run: Path, source: str = "commentary.md") -> list[dict[str, Any]]:
