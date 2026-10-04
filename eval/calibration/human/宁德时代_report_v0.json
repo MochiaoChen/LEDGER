@@ -1,0 +1,754 @@
+{
+  "schema_version": "finagent.manual_review.v2",
+  "purpose": "refine_report_and_rubric",
+  "provisional": true,
+  "company": "宁德时代",
+  "selection_policy": "model_flagged_only",
+  "rubric_version": "report_v0",
+  "source_sha256": "49748481844b48dc5c2eb6b1b7a2d6939a0d5b9ad6fb459b1166e38929e309e6",
+  "baseline_total": 49,
+  "baseline_deliverable": false,
+  "machine_excel": {
+    "status": "pass",
+    "workbook_sha256": "0719d78db0110df2d0604520b8772fc089f5051b6868f43e22605ba59d870a9b",
+    "workbook_name": "sheet.xlsx",
+    "method": "只读公式结构检查；以来源单元格缓存值独立复算三表勾稽",
+    "formula_count": 969,
+    "missing_cache_count": 0,
+    "error_count": 0,
+    "broken_ref_count": 0,
+    "checks": [
+      {
+        "name": "资产负债平衡",
+        "cell": "三表-资产负债表!D24",
+        "passed": true,
+        "formula_link_ok": true,
+        "cache_matches_independent": true,
+        "residual_mm": 0
+      },
+      {
+        "name": "现金与现金流量表衔接",
+        "cell": "三表-资产负债表!D25",
+        "passed": true,
+        "formula_link_ok": true,
+        "cache_matches_independent": true,
+        "residual_mm": 0
+      },
+      {
+        "name": "留存收益滚动",
+        "cell": "三表-资产负债表!D26",
+        "passed": true,
+        "formula_link_ok": true,
+        "cache_matches_independent": true,
+        "residual_mm": 0
+      },
+      {
+        "name": "固定资产滚动",
+        "cell": "三表-资产负债表!D27",
+        "passed": true,
+        "formula_link_ok": true,
+        "cache_matches_independent": true,
+        "residual_mm": 0
+      },
+      {
+        "name": "有息负债滚动",
+        "cell": "三表-资产负债表!D28",
+        "passed": true,
+        "formula_link_ok": true,
+        "cache_matches_independent": true,
+        "residual_mm": 0
+      },
+      {
+        "name": "资产负债平衡",
+        "cell": "三表-资产负债表!E24",
+        "passed": true,
+        "formula_link_ok": true,
+        "cache_matches_independent": true,
+        "residual_mm": 0
+      },
+      {
+        "name": "现金与现金流量表衔接",
+        "cell": "三表-资产负债表!E25",
+        "passed": true,
+        "formula_link_ok": true,
+        "cache_matches_independent": true,
+        "residual_mm": 0
+      },
+      {
+        "name": "留存收益滚动",
+        "cell": "三表-资产负债表!E26",
+        "passed": true,
+        "formula_link_ok": true,
+        "cache_matches_independent": true,
+        "residual_mm": 0
+      },
+      {
+        "name": "固定资产滚动",
+        "cell": "三表-资产负债表!E27",
+        "passed": true,
+        "formula_link_ok": true,
+        "cache_matches_independent": true,
+        "residual_mm": 0
+      },
+      {
+        "name": "有息负债滚动",
+        "cell": "三表-资产负债表!E28",
+        "passed": true,
+        "formula_link_ok": true,
+        "cache_matches_independent": true,
+        "residual_mm": 0
+      },
+      {
+        "name": "资产负债平衡",
+        "cell": "三表-资产负债表!F24",
+        "passed": true,
+        "formula_link_ok": true,
+        "cache_matches_independent": true,
+        "residual_mm": 0
+      },
+      {
+        "name": "现金与现金流量表衔接",
+        "cell": "三表-资产负债表!F25",
+        "passed": true,
+        "formula_link_ok": true,
+        "cache_matches_independent": true,
+        "residual_mm": 0
+      },
+      {
+        "name": "留存收益滚动",
+        "cell": "三表-资产负债表!F26",
+        "passed": true,
+        "formula_link_ok": true,
+        "cache_matches_independent": true,
+        "residual_mm": 0
+      },
+      {
+        "name": "固定资产滚动",
+        "cell": "三表-资产负债表!F27",
+        "passed": true,
+        "formula_link_ok": true,
+        "cache_matches_independent": true,
+        "residual_mm": 0
+      },
+      {
+        "name": "有息负债滚动",
+        "cell": "三表-资产负债表!F28",
+        "passed": true,
+        "formula_link_ok": true,
+        "cache_matches_independent": true,
+        "residual_mm": 0
+      },
+      {
+        "name": "资产负债平衡",
+        "cell": "三表-资产负债表!G24",
+        "passed": true,
+        "formula_link_ok": true,
+        "cache_matches_independent": true,
+        "residual_mm": 0
+      },
+      {
+        "name": "现金与现金流量表衔接",
+        "cell": "三表-资产负债表!G25",
+        "passed": true,
+        "formula_link_ok": true,
+        "cache_matches_independent": true,
+        "residual_mm": 0
+      },
+      {
+        "name": "留存收益滚动",
+        "cell": "三表-资产负债表!G26",
+        "passed": true,
+        "formula_link_ok": true,
+        "cache_matches_independent": true,
+        "residual_mm": 0
+      },
+      {
+        "name": "固定资产滚动",
+        "cell": "三表-资产负债表!G27",
+        "passed": true,
+        "formula_link_ok": true,
+        "cache_matches_independent": true,
+        "residual_mm": 0
+      },
+      {
+        "name": "有息负债滚动",
+        "cell": "三表-资产负债表!G28",
+        "passed": true,
+        "formula_link_ok": true,
+        "cache_matches_independent": true,
+        "residual_mm": 0
+      },
+      {
+        "name": "资产负债平衡",
+        "cell": "三表-资产负债表!H24",
+        "passed": true,
+        "formula_link_ok": true,
+        "cache_matches_independent": true,
+        "residual_mm": 0
+      },
+      {
+        "name": "现金与现金流量表衔接",
+        "cell": "三表-资产负债表!H25",
+        "passed": true,
+        "formula_link_ok": true,
+        "cache_matches_independent": true,
+        "residual_mm": 0
+      },
+      {
+        "name": "留存收益滚动",
+        "cell": "三表-资产负债表!H26",
+        "passed": true,
+        "formula_link_ok": true,
+        "cache_matches_independent": true,
+        "residual_mm": 0
+      },
+      {
+        "name": "固定资产滚动",
+        "cell": "三表-资产负债表!H27",
+        "passed": true,
+        "formula_link_ok": true,
+        "cache_matches_independent": true,
+        "residual_mm": 0
+      },
+      {
+        "name": "有息负债滚动",
+        "cell": "三表-资产负债表!H28",
+        "passed": true,
+        "formula_link_ok": true,
+        "cache_matches_independent": true,
+        "residual_mm": 0
+      }
+    ],
+    "max_abs_residual_mm": 0,
+    "limitation": "未在 Excel/LibreOffice 中重算全部公式；只验证公式结构、缓存和五组勾稽关系"
+  },
+  "flagged_count": 15,
+  "assumed_ok_count": 25,
+  "complete": true,
+  "review_sessions": [
+    {
+      "id": "single-1791037835276-livwbn0a",
+      "reviewer": "流星雨",
+      "exported_at": "2026-10-03T14:40:41.381Z",
+      "overall_comment": "",
+      "items": [
+        {
+          "item_id": "L0-01",
+          "layer": "L0",
+          "baseline_passed": true,
+          "model_flagged": false,
+          "human_queue": false,
+          "human_verdict": "assumed_ok",
+          "human_reviewed": false,
+          "effective_passed": true,
+          "feedback": {}
+        },
+        {
+          "item_id": "L0-02",
+          "layer": "L0",
+          "baseline_passed": true,
+          "model_flagged": false,
+          "human_queue": false,
+          "human_verdict": "assumed_ok",
+          "human_reviewed": false,
+          "effective_passed": true,
+          "feedback": {}
+        },
+        {
+          "item_id": "L0-03",
+          "layer": "L0",
+          "baseline_passed": true,
+          "model_flagged": false,
+          "human_queue": false,
+          "human_verdict": "assumed_ok",
+          "human_reviewed": false,
+          "effective_passed": true,
+          "feedback": {}
+        },
+        {
+          "item_id": "L0-04",
+          "layer": "L0",
+          "baseline_passed": true,
+          "model_flagged": false,
+          "human_queue": false,
+          "human_verdict": "assumed_ok",
+          "human_reviewed": false,
+          "effective_passed": true,
+          "feedback": {}
+        },
+        {
+          "item_id": "L0-05",
+          "layer": "L0",
+          "baseline_passed": true,
+          "model_flagged": false,
+          "human_queue": false,
+          "human_verdict": "assumed_ok",
+          "human_reviewed": false,
+          "effective_passed": true,
+          "feedback": {}
+        },
+        {
+          "item_id": "L1-01",
+          "layer": "L1",
+          "baseline_passed": true,
+          "model_flagged": false,
+          "human_queue": false,
+          "human_verdict": "assumed_ok",
+          "human_reviewed": false,
+          "effective_passed": true,
+          "feedback": {}
+        },
+        {
+          "item_id": "L1-02",
+          "layer": "L1",
+          "baseline_passed": true,
+          "model_flagged": false,
+          "human_queue": false,
+          "human_verdict": "assumed_ok",
+          "human_reviewed": false,
+          "effective_passed": true,
+          "feedback": {}
+        },
+        {
+          "item_id": "L1-03",
+          "layer": "L1",
+          "baseline_passed": true,
+          "model_flagged": false,
+          "human_queue": false,
+          "human_verdict": "assumed_ok",
+          "human_reviewed": false,
+          "effective_passed": true,
+          "feedback": {}
+        },
+        {
+          "item_id": "L1-04",
+          "layer": "L1",
+          "baseline_passed": true,
+          "model_flagged": false,
+          "human_queue": false,
+          "human_verdict": "assumed_ok",
+          "human_reviewed": false,
+          "effective_passed": true,
+          "feedback": {}
+        },
+        {
+          "item_id": "L1-05",
+          "layer": "L1",
+          "baseline_passed": true,
+          "model_flagged": false,
+          "human_queue": false,
+          "human_verdict": "assumed_ok",
+          "human_reviewed": false,
+          "effective_passed": true,
+          "feedback": {}
+        },
+        {
+          "item_id": "L1-06",
+          "layer": "L1",
+          "baseline_passed": true,
+          "model_flagged": false,
+          "human_queue": false,
+          "human_verdict": "assumed_ok",
+          "human_reviewed": false,
+          "effective_passed": true,
+          "feedback": {}
+        },
+        {
+          "item_id": "L1-07",
+          "layer": "L1",
+          "baseline_passed": true,
+          "model_flagged": false,
+          "human_queue": false,
+          "human_verdict": "assumed_ok",
+          "human_reviewed": false,
+          "effective_passed": true,
+          "feedback": {}
+        },
+        {
+          "item_id": "L1-08",
+          "layer": "L1",
+          "baseline_passed": true,
+          "model_flagged": false,
+          "human_queue": false,
+          "human_verdict": "assumed_ok",
+          "human_reviewed": false,
+          "effective_passed": true,
+          "feedback": {}
+        },
+        {
+          "item_id": "L1-09",
+          "layer": "L1",
+          "baseline_passed": true,
+          "model_flagged": false,
+          "human_queue": false,
+          "human_verdict": "assumed_ok",
+          "human_reviewed": false,
+          "effective_passed": true,
+          "feedback": {}
+        },
+        {
+          "item_id": "L1-10",
+          "layer": "L1",
+          "baseline_passed": false,
+          "model_flagged": true,
+          "human_queue": true,
+          "human_verdict": "confirmed_issue",
+          "human_reviewed": true,
+          "effective_passed": false,
+          "feedback": {
+            "fix": "",
+            "reason": "",
+            "evidence": "",
+            "pending": ""
+          }
+        },
+        {
+          "item_id": "L1-11",
+          "layer": "L1",
+          "baseline_passed": true,
+          "model_flagged": false,
+          "human_queue": false,
+          "human_verdict": "assumed_ok",
+          "human_reviewed": false,
+          "effective_passed": true,
+          "feedback": {}
+        },
+        {
+          "item_id": "L1-12",
+          "layer": "L1",
+          "baseline_passed": false,
+          "model_flagged": true,
+          "human_queue": true,
+          "human_verdict": "confirmed_issue",
+          "human_reviewed": true,
+          "effective_passed": false,
+          "feedback": {
+            "fix": "加自动对比程序",
+            "reason": "",
+            "evidence": "",
+            "pending": ""
+          }
+        },
+        {
+          "item_id": "L1-13",
+          "layer": "L1",
+          "baseline_passed": false,
+          "model_flagged": true,
+          "human_queue": true,
+          "human_verdict": "confirmed_issue",
+          "human_reviewed": true,
+          "effective_passed": false,
+          "feedback": {
+            "fix": "列出AI不确定但影响结论的问题，再由人工复核",
+            "reason": "",
+            "evidence": "",
+            "pending": ""
+          }
+        },
+        {
+          "item_id": "L2-01",
+          "layer": "L2",
+          "baseline_passed": false,
+          "model_flagged": true,
+          "human_queue": true,
+          "human_verdict": "confirmed_issue",
+          "human_reviewed": true,
+          "effective_passed": false,
+          "feedback": {
+            "fix": "明确写出383.31元主要来自哪些假设",
+            "reason": "",
+            "evidence": "",
+            "pending": ""
+          }
+        },
+        {
+          "item_id": "L2-02",
+          "layer": "L2",
+          "baseline_passed": false,
+          "model_flagged": true,
+          "human_queue": true,
+          "human_verdict": "confirmed_issue",
+          "human_reviewed": true,
+          "effective_passed": false,
+          "feedback": {
+            "fix": "用当前股价291.11元做反向DCF，计算市场隐含的销量增速、毛利率或长期增长率，再与报告的基准假设比较",
+            "reason": "",
+            "evidence": "",
+            "pending": ""
+          }
+        },
+        {
+          "item_id": "L2-03",
+          "layer": "L2",
+          "baseline_passed": true,
+          "model_flagged": false,
+          "human_queue": false,
+          "human_verdict": "assumed_ok",
+          "human_reviewed": false,
+          "effective_passed": true,
+          "feedback": {}
+        },
+        {
+          "item_id": "L2-04",
+          "layer": "L2",
+          "baseline_passed": true,
+          "model_flagged": false,
+          "human_queue": false,
+          "human_verdict": "assumed_ok",
+          "human_reviewed": false,
+          "effective_passed": true,
+          "feedback": {}
+        },
+        {
+          "item_id": "L2-05",
+          "layer": "L2",
+          "baseline_passed": true,
+          "model_flagged": false,
+          "human_queue": false,
+          "human_verdict": "assumed_ok",
+          "human_reviewed": false,
+          "effective_passed": true,
+          "feedback": {}
+        },
+        {
+          "item_id": "L2-06",
+          "layer": "L2",
+          "baseline_passed": false,
+          "model_flagged": true,
+          "human_queue": true,
+          "human_verdict": "confirmed_issue",
+          "human_reviewed": true,
+          "effective_passed": false,
+          "feedback": {
+            "fix": "",
+            "reason": "",
+            "evidence": "",
+            "pending": ""
+          }
+        },
+        {
+          "item_id": "L2-07",
+          "layer": "L2",
+          "baseline_passed": false,
+          "model_flagged": true,
+          "human_queue": true,
+          "human_verdict": "confirmed_issue",
+          "human_reviewed": true,
+          "effective_passed": false,
+          "feedback": {
+            "fix": "对销量增长25%/18%/14%、价格下降3%/2%/1%、毛利率变化分别提供依据。增加产能投产时间表",
+            "reason": "",
+            "evidence": "",
+            "pending": ""
+          }
+        },
+        {
+          "item_id": "L2-08",
+          "layer": "L2",
+          "baseline_passed": false,
+          "model_flagged": true,
+          "human_queue": true,
+          "human_verdict": "confirmed_issue",
+          "human_reviewed": true,
+          "effective_passed": false,
+          "feedback": {
+            "fix": "增加一段“为什么使用DCF”，并说明高增长、重资本公司使用DCF的优缺点",
+            "reason": "",
+            "evidence": "",
+            "pending": ""
+          }
+        },
+        {
+          "item_id": "L2-09",
+          "layer": "L2",
+          "baseline_passed": false,
+          "model_flagged": true,
+          "human_queue": true,
+          "human_verdict": "confirmed_issue",
+          "human_reviewed": true,
+          "effective_passed": false,
+          "feedback": {
+            "fix": "",
+            "reason": "",
+            "evidence": "",
+            "pending": ""
+          }
+        },
+        {
+          "item_id": "L2-10",
+          "layer": "L2",
+          "baseline_passed": true,
+          "model_flagged": false,
+          "human_queue": false,
+          "human_verdict": "assumed_ok",
+          "human_reviewed": false,
+          "effective_passed": true,
+          "feedback": {}
+        },
+        {
+          "item_id": "L2-11",
+          "layer": "L2",
+          "baseline_passed": false,
+          "model_flagged": true,
+          "human_queue": true,
+          "human_verdict": "confirmed_issue",
+          "human_reviewed": true,
+          "effective_passed": false,
+          "feedback": {
+            "fix": "把每项主要风险转成量化情景。例如：海外毛利率下降2个百分点、销量低于预测10%、碳酸锂价格上涨20%时，净利润和每股价值分别下降多少",
+            "reason": "",
+            "evidence": "",
+            "pending": ""
+          }
+        },
+        {
+          "item_id": "L2-12",
+          "layer": "L2",
+          "baseline_passed": false,
+          "model_flagged": true,
+          "human_queue": true,
+          "human_verdict": "confirmed_issue",
+          "human_reviewed": true,
+          "effective_passed": false,
+          "feedback": {
+            "fix": "增加“跟踪指标与评级失效条件”表，写清指标、当前值、警戒值和影响。",
+            "reason": "",
+            "evidence": "",
+            "pending": ""
+          }
+        },
+        {
+          "item_id": "L3-01",
+          "layer": "L3",
+          "baseline_passed": false,
+          "model_flagged": true,
+          "human_queue": true,
+          "human_verdict": "confirmed_issue",
+          "human_reviewed": true,
+          "effective_passed": false,
+          "feedback": {
+            "fix": "重新围绕四条主线组织正文：动力电池基本盘、储能第二增长曲线、海外盈利、价格竞争。员工数量、治理结构、分红明细等与估值关系不大的内容压缩或移到附录。",
+            "reason": "",
+            "evidence": "",
+            "pending": ""
+          }
+        },
+        {
+          "item_id": "L3-02",
+          "layer": "L3",
+          "baseline_passed": true,
+          "model_flagged": false,
+          "human_queue": false,
+          "human_verdict": "assumed_ok",
+          "human_reviewed": false,
+          "effective_passed": true,
+          "feedback": {}
+        },
+        {
+          "item_id": "L3-03",
+          "layer": "L3",
+          "baseline_passed": false,
+          "model_flagged": true,
+          "human_queue": true,
+          "human_verdict": "confirmed_issue",
+          "human_reviewed": true,
+          "effective_passed": false,
+          "feedback": {
+            "fix": "重写主要段落的首句，先给判断、再给数据",
+            "reason": "",
+            "evidence": "",
+            "pending": ""
+          }
+        },
+        {
+          "item_id": "L3-04",
+          "layer": "L3",
+          "baseline_passed": false,
+          "model_flagged": true,
+          "human_queue": true,
+          "human_verdict": "false_alarm",
+          "human_reviewed": true,
+          "effective_passed": true,
+          "feedback": {
+            "fix": "",
+            "reason": "不要太过于机械和严格，只检查正文中重复、无意义的程序口吻",
+            "evidence": "19页",
+            "pending": ""
+          }
+        },
+        {
+          "item_id": "L3-05",
+          "layer": "L3",
+          "baseline_passed": false,
+          "model_flagged": true,
+          "human_queue": true,
+          "human_verdict": "confirmed_issue",
+          "human_reviewed": true,
+          "effective_passed": false,
+          "feedback": {
+            "fix": "",
+            "reason": "",
+            "evidence": "",
+            "pending": ""
+          }
+        },
+        {
+          "item_id": "L3-06",
+          "layer": "L3",
+          "baseline_passed": true,
+          "model_flagged": false,
+          "human_queue": false,
+          "human_verdict": "assumed_ok",
+          "human_reviewed": false,
+          "effective_passed": true,
+          "feedback": {}
+        },
+        {
+          "item_id": "L3-07",
+          "layer": "L3",
+          "baseline_passed": true,
+          "model_flagged": false,
+          "human_queue": false,
+          "human_verdict": "assumed_ok",
+          "human_reviewed": false,
+          "effective_passed": true,
+          "feedback": {}
+        },
+        {
+          "item_id": "N-01",
+          "layer": "N",
+          "baseline_passed": false,
+          "model_flagged": false,
+          "human_queue": false,
+          "human_verdict": "assumed_ok",
+          "human_reviewed": false,
+          "effective_passed": false,
+          "feedback": {}
+        },
+        {
+          "item_id": "N-02",
+          "layer": "N",
+          "baseline_passed": false,
+          "model_flagged": false,
+          "human_queue": false,
+          "human_verdict": "assumed_ok",
+          "human_reviewed": false,
+          "effective_passed": false,
+          "feedback": {}
+        },
+        {
+          "item_id": "N-03",
+          "layer": "N",
+          "baseline_passed": false,
+          "model_flagged": false,
+          "human_queue": false,
+          "human_verdict": "assumed_ok",
+          "human_reviewed": false,
+          "effective_passed": false,
+          "feedback": {}
+        }
+      ]
+    }
+  ],
+  "aggregation": null
+}

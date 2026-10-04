@@ -1,0 +1,550 @@
+{
+  "companies": [
+    {
+      "company": "中际旭创",
+      "stability": {
+        "runs": 3,
+        "items": 22,
+        "unanimous": 20,
+        "agreement": 0.909,
+        "pairwise_flip_rate": 0.061,
+        "totals": [
+          85.0,
+          80.0,
+          78.0
+        ],
+        "total_range": 7.0,
+        "unstable_items": [
+          "L2-07",
+          "L3-07"
+        ]
+      },
+      "variants": [
+        {
+          "variant": "contradiction",
+          "desc": "只把摘要里的评级改成相反方向，正文不变",
+          "targets": [
+            "N-02"
+          ],
+          "clean_flagged": {
+            "N-02": true
+          },
+          "hit": {
+            "N-02": true
+          },
+          "valid": false,
+          "collateral": [
+            "L2-01",
+            "L2-07"
+          ],
+          "collateral_rate": 0.091,
+          "total": 81.0,
+          "clean_total_mean": 81.0
+        },
+        {
+          "variant": "generic_risks",
+          "desc": "风险提示换成不对应任何假设的通用模板",
+          "targets": [
+            "L2-11"
+          ],
+          "clean_flagged": {
+            "L2-11": false
+          },
+          "hit": {
+            "L2-11": false
+          },
+          "valid": true,
+          "collateral": [
+            "L2-07"
+          ],
+          "collateral_rate": 0.045,
+          "total": 85.0,
+          "clean_total_mean": 81.0
+        },
+        {
+          "variant": "no_cross_check",
+          "desc": "删掉相对估值与交叉验证小节",
+          "targets": [
+            "L2-09"
+          ],
+          "clean_flagged": {
+            "L2-09": false
+          },
+          "hit": {
+            "L2-09": false
+          },
+          "valid": true,
+          "collateral": [
+            "L2-07"
+          ],
+          "collateral_rate": 0.045,
+          "total": 85.0,
+          "clean_total_mean": 81.0
+        },
+        {
+          "variant": "no_expectation_gap",
+          "desc": "删掉市场关注问题、预期差与“股价隐含”专题",
+          "targets": [
+            "L2-02"
+          ],
+          "clean_flagged": {
+            "L2-02": false
+          },
+          "hit": {
+            "L2-02": false
+          },
+          "valid": true,
+          "collateral": [
+            "L2-08",
+            "N-02"
+          ],
+          "collateral_rate": 0.091,
+          "total": 91.0,
+          "clean_total_mean": 81.0
+        },
+        {
+          "variant": "no_tracking",
+          "desc": "删掉跟踪指标与结论失效条件",
+          "targets": [
+            "L2-12"
+          ],
+          "clean_flagged": {
+            "L2-12": false
+          },
+          "hit": {
+            "L2-12": false
+          },
+          "valid": true,
+          "collateral": [
+            "L2-07",
+            "L2-09"
+          ],
+          "collateral_rate": 0.091,
+          "total": 81.0,
+          "clean_total_mean": 81.0
+        }
+      ],
+      "detection": {
+        "valid": 4,
+        "hit": 0,
+        "rate": 0.0
+      }
+    },
+    {
+      "company": "宇树科技",
+      "stability": {
+        "runs": 3,
+        "items": 22,
+        "unanimous": 19,
+        "agreement": 0.864,
+        "pairwise_flip_rate": 0.091,
+        "totals": [
+          80.0,
+          88.0,
+          83.0
+        ],
+        "total_range": 8.0,
+        "unstable_items": [
+          "L2-07",
+          "L3-07",
+          "N-02"
+        ]
+      },
+      "variants": [
+        {
+          "variant": "generic_risks",
+          "desc": "风险提示换成不对应任何假设的通用模板",
+          "targets": [
+            "L2-11"
+          ],
+          "clean_flagged": {
+            "L2-11": false
+          },
+          "hit": {
+            "L2-11": true
+          },
+          "valid": true,
+          "collateral": [
+            "L2-07",
+            "N-02"
+          ],
+          "collateral_rate": 0.091,
+          "total": 89.0,
+          "clean_total_mean": 83.7
+        },
+        {
+          "variant": "no_cross_check",
+          "desc": "删掉相对估值与交叉验证小节",
+          "targets": [
+            "L2-09"
+          ],
+          "clean_flagged": {
+            "L2-09": false
+          },
+          "hit": {
+            "L2-09": false
+          },
+          "valid": true,
+          "collateral": [
+            "L2-07",
+            "L2-08"
+          ],
+          "collateral_rate": 0.091,
+          "total": 82.0,
+          "clean_total_mean": 83.7
+        },
+        {
+          "variant": "no_expectation_gap",
+          "desc": "删掉市场关注问题、预期差与“股价隐含”专题",
+          "targets": [
+            "L2-02"
+          ],
+          "clean_flagged": {
+            "L2-02": false
+          },
+          "hit": {
+            "L2-02": false
+          },
+          "valid": true,
+          "collateral": [
+            "L2-08",
+            "L3-01",
+            "L3-04",
+            "N-02"
+          ],
+          "collateral_rate": 0.182,
+          "total": 78.0,
+          "clean_total_mean": 83.7
+        },
+        {
+          "variant": "no_tracking",
+          "desc": "删掉跟踪指标与结论失效条件",
+          "targets": [
+            "L2-12"
+          ],
+          "clean_flagged": {
+            "L2-12": false
+          },
+          "hit": {
+            "L2-12": false
+          },
+          "valid": true,
+          "collateral": [
+            "L2-07",
+            "L2-08",
+            "N-02"
+          ],
+          "collateral_rate": 0.136,
+          "total": 90.0,
+          "clean_total_mean": 83.7
+        }
+      ],
+      "detection": {
+        "valid": 4,
+        "hit": 1,
+        "rate": 0.25
+      }
+    }
+  ],
+  "human": {
+    "per_company": {
+      "宁德时代": {
+        "rubric": "report_v0",
+        "policy": "model_flagged_only",
+        "reviewer": "流星雨",
+        "confirmed_issue": 11,
+        "false_alarm": 1
+      },
+      "招商轮船": {
+        "rubric": "report_v0",
+        "policy": "model_flagged_only",
+        "reviewer": "流星雨",
+        "confirmed_issue": 9,
+        "false_alarm": 1
+      },
+      "贵州茅台": {
+        "rubric": "report_v0",
+        "policy": "model_flagged_only",
+        "reviewer": "zqc",
+        "confirmed_issue": 6,
+        "false_alarm": 3,
+        "pending": 2
+      }
+    },
+    "reviewed": 33,
+    "confirmed": 26,
+    "false_alarm": 5,
+    "pending": 2,
+    "precision": 0.839,
+    "false_alarm_items": [
+      {
+        "company": "宁德时代",
+        "item": "L3-04",
+        "judge_flagged": true,
+        "human": "false_alarm",
+        "reason": "不要太过于机械和严格，只检查正文中重复、无意义的程序口吻"
+      },
+      {
+        "company": "招商轮船",
+        "item": "L3-04",
+        "judge_flagged": true,
+        "human": "false_alarm",
+        "reason": "AI认为报告出现几次“不是……而是……”以及程序说明，就算机器味太重。这个判断过于严格。"
+      },
+      {
+        "company": "贵州茅台",
+        "item": "L2-02",
+        "judge_flagged": true,
+        "human": "false_alarm",
+        "reason": "没看懂模型判断的一句是啥意思"
+      },
+      {
+        "company": "贵州茅台",
+        "item": "L2-07",
+        "judge_flagged": true,
+        "human": "false_alarm",
+        "reason": "感觉原文写的挺对的吧？？这个不能判断成定性吧"
+      },
+      {
+        "company": "贵州茅台",
+        "item": "L3-05",
+        "judge_flagged": true,
+        "human": "false_alarm",
+        "reason": "这个数据加百分比不算数据堆砌吧，我觉得这个判断标准有点不对。而且似乎我们的PDF不是很有数据堆砌的问题，只是没有突出到重点"
+      }
+    ],
+    "rows": [
+      {
+        "company": "宁德时代",
+        "item": "L2-01",
+        "judge_flagged": true,
+        "human": "confirmed_issue",
+        "reason": ""
+      },
+      {
+        "company": "宁德时代",
+        "item": "L2-02",
+        "judge_flagged": true,
+        "human": "confirmed_issue",
+        "reason": ""
+      },
+      {
+        "company": "宁德时代",
+        "item": "L2-06",
+        "judge_flagged": true,
+        "human": "confirmed_issue",
+        "reason": ""
+      },
+      {
+        "company": "宁德时代",
+        "item": "L2-07",
+        "judge_flagged": true,
+        "human": "confirmed_issue",
+        "reason": ""
+      },
+      {
+        "company": "宁德时代",
+        "item": "L2-08",
+        "judge_flagged": true,
+        "human": "confirmed_issue",
+        "reason": ""
+      },
+      {
+        "company": "宁德时代",
+        "item": "L2-09",
+        "judge_flagged": true,
+        "human": "confirmed_issue",
+        "reason": ""
+      },
+      {
+        "company": "宁德时代",
+        "item": "L2-11",
+        "judge_flagged": true,
+        "human": "confirmed_issue",
+        "reason": ""
+      },
+      {
+        "company": "宁德时代",
+        "item": "L2-12",
+        "judge_flagged": true,
+        "human": "confirmed_issue",
+        "reason": ""
+      },
+      {
+        "company": "宁德时代",
+        "item": "L3-01",
+        "judge_flagged": true,
+        "human": "confirmed_issue",
+        "reason": ""
+      },
+      {
+        "company": "宁德时代",
+        "item": "L3-03",
+        "judge_flagged": true,
+        "human": "confirmed_issue",
+        "reason": ""
+      },
+      {
+        "company": "宁德时代",
+        "item": "L3-04",
+        "judge_flagged": true,
+        "human": "false_alarm",
+        "reason": "不要太过于机械和严格，只检查正文中重复、无意义的程序口吻"
+      },
+      {
+        "company": "宁德时代",
+        "item": "L3-05",
+        "judge_flagged": true,
+        "human": "confirmed_issue",
+        "reason": ""
+      },
+      {
+        "company": "招商轮船",
+        "item": "L2-04",
+        "judge_flagged": true,
+        "human": "confirmed_issue",
+        "reason": ""
+      },
+      {
+        "company": "招商轮船",
+        "item": "L2-06",
+        "judge_flagged": true,
+        "human": "confirmed_issue",
+        "reason": ""
+      },
+      {
+        "company": "招商轮船",
+        "item": "L2-07",
+        "judge_flagged": true,
+        "human": "confirmed_issue",
+        "reason": ""
+      },
+      {
+        "company": "招商轮船",
+        "item": "L2-08",
+        "judge_flagged": true,
+        "human": "confirmed_issue",
+        "reason": ""
+      },
+      {
+        "company": "招商轮船",
+        "item": "L2-09",
+        "judge_flagged": true,
+        "human": "confirmed_issue",
+        "reason": ""
+      },
+      {
+        "company": "招商轮船",
+        "item": "L2-10",
+        "judge_flagged": true,
+        "human": "confirmed_issue",
+        "reason": ""
+      },
+      {
+        "company": "招商轮船",
+        "item": "L3-04",
+        "judge_flagged": true,
+        "human": "false_alarm",
+        "reason": "AI认为报告出现几次“不是……而是……”以及程序说明，就算机器味太重。这个判断过于严格。"
+      },
+      {
+        "company": "招商轮船",
+        "item": "L3-05",
+        "judge_flagged": true,
+        "human": "confirmed_issue",
+        "reason": ""
+      },
+      {
+        "company": "招商轮船",
+        "item": "L3-06",
+        "judge_flagged": true,
+        "human": "confirmed_issue",
+        "reason": ""
+      },
+      {
+        "company": "招商轮船",
+        "item": "N-02",
+        "judge_flagged": true,
+        "human": "confirmed_issue",
+        "reason": ""
+      },
+      {
+        "company": "贵州茅台",
+        "item": "L2-01",
+        "judge_flagged": true,
+        "human": "confirmed_issue",
+        "reason": ""
+      },
+      {
+        "company": "贵州茅台",
+        "item": "L2-02",
+        "judge_flagged": true,
+        "human": "false_alarm",
+        "reason": "没看懂模型判断的一句是啥意思"
+      },
+      {
+        "company": "贵州茅台",
+        "item": "L2-06",
+        "judge_flagged": true,
+        "human": "confirmed_issue",
+        "reason": ""
+      },
+      {
+        "company": "贵州茅台",
+        "item": "L2-07",
+        "judge_flagged": true,
+        "human": "false_alarm",
+        "reason": "感觉原文写的挺对的吧？？这个不能判断成定性吧"
+      },
+      {
+        "company": "贵州茅台",
+        "item": "L2-08",
+        "judge_flagged": true,
+        "human": "pending",
+        "reason": ""
+      },
+      {
+        "company": "贵州茅台",
+        "item": "L2-09",
+        "judge_flagged": true,
+        "human": "confirmed_issue",
+        "reason": ""
+      },
+      {
+        "company": "贵州茅台",
+        "item": "L2-12",
+        "judge_flagged": true,
+        "human": "confirmed_issue",
+        "reason": ""
+      },
+      {
+        "company": "贵州茅台",
+        "item": "L3-01",
+        "judge_flagged": true,
+        "human": "confirmed_issue",
+        "reason": ""
+      },
+      {
+        "company": "贵州茅台",
+        "item": "L3-04",
+        "judge_flagged": true,
+        "human": "pending",
+        "reason": ""
+      },
+      {
+        "company": "贵州茅台",
+        "item": "L3-05",
+        "judge_flagged": true,
+        "human": "false_alarm",
+        "reason": "这个数据加百分比不算数据堆砌吧，我觉得这个判断标准有点不对。而且似乎我们的PDF不是很有数据堆砌的问题，只是没有突出到重点"
+      },
+      {
+        "company": "贵州茅台",
+        "item": "N-02",
+        "judge_flagged": true,
+        "human": "confirmed_issue",
+        "reason": ""
+      }
+    ]
+  }
+}

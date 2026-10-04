@@ -84,6 +84,11 @@ def rescore(out: Path, rubric: dict[str, Any], problems: list[str] | None = None
         judged, found = judge.read_judgments(out / "judgments.json", rubric)
         results.update(judged)
         problems = found if problems is None else problems
+    elif (out / "judge_run.json").is_file():  # 评审跑了但没写出判定（如额度用尽）：不能静默按全部不通过计分
+        problems = ["评审未写出 judgments.json：评审条目全部缺判定，本次总分无效"]
+    run = json.loads((out / "judge_run.json").read_text(encoding="utf-8")) if (out / "judge_run.json").is_file() else {}
+    if run.get("exit_code"):
+        problems = [*(problems or []), f"评审会话异常退出（exit {run['exit_code']}），判定可能不完整"]
     sc = score(rubric, results)
     sc["judge_problems"] = problems or []
     if (out / "judgments.json").is_file():

@@ -1,0 +1,744 @@
+{
+  "schema_version": "finagent.manual_review.v2",
+  "purpose": "refine_report_and_rubric",
+  "provisional": true,
+  "company": "招商轮船",
+  "selection_policy": "model_flagged_only",
+  "rubric_version": "report_v0",
+  "source_sha256": "db1071b2a0fc260816d513bb8607cf5be860489dec0453e39af6cedf3578f704",
+  "baseline_total": 46,
+  "baseline_deliverable": false,
+  "machine_excel": {
+    "status": "pass",
+    "workbook_sha256": "916145d447ee1729c49b11d8bda0b67665e0dfb81d75266fd4622f30b1133393",
+    "workbook_name": "sheet.xlsx",
+    "method": "只读公式结构检查；以来源单元格缓存值独立复算三表勾稽",
+    "formula_count": 624,
+    "missing_cache_count": 0,
+    "error_count": 0,
+    "broken_ref_count": 0,
+    "checks": [
+      {
+        "name": "资产负债平衡",
+        "cell": "三表-资产负债表!D24",
+        "passed": true,
+        "formula_link_ok": true,
+        "cache_matches_independent": true,
+        "residual_mm": 0
+      },
+      {
+        "name": "现金与现金流量表衔接",
+        "cell": "三表-资产负债表!D25",
+        "passed": true,
+        "formula_link_ok": true,
+        "cache_matches_independent": true,
+        "residual_mm": 0
+      },
+      {
+        "name": "留存收益滚动",
+        "cell": "三表-资产负债表!D26",
+        "passed": true,
+        "formula_link_ok": true,
+        "cache_matches_independent": true,
+        "residual_mm": 0
+      },
+      {
+        "name": "固定资产滚动",
+        "cell": "三表-资产负债表!D27",
+        "passed": true,
+        "formula_link_ok": true,
+        "cache_matches_independent": true,
+        "residual_mm": 0
+      },
+      {
+        "name": "有息负债滚动",
+        "cell": "三表-资产负债表!D28",
+        "passed": true,
+        "formula_link_ok": true,
+        "cache_matches_independent": true,
+        "residual_mm": 0
+      },
+      {
+        "name": "资产负债平衡",
+        "cell": "三表-资产负债表!E24",
+        "passed": true,
+        "formula_link_ok": true,
+        "cache_matches_independent": true,
+        "residual_mm": 0
+      },
+      {
+        "name": "现金与现金流量表衔接",
+        "cell": "三表-资产负债表!E25",
+        "passed": true,
+        "formula_link_ok": true,
+        "cache_matches_independent": true,
+        "residual_mm": 0
+      },
+      {
+        "name": "留存收益滚动",
+        "cell": "三表-资产负债表!E26",
+        "passed": true,
+        "formula_link_ok": true,
+        "cache_matches_independent": true,
+        "residual_mm": 0
+      },
+      {
+        "name": "固定资产滚动",
+        "cell": "三表-资产负债表!E27",
+        "passed": true,
+        "formula_link_ok": true,
+        "cache_matches_independent": true,
+        "residual_mm": 0
+      },
+      {
+        "name": "有息负债滚动",
+        "cell": "三表-资产负债表!E28",
+        "passed": true,
+        "formula_link_ok": true,
+        "cache_matches_independent": true,
+        "residual_mm": 0
+      },
+      {
+        "name": "资产负债平衡",
+        "cell": "三表-资产负债表!F24",
+        "passed": true,
+        "formula_link_ok": true,
+        "cache_matches_independent": true,
+        "residual_mm": 0
+      },
+      {
+        "name": "现金与现金流量表衔接",
+        "cell": "三表-资产负债表!F25",
+        "passed": true,
+        "formula_link_ok": true,
+        "cache_matches_independent": true,
+        "residual_mm": 0
+      },
+      {
+        "name": "留存收益滚动",
+        "cell": "三表-资产负债表!F26",
+        "passed": true,
+        "formula_link_ok": true,
+        "cache_matches_independent": true,
+        "residual_mm": 0
+      },
+      {
+        "name": "固定资产滚动",
+        "cell": "三表-资产负债表!F27",
+        "passed": true,
+        "formula_link_ok": true,
+        "cache_matches_independent": true,
+        "residual_mm": 0
+      },
+      {
+        "name": "有息负债滚动",
+        "cell": "三表-资产负债表!F28",
+        "passed": true,
+        "formula_link_ok": true,
+        "cache_matches_independent": true,
+        "residual_mm": 0
+      },
+      {
+        "name": "资产负债平衡",
+        "cell": "三表-资产负债表!G24",
+        "passed": true,
+        "formula_link_ok": true,
+        "cache_matches_independent": true,
+        "residual_mm": 0
+      },
+      {
+        "name": "现金与现金流量表衔接",
+        "cell": "三表-资产负债表!G25",
+        "passed": true,
+        "formula_link_ok": true,
+        "cache_matches_independent": true,
+        "residual_mm": 0
+      },
+      {
+        "name": "留存收益滚动",
+        "cell": "三表-资产负债表!G26",
+        "passed": true,
+        "formula_link_ok": true,
+        "cache_matches_independent": true,
+        "residual_mm": 0
+      },
+      {
+        "name": "固定资产滚动",
+        "cell": "三表-资产负债表!G27",
+        "passed": true,
+        "formula_link_ok": true,
+        "cache_matches_independent": true,
+        "residual_mm": 0
+      },
+      {
+        "name": "有息负债滚动",
+        "cell": "三表-资产负债表!G28",
+        "passed": true,
+        "formula_link_ok": true,
+        "cache_matches_independent": true,
+        "residual_mm": 0
+      },
+      {
+        "name": "资产负债平衡",
+        "cell": "三表-资产负债表!H24",
+        "passed": true,
+        "formula_link_ok": true,
+        "cache_matches_independent": true,
+        "residual_mm": 0
+      },
+      {
+        "name": "现金与现金流量表衔接",
+        "cell": "三表-资产负债表!H25",
+        "passed": true,
+        "formula_link_ok": true,
+        "cache_matches_independent": true,
+        "residual_mm": 0
+      },
+      {
+        "name": "留存收益滚动",
+        "cell": "三表-资产负债表!H26",
+        "passed": true,
+        "formula_link_ok": true,
+        "cache_matches_independent": true,
+        "residual_mm": 0
+      },
+      {
+        "name": "固定资产滚动",
+        "cell": "三表-资产负债表!H27",
+        "passed": true,
+        "formula_link_ok": true,
+        "cache_matches_independent": true,
+        "residual_mm": 0
+      },
+      {
+        "name": "有息负债滚动",
+        "cell": "三表-资产负债表!H28",
+        "passed": true,
+        "formula_link_ok": true,
+        "cache_matches_independent": true,
+        "residual_mm": 0
+      }
+    ],
+    "max_abs_residual_mm": 0,
+    "limitation": "未在 Excel/LibreOffice 中重算全部公式；只验证公式结构、缓存和五组勾稽关系"
+  },
+  "flagged_count": 13,
+  "assumed_ok_count": 25,
+  "complete": true,
+  "review_sessions": [
+    {
+      "id": "single-1791036601686-byrhec7t",
+      "reviewer": "流星雨",
+      "exported_at": "2026-10-03T14:28:48.647Z",
+      "overall_comment": "",
+      "items": [
+        {
+          "item_id": "L0-01",
+          "layer": "L0",
+          "baseline_passed": true,
+          "model_flagged": false,
+          "human_queue": false,
+          "human_verdict": "assumed_ok",
+          "human_reviewed": false,
+          "effective_passed": true,
+          "feedback": {}
+        },
+        {
+          "item_id": "L0-02",
+          "layer": "L0",
+          "baseline_passed": true,
+          "model_flagged": false,
+          "human_queue": false,
+          "human_verdict": "assumed_ok",
+          "human_reviewed": false,
+          "effective_passed": true,
+          "feedback": {}
+        },
+        {
+          "item_id": "L0-03",
+          "layer": "L0",
+          "baseline_passed": true,
+          "model_flagged": false,
+          "human_queue": false,
+          "human_verdict": "assumed_ok",
+          "human_reviewed": false,
+          "effective_passed": true,
+          "feedback": {}
+        },
+        {
+          "item_id": "L0-04",
+          "layer": "L0",
+          "baseline_passed": true,
+          "model_flagged": false,
+          "human_queue": false,
+          "human_verdict": "assumed_ok",
+          "human_reviewed": false,
+          "effective_passed": true,
+          "feedback": {}
+        },
+        {
+          "item_id": "L0-05",
+          "layer": "L0",
+          "baseline_passed": true,
+          "model_flagged": false,
+          "human_queue": false,
+          "human_verdict": "assumed_ok",
+          "human_reviewed": false,
+          "effective_passed": true,
+          "feedback": {}
+        },
+        {
+          "item_id": "L1-01",
+          "layer": "L1",
+          "baseline_passed": true,
+          "model_flagged": false,
+          "human_queue": false,
+          "human_verdict": "assumed_ok",
+          "human_reviewed": false,
+          "effective_passed": true,
+          "feedback": {}
+        },
+        {
+          "item_id": "L1-02",
+          "layer": "L1",
+          "baseline_passed": false,
+          "model_flagged": true,
+          "human_queue": false,
+          "human_verdict": "machine_only",
+          "human_reviewed": false,
+          "effective_passed": false,
+          "feedback": {}
+        },
+        {
+          "item_id": "L1-03",
+          "layer": "L1",
+          "baseline_passed": true,
+          "model_flagged": false,
+          "human_queue": false,
+          "human_verdict": "assumed_ok",
+          "human_reviewed": false,
+          "effective_passed": true,
+          "feedback": {}
+        },
+        {
+          "item_id": "L1-04",
+          "layer": "L1",
+          "baseline_passed": true,
+          "model_flagged": false,
+          "human_queue": false,
+          "human_verdict": "assumed_ok",
+          "human_reviewed": false,
+          "effective_passed": true,
+          "feedback": {}
+        },
+        {
+          "item_id": "L1-05",
+          "layer": "L1",
+          "baseline_passed": true,
+          "model_flagged": false,
+          "human_queue": false,
+          "human_verdict": "assumed_ok",
+          "human_reviewed": false,
+          "effective_passed": true,
+          "feedback": {}
+        },
+        {
+          "item_id": "L1-06",
+          "layer": "L1",
+          "baseline_passed": true,
+          "model_flagged": false,
+          "human_queue": false,
+          "human_verdict": "assumed_ok",
+          "human_reviewed": false,
+          "effective_passed": true,
+          "feedback": {}
+        },
+        {
+          "item_id": "L1-07",
+          "layer": "L1",
+          "baseline_passed": true,
+          "model_flagged": false,
+          "human_queue": false,
+          "human_verdict": "assumed_ok",
+          "human_reviewed": false,
+          "effective_passed": true,
+          "feedback": {}
+        },
+        {
+          "item_id": "L1-08",
+          "layer": "L1",
+          "baseline_passed": false,
+          "model_flagged": true,
+          "human_queue": false,
+          "human_verdict": "machine_only",
+          "human_reviewed": false,
+          "effective_passed": false,
+          "feedback": {}
+        },
+        {
+          "item_id": "L1-09",
+          "layer": "L1",
+          "baseline_passed": true,
+          "model_flagged": false,
+          "human_queue": false,
+          "human_verdict": "assumed_ok",
+          "human_reviewed": false,
+          "effective_passed": true,
+          "feedback": {}
+        },
+        {
+          "item_id": "L1-10",
+          "layer": "L1",
+          "baseline_passed": false,
+          "model_flagged": true,
+          "human_queue": true,
+          "human_verdict": "confirmed_issue",
+          "human_reviewed": true,
+          "effective_passed": false,
+          "feedback": {
+            "fix": "建议再给数据标注一下来源",
+            "reason": "",
+            "evidence": "",
+            "pending": ""
+          }
+        },
+        {
+          "item_id": "L1-11",
+          "layer": "L1",
+          "baseline_passed": true,
+          "model_flagged": false,
+          "human_queue": false,
+          "human_verdict": "assumed_ok",
+          "human_reviewed": false,
+          "effective_passed": true,
+          "feedback": {}
+        },
+        {
+          "item_id": "L1-12",
+          "layer": "L1",
+          "baseline_passed": false,
+          "model_flagged": true,
+          "human_queue": true,
+          "human_verdict": "confirmed_issue",
+          "human_reviewed": true,
+          "effective_passed": false,
+          "feedback": {
+            "fix": "保存润色前后的两个版本，让程序自动比较数字是否发生变化。",
+            "reason": "",
+            "evidence": "",
+            "pending": ""
+          }
+        },
+        {
+          "item_id": "L1-13",
+          "layer": "L1",
+          "baseline_passed": false,
+          "model_flagged": true,
+          "human_queue": true,
+          "human_verdict": "confirmed_issue",
+          "human_reviewed": true,
+          "effective_passed": false,
+          "feedback": {
+            "fix": "增加一份清单，把不确定的重要问题留给人处理",
+            "reason": "",
+            "evidence": "",
+            "pending": ""
+          }
+        },
+        {
+          "item_id": "L2-01",
+          "layer": "L2",
+          "baseline_passed": true,
+          "model_flagged": false,
+          "human_queue": false,
+          "human_verdict": "assumed_ok",
+          "human_reviewed": false,
+          "effective_passed": true,
+          "feedback": {}
+        },
+        {
+          "item_id": "L2-02",
+          "layer": "L2",
+          "baseline_passed": true,
+          "model_flagged": false,
+          "human_queue": false,
+          "human_verdict": "assumed_ok",
+          "human_reviewed": false,
+          "effective_passed": true,
+          "feedback": {}
+        },
+        {
+          "item_id": "L2-03",
+          "layer": "L2",
+          "baseline_passed": true,
+          "model_flagged": false,
+          "human_queue": false,
+          "human_verdict": "assumed_ok",
+          "human_reviewed": false,
+          "effective_passed": true,
+          "feedback": {}
+        },
+        {
+          "item_id": "L2-04",
+          "layer": "L2",
+          "baseline_passed": false,
+          "model_flagged": true,
+          "human_queue": true,
+          "human_verdict": "confirmed_issue",
+          "human_reviewed": true,
+          "effective_passed": false,
+          "feedback": {
+            "fix": "",
+            "reason": "",
+            "evidence": "",
+            "pending": ""
+          }
+        },
+        {
+          "item_id": "L2-05",
+          "layer": "L2",
+          "baseline_passed": true,
+          "model_flagged": false,
+          "human_queue": false,
+          "human_verdict": "assumed_ok",
+          "human_reviewed": false,
+          "effective_passed": true,
+          "feedback": {}
+        },
+        {
+          "item_id": "L2-06",
+          "layer": "L2",
+          "baseline_passed": false,
+          "model_flagged": true,
+          "human_queue": true,
+          "human_verdict": "confirmed_issue",
+          "human_reviewed": true,
+          "effective_passed": false,
+          "feedback": {
+            "fix": "行业分析太空，只说行业好不好，需要补足数据和来源",
+            "reason": "",
+            "evidence": "",
+            "pending": ""
+          }
+        },
+        {
+          "item_id": "L2-07",
+          "layer": "L2",
+          "baseline_passed": false,
+          "model_flagged": true,
+          "human_queue": true,
+          "human_verdict": "confirmed_issue",
+          "human_reviewed": true,
+          "effective_passed": false,
+          "feedback": {
+            "fix": "给每个关键预测写清楚依据，例如历史水平、公司指引或行业数据。",
+            "reason": "",
+            "evidence": "",
+            "pending": ""
+          }
+        },
+        {
+          "item_id": "L2-08",
+          "layer": "L2",
+          "baseline_passed": false,
+          "model_flagged": true,
+          "human_queue": true,
+          "human_verdict": "confirmed_issue",
+          "human_reviewed": true,
+          "effective_passed": false,
+          "feedback": {
+            "fix": "",
+            "reason": "",
+            "evidence": "",
+            "pending": ""
+          }
+        },
+        {
+          "item_id": "L2-09",
+          "layer": "L2",
+          "baseline_passed": false,
+          "model_flagged": true,
+          "human_queue": true,
+          "human_verdict": "confirmed_issue",
+          "human_reviewed": true,
+          "effective_passed": false,
+          "feedback": {
+            "fix": "报告基本只用了DCF，没有用另一种相对独立的方法验证结果是否靠谱。用同行估值、历史市净率、EV/EBITDA或船队资产价值验证一次",
+            "reason": "",
+            "evidence": "",
+            "pending": ""
+          }
+        },
+        {
+          "item_id": "L2-10",
+          "layer": "L2",
+          "baseline_passed": false,
+          "model_flagged": true,
+          "human_queue": true,
+          "human_verdict": "confirmed_issue",
+          "human_reviewed": true,
+          "effective_passed": false,
+          "feedback": {
+            "fix": "在表格后加一句明确结论",
+            "reason": "",
+            "evidence": "",
+            "pending": ""
+          }
+        },
+        {
+          "item_id": "L2-11",
+          "layer": "L2",
+          "baseline_passed": true,
+          "model_flagged": false,
+          "human_queue": false,
+          "human_verdict": "assumed_ok",
+          "human_reviewed": false,
+          "effective_passed": true,
+          "feedback": {}
+        },
+        {
+          "item_id": "L2-12",
+          "layer": "L2",
+          "baseline_passed": true,
+          "model_flagged": false,
+          "human_queue": false,
+          "human_verdict": "assumed_ok",
+          "human_reviewed": false,
+          "effective_passed": true,
+          "feedback": {}
+        },
+        {
+          "item_id": "L3-01",
+          "layer": "L3",
+          "baseline_passed": true,
+          "model_flagged": false,
+          "human_queue": false,
+          "human_verdict": "assumed_ok",
+          "human_reviewed": false,
+          "effective_passed": true,
+          "feedback": {}
+        },
+        {
+          "item_id": "L3-02",
+          "layer": "L3",
+          "baseline_passed": true,
+          "model_flagged": false,
+          "human_queue": false,
+          "human_verdict": "assumed_ok",
+          "human_reviewed": false,
+          "effective_passed": true,
+          "feedback": {}
+        },
+        {
+          "item_id": "L3-03",
+          "layer": "L3",
+          "baseline_passed": true,
+          "model_flagged": false,
+          "human_queue": false,
+          "human_verdict": "assumed_ok",
+          "human_reviewed": false,
+          "effective_passed": true,
+          "feedback": {}
+        },
+        {
+          "item_id": "L3-04",
+          "layer": "L3",
+          "baseline_passed": false,
+          "model_flagged": true,
+          "human_queue": true,
+          "human_verdict": "false_alarm",
+          "human_reviewed": true,
+          "effective_passed": true,
+          "feedback": {
+            "fix": "",
+            "reason": "AI认为报告出现几次“不是……而是……”以及程序说明，就算机器味太重。这个判断过于严格。",
+            "evidence": "p10",
+            "pending": ""
+          }
+        },
+        {
+          "item_id": "L3-05",
+          "layer": "L3",
+          "baseline_passed": false,
+          "model_flagged": true,
+          "human_queue": true,
+          "human_verdict": "confirmed_issue",
+          "human_reviewed": true,
+          "effective_passed": false,
+          "feedback": {
+            "fix": "一句话只讲一个结论，保留1—2个关键数字，其他数字放表格里。",
+            "reason": "",
+            "evidence": "",
+            "pending": ""
+          }
+        },
+        {
+          "item_id": "L3-06",
+          "layer": "L3",
+          "baseline_passed": false,
+          "model_flagged": true,
+          "human_queue": true,
+          "human_verdict": "confirmed_issue",
+          "human_reviewed": true,
+          "effective_passed": false,
+          "feedback": {
+            "fix": "调整图表位置，把单位改成“亿元”，减少小数，并解决标签重叠。",
+            "reason": "",
+            "evidence": "",
+            "pending": ""
+          }
+        },
+        {
+          "item_id": "L3-07",
+          "layer": "L3",
+          "baseline_passed": true,
+          "model_flagged": false,
+          "human_queue": false,
+          "human_verdict": "assumed_ok",
+          "human_reviewed": false,
+          "effective_passed": true,
+          "feedback": {}
+        },
+        {
+          "item_id": "N-01",
+          "layer": "N",
+          "baseline_passed": false,
+          "model_flagged": false,
+          "human_queue": false,
+          "human_verdict": "assumed_ok",
+          "human_reviewed": false,
+          "effective_passed": false,
+          "feedback": {}
+        },
+        {
+          "item_id": "N-02",
+          "layer": "N",
+          "baseline_passed": true,
+          "model_flagged": true,
+          "human_queue": true,
+          "human_verdict": "confirmed_issue",
+          "human_reviewed": true,
+          "effective_passed": true,
+          "feedback": {
+            "fix": "",
+            "reason": "",
+            "evidence": "",
+            "pending": ""
+          }
+        },
+        {
+          "item_id": "N-03",
+          "layer": "N",
+          "baseline_passed": false,
+          "model_flagged": false,
+          "human_queue": false,
+          "human_verdict": "assumed_ok",
+          "human_reviewed": false,
+          "effective_passed": false,
+          "feedback": {}
+        }
+      ]
+    }
+  ],
+  "aggregation": null
+}

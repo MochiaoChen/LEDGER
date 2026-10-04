@@ -4,3 +4,4 @@ pytest>=8.0           # 测试
 matplotlib>=3.8       # Skill 版本图文研报画图（可选，finagent/ 本身不依赖）
 pillow>=10           # 研报预览缩略图（matplotlib 已依赖，可选）
 fpdf2>=2.8           # 开发时跨平台重建样例 PDF（可选）
+textual>=1.0         # 终端界面 finagent tui（可选，finagent/ 本身不依赖）

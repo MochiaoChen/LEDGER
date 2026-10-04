@@ -9,3 +9,9 @@ runs/*
 # 评测事件流（含 PDF 内容，体积大）只留在本地；评审结论在 judgments.json / scorecard.md
 eval/results/*/judge.jsonl
 .DS_Store
+
+# 原 OpenAI 插件的参考副本（Proprietary，仅本地借鉴方法，不入库）
+reference/
+*.egg-info/
+build/
+eval/calibration/*/*/judge.jsonl

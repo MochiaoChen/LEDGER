@@ -67,18 +67,26 @@
   评分标准 v1（2026-10-04，依据三家人工质检）：L1-10/L1-13 改为核对实质内容，L3-04/L3-05 放宽；
   研报 skill 要求关键预测参数写出“依据数字 → 换算 → 取值”（`BASIS` 缺项直接报错），复核 skill 增加前后矛盾对账。环境：`scripts/setup.sh` / `setup.ps1` +
   `python -m finagent.doctor`。
-- 129 个测试通过。
+- 真实年报 PDF 表格（2026-10-04）：稀疏网格列合并（宁德时代科目与数字错列）、跨页续表沿用首页表头（`Chunk.continued_from`）、
+  科目折行接回；茅台 / 宁德 / 招商三家 314 个核验值，规则通道取到 293 个（原 128 个），错配 0。比率类“本年比上年增减”按百分点核对。
+- 评审校准（2026-10-04，`finagent/evaluation/calibrate.py`，结果 `eval/calibration/report.md`）：原稿重复盲评看稳定性；
+  七种程序劣化（删交叉验证、删预期差、风险泛化、删跟踪指标、无来源数字、前后矛盾、机器腔）重新排版后盲评看命中与连带改判；
+  人工质检导出（`eval/calibration/human/`）算评审判“不通过”的精确率（人工只复核了判不通过的条目，漏判靠劣化命中补）。
+  现状：原稿重复盲评已完成（宇树、中际各 3 次）；劣化变体因 Claude 周额度用尽（10-07 05:00 重置）作废，存档于 `~/finagent-evals/calibration/_invalid_20261004/`，需重跑 `calibrate run --workspace ~/finagent-samples/<公司>_2025`。
+- 已拍板（2026-10-04）：模型全部用 Claude（不再接国产模型 live）；导师风格改写不做；计划书按顶会论文体例写（中文，
+  方案 `docs/design/2026-10-04-proposal-paper.md`）；前端倾向 Textual TUI（调研 `docs/design/2026-10-04-frontend-tui.md`）。
+- 统一命令行与终端界面（2026-10-04）：`finagent <research|report|eval|calibrate|bench|test|doctor|ls|tui>`（`finagent/cli.py`，
+  旧入口保留；`pip install -e .` 或 `bin/finagent`）；`finagent/catalog.py` 读工作区与运行产物（只读）；
+  终端界面 `finagent_tui/`（Textual，可选依赖，不在 `finagent/` 内）：概览 / 真值表来源回溯 / 估值热力表 / 质检逐条 / 追溯回放 / Agent 日志 / 命令。
+- 145 个测试通过。
 
 **按优先级待做**：
-1. **真实 A 股年报联调**（两个版本都要测）：茅台已跑通 Skill 版本；规则通道仍取不到跨页表格续页（续页无表头），
-   宁德时代、招商轮船未测；Agent 版本未测。扫描页目前直接拒收，不做 OCR。
-   研报写作待用户提供优秀研报样例（`references/exemplars/`）后提炼分析逻辑，再改写正文。
-   宁德时代、招商轮船的深度报告按 finagent-report skill 生成。
-2. **导师风格改写**（已和用户讨论过，放在 `tasks/report_check/` 下）：喂导师点评 → 提炼风格档案 → 代码做格式合规检查 → LLM 一键改写 → **数字锁**（改写前后断言必须完全一致，否则拒绝输出）。
-3. 扩充评测集：10～20 份真实财报 + 人工埋错研报。
-4. Streamlit Web 界面 + 运行日志回放。
-5. Agent 版本接入真实国产模型跑 `--llm live`，并把 `.cache/llm/` 提交进仓库供评审 replay。
-6. Agent 版本跟进 Skill 版本：多文件输入（季报）、规则通道识别季报表头“本报告期/年初至报告期末”
+1. **计划书**（论文体例，`paper/`，XeLaTeX + ctex）：先确认大赛模板与页数要求、项目名（FinAgent 与已发表论文撞名）。
+2. **前端**：网页前端由其他成员负责；终端界面 `finagent tui` 已有，后续按需补运行中实时刷新。
+3. **评测集**：清单见 `docs/eval-dataset-collection.md`（15 家年报季报 + 卖方研报人工埋错），用户团队收集中。
+4. 真实年报联调余项：规则通道未取到的股本变动表、政府补助口径、部分扣非季度别名；Agent 版本未测；扫描页拒收不做 OCR。
+   研报写作待用户提供优秀研报样例（`references/exemplars/`）后提炼分析逻辑。
+5. Agent 版本跟进 Skill 版本：多文件输入（季报）、规则通道识别季报表头“本报告期/年初至报告期末”
    （现在会被当成年度，所以没有对季报开放）、`prompts/extract_financials.md` 补投资收益与公允价值变动收益。
 
 **截止日期**：**2026-10-18** 初赛提交（计划书 PDF + ≤5 分钟 MP4 视频）；11 月底决赛（现场演示 + 答辩，需可运行原型和现场样例数据）。

@@ -210,7 +210,11 @@ def _tieouts(t: FactTable, period: str) -> list[dict[str, Any]]:
         if not mid.endswith(".reported_yoy") or per != p:
             continue
         base = mid.split(".")[0]
-        calc = pct_change(t.v(base, p), t.v(base, yoy_p)) if yoy_p else None
+        cur, prev = t.v(base, p), (t.v(base, yoy_p) if yoy_p else None)
+        if BY_ID[base].kind == "pct":  # 比率类（ROE 等）财报列示的是百分点差，不是相对增速
+            calc = None if cur is None or prev is None else cur - prev
+        else:
+            calc = pct_change(cur, prev) if yoy_p else None
         if calc is None:
             continue
         tol = half_ulp(f["raw"]) + 0.01

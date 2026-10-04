@@ -1,0 +1,11 @@
+{
+  "model": "claude-sonnet-5-5",
+  "exit_code": 0,
+  "started_at": "2026-10-04T23:35:11",
+  "elapsed_sec": 205.0,
+  "turns": 19,
+  "cost_usd": 2.2303226,
+  "input_tokens": 1138992,
+  "output_tokens": 12967,
+  "blind_dir": "/Users/mochiaochen/finagent-evals/calibration/中际旭创/no_expectation_gap/blind"
+}

@@ -1,0 +1,8 @@
+{
+  "kind": "no_tracking",
+  "rep": 1,
+  "targets": [
+    "L2-12"
+  ],
+  "desc": "删掉跟踪指标与结论失效条件"
+}

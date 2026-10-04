@@ -392,6 +392,20 @@ python -m finagent.doctor
 `python` 指向该环境；否则 macOS/Linux 用 `.venv/bin/python`，Windows 用 `.\.venv\Scripts\python.exe` 替换。
 研报打印找不到浏览器时可设置 `FINAGENT_CHROME`，中文字体找不到时检查本机字体安装。
 
+### 统一命令行与终端界面
+
+安装成命令（可选）：`.venv/bin/python -m pip install -e ".[tui]"`，之后直接用 `finagent`；不安装时用 `bin/finagent`
+（Windows `bin\finagent.cmd`），或照旧 `python -m finagent`。
+
+| 命令 | 作用 |
+|---|---|
+| `finagent research <任务>` | 财报分析 / 估值 / 纠错与 Skill 辅助命令（旧写法 `finagent all …` 仍可用） |
+| `finagent report <子命令>` | 研报流水线（原 `python -m finagent.report_pipeline`） |
+| `finagent eval` / `finagent calibrate` | 研报评测 / 评审校准 |
+| `finagent bench` / `finagent test` / `finagent doctor` | 样例评测集 / 全部测试 / 环境自检 |
+| `finagent ls` | 列出研报工作区与运行目录 |
+| `finagent tui` | 终端界面：闸门、真值表点数字看来源页码、估值热力表、质检逐条、追溯回放、Agent 日志、在界面里跑命令 |
+
 ### 样例一键运行（无需 API Key）
 
 ```bash

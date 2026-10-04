@@ -1,0 +1,143 @@
+Screen {
+    background: $background;
+}
+
+#sidebar {
+    width: 34;
+    background: $panel;
+    border-right: tall $primary-background;
+    padding: 0 1;
+}
+
+.side-title {
+    color: $accent;
+    text-style: bold;
+    padding: 1 0 0 1;
+}
+
+#tree {
+    background: $panel;
+    overflow-x: hidden;
+    height: 1fr;
+    scrollbar-size-vertical: 1;
+}
+
+#side-hint {
+    height: auto;
+    padding: 1 0;
+}
+
+TabbedContent {
+    height: 1fr;
+    width: 1fr;
+}
+
+TabPane {
+    padding: 0 1;
+}
+
+Card {
+    border: round $primary-background-lighten-2;
+    border-title-color: $accent;
+    border-title-style: bold;
+    border-subtitle-color: $text-muted;
+    padding: 0 1;
+    height: auto;
+}
+
+.row {
+    height: auto;
+}
+
+.row Card {
+    width: 1fr;
+    margin: 0 1 1 0;
+}
+
+#ov-head {
+    padding: 1 1;
+    height: auto;
+}
+
+#facts-filter, #trace-filter {
+    margin: 1 0 0 0;
+}
+
+#facts-table {
+    height: 1fr;
+}
+
+#facts-source {
+    height: 6;
+    margin-bottom: 1;
+}
+
+#val-body {
+    padding: 1 1;
+    width: 100%;
+}
+
+#score-select {
+    width: 60;
+    margin: 1 0 0 0;
+}
+
+#score-head {
+    height: auto;
+    padding: 1 1;
+}
+
+#score-table {
+    height: 1fr;
+}
+
+#score-detail {
+    height: 9;
+    margin-bottom: 1;
+}
+
+#trace-table {
+    height: 1fr;
+}
+
+#agent-table {
+    height: 12;
+    margin-top: 1;
+}
+
+#agent-log {
+    height: 1fr;
+    border: round $primary-background-lighten-2;
+    margin-bottom: 1;
+}
+
+#cmd-bar {
+    height: 3;
+    margin-top: 1;
+}
+
+#cmd-prefix {
+    padding: 1 1 0 0;
+    color: $accent;
+    text-style: bold;
+}
+
+#cmd-input {
+    width: 1fr;
+}
+
+#cmd-bar Button {
+    margin-left: 1;
+    min-width: 8;
+}
+
+#cmd-presets {
+    height: auto;
+    padding: 1 0;
+}
+
+#cmd-log {
+    height: 1fr;
+    border: round $primary-background-lighten-2;
+    margin-bottom: 1;
+}
