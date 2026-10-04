@@ -158,6 +158,8 @@ def assumptions(run: Run, basis: dict[str, str], years: int = 3, price_label: st
     payout = (run.detail.get("drivers", {}).get("dividend_payout") or [None])[0]
     if payout is not None:
         items.append(("现金分红率", f"{payout * 100:.0f}%"))
+    if missing := [a for a, _ in items if not str(basis.get(a, "")).strip()]:
+        raise ValueError("关键假设缺依据（BASIS 未填）：" + "、".join(missing) + "。依据写依据数字和对应第几节")
     rows = [tr([a, b, f'<td class="basis">{html.escape(basis.get(a, ""))}</td>']) for a, b in items]
     return table(["关键假设（基准情景）", " / ".join(ys), "依据"], rows, "data assume")
 

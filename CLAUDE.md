@@ -63,9 +63,11 @@
   `eval/rubrics/report_v0.json` 四层（L0 硬闸门 / L1 数据闭合由程序判，L2 分析质量 / L3 表达与合规 / 负向条目由 Sonnet
   在仓库与工作区之外的盲评目录里判），`finagent/evaluation/` 计分；`report_pipeline refine` 串起生成（Opus 5.5）→
   复核（Sonnet）→ 质检（Sonnet）循环，问题单按路由回传，评分标准对生成方不可见（工作区不复制 `finagent/evaluation/`）。
-  三家 Opus 研报 v0 得分 46～49（`eval/results/`），用户会据此调权重。环境：`scripts/setup.sh` / `setup.ps1` +
+  三家 Opus 研报 v0 得分 46～49（`eval/results/`），用户会据此调权重。
+  评分标准 v1（2026-10-04，依据三家人工质检）：L1-10/L1-13 改为核对实质内容，L3-04/L3-05 放宽；
+  研报 skill 要求关键预测参数写出“依据数字 → 换算 → 取值”（`BASIS` 缺项直接报错），复核 skill 增加前后矛盾对账。环境：`scripts/setup.sh` / `setup.ps1` +
   `python -m finagent.doctor`。
-- 120 个测试通过。
+- 129 个测试通过。
 
 **按优先级待做**：
 1. **真实 A 股年报联调**（两个版本都要测）：茅台已跑通 Skill 版本；规则通道仍取不到跨页表格续页（续页无表头），
