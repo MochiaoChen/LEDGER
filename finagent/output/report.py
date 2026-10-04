@@ -190,6 +190,22 @@ def render_check(report_name: str, result: dict[str, Any]) -> str:
     return "\n".join(L) + "\n"
 
 
+def render_consistency(res: dict[str, Any], by_page: bool = False) -> str:
+    """研报内部一致性：同一口径两处数值不同、评级前后不一（不依赖真值表）。"""
+    L = ["", "## 三、内部一致性", "",
+         f"比较 {res['compared']} 组同口径提及（评级、各情景每股价值、预测年度公司整体收入与利润），"
+         f"发现矛盾 {len(res['findings'])} 组。", ""]
+    if not res["findings"]:
+        return "\n".join(L) + "\n"
+    L += ["| 项目 | 位置 | 原文 |", "|---|---|---|"]
+    for f in res["findings"]:
+        for m in f["mentions"]:
+            where = f"p.{m['page']}" if by_page else f"第 {m['line']} 行"
+            L.append(f"| {f['item']} | {where} | {m['quote']} |")
+    L += ["", "> 只比较实体、指标、期间、情景都相同的提及；外部来源、条件句、敏感性与区间表述不参与比较。"]
+    return "\n".join(L) + "\n"
+
+
 # ------------------------------------------------------------------ 新增模块渲染
 SKEW_CN = {"underwriteable upside": "可承接的上行空间", "optical upside / needs proof": "表面上行、待验证",
            "negative skew": "负偏度", "balanced / watchlist": "均衡/观察", "input required": "缺少输入"}
@@ -289,6 +305,33 @@ def render_scenarios(res: dict[str, Any]) -> str:
         if tb["name"] == "equity_liquidity_downside":
             L += ["", "> 注：原脚本按 FCF ×(1+冲击) 计算，当 FCF 为负时冲击方向与直觉相反（负冲击反而改善），解读时请注意。"]
         L.append("")
+    return "\n".join(L) + "\n"
+
+
+def render_reverse_dcf(res: dict[str, Any]) -> str:
+    """反向 DCF：参考股价隐含的单变量取值与可行性分档。"""
+    if res.get("status") != "ok":
+        return ""
+
+    def val(lever: str, v: float | None) -> str:
+        if v is None:
+            return "—"
+        return f"{v:.1f}x" if lever == "exit_multiple" else f"{v * 100:.2f}%"
+
+    L = ["", "## 八、股价隐含了什么（反向 DCF）", "",
+         f"参考股价 {res['current_price']:.2f} 元，基准情景每股价值 {res['base_value_per_share']:.2f} 元。"
+         "其余假设保持基准，单独求解下列变量使每股价值等于参考股价：", "",
+         "| 变量 | 股价隐含 | 基准假设 | 历史最高 | 历史平均 | 分档 |", "|---|---|---|---|---|---|"]
+    for r in res["levers"]:
+        lv = r["lever"]
+        L.append(f"| {r['name']} | **{val(lv, r.get('implied'))}** | {val(lv, r['base'])} | "
+                 f"{val(lv, r.get('historical_max'))} | {val(lv, r.get('historical_avg'))} | {r['grade']} |")
+    for r in res["levers"]:
+        if r.get("max_value_per_share") is not None:
+            L += ["", f"- {r['name']}：单独调整最多把每股价值推到 {r['max_value_per_share']:.2f} 元"
+                      f"（对应 {val(r['lever'], r.get('implied_at_max'))}）"
+                      + ("，再提高反而下降" if r.get("max_inside_range") else "，已到搜索边界") + "，达不到参考股价。"]
+    L += [""] + [f"- {n}" for n in res["notes"]]
     return "\n".join(L) + "\n"
 
 

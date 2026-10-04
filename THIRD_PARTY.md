@@ -17,6 +17,11 @@
 | `dcf-model-builder/scripts/skill_core.py`（FCFF DCF） | `finagent/tasks/valuation/dcf.py` | 相对误差 < 1e-9 |
 | `comps-valuation/references/*.md`（EV 桥、倍数配对、NM、IQR 离群值、P25/P75 区间） | `finagent/tasks/valuation/comps.py` | — |
 | `comps-valuation/scripts/create_comps_template.py`（英文 comps 公式模板） | 未沿用模板；`comps.write_formula_workbook` 另行生成中文公式工作簿，数值与 `comps.json` 一致 | 公式独立重算与缓存值相等 |
+| `scenario-sensitivity-generator/references/target-backsolve-rubric.md`（“股价隐含了什么”、反解目标所需路径、可行性分档的思路） | `finagent/tasks/valuation/reverse_dcf.py`：自研单变量反向 DCF（网格扫描 + 二分求解），分档改为按基准假设与历史区间判定，未沿用原分档文字 | 仅借方法，无口径复刻；`tests/test_reverse_dcf.py` 代回正向 DCF 校验 |
+| `deck-report-qc/references/extraction-and-tieout.md`、`issue-taxonomy.md`（重复数字对账：实体、口径、期间、单位、情景都相同才算矛盾；证据强度分级） | `finagent/tasks/report_check/consistency.py`：自研研报内部一致性检查（评级、各情景每股价值、预测年度公司整体收入与利润），用于评分标准 N-02、guard 与选题 5；比较范围与判定规则自定，未使用原脚本 | 仅借方法；`tests/test_consistency.py` |
+| `initiating-coverage/references/thesis-framework.md`、`pm-md-standards.md`；`thesis-tracker/references/workflow-core.md`（论点质量要求、分歧表、确认 / 预警 / 证伪三档阈值、公司判断与股价判断分开） | `.claude/skills/finagent-report/references/analysis.md`“投资主线写到什么程度”、`sections.md` 跟踪一节：中文自写的写作要求，未搬原文与行业模板，不含买方仓位操作建议 | 文档，无计算 |
+| `model-audit-tieout/references/formula-and-workbook-controls.md`（跨期公式一致性、公式内写死数字、易变函数） | `finagent/evaluation/workbook_audit.py` 的 `formula_controls`：自研只读检查，跨期只抓“孤岛”列，写死数字按约定常数白名单识别，未使用原脚本 | 仅借方法；`tests/test_workbook_audit.py` |
+| `financials-normalizer/references/normalization-schema.md`、`source-protocol.md`（证据标签：报告披露、计算、管理层表述、假设、外部估计等） | `finagent/output/guard.py` 的 `tagged_truth_values` / `classify_text`：按产物文件与抽取方式给数字定出处类型，并归入赛题要求的事实 / 推论 / 观点；标签体系自定（中文五类），未使用原脚本 | 仅借方法；`tests/test_provenance.py` |
 
 校验方式：
 - `tests/golden/`：改造前用原插件引擎跑样例得到的产物快照；`tests/test_golden.py` 要求自研实现的产物与之完全相等（无需原插件即可运行）。

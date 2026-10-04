@@ -29,11 +29,13 @@ from .tasks.financials.analyze import analyze
 from .tasks.financials.external import ingest
 from .tasks.financials.extract import extract_financials
 from .tasks.financials.extras import verify_extras
+from .tasks.report_check import consistency as consistency_mod
 from .tasks.report_check.claims import extract_claims, ingest_claims
 from .tasks.report_check.verify import verify_claims
 from .tasks.valuation.build_plan import build_plan, resolve_non_operating_items
 from .tasks.valuation import comps as comps_mod
 from .tasks.valuation import forecast_summary as forecast_mod
+from .tasks.valuation import reverse_dcf as reverse_mod
 from .tasks.valuation import segment_forecast as segment_mod
 from .tasks.valuation import scenarios as scenarios_mod
 from .tasks.valuation import three_statement as ts_mod
@@ -207,6 +209,17 @@ def _v_dcf(ctx: dict[str, Any]):
     return res
 
 
+@valuation_pipeline.step("reverse_dcf", "reverse_dcf")
+def _v_reverse_dcf(ctx: dict[str, Any]):
+    """参考股价隐含的收入增速、利润率、折现率与终值参数（逐个单独求解）。"""
+    if ctx["valuation"].get("status") != "ok" or not ctx["assumptions_data"].get("current_price"):
+        return None
+    hist = reverse_mod.history(ctx["analysis"]["truth_table"], ctx["analysis"]["period"])
+    out = reverse_mod.run(ctx["plan"], ctx["valuation"], ctx["assumptions_data"]["current_price"], hist)
+    _write(ctx, "valuation/reverse_dcf.json", out)
+    return out
+
+
 @valuation_pipeline.step("scenarios", "scenarios")
 def _v_scenarios(ctx: dict[str, Any]):
     if ctx["valuation"].get("status") != "ok":
@@ -253,6 +266,8 @@ def _v_report(ctx: dict[str, Any]):
         md += R.render_scenarios(ctx["scenarios"])
     if ctx.get("comps"):
         md += R.render_comps(ctx["comps"])
+    if ctx.get("reverse_dcf"):
+        md += R.render_reverse_dcf(ctx["reverse_dcf"])
     _write(ctx, "valuation/report.md", md)
     if res.get("status") == "ok" and tracing.current() is not None:
         sheets = model_sheets(ctx["company"], ctx["plan"], res, ctx.get("three_statement"), ctx.get("comps"),
@@ -298,6 +313,29 @@ def _c_verify(ctx: dict[str, Any]):
         "claim_id", "metric_name", "period", "claim_type", "raw_value", "unit", "quote", "verdict",
         "truth_display", "explanation", "suggestion", "location"]))
     _write(ctx, "check/report.md", R.render_check(Path(ctx["report"]).name, out))
+    return out
+
+
+@check_pipeline.step("consistency", "consistency")
+def _c_consistency(ctx: dict[str, Any]):
+    """研报内部一致性（不依赖真值表）：评级、各情景每股价值、预测年度公司整体收入与利润前后不一。"""
+    year = ctx.get("fiscal_year") or int(str(ctx["analysis"]["period"])[:4])
+    if str(ctx["report"]).lower().endswith(".md"):
+        text, pages = tracing.read_file(ctx["report"]).decode("utf-8"), None
+    else:  # PDF 等：按文本块拼接，行号换算回页码
+        lines, pages = [], []
+        for ch in ctx["report_doc"].texts():
+            for ln in ch.text.splitlines():
+                lines.append(ln)
+                pages.append(ch.page)
+        text = "\n".join(lines)
+    out = consistency_mod.check(text, year)
+    for f in out["findings"]:
+        for m in f["mentions"]:
+            m["page"] = pages[m["line"] - 1] if pages else None
+    _write(ctx, "check/consistency.json", out)
+    _write(ctx, "check/report.md", R.render_check(Path(ctx["report"]).name, ctx["check"])
+           + R.render_consistency(out, pages is not None))
     return out
 
 

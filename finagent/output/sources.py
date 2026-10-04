@@ -132,18 +132,36 @@ def check_citations(text: str, data: dict[str, Any], truth: list[float], check_t
 
 
 def run_guard(run: Path, text: str, sources: str | Path | None = None) -> dict[str, Any]:
-    """完整的解读护栏（guard 命令与评测共用）：数字出处、指标期间绑定、外部数字的 [S编号]。只返回结果，不落盘。"""
-    from .guard import check_binding, check_text, truth_values
+    """完整的解读护栏（guard 命令与评测共用）：数字出处、指标期间绑定、外部数字的 [S编号]、前后矛盾；
+    另给出每个数字的出处类型（不影响 ok）。只返回结果，不落盘。"""
+    from .guard import check_binding, check_text, classify_text, tagged_truth_values
 
     plain = MARK.sub("", text)
-    truth = truth_values(run)
+    tagged = tagged_truth_values(run)
+    truth = [v for vs in tagged.values() for v in vs]
     ext = load(sources)
     external = [v for vs in fact_values(ext).values() for v in vs]
+    tagged["外部来源"] = tagged["外部来源"] + external
     unverified = check_text(plain, truth + external)
     mismatched = check_binding(plain, run)
     citations = check_citations(text, ext, truth, check_text) if ext else []
-    return {"ok": not (unverified or mismatched or citations),
-            "unverified_numbers": unverified, "mismatched_claims": mismatched, "uncited_external": citations}
+    contradictions = _contradictions(run, plain)
+    return {"ok": not (unverified or mismatched or citations or contradictions),
+            "unverified_numbers": unverified, "mismatched_claims": mismatched, "uncited_external": citations,
+            "contradictions": contradictions,
+            # 每个有出处的数字属于事实（报告披露、外部来源）、推论（程序计算）还是观点（模型预测、估值假设）
+            "provenance": classify_text(plain, tagged)}
+
+
+def _contradictions(run: Path, text: str) -> list[str]:
+    """文稿内部前后矛盾：评级、各情景每股价值、预测年度的公司整体收入与利润（report_check/consistency.py）。"""
+    from ..tasks.report_check.consistency import check, describe
+
+    a = run / "financials" / "analysis.json"
+    if not a.is_file():
+        return []
+    year = int(str(json.loads(a.read_text(encoding="utf-8"))["period"])[:4])
+    return [describe(f) for f in check(text, year)["findings"]]
 
 
 # 资料搜集阶段（先搜集、后分析）必须覆盖的方面：每个公司都适用的通用类别，不预设行业内容

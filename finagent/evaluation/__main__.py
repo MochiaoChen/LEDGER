@@ -133,7 +133,7 @@ def main(argv: list[str] | None = None) -> int:
     r.add_argument("--company")
     r.add_argument("--run-dir", help="估值运行目录")
     r.add_argument("--work", help="抽取目录 data/extractions/<公司>_<年度>")
-    r.add_argument("--rubric", help="评分标准，默认 eval/rubrics/report_v1.json")
+    r.add_argument("--rubric", help="评分标准，默认 eval/rubrics/report_v2.json")
     r.add_argument("--model", help=f"评审模型，默认 {judge.QC_MODEL}（环境变量 FINAGENT_QC_MODEL）")
     r.add_argument("--no-judge", action="store_true", help="只跑程序检查")
     r.add_argument("--out", help="结果目录，默认 eval/results/<公司>_<时间>")

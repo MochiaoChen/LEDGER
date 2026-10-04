@@ -15,6 +15,15 @@ REL = "{http://schemas.openxmlformats.org/officeDocument/2006/relationships}"
 PKG = "{http://schemas.openxmlformats.org/package/2006/relationships}"
 SHEET_FILE = re.compile(r"xl/worksheets/sheet\d+\.xml")
 TOLERANCE_MM = 1e-4  # 工作簿单位为百万元；比写入缓存的 6 位小数略宽
+# 公式里允许出现的约定常数：0/1、平均余额的 0.5 与 2、年化的 4/12/365、百分数换算的 100
+CONVENTION_CONSTANTS = {0.0, 0.5, 1.0, 2.0, 4.0, 12.0, 100.0, 365.0}
+VOLATILE = re.compile(r"\b(NOW|TODAY|RAND|RANDBETWEEN|OFFSET|INDIRECT)\s*\(", re.I)
+CELL_REF = re.compile(r"(\$?)([A-Z]{1,3})(\$?)(\d+)(?![\d(])")
+QUOTED = re.compile(r'"[^"]*"|\'[^\']*\'!|[A-Za-z_\u4e00-\u9fff][\w\u4e00-\u9fff.]*!')
+NUMBER = re.compile(r"(?<![\w.])(\d+(?:\.\d+)?(?:[eE]-?\d+)?)(?![\w.(])")
+# 这些函数的最后一个参数是精度或分位序号，不是业务假设
+INDEX_ARG_FUNCS = ("ROUND", "ROUNDUP", "ROUNDDOWN", "QUARTILE", "QUARTILE.INC", "PERCENTILE", "PERCENTILE.INC",
+                   "LARGE", "SMALL", "INDEX", "CHOOSE")
 
 
 def _sha256(path: Path) -> str:
@@ -141,6 +150,92 @@ def _check_three_statements(sheets: dict[str, dict[str, dict[str, Any]]]) -> tup
     return checks, max_residual
 
 
+def _col_num(col: str) -> int:
+    n = 0
+    for ch in col:
+        n = n * 26 + ord(ch) - 64
+    return n
+
+
+def _col_name(n: int) -> str:
+    out = ""
+    while n:
+        n, r = divmod(n - 1, 26)
+        out = chr(65 + r) + out
+    return out
+
+
+def _drop_index_args(body: str) -> str:
+    """去掉 ROUND 精度、QUARTILE 分位序号等最后一个参数（按括号配对，支持嵌套）。"""
+    out, i = [], 0
+    pattern = re.compile(r"\b(" + "|".join(re.escape(f) for f in INDEX_ARG_FUNCS) + r")\(", re.I)
+    while (m := pattern.search(body, i)):
+        out.append(body[i:m.end()])
+        depth, j, last_comma = 1, m.end(), None
+        while j < len(body) and depth:
+            ch = body[j]
+            depth += ch == "("
+            depth -= ch == ")"
+            if ch == "," and depth == 1:
+                last_comma = j
+            j += 1
+        inner = body[m.end():j - 1]
+        if last_comma is not None and re.fullmatch(r"\s*-?[\d.]+\s*", body[last_comma + 1:j - 1]):
+            inner = body[m.end():last_comma]
+        out.append(_drop_index_args(inner) + ")")
+        i = j
+    out.append(body[i:])
+    return "".join(out)
+
+
+def hardcoded_literals(formula: str) -> list[str]:
+    """公式里写死的数字（约定常数、函数精度参数、比较容差除外）。假设应放在单元格里被引用，便于追溯与情景切换。"""
+    body = CELL_REF.sub(" R ", _drop_index_args(QUOTED.sub(" ", formula)))
+    found = []
+    for m in NUMBER.finditer(body):
+        v = float(m.group(1))
+        if v in CONVENTION_CONSTANTS:
+            continue
+        if body[:m.start()].rstrip().endswith(("<", ">", "=")) and v <= 0.01:
+            continue  # 勾稽检查里的容差
+        found.append(m.group(1))
+    return found
+
+
+def _relative(formula: str, col: int) -> str:
+    """把相对列引用换成相对偏移（R1C1 思路），同一行不同期的公式写法相同时结果相同。"""
+    return CELL_REF.sub(lambda m: m.group(0) if m.group(1) else f"C[{_col_num(m.group(2)) - col}]{m.group(3)}{m.group(4)}",
+                        formula)
+
+
+def formula_controls(sheets: dict[str, dict[str, dict[str, Any]]]) -> dict[str, Any]:
+    """跨期公式一致性、公式内写死数字、易变函数。
+    跨期一致性只抓“孤岛”：某一期的公式写法与左右相邻两期都不同、而左右两期彼此相同（如中间一年被手工改成数值或改了引用）。
+    历史期与预测期的分界、首个预测期衔接资产负债表、末列合计或同比，都是写法的一次性切换，不算异常。"""
+    rows: dict[tuple[str, str], dict[int, str]] = {}
+    hardcodes, volatile = [], []
+    for sheet, cells in sheets.items():
+        for ref, cell in cells.items():
+            formula = cell["formula"]
+            if not formula:
+                continue
+            col, row = re.fullmatch(r"([A-Z]+)(\d+)", ref).groups()
+            rows.setdefault((sheet, row), {})[_col_num(col)] = _relative(formula, _col_num(col))
+            if lits := hardcoded_literals(formula):
+                hardcodes.append({"cell": f"{sheet}!{ref}", "formula": formula, "literals": lits})
+            if VOLATILE.search(formula):
+                volatile.append({"cell": f"{sheet}!{ref}", "formula": formula})
+    islands = []
+    for (sheet, row), cols in rows.items():
+        for c, pattern in cols.items():
+            left, right = cols.get(c - 1), cols.get(c + 1)
+            if left is not None and left == right != pattern:
+                islands.append({"cell": f"{sheet}!{_col_name(c)}{row}",
+                                "formula": sheets[sheet][f"{_col_name(c)}{row}"]["formula"],
+                                "neighbor_formula": sheets[sheet][f"{_col_name(c - 1)}{row}"]["formula"]})
+    return {"inconsistent_formulas": islands, "hardcoded_formulas": hardcodes, "volatile_formulas": volatile}
+
+
 def audit_workbook(path: Path | None) -> dict[str, Any]:
     """静态公式结构 + 基于前置缓存值的独立勾稽复算；不宣称已重算整本 Excel。"""
     if path is None:
@@ -151,12 +246,21 @@ def audit_workbook(path: Path | None) -> dict[str, Any]:
         with zipfile.ZipFile(path) as z:
             sheets, counters = _cells(z)
         result.update(counters)
+        controls = formula_controls(sheets)
+        result.update(controls)
         checks, max_residual = _check_three_statements(sheets)
         result.update({"checks": checks, "max_abs_residual_mm": round(max_residual, 8)})
+        # 跨期写法孤岛判失败；写死数字与易变函数列为警告（约定常数靠白名单识别，不宜一票否决）
+        result["warnings"] = ([f"{h['cell']} 公式内写死数字 {'、'.join(h['literals'])}" for h in controls["hardcoded_formulas"]]
+                              + [f"{v['cell']} 使用易变函数" for v in controls["volatile_formulas"]])
         result["status"] = "pass" if (counters["formula_count"] > 0
                                        and not any(counters[k] for k in ("missing_cache_count", "error_count", "broken_ref_count"))
+                                       and not controls["inconsistent_formulas"]
                                        and all(row["passed"] for row in checks)) else "fail"
-        result["limitation"] = "未在 Excel/LibreOffice 中重算全部公式；只验证公式结构、缓存和五组勾稽关系"
+        if controls["inconsistent_formulas"] and "reason" not in result:
+            result["reason"] = "跨期公式写法不一致：" + "、".join(x["cell"] for x in controls["inconsistent_formulas"][:5])
+        result["limitation"] = ("未在 Excel/LibreOffice 中重算全部公式；只验证公式结构、缓存、跨期写法一致性、"
+                                "公式内写死数字与五组勾稽关系")
     except (OSError, KeyError, ValueError, zipfile.BadZipFile, ET.ParseError) as exc:
         result["reason"] = str(exc)
     return result

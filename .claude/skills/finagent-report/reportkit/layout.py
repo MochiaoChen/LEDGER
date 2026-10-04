@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import argparse
 import html
+import json
 import re
 import subprocess
 import sys
@@ -323,13 +324,30 @@ def appendix_notes(run: Run, cfg: Config, forecast_secs: str) -> str:
 <h3>数据来源与方法</h3>
 <p class="small">历史财务与经营数据取自公司 {run.period} 年年度报告。逐项页码见估值模型“历史财务”“经营数据”页；
 预测值依据第 7 节的分析师假设。表内单价、占比、增速按已披露数据计算。
-当前股价为外部行情数据（{run.fs.get("market", {}).get("price_date", "—")} 收盘）。</p>
+当前股价为外部行情数据（{run.fs.get("market", {}).get("price_date", "—")} 收盘）。{provenance_note(run)}</p>
 <table class="data slim mono"><thead><tr><th>输入文件（运行 {m['run_id']}）</th><th>SHA-256</th></tr></thead><tbody>{inputs}</tbody></table>
 {sources_html(cfg)}
 <h3>内容说明</h3>
 <p class="small">经营归因、盈利预测、估值及评级依赖{forecast_secs}所列假设，请结合敏感性分析与风险提示使用。</p>
 <h3>投资评级说明</h3>
 <p class="small">评级依据{rt['basis']}：{rt['rule']}。</p>"""
+
+
+def provenance_note(run: Run) -> str:
+    """正文数字的事实 / 推论 / 观点构成，取自最近一次 guard 的结果（运行目录 commentary_guard.json）。"""
+    p = run.dir / "commentary_guard.json"
+    prov = (json.loads(p.read_text(encoding="utf-8")).get("provenance") if p.is_file() else None) or {}
+    nums = prov.get("numbers") or []
+    if not nums:
+        return ""
+    by = {}
+    for n in nums:
+        by[n["evidence"]] = by.get(n["evidence"], 0) + 1
+    c = prov["counts"]
+    part = lambda *ks: "、".join(f"{k} {by[k]} 个" for k in ks if by.get(k))  # noqa: E731
+    return (f"正文中可溯源的 {len(nums)} 个数字里，事实 {c['事实']} 个（{part('报告披露', '外部来源') or '—'}），"
+            f"推论 {c['推论']} 个（程序按披露数据计算），观点 {c['观点']} 个（{part('模型预测', '估值假设') or '—'}）；"
+            "同一数字能在多处找到出处时按事实、推论、观点的顺序归类。")
 
 
 def sources_html(cfg: Config) -> str:

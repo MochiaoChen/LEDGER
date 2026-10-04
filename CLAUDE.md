@@ -72,13 +72,20 @@
 - 评审校准（2026-10-04，`finagent/evaluation/calibrate.py`，结果 `eval/calibration/report.md`）：原稿重复盲评看稳定性；
   七种程序劣化（删交叉验证、删预期差、风险泛化、删跟踪指标、无来源数字、前后矛盾、机器腔）重新排版后盲评看命中与连带改判；
   人工质检导出（`eval/calibration/human/`）算评审判“不通过”的精确率（人工只复核了判不通过的条目，漏判靠劣化命中补）。
-  现状：原稿重复盲评已完成（宇树、中际各 3 次）；劣化变体因 Claude 周额度用尽（10-07 05:00 重置）作废，存档于 `~/finagent-evals/calibration/_invalid_20261004/`，需重跑 `calibrate run --workspace ~/finagent-samples/<公司>_2025`。
+  结果（宇树、中际各 3 次原稿 + 7 个劣化）：重复评审逐条一致 86%～91%、总分极差 7～8；无来源数字、机器腔、评级矛盾能判出；整节删除类（交叉验证、预期差、跟踪指标、风险泛化）多数未判出，评审理由显示同一论点在专题与图表里仍在（图表由排版脚本生成，删文稿删不掉），属劣化不彻底；要测真漏判需改成跨全文删句子并同步删图表。人工一致：判出问题精确率 84%。
 - 已拍板（2026-10-04）：模型全部用 Claude（不再接国产模型 live）；导师风格改写不做；计划书按顶会论文体例写（中文，
   方案 `docs/design/2026-10-04-proposal-paper.md`）；前端倾向 Textual TUI（调研 `docs/design/2026-10-04-frontend-tui.md`）。
 - 统一命令行与终端界面（2026-10-04）：`finagent <research|report|eval|calibrate|bench|test|doctor|ls|tui>`（`finagent/cli.py`，
   旧入口保留；`pip install -e .` 或 `bin/finagent`）；`finagent/catalog.py` 读工作区与运行产物（只读）；
   终端界面 `finagent_tui/`（Textual，可选依赖，不在 `finagent/` 内）：概览 / 真值表来源回溯 / 估值热力表 / 质检逐条 / 追溯回放 / Agent 日志 / 命令。
-- 145 个测试通过。
+- 借鉴原插件方法（2026-10-05，本地参考副本 `reference/openai-pei/` 不入库，规则见其 README；对照写进 THIRD_PARTY 第 1 节）：
+  反向 DCF `valuation/reverse_dcf.json`（参考股价隐含的增速、利润率、折现率、终值参数，逐个单独求解，按基准与历史区间分档；
+  每股价值对增速不单调时报告可达最高值）；研报内部一致性 `report_check/consistency.py`（评级、各情景每股价值、预测年度公司整体
+  收入与利润，同口径才比，命中即确认），用于评分标准 v2 的 N-02（程序判，结论冲突拆为 N-04）、guard 的 `contradictions`、
+  选题 5 的 `check/consistency.json`；研报 skill 补投资主线六项要求、分歧表、跟踪三档阈值（确认 / 预警 / 证伪），`md()` 支持表格。
+  工作簿审计补跨期公式孤岛（判失败）、公式内写死数字与易变函数（提示）；guard 的 `provenance` 给正文每个数字定出处类型
+  （报告披露 / 外部来源 = 事实，程序计算 = 推论，模型预测 / 估值假设 = 观点），研报附录写出全文数字构成。
+- 166 个测试通过。
 
 **按优先级待做**：
 1. **计划书**（论文体例，`paper/`，XeLaTeX + ctex）：先确认大赛模板与页数要求、项目名（FinAgent 与已发表论文撞名）。

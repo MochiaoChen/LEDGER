@@ -1093,7 +1093,7 @@ def main(argv: list[str] | None = None) -> int:
             p.add_argument("--min-gain", type=float, default=2.0, help="连续两轮提升都低于此分数即停止")
             p.add_argument("--gen-model", help=f"生成模型，默认 {GEN_MODEL}（FINAGENT_GEN_MODEL）")
             p.add_argument("--qc-model", help=f"复核与质检模型，默认 {QC_MODEL}（FINAGENT_QC_MODEL）")
-            p.add_argument("--rubric", help="评分标准，默认 eval/rubrics/report_v1.json")
+            p.add_argument("--rubric", help="评分标准，默认 eval/rubrics/report_v2.json")
     sc = sub.add_parser("scorecard", help="测评：多个工作区并排比较")
     sc.add_argument("--workspace", action="append", required=True, help="可多次指定")
     sc.add_argument("--json", action="store_true")
