@@ -60,7 +60,7 @@ h1 { font-family: var(--title); font-size: 22pt; line-height: 1.3; font-weight: 
   font-size: 12.5pt; font-weight: 700; color: var(--navy); padding-bottom: 1.6mm; border-bottom: 2.4pt solid var(--navy);
   margin-bottom: 5mm; }
 .subline .kind { font-size: 12.5pt; }
-.cover-grid { display: grid; grid-template-columns: 1fr 58mm; gap: 6mm; align-items: start; }
+.cover-grid { display: grid; grid-template-columns: minmax(0, 1fr) 58mm; gap: 6mm; align-items: start; }
 .kicker { font-family: var(--title); font-size: 12pt; font-weight: 700; color: var(--navy); margin: 0 0 1.5mm; }
 p.point { font-size: 10.5pt; line-height: 1.52; margin: 0 0 1.7mm; }
 .point-h { font-family: var(--title); font-weight: 700; color: var(--navy); }
@@ -98,14 +98,15 @@ figcaption {
   text-align: left; padding-bottom: 1mm; border-bottom: 0.4pt solid var(--rule);
 }
 .fno { color: var(--navy); margin-right: 2mm; }
-figure img { display: block; max-width: 100%; }
+img { max-width: 100%; height: auto; }
+figure img { display: block; }
 .src { font-family: var(--sans); font-size: 6.7pt; color: #9CA3AF; margin-top: 1.3mm; text-align: left; line-height: 1.4; }
-.src code { white-space: nowrap; }
+.src code { white-space: normal; overflow-wrap: anywhere; }
 sup.cite { font-family: var(--sans); font-size: 5.6pt; color: var(--muted); margin-left: 0.3mm; }
 table.text td { text-align: left; vertical-align: top; line-height: 1.45; }
-table.text td:first-child { font-weight: 600; white-space: nowrap; }
+table.text td:first-child { font-weight: 600; }
 .sources td { font-size: 6.6pt; word-break: break-all; }
-.two { display: grid; grid-template-columns: 1fr 1fr; gap: 6mm; align-items: start; }
+.two { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 6mm; align-items: start; }
 .two figure { margin-top: 1mm; }
 
 /* ---------- 表格（三线表） ---------- */
@@ -113,7 +114,7 @@ table { border-collapse: collapse; width: 100%; font-family: var(--sans); font-v
 thead { display: table-header-group; }
 tr { break-inside: avoid; }
 table.data { font-size: 7.9pt; line-height: 1.35; border-top: 1pt solid var(--ink); border-bottom: 1pt solid var(--ink); }
-table.data th { font-weight: 600; text-align: right; padding: 1mm 1.6mm; border-bottom: 0.5pt solid var(--ink); white-space: nowrap; }
+table.data th { font-weight: 600; text-align: right; padding: 1mm 1.6mm; border-bottom: 0.5pt solid var(--ink); white-space: normal; overflow-wrap: anywhere; }
 table.data td { text-align: right; padding: 0.7mm 1.6mm; border-bottom: 0.3pt solid #E5E7EB; white-space: nowrap; }
 table.data th:first-child, table.data td:first-child { text-align: left; white-space: normal; }
 table.data td.pg, table.data th.pg { color: var(--muted); font-size: 7pt; }
@@ -127,14 +128,14 @@ table.forecast td.neg, .neg { color: var(--brick); }
 table.data td.pos, .pos { color: var(--navy); }
 
 table.heat { font-size: 7.8pt; border-top: 1pt solid var(--ink); border-bottom: 1pt solid var(--ink); }
-table.heat th { font-weight: 600; padding: 1.1mm 1mm; text-align: center; border-bottom: 0.5pt solid var(--ink); white-space: nowrap; }
+table.heat th { font-weight: 600; padding: 1.1mm 1mm; text-align: center; border-bottom: 0.5pt solid var(--ink); white-space: normal; overflow-wrap: anywhere; }
 table.heat tbody th { text-align: left; border-bottom: none; border-right: 0.5pt solid var(--ink); padding-right: 2mm; }
 table.heat th.corner { font-size: 6.8pt; color: var(--muted); font-weight: 400; text-align: left; }
 table.heat td { text-align: center; padding: 1.2mm 0.5mm; border: 0.6pt solid #fff; }
 table.heat td.center { outline: 1.2pt solid var(--ink); outline-offset: -1.2pt; font-weight: 700; }
 
 /* ---------- 附录：财务报表 ---------- */
-.fin-grid { gap: 5mm; }
+.fin-grid { gap: 5mm; grid-template-columns: 1fr; }
 table.fin { font-size: 7.3pt; line-height: 1.3; margin-bottom: 4mm; border-top: 1pt solid var(--navy); border-bottom: 0.8pt solid var(--navy); }
 table.fin th { background: var(--navy); color: #fff; font-weight: 600; text-align: right; padding: 1mm 1.4mm; white-space: nowrap; }
 table.fin th:first-child { text-align: left; }
@@ -208,3 +209,14 @@ table.data tr.grp td { color: #A21316; background: #F8F5EE; }
 .part { background: var(--navy); color: #fff; padding: 2.6mm 4mm; margin: 7mm 0 3mm; break-after: avoid; }
 .part-t { font-family: var(--title); font-size: 15pt; font-weight: 700; letter-spacing: 1pt; }
 .part-lead { font-size: 9pt; margin-top: 1mm; opacity: 0.92; }
+
+/* 表格按版心约束；数值保持同一行，长表头、说明与网址换行。 */
+.two > *, .cover-grid > * { min-width: 0; }
+table.scenario, table.text, table.sources { table-layout: fixed; }
+table.text th, table.text td, table.sources th, table.sources td { white-space: normal; overflow-wrap: anywhere; }
+table.sources th:nth-child(1) { width: 5%; }
+table.sources th:nth-child(2) { width: 15%; }
+table.sources th:nth-child(3) { width: 34%; }
+table.sources th:nth-child(4) { width: 12%; }
+table.sources th:nth-child(5) { width: 34%; }
+table.fin th:first-child, table.fin td:first-child { white-space: normal; overflow-wrap: anywhere; }

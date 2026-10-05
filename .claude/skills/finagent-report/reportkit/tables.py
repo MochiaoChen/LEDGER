@@ -245,7 +245,7 @@ def scenario_table(run: Run, price_label: str = "单价") -> str:
         rows.append(tr(cells, "base" if k == "base" else ""))
     head = ["情景"] + [f"{n}{price_label}（{y}）" for n in names] + [
         f"收入增速（{y}）", "WACC", "永续增长", "企业价值（亿元）", "每股价值（元）", "较参考股价", "终值占比"]
-    return table(head, rows, "data nw")
+    return table(head, rows, "data nw scenario")
 
 
 SENS_KIND = {"WACC × 永续增长率": 0, "WACC × 退出 EV/EBITDA 倍数": 1, "收入增速 × EBIT 利润率": 2}
