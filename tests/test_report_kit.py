@@ -28,7 +28,7 @@ def sample_run(tmp_path_factory):
     rc = main(["all", "--input", str(SAMPLES / "annual_report_2024.md"), "--year", "2024", "--company", "星河智造",
                "--assumptions", str(SAMPLES / "valuation_assumptions.json"), "--report", str(SAMPLES / "research_draft.md"),
                "--peers", str(SAMPLES / "peers.csv"), "--estimates", str(SAMPLES / "estimates.csv"),
-               "--guidance", str(SAMPLES / "guidance.csv"), "--llm", "off", "--runs-dir", str(runs)])
+               "--guidance", str(SAMPLES / "guidance.csv"), "--runs-dir", str(runs)])
     assert rc == 0
     return next(runs.iterdir())
 
@@ -100,7 +100,7 @@ def test_moutai_script_builds(tmp_path):
     pdf = ROOT / "report" / "resources" / "贵州茅台" / "600519_贵州茅台_2025_年度报告.pdf"
     assert main(["valuation", "--input", str(pdf), "--year", "2025", "--company", "贵州茅台",
                  "--assumptions", str(work / "valuation_assumptions.json"), "--facts", str(work / "facts.json"),
-                 "--extras", str(work / "extras.json"), "--llm", "off", "--runs-dir", str(runs)]) == 0
+                 "--extras", str(work / "extras.json"), "--runs-dir", str(runs)]) == 0
     run = next(runs.iterdir())
     argv = sys.argv
     sys.argv = ["build_report.py", "--run-dir", str(run), "--no-pdf"]

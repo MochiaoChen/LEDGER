@@ -1,0 +1,94 @@
+\section{复现说明}
+\label{app:repro}
+
+环境：Python 3.12；计算引擎只依赖标准库与 pdfplumber。深度研报流水线另需 Node.js 18 以上、已登录的 Claude Code、Chrome / Chromium / Edge（HTML 打印为 PDF）与中文字体。\file{scripts/setup.sh}（Windows 为 \file{setup.ps1}）创建虚拟环境、安装依赖并检查上述组件，最后运行 \code{python -m finagent.doctor} 逐项自检。
+
+\paragraph{自造样例端到端（不调用模型）。}
+\begin{verbatim}
+python -m finagent all --input data/samples/annual_report_2024.md --year 2024 \
+  --company 星河智造 --assumptions data/samples/valuation_assumptions.json \
+  --report data/samples/research_draft.md --peers data/samples/peers.csv \
+  --estimates data/samples/estimates.csv --guidance data/samples/guidance.csv --llm off
+python eval/run_eval.py          # 样例评测指标
+python -m pytest -q tests        # 测试与一致性快照
+\end{verbatim}
+
+\paragraph{真实年报的计算复算（不调用模型）。}抽取文件随仓库保存在 \file{data/extractions/<公司>\_<年度>/}，可直接用其运行校验与估值（\code{all} 另需研报草稿 \code{--report}，没有草稿时用 \code{valuation}；以贵州茅台为例，两条命令各约 5 秒，三表勾稽全部通过）：
+\begin{verbatim}
+python -m finagent verify-facts --input <年报.pdf> --facts data/extractions/<公司>_2025/facts.json
+python -m finagent valuation --input <年报.pdf> --year 2025 --company <公司> \
+  --facts data/extractions/<公司>_2025/facts.json \
+  --extras data/extractions/<公司>_2025/extras.json \
+  --assumptions data/extractions/<公司>_2025/valuation_assumptions.json --llm off
+\end{verbatim}
+
+\paragraph{研报流水线与质检（需要模型环境）。}
+\begin{verbatim}
+python -m finagent.report_pipeline build --company <公司> --year 2025 \
+  --price <股价> --price-source "<来源>"
+python -m finagent.report_pipeline refine --workspace ~/finagent-samples/<公司>_2025
+python -m finagent.report_pipeline status --workspace ~/finagent-samples/<公司>_2025
+python -m finagent.report_pipeline collect --workspace ~/finagent-samples/<公司>_2025
+\end{verbatim}
+
+\paragraph{评分重算与校准。}修改评分标准后无需重跑评审即可重算；校准报告由已保存的判定汇总生成：
+\begin{verbatim}
+python -m finagent.evaluation score --result eval/results/v2_中际旭创
+python -m finagent.evaluation.calibrate report
+\end{verbatim}
+
+\section{评分标准条目}
+\label{app:rubric}
+
+表 \ref{tab:rubric-full} 列出 L1～L3 的全部条目与分值（v2）。L0 与负向条目见表 \ref{tab:rubric}。完整判定标准与反例见 \file{eval/rubrics/report\_v2.json}。
+
+\begin{table}[h]
+\centering
+\caption{L1～L3 条目与分值。}
+\label{tab:rubric-full}
+\small
+\begin{tabular}{@{}llc@{\hspace{1.2em}}llc@{}}
+\toprule
+编号 & 条目 & 分 & 编号 & 条目 & 分 \\
+\midrule
+L1-01 & 抽取校验 & 3 & L2-01 & 核心结论 & 4 \\
+L1-02 & 分部预测基期闭合 & 3 & L2-02 & 预期差 & 4 \\
+L1-03 & 股权价值桥加总 & 4 & L2-03 & 商业模式 & 3 \\
+L1-04 & 每股价值复算 & 3 & L2-04 & 驱动拆解 & 5 \\
+L1-05 & 情景排序 & 2 & L2-05 & 历史业绩归因 & 4 \\
+L1-06 & 敏感性方向 & 2 & L2-06 & 行业与竞争 & 4 \\
+L1-07 & 终值占比（$\le 80\%$） & 2 & L2-07 & 预测假设有依据 & 5 \\
+L1-08 & 预测与历史衔接 & 2 & L2-08 & 估值方法与参数 & 3 \\
+L1-09 & 正文估值与产物一致 & 3 & L2-09 & 估值交叉验证 & 4 \\
+L1-10 & 外部信息可追溯 & 4 & L2-10 & 情景与敏感性 & 3 \\
+L1-11 & 股价有日期与来源 & 2 & L2-11 & 风险落到假设 & 4 \\
+L1-12 & 复核改写过数字锁 & 3 & L2-12 & 跟踪指标与失效条件 & 2 \\
+L1-13 & 人工复核清单 & 2 & & & \\
+\midrule
+L3-01 & 故事线连贯 & 4 & L3-05 & 数字密度 & 2 \\
+L3-02 & 事实、推论、观点可区分 & 3 & L3-06 & 图表服务论点 & 3 \\
+L3-03 & 结论先行 & 3 & L3-07 & 假设与局限透明 & 2 \\
+L3-04 & 无机器腔 & 3 & & & \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{会话提示要点}
+\label{app:prompts}
+
+各会话的启动提示都很短，只规定身份、阶段边界和收尾动作；做法写在技能说明与工作区说明里。以下为要点（原文见 \file{finagent/report\_pipeline.py}）。
+
+\begin{itemize}
+  \item \textbf{研究助理}：只做阶段 1；先读资料搜集方法，用联网检索把年报之后的最新信息搜齐，登记来源并写资料包；不做财务抽取、不写分析框架；结束时运行 \code{status}，阶段 1 通过即停止。
+  \item \textbf{分析师}：先读资料包，再完成阶段 2～7（抽取、框架与深度专题、深度调研、经营数据、估值假设、估值运行）；不写文稿；每个阶段结束运行 \code{status}。
+  \item \textbf{主笔}：先读框架、资料包、专题笔记与运行产物，写“年报点评 + 深度研究”，深度研究要做多环定量推导；护栏与篇幅闸门通过即停止，复核与排版由后续会话完成。
+  \item \textbf{复核编辑}：没有参与写作；读复核技能说明，只做阶段 9。
+  \item \textbf{排版设计师}：文稿已定稿、不改正文；从模板起写本公司排版脚本，每张图服务一个论点，逐页检查预览。
+  \item \textbf{修订（质检回传）}：读问题单，修改对应阶段产物；需要补数据、改假设就重跑估值，文稿改完重跑护栏；处理不了的写进复核清单并说明原因。
+\end{itemize}
+所有提示都要求命令直接以工作区内的解释器包装 \code{./py} 开头、不加 \code{cd}、不串联，以匹配工具白名单。
+
+\section{图的生成}
+\label{app:figs}
+
+图 \ref{fig:arch}～\ref{fig:refine} 的示意图由图像生成模型按统一风格绘制，提示词与风格约束保存在 \file{paper/figures/PROMPTS.md}；图 \ref{fig:scores} 与全部表格由仓库中的评测结果直接生成，未经图像模型处理。示意图只表达结构，不含任何实验数字。

@@ -1,4 +1,4 @@
-"""（开发用）把样例年报 Markdown 渲染成 PDF，用于测试 Skill 版本的 PDF 路径。
+"""（开发用）把样例年报 Markdown 渲染成 PDF，用于测试模型读 PDF 抽取的路径。
 
 支持 macOS、Windows 与 Linux。中文字体按 ``--font``、``FINAGENT_CJK_FONT``、
 系统常见字体路径的顺序查找；找不到时给出可操作的错误信息，不再依赖 macOS 固定路径。

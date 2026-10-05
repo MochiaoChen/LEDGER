@@ -24,7 +24,7 @@ def run_dir(tmp_path_factory):
     c = {"input": str(SAMPLES / "annual_report_2024.md"), "fiscal_year": 2024, "company": "星河智造",
          "assumptions": str(SAMPLES / "valuation_assumptions.json"), "report": str(SAMPLES / "research_draft.md"),
          "peers": str(SAMPLES / "peers.csv"), "estimates": str(SAMPLES / "estimates.csv"),
-         "guidance": str(SAMPLES / "guidance.csv"), "llm": None}
+         "guidance": str(SAMPLES / "guidance.csv")}
     with RunTracer("golden", tmp_path_factory.mktemp("runs")) as tr:
         pipelines.run("all", c)
     return tr.dir

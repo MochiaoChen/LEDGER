@@ -1,7 +1,7 @@
 """季报单季拆分、经营性 EBIT、三表驱动 DCF、comps 利润率对比页。
 
 季度拆分用两种输入检验：年报“分季度主要财务指标”单季表（Agent / Skill 共用规则通道），
-以及 Skill 版本的“年报 + 三季报”（--supplement，第四季度 = 全年 − 前三季度累计）。
+以及模型抽取的“年报 + 三季报”（--supplement，第四季度 = 全年 − 前三季度累计）。
 """
 
 import json
@@ -85,7 +85,7 @@ def test_sign_note_suffix_matches_metric():
 @pytest.fixture(scope="module")
 def run(tmp_path_factory):
     c = {"input": str(ANNUAL), "fiscal_year": 2024, "company": "星河智造",
-         "assumptions": str(SAMPLES / "valuation_assumptions.json"), "peers": str(SAMPLES / "peers.csv"), "llm": None}
+         "assumptions": str(SAMPLES / "valuation_assumptions.json"), "peers": str(SAMPLES / "peers.csv")}
     with RunTracer("quarterly", tmp_path_factory.mktemp("runs")) as tr:
         pipelines.run("valuation", c)
     c["run_dir"] = tr.dir
@@ -151,7 +151,7 @@ def test_supplement_must_be_passed(skill_facts, tmp_path):
 
 def test_supplement_requires_skill_facts():
     with pytest.raises(SystemExit):
-        main(["financials", "--input", str(ANNUAL), "--supplement", str(Q3), "--llm", "off"])
+        main(["financials", "--input", str(ANNUAL), "--supplement", str(Q3)])
 
 
 # ---------------------------------------------------------------- EBIT 与三表驱动的 DCF

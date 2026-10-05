@@ -1,4 +1,4 @@
-"""解读数字护栏（Skill 版本）：按单位与展示精度核对文字中的每个数字。
+"""文稿数字护栏：按单位与展示精度核对文字中的每个数字。
 
 “58.62 亿元”只与真值 ÷1e8 后四舍五入到 2 位小数比较，“14.49%”只与百分数值比较，
 因此不会因为中间计算结果数量多而“碰巧”放行编造的数字。
@@ -188,7 +188,7 @@ def check_binding(text: str, run: Path, source: str = "commentary.md") -> list[d
     analysis = json.loads((run / "financials" / "analysis.json").read_text(encoding="utf-8"))
     year = int(str(analysis["period"])[:4])
     doc = Document(source, "", _parse_markdown(text, source))
-    claims = extract_claims(doc, default_year=year, llm=None)
+    claims = extract_claims(doc, default_year=year)
     segment = _segment_values(run)
     claims = [c for c in claims if _binding_candidate(c, year, segment, _sentence(text, c["quote"]))]
     findings = verify_claims(claims, analysis["truth_table"])["findings"]

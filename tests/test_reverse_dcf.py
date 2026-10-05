@@ -14,7 +14,7 @@ from finagent.tasks.valuation import dcf, reverse_dcf
 @pytest.fixture(scope="module")
 def run_dir(tmp_path_factory):
     c = {"input": str(SAMPLES / "annual_report_2024.md"), "fiscal_year": 2024, "company": "星河智造",
-         "assumptions": str(SAMPLES / "valuation_assumptions.json"), "peers": str(SAMPLES / "peers.csv"), "llm": None}
+         "assumptions": str(SAMPLES / "valuation_assumptions.json"), "peers": str(SAMPLES / "peers.csv")}
     with RunTracer("rdcf", tmp_path_factory.mktemp("runs")) as tr:
         pipelines.run("valuation", c)
     return tr.dir

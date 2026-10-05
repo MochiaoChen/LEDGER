@@ -1,0 +1,208 @@
+\section{实验}
+\label{sec:exp}
+
+本节报告五组结果：自造样例上的端到端指标、真实年报上的抽取覆盖、引擎一致性、研报质检得分的演进，以及评审模型的校准。我们先说明一个总的前提：这些结果来自一支学生团队在一个月开发周期内的内部评测，样本量小，版本之间不是严格的对照实验；我们在每组结果后写明它能说明什么、不能说明什么。
+
+\subsection{实验设置}
+\paragraph{模型。}研报流水线中，研究助理、分析师、主笔与排版设计师使用 Claude Opus 5.5，复核编辑与盲评使用 Claude Sonnet 5.5，均通过 Claude Code 的无头模式（\code{claude -p}，事件流输出）运行。计算引擎不调用任何模型。
+
+\paragraph{数据。}自造样例为一家虚构制造业公司“星河智造”的 2024 年年报、三季报、估值假设、可比公司、一致预期、业绩预告与一份植入了 7 处错误的研报草稿，内部完全自洽。真实数据为贵州茅台、宁德时代、招商轮船、中际旭创的 2025 年年报，以及宇树科技的招股说明书；原件及其 SHA-256 登记在仓库中。
+
+\subsection{自造样例上的端到端指标}
+\label{sec:exp-sample}
+
+\begin{table}[h]
+\centering
+\caption{自造样例上的评测结果（\file{eval/run\_eval.py}）。样例为虚构且内部自洽，指标只说明流程正确，不代表真实效果。}
+\label{tab:sample}
+\small
+\begin{tabular}{@{}lc@{}}
+\toprule
+指标 & 结果 \\
+\midrule
+字段抽取准确率 & 100\%（35/35） \\
+纠错召回率 / 精确率 & 100\% / 100\%（7 处植入错误） \\
+误报数 & 0 \\
+错误类型判定准确率 & 100\%（口径 1、数值 4、单位 1、期间 1） \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+表 \ref{tab:sample} 的满分不应被解读为系统能力：样例是我们自己构造的，与代码共同演进。它的作用是回归测试——任何改动使这些指标下降都被视为回归。
+
+\subsection{真实年报上的抽取}
+\label{sec:exp-extract}
+我们在贵州茅台、宁德时代、招商轮船三家 2025 年年报上，由分析师会话抽取并经 \code{verify-facts} 校验、人工抽查后得到的 314 个数值作为核验集，检验规则通道（不调用任何模型）能独立取到多少、取对多少。
+
+\begin{table}[h]
+\centering
+\caption{规则通道在三家真实年报上的覆盖（合计 314 个核验值）。改进指第 \ref{sec:parsing} 节的四项版式处理。}
+\label{tab:extract}
+\small
+\begin{tabular}{@{}lccc@{}}
+\toprule
+版本 & 取到的核验值 & 覆盖率 & 与核验值错配 \\
+\midrule
+改进前 & 128 & 40.8\% & — \\
+改进后（稀疏网格、跨页续表、科目折行、同页多单位） & 293 & 93.3\% & 0 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+覆盖率从 40.8\% 提升到 93.3\%，且取到的 293 个值与核验值零错配。剩余未取到的主要是股本变动表、政府补助口径与部分季度扣非别名。这一结果的意义在于双通道校验：当规则通道能独立覆盖九成以上的核心数值时，模型通道的任何一个读错都会以冲突的形式暴露出来，而不会静默进入真值表。局限是只有三家公司、核验集由我们自己的流程产生；扩充到 15 家左右、覆盖更多行业与版式的评测集正在收集中。
+
+\subsection{计算引擎的一致性与完整性}
+截至 2026 年 10 月 5 日，开发分支上共 166 个测试，161 个通过，5 个因本地没有原参照插件而跳过（逐项对照测试），覆盖流水线、季报拆分、三表、DCF、反向 DCF、研报排版、护栏与出处分类、一致性检查、质检与闸门。三表、情景表、业绩对比与 DCF 引擎在样例上与原参照引擎的快照完全相等。在真实研报的运行中，三表模型的六项勾稽全部通过，DCF 各期收入、EBIT、折旧摊销、资本开支与营运资本与三表模型的最大偏差为 $7.3\times10^{-12}$ 百万元（第 \ref{sec:case} 节）。
+
+\subsection{研报质检得分的演进}
+\label{sec:exp-quality}
+
+我们用同一份评分标准（v0）、同一评审模型对三个流水线版本的交付稿各评一次：
+\begin{itemize}
+  \item \textbf{旧流程（v0）}：贵州茅台、宁德时代、招商轮船。没有前置的资料搜集阶段，也没有独立的复核会话与数字锁。
+  \item \textbf{先搜集（v1）}：中际旭创、宇树科技。研究助理会话先联网搜集并登记来源，独立复核会话改写并过数字锁。
+  \item \textbf{深度调研（v2）}：同为中际旭创、宇树科技。在 v1 基础上增加分析框架中的深度专题与专题调研阶段，以及篇幅与图表闸门。
+\end{itemize}
+值得注意的是，中际旭创的 v1 与 v2 稿使用了同一套估值结果（基准每股价值均为 521.72 元，L1 各项证据相同），两版的差别集中在调研深度与文稿：登记的检索问题由 21 个增至 31 个，来源由 33 个增至 51 个，正文来源引用由 67 处增至 243 处。
+
+\begin{figure}[t]
+\centering
+\begin{tikzpicture}
+\begin{axis}[
+  ybar stacked, bar width=13pt, width=\linewidth, height=6.2cm,
+  ymin=-10, ymax=100, ylabel={得分}, ylabel style={font=\small},
+  symbolic x coords={茅台v0,宁德v0,招商v0,中际v1,宇树v1,中际v2,宇树v2},
+  xtick=data, x tick label style={font=\footnotesize},
+  y tick label style={font=\footnotesize},
+  legend style={at={(0.02,0.98)},anchor=north west,font=\footnotesize,legend columns=4,draw=none,fill=none},
+  extra y ticks={75}, extra y tick labels={}, extra y tick style={grid=major,grid style={dashed,gatered}},
+  nodes near coords={}, enlarge x limits=0.08,
+]
+\addplot+[fill=nipsblue,draw=nipsblue] coordinates {(茅台v0,26) (宁德v0,26) (招商v0,21) (中际v1,33) (宇树v1,30) (中际v2,33) (宇树v2,30)};
+\addplot+[fill=modelorange,draw=modelorange] coordinates {(茅台v0,19) (宁德v0,15) (招商v0,21) (中际v1,26) (宇树v1,19) (中际v2,42) (宇树v2,40)};
+\addplot+[fill=midgray,draw=midgray] coordinates {(茅台v0,11) (宁德v0,8) (招商v0,12) (中际v1,15) (宇树v1,18) (中际v2,15) (宇树v2,18)};
+\legend{L1 数据闭合 (35), L2 分析质量 (45), L3 表达与合规 (20)}
+\end{axis}
+\begin{axis}[
+  width=\linewidth, height=6.2cm, ymin=-10, ymax=100, hide axis,
+  symbolic x coords={茅台v0,宁德v0,招商v0,中际v1,宇树v1,中际v2,宇树v2}, enlarge x limits=0.08,
+  only marks, mark=*, mark options={fill=gatered,draw=gatered,scale=0.8},
+  nodes near coords, nodes near coords style={font=\scriptsize\bfseries,anchor=south},
+  point meta=explicit symbolic,
+]
+\addplot coordinates {(茅台v0,48)[48] (宁德v0,49)[49] (招商v0,46)[46] (中际v1,74)[74] (宇树v1,67)[67] (中际v2,90)[90] (宇树v2,88)[88]};
+\end{axis}
+\end{tikzpicture}
+\caption{三个流水线版本交付稿的质检得分（评分标准 v0，单次盲评）。柱为各层正向得分，红点为扣分后的总分（茅台、招商各命中一次负向条目“前后矛盾”，$-8$），红色虚线为交付线 75 分。v0 与 v1/v2 的公司不同，v1 与 v2 为同一组公司。}
+\label{fig:scores}
+\end{figure}
+
+\begin{table}[t]
+\centering
+\caption{质检得分明细（评分标准 v0，单次盲评）。}
+\label{tab:scores}
+\small
+\begin{tabular}{@{}llccccc c@{}}
+\toprule
+版本 & 公司 & L1 /35 & L2 /45 & L3 /20 & 扣分 & 总分 & 达标 \\
+\midrule
+\multirow{3}{*}{v0 旧流程} & 贵州茅台 & 26 & 19 & 11 & $-8$ & 48 & 否 \\
+ & 宁德时代 & 26 & 15 & 8 & 0 & 49 & 否 \\
+ & 招商轮船 & 21 & 21 & 12 & $-8$ & 46 & 否 \\
+\midrule
+\multirow{2}{*}{v1 先搜集} & 中际旭创 & 33 & 26 & 15 & 0 & 74 & 否 \\
+ & 宇树科技 & 30 & 19 & 18 & 0 & 67 & 否 \\
+\midrule
+\multirow{2}{*}{v2 深度调研} & 中际旭创 & 33 & 42 & 15 & 0 & 90 & 是 \\
+ & 宇树科技 & 30 & 40 & 18 & 0 & 88 & 是 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{观察。}图 \ref{fig:scores} 与表 \ref{tab:scores} 显示两段提升。从 v0 到 v1，L1 数据闭合的提升最直接：v0 三家在“外部信息可追溯”（L1-10）、“复核改写过数字锁”（L1-12）、“人工复核清单”（L1-13）上全部失分，这三项分别由资料搜集先行与来源编号、独立复核会话和复核清单补上。从 v1 到 v2，同一组公司的 L1、L3 几乎不变，提升几乎全部来自 L2 分析质量（中际旭创 26 → 42，宇树科技 19 → 40），与 v2 新增深度专题调研的设计意图一致。v0 三家在 L2 中的“行业与竞争”“预测假设有依据”“估值方法与参数”“估值交叉验证”四条全部失分，而这些在 v2 中大多通过。
+
+\paragraph{这组结果不能说明什么。}第一，每份交付稿只评了一次，而第 \ref{sec:exp-calib} 节显示重复评审的总分极差为 7～8 分，单次得分的差异需要结合这一波动来读。第二，v0 与 v1/v2 的公司不同，行业难度不可比。第三，版本之间同时改变了多个因素（资料搜集、复核会话、深度专题、篇幅闸门），这里的比较不是消融实验，不能把提升归因到某一项设计上。第四，评审与生成模型同属一个模型家族，可能存在自我偏好~\citep{panickssery2024self}。
+
+\subsection{评审模型的校准}
+\label{sec:exp-calib}
+
+\paragraph{稳定性。}我们对中际旭创与宇树科技的 v2 交付稿各重复盲评 3 次（表 \ref{tab:stability}）。逐条全一致的比例为 91\% 与 86\%，两两不一致率为 0.061 与 0.091，总分极差为 7 与 8 分。不稳定的条目集中在“预测假设有依据”（L2-07）与“假设与局限透明”（L3-07），二者的判定都依赖“关键假设”“基本满足”这类需要裁量的措辞。
+
+\begin{table}[h]
+\centering
+\caption{同一交付稿重复盲评 3 次的稳定性（评审判定的 22 个条目）。}
+\label{tab:stability}
+\small
+\begin{tabular}{@{}lcccc l@{}}
+\toprule
+公司 & 逐条全一致 & 两两不一致率 & 三次总分 & 极差 & 不稳定条目 \\
+\midrule
+中际旭创 & 20/22（91\%） & 0.061 & 85 / 80 / 78 & 7 & L2-07、L3-07 \\
+宇树科技 & 19/22（86\%） & 0.091 & 80 / 88 / 83 & 8 & L2-07、L3-07、N-02 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{灵敏度。}表 \ref{tab:degrade-res} 给出七个劣化算子在两家公司上的结果。三类缺陷能稳定判出：插入无来源数字（2/2，同时触发数字护栏，总分被封顶为 40）、注入程序口吻（2/2）、摘要评级反转（2/2，但原稿在重复评审中已被判出过“前后矛盾”，按规则不计入命中率）。整节删除类缺陷——删交叉验证、删预期差、删跟踪指标、风险泛化——大多未判出，按有效变体计，中际旭创判出 2/6，宇树科技判出 3/6。
+
+\begin{table}[h]
+\centering
+\caption{劣化命中。“✓”表示劣化稿上目标条目被判出问题。连带改判为非目标条目与原稿多数判定不同的数量。}
+\label{tab:degrade-res}
+\small
+\begin{tabular}{@{}l cc cc@{}}
+\toprule
+ & \multicolumn{2}{c}{中际旭创} & \multicolumn{2}{c}{宇树科技} \\
+\cmidrule(lr){2-3}\cmidrule(lr){4-5}
+变体（目标条目） & 判出 & 连带改判 & 判出 & 连带改判 \\
+\midrule
+unsourced\_number（N-01） & ✓ & 3 & ✓ & 2 \\
+machine\_tone（L3-04） & ✓ & 2 & ✓ & 3 \\
+contradiction（N-02）$^\dagger$ & ✓ & 2 & ✓ & 2 \\
+generic\_risks（L2-11） & ✗ & 1 & ✓ & 2 \\
+no\_cross\_check（L2-09） & ✗ & 1 & ✗ & 2 \\
+no\_expectation\_gap（L2-02） & ✗ & 2 & ✗ & 4 \\
+no\_tracking（L2-12） & ✗ & 2 & ✗ & 3 \\
+\midrule
+有效变体判出率 & \multicolumn{2}{c}{2/6（33\%）} & \multicolumn{2}{c}{3/6（50\%）} \\
+\bottomrule
+\end{tabular}
+\par\vspace{2pt}{\footnotesize $^\dagger$ 原稿已被判出该问题，不计入判出率。}
+\end{table}
+
+我们逐条阅读了未判出变体的评审理由，发现多数情况不是评审漏判，而是\textbf{劣化不彻底}：深度研报会在核心观点、深度专题和图表中多次重复同一论点，而图表由排版脚本从产物生成、不在文稿里，删除文稿中的一节删不干净。例如删除“预期差”一节后，评审仍在摘要与估值章中找到了“股价隐含约 18 倍退出 EV/EBITDA”这一分歧表述；删除跟踪一节后，评审指出该节在 PDF 中“只有标题没有内容”，但失效条件散见于预期差与专题结论中，因此按判定标准仍判通过。要测量真正的漏判率，劣化算子需要改成跨全文删除相关句子并同步删除图表，这是下一步的工作。这组结果同时提示了评分标准本身的一个问题：对“是否存在”的判定容易被零散内容满足，可能需要区分“有专门一节”与“有零散提及”。
+
+\paragraph{与人工的一致性。}两位复核人对三家 v0 研报中评审判“不通过”的 33 条进行了复核：确认 26 条、误报 5 条、待查 2 条，判出问题的精确率为 84\%（不含待查）。误报集中在两类：“无机器腔”判得过严（两家研报因少量“不是……而是……”句式被判不通过）与“数字密度”的口径（数字加同比是否算堆砌）。评分标准 v1 据此修改了这两条的判定标准（第 \ref{sec:eval} 节）。
+
+\subsection{案例：一份 v2 研报的程序检查}
+\label{sec:case}
+以中际旭创 v2 交付稿为例，表 \ref{tab:case} 摘录 L0 与 L1 中程序检查给出的具体证据。这些数字均来自评测产物（\file{eval/results/v2\_中际旭创/}），对应的估值结论高度依赖文中假设，不构成投资建议。
+
+\begin{table}[h]
+\centering
+\caption{中际旭创 v2 研报的部分程序检查结果。}
+\label{tab:case}
+\small
+\begin{tabularx}{\linewidth}{@{}p{3.1cm}Xc@{}}
+\toprule
+检查 & 程序给出的证据 & 结果 \\
+\midrule
+L0-01 数字护栏 & 无出处数字 0，指标期间不符 0，外部数字缺引用 0 & ✓ \\
+L0-02 三表勾稽 & 6 项勾稽，失败 0 & ✓ \\
+L0-03 DCF 与三表同口径 & 收入、EBIT、折旧摊销、资本开支、营运资本逐期核对，最大偏差 $7.3\times10^{-12}$ 百万元 & ✓ \\
+L0-05 评级与估值一致 & 基准每股价值 521.72 元，参考股价 808.44 元，上行空间 $-35.5\%$，按规则为“卖出”，正文一致 & ✓ \\
+L1-02 分部预测基期闭合 & 分部合计 38,239.94 百万元，等于营业收入，差 0.00 & ✓ \\
+L1-05 情景排序 & 悲观 185.77 / 基准 521.72 / 乐观 918.06 元 & ✓ \\
+L1-07 终值占比 & 终值占企业价值 77.1\%（阈值 80\%） & ✓ \\
+L1-08 预测与历史衔接 & 首个预测年收入增速较实际年变动 71.0 个百分点（阈值 30） & ✗ \\
+L1-10 外部信息可追溯 & 31 个问题、61 次检索、51 个来源，正文引用 243 处 & ✓ \\
+L1-12 数字锁 & 复核改写删去 15 个数字，无新增 & ✓ \\
+L1-13 人工复核清单 & \file{review.md} 10 条 & ✓ \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+L1-08 的失败值得一提：程序发现首个预测年的收入增速相对实际年变动过大。这不一定是错误——高景气行业的增速确实可能大幅变化——但它是一个需要人看的信号，因此被计为失分并进入问题单。评审在 L2 中也给出了具体的批评：估值方法的选择理由与 β、风险溢价、永续增长率的依据不足（L2-08 未通过），同业倍数与 DCF 的口径不一致。
+
+\subsection{成本与耗时}
+一次盲评约需 3～4 分钟：中际旭创与宇树科技 v2 稿的评审分别耗时 163 秒与 254 秒，约 17 轮工具调用，输入约 96 万～107 万词元，按 API 价格折合约 2.3 美元。生成一份研报（五个会话、11 个阶段）的墙钟时间约 30～60 分钟，主要花在资料搜集、深度调研与排版上。

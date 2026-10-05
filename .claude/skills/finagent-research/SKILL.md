@@ -1,15 +1,13 @@
 ---
 name: finagent-research
-description: A 股上市公司投研（Skill 版本）：直接读年报/季报 PDF 抽取财务数据，经程序校验后完成财报分析（含单季拆分）、三表驱动的 DCF/可比公司估值与研报纠错。用户给出 A 股年报或季报（PDF），要求分析财报、估值、核查研报草稿，或提到 FinAgent / 赛题 2、4、5 时使用。
+description: A 股上市公司投研（分析师角色）：直接读年报/季报 PDF 抽取财务数据，经程序校验后完成财报分析（含单季拆分）、三表驱动的 DCF/可比公司估值与研报纠错。用户给出 A 股年报或季报（PDF），要求分析财报、估值、核查研报草稿，或提到 FinAgent / 赛题 2、4、5 时使用。
 ---
 
-# FinAgent 投研（Skill 版本）
+# FinAgent 投研（分析师）
 
-本仓库有两个版本，计算引擎共用：
-
-- **Agent 版本**：`python -m finagent all|ask`，程序调用国产大模型 API（DeepSeek 等）抽取与规划。
-- **Skill 版本（本文件）**：由你（Claude Code 中的模型）直接读 PDF 抽取数字、拆研报断言、写解读；
-  程序负责定位关键页、校验每个数字、做全部计算与出报告。
+分工：由你（无头 Claude Code 会话中的模型）直接读 PDF 抽取数字、拆研报断言、起草估值假设、写解读；
+程序（`python -m finagent`，不调用模型）负责定位关键页、校验每个数字、做全部计算与出报告。
+在研报流水线里，你是分析师会话，负责工作区 `CLAUDE.md` 的阶段 2～7。
 
 ## 铁律
 
@@ -87,7 +85,7 @@ PY -m finagent verify-facts --input <年报.pdf> --year <年度> --facts data/ex
 PY -m finagent all --input <年报.pdf> --year <年度> --company <公司> \
   --assumptions <假设.json> --report <研报草稿> \
   --facts data/extractions/<公司>_<年度>/facts.json --claims data/extractions/<公司>_<年度>/claims.json \
-  [--supplement <季报.pdf>] [--extras data/extractions/<公司>_<年度>/extras.json] --llm off
+  [--supplement <季报.pdf>] [--extras data/extractions/<公司>_<年度>/extras.json]
 ```
 
 可选：`--peers`、`--estimates`、`--guidance`（格式见 `data/samples/`）。只做财报分析用 `financials`，

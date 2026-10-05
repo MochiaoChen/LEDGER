@@ -27,7 +27,7 @@ def ctx(tmp_path_factory):
     c = {"input": str(SAMPLES / "annual_report_2024.md"), "fiscal_year": 2024, "company": "样例",
          "assumptions": str(SAMPLES / "valuation_assumptions.json"), "report": str(SAMPLES / "research_draft.md"),
          "peers": str(SAMPLES / "peers.csv"), "estimates": str(SAMPLES / "estimates.csv"),
-         "guidance": str(SAMPLES / "guidance.csv"), "llm": None}
+         "guidance": str(SAMPLES / "guidance.csv")}
     with RunTracer("parity", tmp_path_factory.mktemp("runs")):
         pipelines.run("all", c)
     c["assumptions_data"] = json.loads((SAMPLES / "valuation_assumptions.json").read_text(encoding="utf-8"))

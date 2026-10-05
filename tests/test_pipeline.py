@@ -6,7 +6,6 @@ from conftest import SAMPLES
 from finagent import pipelines
 from finagent.core.tracing import RunTracer
 from finagent.parsing.document import load_document
-from finagent.tasks.financials.extract import extract_financials
 
 
 @pytest.fixture(scope="module")
@@ -14,7 +13,7 @@ def ctx(tmp_path_factory):
     runs = tmp_path_factory.mktemp("runs")
     c = {"input": str(SAMPLES / "annual_report_2024.md"), "fiscal_year": 2024, "company": "样例",
          "assumptions": str(SAMPLES / "valuation_assumptions.json"),
-         "report": str(SAMPLES / "research_draft.md"), "llm": None}
+         "report": str(SAMPLES / "research_draft.md")}
     with RunTracer("test", runs) as tr:
         pipelines.run("all", c)
     c["run_dir"] = tr.dir
@@ -60,29 +59,8 @@ def test_run_artifacts_and_manifest(ctx):
 
 
 def test_deterministic(ctx, tmp_path):
-    c2 = {k: ctx[k] for k in ("input", "fiscal_year", "company", "assumptions", "report", "llm")}
+    c2 = {k: ctx[k] for k in ("input", "fiscal_year", "company", "assumptions", "report")}
     with RunTracer("test2", tmp_path):
         pipelines.run("all", c2)
     assert c2["check"]["findings"] == ctx["check"]["findings"]
     assert c2["valuation"]["value_range"] == ctx["valuation"]["value_range"]
-
-
-class FakeLLM:
-    """模拟 LLM：一条真实数字 + 一条编造数字，验证证据校验能拦截编造。"""
-    enabled = True
-
-    def chat_json(self, system, user, purpose=""):
-        return {"facts": [
-            {"metric_id": "revenue", "period": "2024", "raw_value": "5,862,340,125.36", "unit": "元"},
-            {"metric_id": "ocf", "period": "2024", "raw_value": "999,999,999.00", "unit": "元"},
-        ]}
-
-
-def test_llm_evidence_guard():
-    doc = load_document(SAMPLES / "annual_report_2024.md")
-    out = extract_financials(doc, fiscal_year=2024, llm=FakeLLM(), llm_mode="all")
-    ocf = [f for f in out["facts"] if f["metric_id"] == "ocf" and f["period"] == "2024"][0]
-    assert ocf["value"] == 238460000.0  # 编造的数字未进入结果
-    assert any(i["type"] == "LLM结果未通过证据校验" for i in out["issues"])
-    rev = [f for f in out["facts"] if f["metric_id"] == "revenue" and f["period"] == "2024"][0]
-    assert rev["method"] == "rule+llm"  # 规则与 LLM 一致 → 交叉印证

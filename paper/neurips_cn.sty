@@ -1,0 +1,105 @@
+% neurips_cn.sty —— 仿 NeurIPS 版式的中文技术报告样式（XeLaTeX + ctex）
+% 版心、标题块、摘要、节标题与页脚沿用 NeurIPS 的尺寸与层级；中文用 ctex 的 mac 字库，英文用 TeX Gyre Termes。
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{neurips_cn}[2026/10/05 NeurIPS-like layout for Chinese technical reports]
+
+% ---------------------------------------------------------------- 版心（NeurIPS：5.5in × 9in，左边距 1.5in）
+\RequirePackage[letterpaper,textwidth=5.5in,textheight=9in,top=1in,
+  headheight=12pt,headsep=25pt,footskip=30pt]{geometry}
+
+% ---------------------------------------------------------------- 字体
+\RequirePackage{amsmath,amssymb}
+\RequirePackage{unicode-math}
+\setmainfont{texgyretermes}[Extension=.otf,UprightFont=*-regular,BoldFont=*-bold,ItalicFont=*-italic,BoldItalicFont=*-bolditalic]
+\setsansfont{texgyreheros}[Extension=.otf,UprightFont=*-regular,BoldFont=*-bold,ItalicFont=*-italic,BoldItalicFont=*-bolditalic]
+\setmonofont{Menlo}[Scale=0.84]
+\setmathfont{texgyretermes-math.otf}
+\setCJKmonofont{Heiti SC}
+\linespread{1.18}
+
+% ---------------------------------------------------------------- 常用宏包
+\RequirePackage{microtype}
+\RequirePackage{xcolor}
+\RequirePackage{graphicx}
+\RequirePackage{booktabs,tabularx,multirow,makecell,array}
+\RequirePackage{threeparttable}
+\RequirePackage{enumitem}
+\RequirePackage{caption}
+\RequirePackage{subcaption}
+\RequirePackage[numbers,sort&compress]{natbib}
+\RequirePackage{hyperref}
+\RequirePackage{tcolorbox}
+\RequirePackage{algorithm}
+\RequirePackage[noEnd=false]{algpseudocodex}
+\RequirePackage{pgfplots}
+\pgfplotsset{compat=1.18}
+
+\definecolor{nipsblue}{HTML}{1F3A5F}
+\definecolor{gatered}{HTML}{B22222}
+\definecolor{modelorange}{HTML}{E08A2E}
+\definecolor{lightgray}{HTML}{F2F2F2}
+\definecolor{midgray}{HTML}{888888}
+
+\hypersetup{colorlinks=true,linkcolor=nipsblue,citecolor=nipsblue,urlcolor=nipsblue}
+\setlist{nosep,leftmargin=1.6em}
+\captionsetup{font=small,labelfont=bf,labelsep=quad,skip=6pt}
+\captionsetup[table]{position=top}
+\setlength{\abovecaptionskip}{6pt}
+\renewcommand{\arraystretch}{1.12}
+
+% ---------------------------------------------------------------- 节标题：左对齐、加粗，层级字号同 NeurIPS
+\ctexset{
+  section={format=\large\bfseries\raggedright,name={,},number=\arabic{section},aftername=\quad,
+           beforeskip=2.2ex plus .4ex minus .2ex,afterskip=1.2ex plus .2ex},
+  subsection={format=\normalsize\bfseries\raggedright,aftername=\quad,
+              beforeskip=1.6ex plus .3ex minus .2ex,afterskip=0.8ex plus .2ex},
+  subsubsection={format=\normalsize\bfseries\raggedright,aftername=\quad,
+                 beforeskip=1.2ex plus .3ex,afterskip=0.6ex},
+  paragraph={format=\normalsize\bfseries,aftername=\quad,runin=true,beforeskip=1ex plus .3ex,afterskip=0.6em},
+  appendix={name={附录}},
+  abstractname={摘要},
+  figurename={图},tablename={表},
+}
+\floatname{algorithm}{算法}
+
+% ---------------------------------------------------------------- 标题块（NeurIPS：4pt 粗线、标题、1pt 细线、作者）
+\newcommand{\@reportnote}{}
+\newcommand{\reportnote}[1]{\renewcommand{\@reportnote}{#1}}
+\renewcommand{\maketitle}{%
+  \par\begingroup
+    \renewcommand{\thefootnote}{\fnsymbol{footnote}}%
+    \thispagestyle{firstpage}%
+    \vbox{\hsize\textwidth\linewidth\hsize
+      \hrule height 4pt\vskip 0.25in
+      \centering{\LARGE\bfseries\@title\par}
+      \vskip 0.27in\hrule height 1pt\vskip 0.12in
+      {\centering\@author\par}
+      \vskip 0.3in minus 0.1in}%
+  \endgroup
+  \setcounter{footnote}{0}}
+
+\renewenvironment{abstract}{%
+  \centerline{\large\bfseries\abstractname}\vspace{0.6ex}%
+  \begin{list}{}{\leftmargin=0.5in\rightmargin=0.5in\listparindent=2em\parsep=0pt}\item\relax}
+  {\end{list}\vspace{1.2ex}}
+
+% ---------------------------------------------------------------- 页眉页脚
+\RequirePackage{fancyhdr}
+\fancypagestyle{firstpage}{\fancyhf{}\renewcommand{\headrulewidth}{0pt}
+  \fancyfoot[L]{\footnotesize\@reportnote}\fancyfoot[C]{}}
+\fancypagestyle{plain}{\fancyhf{}\renewcommand{\headrulewidth}{0pt}\fancyfoot[C]{\small\thepage}}
+\pagestyle{plain}
+
+% ---------------------------------------------------------------- 正文小工具
+\newcommand{\code}[1]{\texttt{\small #1}}
+\newcommand{\file}[1]{\texttt{\small #1}}
+% 图占位：图片文件不存在时画一个带编号与提示词指引的框，存在时直接插入
+\newcommand{\figslot}[3][\linewidth]{%
+  \IfFileExists{figures/#2.pdf}{\includegraphics[width=#1]{figures/#2.pdf}}{%
+  \IfFileExists{figures/#2.png}{\includegraphics[width=#1]{figures/#2.png}}{%
+    \fcolorbox{midgray}{lightgray}{\parbox[c][#3][c]{\dimexpr#1-2\fboxsep-2\fboxrule}{\centering\small\color{midgray}
+      待生成：\texttt{figures/\detokenize{#2}.png}\\[2pt]提示词见 \texttt{figures/PROMPTS.md} 中 \texttt{\detokenize{#2}} 一节}}}}}
+\newtcolorbox{designbox}[1]{colback=lightgray,colframe=nipsblue,boxrule=0.6pt,arc=1pt,
+  left=6pt,right=6pt,top=4pt,bottom=4pt,fonttitle=\bfseries\small,title={#1},fontupper=\small}
+
+\endinput

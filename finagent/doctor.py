@@ -103,8 +103,6 @@ def checks(live: bool = False) -> list[tuple[str, str, str]]:
 
     env = PROJECT_ROOT / ".env"
     add(env.is_file(), ".env", "已存在" if env.is_file() else "不存在：cp .env.example .env 后填写", optional=True)
-    add(bool(os.getenv("LLM_API_KEY")), "Agent 版本模型密钥", "LLM_API_KEY 已设置" if os.getenv("LLM_API_KEY")
-        else "LLM_API_KEY 未设置：Agent 版本只能 --llm off / replay；研报流水线不受影响", optional=True)
     return rows
 
 

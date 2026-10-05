@@ -12,7 +12,7 @@ def ctx(tmp_path_factory):
     c = {"input": str(SAMPLES / "annual_report_2024.md"), "fiscal_year": 2024, "company": "样例",
          "assumptions": str(SAMPLES / "valuation_assumptions.json"), "report": str(SAMPLES / "research_draft.md"),
          "peers": str(SAMPLES / "peers.csv"), "estimates": str(SAMPLES / "estimates.csv"),
-         "guidance": str(SAMPLES / "guidance.csv"), "llm": None}
+         "guidance": str(SAMPLES / "guidance.csv")}
     with RunTracer("test_new", tmp_path_factory.mktemp("runs")) as tr:
         pipelines.run("all", c)
     c["run_dir"] = tr.dir

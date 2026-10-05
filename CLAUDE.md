@@ -10,109 +10,61 @@
 | 选题 | 做什么 | 代码 |
 |---|---|---|
 | 2 财报分析 | 抽取 A 股财报指标、同比/环比、勾稽校验、异常信号、利润变动归因、实际 vs 一致预期/业绩预告、EPS 质量 | `finagent/tasks/financials/` |
-| 4 估值建模 | DCF（FCFF）三情景 + 敏感性、三表联动预测、可比公司相对估值、情景偏度 | `finagent/tasks/valuation/` |
-| 5 研报纠错 | 抽研报数字断言，与财报真值逐条核对，判断错误类型并给修改建议 | `finagent/tasks/report_check/` |
+| 4 估值建模 | 分部预测 → 三表联动 → FCFF DCF 三情景 + 敏感性、反向 DCF、可比公司、程序评级 | `finagent/tasks/valuation/` |
+| 5 研报纠错 | 抽研报数字断言，与财报真值逐条核对，判断错误类型并给修改建议；研报内部一致性 | `finagent/tasks/report_check/` |
 
 **不做**：选题 1、3、6、7。除非用户明确要求，不要往这些方向扩展。
 
-## 两个版本（共用计算引擎）
+## 系统架构（只有这一条路线）
 
-- **Agent 版本**：`python -m finagent all|ask`，程序内调用国产大模型 API 抽取、规划。
-- **Skill 版本**：`.claude/skills/finagent-research/`，Claude Code 读 PDF 抽取、拆断言、写解读；程序负责
-  `locate` 定位、`verify-facts` 逐字校验、`all --facts/--claims` 计算、`guard` 解读护栏。抽取文件存 `data/extractions/`。
-- 两版在样例上产出逐项一致（`tests/test_skill.py`）；改共用代码时两版都要回归。
-- 季报（`--supplement` + 条目 `source_file`）目前只有 Skill 版本支持；Agent 版本仍只读单份报告，待改。
+**多 Agent 系统，harness 是无头 Claude Code。**
+
+- **编排器** `finagent/report_pipeline.py`（确定性 Python，不是模型）：`build` 在仓库目录树之外为单家公司搭隔离工作区；
+  `run` 依次起五个无头 Claude Code 会话（`claude -p --output-format stream-json`）；`status` 判 11 道闸门；
+  `refine` 加盲评与问题单路由；`collect` 收回产物；`scorecard` 多工作区对比。
+- **五个生产角色**（每个一次独立会话，不共享上下文，只靠工作区文件交接）：研究助理（阶段 1，Opus）→ 分析师（2～7，Opus）
+  → 主笔（8，Opus）→ 复核编辑（9，Sonnet）→ 排版设计师（10～11，Opus）。另有**盲评质检员**（Sonnet），
+  在仓库与工作区之外只含交付物的目录里评审。模型由 `FINAGENT_GEN_MODEL` / `FINAGENT_QC_MODEL` 配置。
+- **角色说明**：`.claude/skills/` 四个 skill（`finagent-pipeline` 编排入口、`finagent-research` 分析师、
+  `finagent-report` 研究助理 / 主笔 / 排版、`finagent-review` 复核编辑）+ 编排器生成的工作区 `CLAUDE.md`（11 阶段、读取边界、闸门）。
+- **计算引擎** `finagent/`（除 `evaluation/`）：**不调用任何模型**。模型会话写下 `facts.json`、`extras.json`、`sources.json`、
+  `claims.json`、`valuation_assumptions.json`、`narrative.md`，引擎负责 `locate` 定位、`verify-facts` / `verify-extra` /
+  `verify-sources` 校验、全部计算、`guard` 护栏与 `numlock` 数字锁。没有模型抽取文件时引擎只走规则通道（样例回归与测试用）。
+- **质检** `finagent/evaluation/`：程序检查（L0/L1）+ 盲评（L2/L3/负向）+ 计分 + 评审校准。工作区不复制它，评分标准对生成方不可见。
+
+历史上曾有“程序内调用国产模型 API”的 Agent 版本（`ask`、`--llm`）和 Codex 执行器，已删除，不要重新引入。
+
+架构说明见 `docs/architecture.md`；技术报告见 `paper/`。
 
 ## 比赛硬约束（违反即扣分或失格）
 
-- 至少一个 LLM 作核心推理引擎，**优先国产模型**（DeepSeek / 千问 / 智谱，走 OpenAI 兼容接口）。
+- 至少一个 LLM 作核心推理引擎（大赛写的是优先国产模型；**已拍板全部用 Claude**，计划书里说明理由）。
 - 输出必须是**结构化数据、表格或报告**，不能只有对话记录。
 - 全程记录文件访问、工具调用、计算过程，做到**可追溯、可复现**。
 - 提交**完整源码**、依赖文件和运行说明，评审要能复现。
 - 第三方代码必须在 `THIRD_PARTY.md` 如实列明名称、版本、来源、许可证、使用范围，**不得冒充自研**。
 - 估值和投资判断必须写明假设、适用范围、风险，并**区分事实、推论与观点**。
 
-## 当前路线（截至 2026-09-28）
-
-**已完成**：
-- 三个选题端到端跑通；样例数据上抽取准确率、纠错召回率/准确率均为 100%（样例是自造的，不代表真实效果）。
-- 去除对 OpenAI 插件的依赖，引擎全部自研，与原引擎产出一致（PR #1）。
-- Skill 版本：Claude Code 读 PDF + 程序校验计算，与 Agent 版本产出一致；样例 PDF 端到端跑通（PR #3）。
-- 季报单季拆分（Q2 = H1 − Q1，Q3 = Q1-3 − H1，Q4 = 全年 − Q1-3）与分季度勾稽；Skill 版本支持年报 + 季报。
-- EBIT 剔除投资收益与公允价值变动；DCF 由三表模型驱动（逐期一致性核对）；comps 工作簿补利润率对比页。
-- Excel 产物按投行模型排版（`output/xlsx.py` 样式层，规范见 skill 的 `references/workbook.md`）。
-- Skill 抽取的阻断问题会在估值前停止流水线，所有下游共用分析真值表。
-- 贵州茅台 2025 年报 Skill 版本端到端跑通（`data/extractions/贵州茅台_2025/`）：规则通道修正真实年报的标题识别
-  （合并/母公司）、结构比列、附注明细与关联方表；营业收入取“其中：营业收入”。
-- 经营数据 `--extras`（分部表逐格核对，比率由程序算）；分部驱动预测 `segment_forecast`（销量 × 吨价 → 收入、毛利率、
-  费用率 → 三表 → DCF）；分红率；程序评级（`forecast_summary.rating`）。
-- model.xlsx：分部预测 → 三表-假设（情景开关 B5）→ 三表全公式联动与勾稽检查 → DCF；历史财务、分季度、经营数据页。
-- 卖方体例研报（HTML → PDF）：规范见 skill 的 `references/html-report.md` 与 `references/writing.md`，
-  茅台样例脚本 `data/extractions/贵州茅台_2025/report/build_report.py`。
-- 茅台研报扩为约 20 页深度报告（目录两遍生成页码、56 个图表）；extras 比率支持 growth/diff 与别名，guard 识别百万元估值产物、WACC 假设与利润归因项。
-- 研报生成抽成独立 Skill `.claude/skills/finagent-report/`：共用代码 reportkit（读产物、标准图表与原语、目录、附录、免责声明、打印）、编排与文稿模板、行业框架；茅台脚本只保留专属部分。
-- 研报流水线 `finagent/report_pipeline.py`：`build` 为单家公司搭隔离工作区（两个 skill + 引擎 + 该公司年报 + 外部输入，
-  建在仓库目录树之外），工作区 CLAUDE.md 按阶段规定读什么、闸门是什么；`status` 逐阶段核对（含过期检测）；
-  `run --agent claude|codex` 无头执行；`collect` 把产物收回仓库；`scorecard` 多工作区对比测评。
-  入口 skill `finagent-pipeline`；`.agents/skills/` 是 Codex 用的入口（`sync-skills` 生成）。新公司出研报走这条流水线。
-- 研报质量（2026-10-02，针对非 Claude 模型的机器腔与凭记忆写外部信息）：外部调研阶段联网检索并登记
-  `research/sources.json`（`verify-sources`），正文外部数字须带 `[S编号]`；文风**不做程序拦截**（用户明确反对），
-  由独立会话按 `finagent-review` skill 复核改写，`numlock` 数字锁保证改写不新增、不改动数字；
-  拿不准但重要的事项写 `report/review.md` 复核清单，随交付物给人工核对。reportkit 新增 `timeline`、`flow`、`text_table`。
-- 研报质检与多 Agent 循环（2026-10-03，设计稿 `docs/design/2026-10-03-multi-agent-eval.md`）：评分标准
-  `eval/rubrics/report_v0.json` 四层（L0 硬闸门 / L1 数据闭合由程序判，L2 分析质量 / L3 表达与合规 / 负向条目由 Sonnet
-  在仓库与工作区之外的盲评目录里判），`finagent/evaluation/` 计分；`report_pipeline refine` 串起生成（Opus 5.5）→
-  复核（Sonnet）→ 质检（Sonnet）循环，问题单按路由回传，评分标准对生成方不可见（工作区不复制 `finagent/evaluation/`）。
-  三家 Opus 研报 v0 得分 46～49（`eval/results/`），用户会据此调权重。
-  评分标准 v1（2026-10-04，依据三家人工质检）：L1-10/L1-13 改为核对实质内容，L3-04/L3-05 放宽；
-  研报 skill 要求关键预测参数写出“依据数字 → 换算 → 取值”（`BASIS` 缺项直接报错），复核 skill 增加前后矛盾对账。环境：`scripts/setup.sh` / `setup.ps1` +
-  `python -m finagent.doctor`。
-- 真实年报 PDF 表格（2026-10-04）：稀疏网格列合并（宁德时代科目与数字错列）、跨页续表沿用首页表头（`Chunk.continued_from`）、
-  科目折行接回；茅台 / 宁德 / 招商三家 314 个核验值，规则通道取到 293 个（原 128 个），错配 0。比率类“本年比上年增减”按百分点核对。
-- 评审校准（2026-10-04，`finagent/evaluation/calibrate.py`，结果 `eval/calibration/report.md`）：原稿重复盲评看稳定性；
-  七种程序劣化（删交叉验证、删预期差、风险泛化、删跟踪指标、无来源数字、前后矛盾、机器腔）重新排版后盲评看命中与连带改判；
-  人工质检导出（`eval/calibration/human/`）算评审判“不通过”的精确率（人工只复核了判不通过的条目，漏判靠劣化命中补）。
-  结果（宇树、中际各 3 次原稿 + 7 个劣化）：重复评审逐条一致 86%～91%、总分极差 7～8；无来源数字、机器腔、评级矛盾能判出；整节删除类（交叉验证、预期差、跟踪指标、风险泛化）多数未判出，评审理由显示同一论点在专题与图表里仍在（图表由排版脚本生成，删文稿删不掉），属劣化不彻底；要测真漏判需改成跨全文删句子并同步删图表。人工一致：判出问题精确率 84%。
-- 已拍板（2026-10-04）：模型全部用 Claude（不再接国产模型 live）；导师风格改写不做；计划书按顶会论文体例写（中文，
-  方案 `docs/design/2026-10-04-proposal-paper.md`）；前端倾向 Textual TUI（调研 `docs/design/2026-10-04-frontend-tui.md`）。
-- 统一命令行与终端界面（2026-10-04）：`finagent <research|report|eval|calibrate|bench|test|doctor|ls|tui>`（`finagent/cli.py`，
-  旧入口保留；`pip install -e .` 或 `bin/finagent`）；`finagent/catalog.py` 读工作区与运行产物（只读）；
-  终端界面 `finagent_tui/`（Textual，可选依赖，不在 `finagent/` 内）：概览 / 真值表来源回溯 / 估值热力表 / 质检逐条 / 追溯回放 / Agent 日志 / 命令。
-- 借鉴原插件方法（2026-10-05，本地参考副本 `reference/openai-pei/` 不入库，规则见其 README；对照写进 THIRD_PARTY 第 1 节）：
-  反向 DCF `valuation/reverse_dcf.json`（参考股价隐含的增速、利润率、折现率、终值参数，逐个单独求解，按基准与历史区间分档；
-  每股价值对增速不单调时报告可达最高值）；研报内部一致性 `report_check/consistency.py`（评级、各情景每股价值、预测年度公司整体
-  收入与利润，同口径才比，命中即确认），用于评分标准 v2 的 N-02（程序判，结论冲突拆为 N-04）、guard 的 `contradictions`、
-  选题 5 的 `check/consistency.json`；研报 skill 补投资主线六项要求、分歧表、跟踪三档阈值（确认 / 预警 / 证伪），`md()` 支持表格。
-  工作簿审计补跨期公式孤岛（判失败）、公式内写死数字与易变函数（提示）；guard 的 `provenance` 给正文每个数字定出处类型
-  （报告披露 / 外部来源 = 事实，程序计算 = 推论，模型预测 / 估值假设 = 观点），研报附录写出全文数字构成。
-- 166 个测试通过。
-
-**按优先级待做**：
-1. **计划书**（论文体例，`paper/`，XeLaTeX + ctex）：先确认大赛模板与页数要求、项目名（FinAgent 与已发表论文撞名）。
-2. **前端**：网页前端由其他成员负责；终端界面 `finagent tui` 已有，后续按需补运行中实时刷新。
-3. **评测集**：清单见 `docs/eval-dataset-collection.md`（15 家年报季报 + 卖方研报人工埋错），用户团队收集中。
-4. 真实年报联调余项：规则通道未取到的股本变动表、政府补助口径、部分扣非季度别名；Agent 版本未测；扫描页拒收不做 OCR。
-   研报写作待用户提供优秀研报样例（`references/exemplars/`）后提炼分析逻辑。
-5. Agent 版本跟进 Skill 版本：多文件输入（季报）、规则通道识别季报表头“本报告期/年初至报告期末”
-   （现在会被当成年度，所以没有对季报开放）、`prompts/extract_financials.md` 补投资收益与公允价值变动收益。
-
-**截止日期**：**2026-10-18** 初赛提交（计划书 PDF + ≤5 分钟 MP4 视频）；11 月底决赛（现场演示 + 答辩，需可运行原型和现场样例数据）。
-
 ## 设计规范（不要破坏）
 
-1. **LLM 不做算术。** LLM 只负责理解文本、抽取补漏、写文字解读、Agent 规划。所有数值计算都用确定性 Python 完成。
-2. **每个数字可追溯。** 抽取结果必须带 `source = {source, page, chunk_id, row, col}`。LLM 抽出的数字必须能在原文 chunk 里找到，否则丢弃（`extract._validate_llm_item`）。
-3. **双通道不静默取舍。** 规则通道和 LLM 通道结果不一致时，记为 issue 交人工复核，不要偷偷选一个。
+1. **LLM 不做算术。** 模型只负责读、抄、写、判断。所有数值计算都用确定性 Python 完成，连“约三倍”这类约数也不许心算。
+2. **每个数字可追溯。** 抽取结果必须带 `source = {source, page, chunk_id, row, col}`。模型抄的数字必须在所写页码的原文中
+   按数字边界找到，否则拒收（`external.find_evidence`）；外部来源的摘句必须包含所登记的数字（`output/sources.py`）。
+3. **双通道不静默取舍。** 模型抽取与规则通道结果不一致时，记为 issue 并阻断估值，不要偷偷选一个（`extract.merge`）。
 4. **一张真值表。** `analyze()` 产出的 `truth_table` 是估值和纠错的唯一数据来源。不要在下游重新抽取或重算基础数字。
-5. **所有文件读取走 `tracing.read_file()`**，所有产物走 `tracer.write_artifact()` / `write_json()`，这样才会记录哈希。新步骤用 `Pipeline.step` 注册，工具函数用 `@tracing.traced`。
+5. **所有文件读取走 `tracing.read_file()`**，所有产物走 `tracer.write_artifact()` / `write_json()`，这样才会记录哈希。
+   引擎步骤用 `Pipeline.step` 注册，工具函数用 `@tracing.traced`。会话事件流存工作区 `.pipeline/agents/`。
 6. **单位约定**：财务事实内部统一用**元**；估值模块（DCF、三表、comps）用**百万元**，每股用**元**；比率存百分数值（14.49 表示 14.49%）。
-7. **误报控制优先于召回。** 纠错容差按研报数字的展示精度算（`half_ulp`）；预测性表述和缺少真值的断言判"无法核实"，不计为错误；错误类型（单位/期间/口径）必须找到精确匹配才下结论。
-8. **报告结构**：事实 → 推论 → 观点；报告中每个数字都附来源定位；估值报告必须写假设、口径简化说明和"不构成投资建议"。
-9. **LLM 输出加护栏**：文字解读过数字护栏（`pipelines.commentary`）；以后任何让 LLM 改写报告的功能都必须加数字锁。
+7. **误报控制优先于召回。** 纠错容差按研报数字的展示精度算（`half_ulp`）；预测性表述和缺少真值的断言判“无法核实”，
+   不计为错误；错误类型（单位/期间/口径/方向）必须找到精确匹配才下结论。
+8. **报告结构**：事实 → 推论 → 观点；估值报告必须写假设、口径简化说明和“不构成投资建议”。
+9. **模型输出加护栏**：文稿过 `guard`（出处、指标绑定、外部数字带 `[S编号]`）；任何让模型改写报告的环节都必须过 `numlock`。
+10. **会话隔离**：角色之间不共享上下文；工作区在仓库之外；评分标准与完整评测结果不进入工作区，回传的问题单只含理由与证据。
+11. **不预设行业框架**：skill 只给方法与约束，驱动由模型从年报与资料包推导。**文风不做程序拦截**（用户明确反对），交给复核编辑。
 
 ## 第三方代码规则
 
-- 仓库**不再包含** OpenAI Public Equity Investing 插件代码（原 `third_party/` 与 `vendor.py` 已删除），不要重新引入。
+- 仓库**不包含** OpenAI Public Equity Investing 插件代码，不要重新引入。本地参考副本 `reference/openai-pei/` 不入库。
 - 原插件引擎已自研替代：`ts_engine.py`（三表）、`scenario_tables.py`（情景表）、`earnings.py`（beat/miss、预告、EPS 质量）、
   `dcf.py`、`comps.py`（含公式工作簿）。计算口径与原插件保持一致，参照关系如实写在 `THIRD_PARTY.md`。
 - 一致性护栏：`tests/test_golden.py`（对比 `tests/golden/` 原引擎快照，必须完全相等）；
@@ -127,12 +79,37 @@
 - 三表模型的经营费用是轧差项（毛利 − EBIT − 折旧摊销），保证历史期 EBIT 与 DCF 同口径；
   DCF 情景向量全部取自三表模型，假设文件里的 `ebit_margin` 等字段不再生效。
 - 三表模型期初留存收益置 0，权益合并列示，只影响列示，不影响勾稽。
+- 规则通道不识别季报表头（“本报告期 / 年初至报告期末”会被当成年度），所以季报（`--supplement`）只接模型抽取，规则通道不参与比对。
+- 规则通道未取到：股本变动表、政府补助口径、部分扣非季度别名。扫描页直接拒收，不做 OCR。
 - 样例数据全部为虚构，内部完全自洽，真实数据效果会明显下降。
+
+## 进展（截至 2026-10-05）
+
+- 三个选题端到端跑通；引擎自研替代原插件，产出一致（PR #1）。
+- 模型读 PDF + 程序校验计算（PR #3）；季报单季拆分与分季度勾稽；EBIT 口径、三表驱动 DCF、comps 利润率对比、投行排版 Excel。
+- 真实年报：茅台、宁德、招商、中际旭创、宇树科技（招股书）；稀疏网格、跨页续表、科目折行处理后，三家 314 个核验值规则通道取到 293 个，错配 0。
+- 研报流水线：隔离工作区、五会话、11 道闸门，先搜集后分析、深度专题调研；reportkit 排版（25～32 页、≥ 60 图表）。
+- 质检：评分标准 v0 → v1（人工质检调整）→ v2（数字前后矛盾改程序判）；`refine` 闭环；评审校准
+  （重复盲评逐条一致 86%～91%、总分极差 7～8；判出问题人工精确率 84%；整节删除类劣化判出率低，原因是劣化不彻底）。
+- v0 三家（旧流程）46～49 分；中际旭创、宇树科技 v1 74 / 67 → v2 90 / 88（评分标准 v0、单次盲评）。
+- 反向 DCF、研报内部一致性检查、工作簿公式审计、数字出处分类（事实 / 推论 / 观点）。
+- 统一命令行 `finagent`、终端界面 `finagent_tui/`。
+- 2026-10-05 清理：删除程序内 LLM 客户端、`ask` 工具循环、prompt 模板、`--llm` 参数与 Codex 执行器，只保留无头 Claude Code 一条路线。
+- 164 个测试通过（本地无原插件时跳过 5 个逐项对照测试）。
+
+**按优先级待做**：
+1. **计划书**（论文体例，`paper/`，XeLaTeX + ctex）；项目名待定（FinAgent 与已发表论文撞名）。
+2. **评测集**：清单见 `docs/eval-dataset-collection.md`（约 15 家年报季报 + 卖方研报人工埋错），团队收集中。
+3. 改进劣化算子（跨全文删除并同步删图表），做资料搜集 / 复核会话 / 深度专题三项消融。
+4. 规则通道识别季报表头；研报写作待优秀研报样例（`references/exemplars/`）到位后提炼分析逻辑。
+5. **前端**：网页前端由其他成员负责；终端界面后续补运行中实时刷新。
+
+**截止日期**：**2026-10-18** 初赛提交（计划书 PDF + ≤5 分钟 MP4 视频）；11 月底决赛（现场演示 + 答辩，需可运行原型和现场样例数据）。
 
 ## 常用命令
 
 ```bash
-python -m finagent all --input data/samples/annual_report_2024.md --year 2024 --company 星河智造 --assumptions data/samples/valuation_assumptions.json --report data/samples/research_draft.md --peers data/samples/peers.csv --estimates data/samples/estimates.csv --guidance data/samples/guidance.csv --llm off
+python -m finagent all --input data/samples/annual_report_2024.md --year 2024 --company 星河智造 --assumptions data/samples/valuation_assumptions.json --report data/samples/research_draft.md --peers data/samples/peers.csv --estimates data/samples/estimates.csv --guidance data/samples/guidance.csv
 ```
 
 ```bash
@@ -144,7 +121,7 @@ python -m finagent.report_pipeline refine --workspace <工作区>
 ```
 
 ```bash
-python -m finagent.evaluation run --company <公司> --run-dir runs/<id> --work data/extractions/<公司>_<年度>
+python -m finagent.evaluation run --workspace <工作区>
 ```
 
 ```bash
@@ -164,6 +141,6 @@ python eval/run_eval.py
 ## 代码风格
 
 - 注释、docstring、报告、错误信息用**中文**；标识符用英文。
-- `finagent/` 只用标准库（pdfplumber 仅用于 PDF 解析）。
+- `finagent/` 只用标准库（pdfplumber 仅用于 PDF 解析）；终端界面在 `finagent_tui/`，可选依赖。
 - 跟随周边代码的写法和注释密度；新功能配测试。
-- Git：分支 `main`，提交信息结尾加 `Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>`；未经用户要求不要 push。
+- Git：分支 `main`，提交信息结尾加 `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`；未经用户要求不要 push。

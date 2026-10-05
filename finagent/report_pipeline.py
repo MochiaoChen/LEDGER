@@ -1,17 +1,16 @@
 """研报生成流水线：为一家公司搭建隔离工作区（sample），让模型在里面直接产出研报。
 
   python -m finagent.report_pipeline build     --company 恒瑞医药 --year 2025 [--tag opus] [--price 45.6 --price-source "..."]
-  python -m finagent.report_pipeline run       --workspace <工作区> --agent claude|codex [--model ...] [--dry-run]
+  python -m finagent.report_pipeline run       --workspace <工作区> [--model ...] [--dry-run]   # 依次起五个无头 Claude Code 会话
   python -m finagent.report_pipeline status    [--workspace <工作区>]           # 阶段闸门（工作区内可省略参数）
   python -m finagent.report_pipeline collect   --workspace <工作区> [--label Opus]  # 产物收回仓库
   python -m finagent.report_pipeline refine    --workspace <工作区> [--max-rounds 3]  # 生成 → 复核 → 质检循环，达标才交付
   python -m finagent.report_pipeline scorecard --workspace <A> --workspace <B>   # 测评：多个工作区并排比较
-  python -m finagent.report_pipeline sync-skills                                 # 更新仓库 .agents/skills 入口
 
 工作区只放两个 skill、计算引擎、这一家公司的年报和外部输入，目录结构与仓库一致（skill 里的相对路径照常可用），
 不含其他公司的抽取文件、文稿、历史运行和交付物，也不在仓库目录树内（避免模型读到仓库或上级目录的
-CLAUDE.md、原插件代码）。工作区说明写在 AGENTS.md（Codex 等直接读，CLAUDE.md 引用它），按阶段写明该读什么、
-不该读什么，`status` 逐阶段核对闸门。skill 全文在 .claude/skills/，.agents/skills/ 下是指向它的入口。
+CLAUDE.md、原插件代码）。工作区说明写在 CLAUDE.md，按阶段写明该读什么、不该读什么，`status` 逐阶段核对闸门。
+执行器（harness）是无头 Claude Code（`claude -p`）：每个角色一次独立会话，只靠工作区文件交接。
 """
 
 from __future__ import annotations
@@ -38,32 +37,31 @@ ENGINE_EXCLUDE = {"__pycache__", "evaluation"}
 FORMAT_SAMPLES = ("data/samples/valuation_assumptions.json", "data/samples/peers.csv")
 META = "sample.json"
 STATE_DIR = ".pipeline"
-AGENT_SKILLS = Path(".agents") / "skills"  # Codex 等读 .agents/skills 与 AGENTS.md
 # Claude 执行时的默认分工：生成用 Opus，复核与质检用 Sonnet
 PY_WRAPPER = "py.cmd" if os.name == "nt" else "./py"
 GEN_MODEL = os.getenv("FINAGENT_GEN_MODEL", "claude-opus-5-5")
 QC_MODEL = os.getenv("FINAGENT_QC_MODEL", "claude-sonnet-5-5")
 # 资料搜集会话：先于一切分析，联网把年报之后的最新信息搜齐，写成资料包交给写作会话
-RESEARCH_PROMPT = ("你是本工作区的研究助理，只做 AGENTS.md 阶段 1（资料搜集）：先读 "
+RESEARCH_PROMPT = ("你是本工作区的研究助理，只做 CLAUDE.md 阶段 1（资料搜集）：先读 "
                    ".claude/skills/finagent-report/references/research.md 第一部分，用 WebSearch / WebFetch 把年报之后的"
                    "最新信息搜齐，登记 sources.json 并写资料包 dossier.md。不做财务抽取、不写分析框架。"
                    f"结束运行 {PY_WRAPPER} -m finagent.report_pipeline status，阶段 1 通过后停止并汇报。"
                    f"命令直接以 {PY_WRAPPER} 开头，不加 cd、不串联。")
-ANALYST_PROMPT = ("你是本工作区研报的分析师。阶段 1 资料搜集已完成，先读 research/dossier.md，再按 AGENTS.md 完成阶段 2～7："
+ANALYST_PROMPT = ("你是本工作区研报的分析师。阶段 1 资料搜集已完成，先读 research/dossier.md，再按 CLAUDE.md 完成阶段 2～7："
                   "财务抽取、分析框架（含深度专题）、深度调研、经营数据、估值假设、估值运行。不写文稿。"
                   f"每个阶段结束运行 {PY_WRAPPER} -m finagent.report_pipeline status，阶段 7 通过后停止并汇报。"
                   f"命令直接以 {PY_WRAPPER} 开头，不加 cd、不串联。")
 TASK_PROMPT = ("你是本工作区研报的主笔。阶段 1～7 已完成：先读 report/framework.md、research/dossier.md、research/topics/ "
-               "和运行产物，再按 AGENTS.md 阶段 8 写文稿：年报点评加深度研究，深度研究要做多环定量推导、写长写深。"
+               "和运行产物，再按 CLAUDE.md 阶段 8 写文稿：年报点评加深度研究，深度研究要做多环定量推导、写长写深。"
                f"guard 与篇幅闸门通过后运行 {PY_WRAPPER} -m finagent.report_pipeline status，阶段 8 通过即停止"
                f"（复核与排版由后面的会话完成）。命令直接以 {PY_WRAPPER} 开头，不加 cd、不串联。")
 # 复核会话：不继承写作会话的上下文，以编辑身份读稿（finagent-review skill）
 REVIEW_PROMPT = ("你是本工作区研报的复核编辑，没有参与写作。先读 .claude/skills/finagent-review/SKILL.md，"
-                 f"按它完成 AGENTS.md 阶段 9（复核改写），只做这一步；结束运行 "
+                 f"按它完成 CLAUDE.md 阶段 9（复核改写），只做这一步；结束运行 "
                  f"{PY_WRAPPER} -m finagent.report_pipeline status，阶段 9 通过后停止并汇报。命令直接以 {PY_WRAPPER} 开头，不加 cd、不串联。")
 # 排版会话：文字定稿之后才开始，只做版面设计与渲染
 LAYOUT_PROMPT = ("你是本工作区研报的排版设计师，文稿已定稿，不改正文。先读 .claude/skills/finagent-report/references/html-report.md "
-                 "与 templates/examples/ 下的参考脚本，再按 AGENTS.md 完成阶段 10～11：从模板起写本公司的定制排版脚本，"
+                 "与 templates/examples/ 下的参考脚本，再按 CLAUDE.md 完成阶段 10～11：从模板起写本公司的定制排版脚本，"
                  "每张图服务一个论点，图表 60 张以上、全文 25～30 页，表格涨跌双色，逐页看 preview 修到美观。"
                  f"每个阶段结束运行 {PY_WRAPPER} -m finagent.report_pipeline status，全部闸门通过后停止并汇报。"
                  f"命令直接以 {PY_WRAPPER} 开头，不加 cd、不串联。")
@@ -86,18 +84,11 @@ MIN_NARRATIVE_CHARS, MIN_DEEP_SHARE = 15000, 0.6
 MIN_PAGES, MAX_PAGES, MIN_FIGURES = 25, 32, 60
 
 
-def agent_command(agent: str, model: str | None = None, prompt: str = TASK_PROMPT) -> list[str]:
-    """无头执行命令。输出都是 JSONL 事件流，存进 .pipeline/agents/ 供测评读取用量。"""
-    if agent == "claude":
-        return ["claude", "-p", prompt, "--permission-mode", "acceptEdits",
-                "--allowedTools", *ALLOWED_TOOLS, "--output-format", "stream-json", "--verbose",
-                *(["--model", model] if model else [])]
-    if agent == "codex":
-        # 工作区不是 git 仓库；workspace-write 沙箱只允许写工作区与临时目录
-        # tools.web_search 打开 Codex 的联网检索（外部调研阶段需要）
-        return ["codex", "exec", "--full-auto", "--skip-git-repo-check", "--json", "-c", "tools.web_search=true",
-                *(["-m", model] if model else []), prompt]
-    raise SystemExit(f"不支持的 agent：{agent}")
+def agent_command(model: str | None = None, prompt: str = TASK_PROMPT) -> list[str]:
+    """无头 Claude Code 命令。输出是 JSONL 事件流，存进 .pipeline/agents/ 供测评读取用量。"""
+    return ["claude", "-p", prompt, "--permission-mode", "acceptEdits",
+            "--allowedTools", *ALLOWED_TOOLS, "--output-format", "stream-json", "--verbose",
+            *(["--model", model] if model else [])]
 
 
 def default_dest() -> Path:
@@ -114,32 +105,6 @@ def _sha256(path: Path) -> str:
 
 def _ignore(names: set[str]):
     return lambda _dir, files: [f for f in files if f in names or f.endswith(".pyc")]
-
-
-def _frontmatter(text: str) -> dict[str, str]:
-    m = re.match(r"---\n(.*?)\n---\n", text, re.S)
-    return dict(line.split(": ", 1) for line in m.group(1).splitlines() if ": " in line) if m else {}
-
-
-def skill_stub(name: str, root: Path) -> str:
-    """.agents/skills/<name>/SKILL.md：与 .claude/skills 同名同描述，正文只指向全文，避免两份内容漂移。"""
-    fm = _frontmatter((root / ".claude" / "skills" / name / "SKILL.md").read_text(encoding="utf-8"))
-    return (f"---\nname: {fm['name']}\ndescription: {fm['description']}\n---\n\n"
-            f"# {fm['name']}\n\n本 skill 的全文与配套文件在 `.claude/skills/{name}/`（相对仓库或工作区根目录）。"
-            f"先完整读 `.claude/skills/{name}/SKILL.md`，按其中的流程执行：文中 `references/`、`templates/`、`reportkit/` "
-            f"等链接相对该目录，命令和 `data/`、`runs/` 等路径相对根目录。\n")
-
-
-def sync_agent_skills(root: Path, names: tuple[str, ...] | None = None) -> list[Path]:
-    names = names or tuple(sorted(p.name for p in (root / ".claude" / "skills").iterdir()
-                                  if (p / "SKILL.md").is_file()))
-    out = []
-    for name in names:
-        path = root / AGENT_SKILLS / name / "SKILL.md"
-        path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(skill_stub(name, root), encoding="utf-8")
-        out.append(path)
-    return out
 
 
 # ------------------------------------------------------------------ 来源
@@ -169,16 +134,15 @@ def resolve_source(company: str, pdf: str | None = None, root: Path = PROJECT_RO
 
 
 def _check_location(ws: Path, root: Path) -> None:
-    """工作区不能在仓库或其上级目录树内：Claude Code / Codex 会沿父目录加载 CLAUDE.md / AGENTS.md，上级目录还有原插件代码。"""
+    """工作区不能在仓库或其上级目录树内：Claude Code 会沿父目录加载 CLAUDE.md，上级目录还有原插件代码。"""
     ws = ws.resolve()
     fence = root.resolve().parent
     if ws == fence or fence in ws.parents:
         raise SystemExit(f"工作区不能放在 {fence} 之下（会读到仓库与原插件内容），请换 --dest")
     home = Path.home().resolve()
     for p in ws.parents:
-        hit = [n for n in ("CLAUDE.md", "AGENTS.md") if (p / n).exists()]
-        if p != home and hit:
-            raise SystemExit(f"上级目录 {p} 有 {hit[0]}，会被加载进模型上下文，请换 --dest")
+        if p != home and (p / "CLAUDE.md").exists():
+            raise SystemExit(f"上级目录 {p} 有 CLAUDE.md，会被加载进模型上下文，请换 --dest")
 
 
 # ------------------------------------------------------------------ build
@@ -205,9 +169,6 @@ def build(company: str, year: int, dest: Path | None = None, *, pdf: str | None 
     for name in SKILLS:
         shutil.copytree(root / ".claude" / "skills" / name, ws / ".claude" / "skills" / name,
                         ignore=_ignore({"__pycache__"}))
-    for name in SKILLS:
-        (ws / AGENT_SKILLS / name).mkdir(parents=True)
-        (ws / AGENT_SKILLS / name / "SKILL.md").write_text(skill_stub(name, root), encoding="utf-8")
     shutil.copytree(root / "finagent", ws / "finagent", ignore=_ignore(ENGINE_EXCLUDE))
     shutil.copy2(root / "requirements.txt", ws / "requirements.txt")
     for rel in FORMAT_SAMPLES:
@@ -248,7 +209,7 @@ def build(company: str, year: int, dest: Path | None = None, *, pdf: str | None 
             "created_at": datetime.now().isoformat(timespec="seconds"), "as_of": f"{datetime.now():%Y-%m-%d}"}
     (ws / META).write_text(json.dumps(meta, ensure_ascii=False, indent=2), encoding="utf-8")
     # 解释器包一层 ./py：命令短，路径里的空格也不影响 Bash 权限前缀匹配；
-    # matplotlib 缓存放进工作区，Codex 等沙箱只允许写工作区时也能画图
+    # matplotlib 缓存放进工作区，只允许写工作区时也能画图
     (ws / "py").write_text("#!/bin/sh\n" 'HERE="$(cd "$(dirname "$0")" && pwd)"\n'
                            'export MPLCONFIGDIR="$HERE/.pipeline/mpl"\n'
                            f'exec "{sys.executable}" "$@"\n', encoding="utf-8")
@@ -258,8 +219,7 @@ def build(company: str, year: int, dest: Path | None = None, *, pdf: str | None 
         "@echo off\r\n"
         "set \"MPLCONFIGDIR=%~dp0.pipeline\\mpl\"\r\n"
         f'"{sys.executable}" %*\r\n', encoding="utf-8")
-    (ws / "AGENTS.md").write_text(render_guide(meta), encoding="utf-8")
-    (ws / "CLAUDE.md").write_text("@AGENTS.md\n", encoding="utf-8")
+    (ws / "CLAUDE.md").write_text(render_guide(meta), encoding="utf-8")
     (ws / "TASK.md").write_text(TASK_PROMPT + "\n", encoding="utf-8")
     (ws / "REVIEW.md").write_text(REVIEW_PROMPT + "\n", encoding="utf-8")
     (ws / ".claude" / "settings.json").write_text(
@@ -279,7 +239,7 @@ def settings(meta: dict[str, Any], root: Path) -> dict[str, Any]:
     """工作区权限：引擎与 skill 只读；仓库及其上级目录（原插件、其他公司产物）不可读。"""
     fence = root.resolve().parent.as_posix()
     # report/resources/ 是年报原件；不能写成 report/**，否则会连带拦住 data/extractions/<公司>/report/（框架与文稿）
-    locked = ("finagent/**", ".claude/**", ".agents/**", "report/resources/**", META, "py", "py.cmd", "CLAUDE.md", "AGENTS.md")
+    locked = ("finagent/**", ".claude/**", "report/resources/**", META, "py", "py.cmd", "CLAUDE.md")
     return {"permissions": {
         "allow": list(ALLOWED_TOOLS),
         "deny": [f"Read(/{fence}/**)",
@@ -326,7 +286,7 @@ def render_guide(meta: dict[str, Any]) -> str:
 | {"`inputs/market.json`" if market else "—"} | {price_line} |
 | {"`inputs/peers.csv`" if "peers" in meta["inputs"] else "—"} | {peers_line} |
 
-skill 全文在 `.claude/skills/`（`.agents/skills/` 下只是指向它的入口），下文的 skill 文档路径都相对 `.claude/skills/`。
+skill 全文在 `.claude/skills/`，下文的 skill 文档路径都相对 `.claude/skills/`。
 
 你的全部产出写在 `{work}/`（资料包、抽取、假设、框架、外部调研、文稿、编排脚本、复核清单、交付说明），程序运行目录在 `runs/`。
 
@@ -375,7 +335,7 @@ skill 全文在 `.claude/skills/`（`.agents/skills/` 下只是指向它的入�
 | 4 | 深度调研 | 每个深度专题深挖一份笔记 `{work}/research/topics/<专题>.md`：多来源交叉、定量推导、结论与对预测的含义，事实句末带 `[S编号]`；补充检索追加进 sources.json（`phase: followup`）；verify-sources | `finagent-report/references/research.md` 第二部分 | 专题笔记 ≥ {MIN_TOPICS} 份，每份 ≥ {MIN_TOPIC_CHARS} 字、≥ {MIN_TOPIC_SOURCES} 个独立来源；补充问题 ≥ {MIN_FOLLOWUP} 个 |
 | 5 | 经营数据 | 按驱动清单逐格抄表到 `{work}/extras.json`，派生比率写 `ratios` | `references/extraction.md`“补充表格” | `PY -m finagent verify-extra --input {pdf} --extras {work}/extras.json` 为 `ok: true` |
 | 6 | 估值假设 | 起草 `{work}/valuation_assumptions.json`：`status` 写明“观点/假设”，股价取 `inputs/market.json`（没有则取资料搜集登记的最新收盘价），每项假设写依据；**预测首年要与资料包里年报之后的最新业绩衔接**，依据里引用 `[S编号]` | `finagent-research/SKILL.md` 第 5 步“估值口径”，`data/samples/valuation_assumptions.json`（格式） | 文件存在，有 `current_price` 与 `price_source`，依据中引用了资料搜集的 `[S编号]` |
-| 7 | 估值运行 | `PY -m finagent valuation --input {pdf} --year {y} --company {c} --assumptions {work}/valuation_assumptions.json --facts {work}/facts.json --extras {work}/extras.json --llm off`{" --peers inputs/peers.csv" if "peers" in meta["inputs"] else f" --peers {work}/research/peers.csv（资料搜集写了可比公司表时）"} | — | 最新运行目录成功，且晚于 facts / extras / 假设 / 可比公司表的修改，并带上了它们。**分析师会话到此停止** |
+| 7 | 估值运行 | `PY -m finagent valuation --input {pdf} --year {y} --company {c} --assumptions {work}/valuation_assumptions.json --facts {work}/facts.json --extras {work}/extras.json`{" --peers inputs/peers.csv" if "peers" in meta["inputs"] else f" --peers {work}/research/peers.csv（资料搜集写了可比公司表时）"} | — | 最新运行目录成功，且晚于 facts / extras / 假设 / 可比公司表的修改，并带上了它们。**分析师会话到此停止** |
 | 8 | 文稿（主笔会话） | `PY -m finagent.report_pipeline template narrative.md {work}/report/narrative.md`，按模板写“年报点评 + 深度研究”：年报点评约 1/3，深度研究（`deep_` 开头的节：行业、竞争、核心竞争力、各深度专题、预期差）约 2/3，素材来自 research/topics/ 与资料包；年报之后的最新进展单列一节；`PY -m finagent guard --run-dir runs/<run_id> --text {work}/report/narrative.md --sources {work}/research/sources.json` | `references/sections.md`，`finagent-research/references/writing.md` | guard 为 `ok: true` 且核对的是当前文稿；正文 ≥ {MIN_NARRATIVE_CHARS} 字、深度研究 ≥ {int(MIN_DEEP_SHARE * 100)}%。**主笔会话到此停止** |
 | 9 | 复核改写（复核会话） | 按 `finagent-review` skill：备份初稿为 `{work}/report/narrative.draft.md`，以编辑身份通读改写，写 `{work}/report/edit_log.md` 与复核清单 `{work}/report/review.md`；`PY -m finagent numlock --before {work}/report/narrative.draft.md --after {work}/report/narrative.md`，再重跑阶段 8 的 guard。只改文字、不删深度内容，不做排版 | `finagent-review/SKILL.md` | 三个文件都存在，数字锁通过，guard 对改写稿通过。**复核会话到此停止** |
 | 10 | 排版（排版会话） | `PY -m finagent.report_pipeline template build_report.py {work}/report/build_report.py`，参考 `templates/examples/` 的定制脚本，为本公司写图表：每张图服务一个论点，深度研究各节配外部数据图（市场空间、份额、对手对标、价格与产能），表格的同比与变动列用 `chg()` 涨跌双色；`Config.output_name` 设为 `{c}{datetime.now():%m%d}.pdf`；`PY {work}/report/build_report.py --run-dir runs/<run_id>`，逐页看 `preview/` 修大块留白、孤立标题、图文重叠 | `finagent-report/references/html-report.md` | PDF 晚于文稿和编排脚本；{MIN_PAGES}～{MAX_PAGES} 页、≥ {MIN_FIGURES} 个图表 |
@@ -560,7 +520,7 @@ def status(ws: Path) -> dict[str, Any]:
     run, man = _latest_run(ws, work)
     inputs_mtime = max(_mtime(facts), _mtime(extras), _mtime(assumptions), _mtime(peers_csv))
     if run is None:
-        add("7 估值运行", False, "没有成功的 valuation 运行", "按 AGENTS.md 阶段 7 的命令运行")
+        add("7 估值运行", False, "没有成功的 valuation 运行", "按 CLAUDE.md 阶段 7 的命令运行")
     else:
         started = datetime.fromisoformat(man["started_at"]).timestamp()
         argv = man["config"]["argv"]
@@ -704,36 +664,36 @@ def _writing_done(ws: Path) -> bool:
     return _done(ws, WRITE_STAGES)
 
 
-def _role_model(agent: str, role: str, model: str | None, review_model: str | None = None) -> str | None:
-    """Claude 默认分工：写作用 GEN_MODEL，复核用 QC_MODEL；显式指定的模型优先。其他 agent 用其默认模型。"""
+def _role_model(role: str, model: str | None, review_model: str | None = None) -> str:
+    """默认分工：生成侧（研究助理、分析师、主笔、排版、修订）用 GEN_MODEL，复核用 QC_MODEL；显式指定的模型优先。"""
     if role in ("research", "analyst", "write", "layout", "fix"):
-        return model or (GEN_MODEL if agent == "claude" else None)
-    return review_model or model or (QC_MODEL if agent == "claude" else None)
+        return model or GEN_MODEL
+    return review_model or model or QC_MODEL
 
 
-def run_agent(ws: Path, agent: str, model: str | None = None, review_model: str | None = None) -> int:
+def run_agent(ws: Path, model: str | None = None, review_model: str | None = None) -> int:
     """依次执行五个会话：研究助理（1）→ 分析师（2～7）→ 主笔（8）→ 复核（9，Sonnet）→ 排版（10～11）。
     彼此不继承上下文，只靠工作区文件交接；已通过的部分不重跑，某个会话没把它的阶段做完就停下。"""
     code = 0
     for role, upto, prompt_name in SESSIONS:
         if _done(ws, upto):
             continue
-        code = _session(ws, agent, _role_model(agent, role, model, review_model), role, globals()[prompt_name])
+        code = _session(ws, _role_model(role, model, review_model), role, globals()[prompt_name])
         if not _done(ws, upto):
             print(f"{role} 会话未完成阶段 1～{upto}，停止；运行 status 查看卡在哪一步。")
             return code or 1
     return code
 
 
-def _session(ws: Path, agent: str, model: str | None, role: str, prompt: str) -> int:
-    """在工作区里无头执行一个会话；事件流原样存 .pipeline/agents/<时间>-<agent>-<role>.jsonl，运行记录追加到 agent_runs.json。"""
-    cmd = agent_command(agent, model, prompt)
+def _session(ws: Path, model: str | None, role: str, prompt: str) -> int:
+    """在工作区里起一个无头 Claude Code 会话；事件流原样存 .pipeline/agents/<时间>-claude-<role>.jsonl，运行记录追加到 agent_runs.json。"""
+    cmd = agent_command(model, prompt)
     if shutil.which(cmd[0]) is None:
         raise SystemExit(f"找不到 {cmd[0]} 命令行，先安装并登录")
     logs = ws / STATE_DIR / "agents"
     logs.mkdir(parents=True, exist_ok=True)
     started = datetime.now()
-    log = logs / f"{started:%Y%m%d-%H%M%S}-{agent}-{role}.jsonl"
+    log = logs / f"{started:%Y%m%d-%H%M%S}-claude-{role}.jsonl"
     with log.open("w", encoding="utf-8") as f:
         proc = subprocess.Popen(cmd, cwd=ws, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                                 text=True, encoding="utf-8", errors="replace")
@@ -752,9 +712,9 @@ def _session(ws: Path, agent: str, model: str | None, role: str, prompt: str) ->
                 proc.wait()
             code = 130
             print("[中断] 已停止执行模型，工作区进度保留\n", flush=True)
-    record = {"agent": agent, "model": model, "role": role, "started_at": started.isoformat(timespec="seconds"),
+    record = {"agent": "claude", "model": model, "role": role, "started_at": started.isoformat(timespec="seconds"),
               "elapsed_sec": round((datetime.now() - started).total_seconds(), 1), "exit_code": code,
-              "log": log.relative_to(ws).as_posix(), **_usage(log, agent)}
+              "log": log.relative_to(ws).as_posix(), **_usage(log)}
     runs = ws / STATE_DIR / "agent_runs.json"
     history = _load(runs) if runs.is_file() else []
     runs.write_text(json.dumps([*history, record], ensure_ascii=False, indent=2), encoding="utf-8")
@@ -773,13 +733,11 @@ def _event_brief(line: str) -> str:
     if kind == "assistant":
         texts = [c.get("text", "") for c in ev.get("message", {}).get("content", []) if c.get("type") == "text"]
         return "".join(f"· {t.strip()[:200]}\n" for t in texts if t.strip())
-    if kind == "item.completed" and ev.get("item", {}).get("type") == "agent_message":
-        return f"· {ev['item'].get('text', '').strip()[:200]}\n"
     return ""
 
 
-def _usage(log: Path, agent: str) -> dict[str, Any]:
-    """从事件流取用量：Claude 的 result 事件有轮数与费用，Codex 的 turn.completed 有 token 数。"""
+def _usage(log: Path) -> dict[str, Any]:
+    """从事件流的 result 事件取轮数、费用与 token 用量。"""
     out: dict[str, Any] = {}
     tokens = {"input_tokens": 0, "output_tokens": 0}
     for line in log.read_text(encoding="utf-8").splitlines():
@@ -787,20 +745,16 @@ def _usage(log: Path, agent: str) -> dict[str, Any]:
             ev = json.loads(line)
         except json.JSONDecodeError:
             continue
-        if agent == "claude" and ev.get("type") == "result":
+        if ev.get("type") == "result":
             out.update(turns=ev.get("num_turns"), cost_usd=ev.get("total_cost_usd"))
             u = ev.get("usage") or {}
             tokens = {"input_tokens": u.get("input_tokens", 0) + u.get("cache_read_input_tokens", 0)
                       + u.get("cache_creation_input_tokens", 0), "output_tokens": u.get("output_tokens", 0)}
-        if agent == "codex" and ev.get("type") == "turn.completed":
-            u = ev.get("usage") or {}
-            tokens["input_tokens"] += u.get("input_tokens", 0)
-            tokens["output_tokens"] += u.get("output_tokens", 0)
     return {**out, **tokens}
 
 
 # ------------------------------------------------------------------ refine（生成 → 复核 → 质检循环）
-FIX_PROMPT = ("上一轮质检发现了需要回到写作阶段处理的问题，见 {issues}。按本工作区 AGENTS.md 修改对应阶段的产物"
+FIX_PROMPT = ("上一轮质检发现了需要回到写作阶段处理的问题，见 {issues}。按本工作区 CLAUDE.md 修改对应阶段的产物"
               "（需要补数据、改假设就重跑估值，文稿改完重跑 guard）；处理不了的写进 {work}/report/review.md 并说明原因。"
               "阶段 1～8 全部通过后停止并汇报，阶段 9 起由复核会话完成。命令直接以 ./py 开头，不加 cd、不串联。")
 REVISE_PROMPT = ("你是本工作区研报的复核编辑，没有参与写作。先读 .claude/skills/finagent-review/SKILL.md，再读质检问题单 "
@@ -888,7 +842,7 @@ def refine(ws: Path, *, max_rounds: int = 3, min_gain: float = 2.0, gen_model: s
 
     for n in range(len(state["rounds"]) + 1, max_rounds + 1):
         if n == 1:
-            run_agent(ws, "claude", gen_model, qc_model)
+            run_agent(ws, gen_model, qc_model)
         else:
             prev = _rounds_dir(ws) / str(n - 1)
             prev.mkdir(parents=True, exist_ok=True)
@@ -905,20 +859,20 @@ def refine(ws: Path, *, max_rounds: int = 3, min_gain: float = 2.0, gen_model: s
                 gen_file.write_text(issues_markdown(to_gen), encoding="utf-8")
                 for name in ("narrative.draft.md", "edit_log.md"):  # 文稿要重写，复核从头再来
                     (ws / work / "report" / name).unlink(missing_ok=True)
-                _session(ws, "claude", gen_model, "fix",
+                _session(ws, gen_model, "fix",
                          FIX_PROMPT.format(issues=gen_file.relative_to(ws).as_posix(), work=work))
                 if _writing_done(ws):
                     if to_rev:
-                        _session(ws, "claude", qc_model, "review",
+                        _session(ws, qc_model, "review",
                                  REVIEW_PROMPT + f"另读质检问题单 {rev_rel} 逐条处理。")
-                    run_agent(ws, "claude", gen_model, qc_model)  # 复核与排版按闸门续做
+                    run_agent(ws, gen_model, qc_model)  # 复核与排版按闸门续做
             else:
                 if to_rev:
-                    _session(ws, "claude", qc_model, "revise", REVISE_PROMPT.format(issues=rev_rel, work=work))
+                    _session(ws, qc_model, "revise", REVISE_PROMPT.format(issues=rev_rel, work=work))
                 if to_lay:
                     lay_file = prev / "issues-layout.md"
                     lay_file.write_text(issues_markdown(to_lay), encoding="utf-8")
-                    _session(ws, "claude", gen_model, "layout",
+                    _session(ws, gen_model, "layout",
                              LAYOUT_PROMPT + f"另读质检问题单 {lay_file.relative_to(ws).as_posix()} 逐条处理版面问题。")
 
         rdir = eroot / f"r{n}"
@@ -1024,7 +978,7 @@ def scorecard_markdown(rows: list[dict[str, Any]]) -> str:
     lines += ["| " + " | ".join(cell(r.get(k)) for k, _ in SCORE_COLUMNS) + " |" for r in rows]
     unfinished = [f"- {r['workspace']}：{r['next']}" for r in rows if not r["done"]]
     note = ("\n\n指标都是客观计数，不代表研报质量高低；正文分析深度、论证是否成立需要人工阅读 PDF 判断。"
-            "费用只有 Claude 的事件流提供。")
+            "费用取自 Claude Code 事件流。")
     return "\n".join(lines) + ("\n\n未完成：\n" + "\n".join(unfinished) if unfinished else "") + note + "\n"
 
 
@@ -1065,7 +1019,7 @@ def main(argv: list[str] | None = None) -> int:
     b.add_argument("--company", required=True)
     b.add_argument("--year", type=int, required=True)
     b.add_argument("--dest", help="工作区父目录，默认 ~/finagent-samples（或 FINAGENT_SAMPLES_DIR）")
-    b.add_argument("--tag", help="工作区后缀；同一公司让不同模型各跑一遍时区分，如 opus / codex")
+    b.add_argument("--tag", help="工作区后缀；同一公司让不同模型或配置各跑一遍时区分，如 opus / sonnet")
     b.add_argument("--pdf", help="年报路径，默认按 report/resources/ 查找")
     b.add_argument("--price", type=float, help="当前股价（元，外部数据）")
     b.add_argument("--price-source", help="股价来源（必填，若给 --price）")
@@ -1079,8 +1033,7 @@ def main(argv: list[str] | None = None) -> int:
         if name == "status":
             p.add_argument("--json", action="store_true")
         if name == "run":
-            p.add_argument("--agent", choices=["claude", "codex"], default="claude")
-            p.add_argument("--model", help=f"透传给 agent 的模型名；Claude 默认写作 {GEN_MODEL}、复核 {QC_MODEL}")
+            p.add_argument("--model", help=f"生成侧模型，默认 {GEN_MODEL}；复核默认 {QC_MODEL}")
             p.add_argument("--review-model", help="复核会话单独指定模型")
             p.add_argument("--dry-run", action="store_true", help="只打印命令")
         if name == "collect":
@@ -1098,7 +1051,6 @@ def main(argv: list[str] | None = None) -> int:
     sc.add_argument("--workspace", action="append", required=True, help="可多次指定")
     sc.add_argument("--json", action="store_true")
     sc.add_argument("--out", help="Markdown 表格另存路径")
-    sub.add_parser("sync-skills", help="按 .claude/skills 更新仓库 .agents/skills 入口（Codex 等用）")
     tp = sub.add_parser("template", help="工作区内：把 finagent-report 模板复制到 data/ 下")
     tp.add_argument("name", help="模板文件名，如 narrative.md、build_report.py")
     tp.add_argument("dest", help="目标路径（相对工作区，须在 data/ 下）")
@@ -1111,15 +1063,9 @@ def main(argv: list[str] | None = None) -> int:
                    price=args.price, price_source=args.price_source, price_date=args.price_date, peers=args.peers,
                    tag=args.tag, allow_unverified=args.allow_unverified, force=args.force)
         print(f"工作区：{ws}")
-        print("下一步：python -m finagent.report_pipeline run --agent claude --workspace "
+        print("下一步：python -m finagent.report_pipeline refine --workspace "
               + json.dumps(str(ws), ensure_ascii=False)
-              + "（或在 Claude Code / Codex 中打开该目录，把 TASK.md 的内容作为第一条消息；"
-              "写作完成后另开一个新会话，把 REVIEW.md 的内容作为第一条消息）")
-        return 0
-    if args.cmd == "sync-skills":
-        _in_workspace("sync-skills")
-        for path in sync_agent_skills(PROJECT_ROOT):
-            print(path.relative_to(PROJECT_ROOT))
+              + "（只生成不质检用 run）")
         return 0
     if args.cmd == "scorecard":
         rows = [scorecard(_workspace(w)) for w in args.workspace]
@@ -1138,11 +1084,11 @@ def main(argv: list[str] | None = None) -> int:
         return 0 if res["done"] else 1
     if args.cmd == "run":
         _in_workspace("run")
-        for role, key, prompt in (("写作会话", "write", TASK_PROMPT), ("复核会话", "review", REVIEW_PROMPT)):
-            cmd = agent_command(args.agent, _role_model(args.agent, key, args.model, args.review_model), prompt)
+        for role, _upto, prompt_name in SESSIONS:
+            cmd = agent_command(_role_model(role, args.model, args.review_model), globals()[prompt_name])
             print(f"# {role}\ncd " + json.dumps(str(ws), ensure_ascii=False) + " && "
                   + " ".join(json.dumps(x, ensure_ascii=False) for x in cmd))
-        return 0 if args.dry_run else run_agent(ws, args.agent, args.model, args.review_model)
+        return 0 if args.dry_run else run_agent(ws, args.model, args.review_model)
     if args.cmd == "refine":
         _in_workspace("refine")
         state = refine(ws, max_rounds=args.max_rounds, min_gain=args.min_gain, gen_model=args.gen_model,
