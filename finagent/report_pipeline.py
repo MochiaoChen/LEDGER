@@ -60,7 +60,7 @@ REVIEW_PROMPT = ("你是本工作区研报的复核编辑，没有参与写作�
                  f"按它完成 CLAUDE.md 阶段 9（复核改写），只做这一步；结束运行 "
                  f"{PY_WRAPPER} -m finagent.report_pipeline status，阶段 9 通过后停止并汇报。命令直接以 {PY_WRAPPER} 开头，不加 cd、不串联。")
 # 排版会话：文字定稿之后才开始，只做版面设计与渲染
-LAYOUT_PROMPT = ("你是本工作区研报的排版设计师，文稿已定稿，不改正文。先读 .claude/skills/finagent-report/references/html-report.md "
+LAYOUT_PROMPT = ("你是本工作区研报的排版设计师，文稿已定稿，不改正文。先读 .claude/skills/finagent-research/references/html-report.md "
                  "与 templates/examples/ 下的参考脚本，再按 CLAUDE.md 完成阶段 10～11：从模板起写本公司的定制排版脚本，"
                  "每张图服务一个论点，图表 60 张以上、全文 25～30 页，表格涨跌双色，逐页看 preview 修到美观。"
                  f"每个阶段结束运行 {PY_WRAPPER} -m finagent.report_pipeline status，全部闸门通过后停止并汇报。"
@@ -105,6 +105,25 @@ def _sha256(path: Path) -> str:
 
 def _ignore(names: set[str]):
     return lambda _dir, files: [f for f in files if f in names or f.endswith(".pyc")]
+
+
+def sync_renderer(ws: Path, *, root: Path = PROJECT_ROOT) -> list[Path]:
+    """升级已有隔离工作区的公共排版设施；不改公司脚本、文稿、数据或历史产物。"""
+    ws = ws.resolve()
+    _check_location(ws, root)
+    if not (ws / META).is_file():
+        raise SystemExit(f"不是研报流水线工作区：{ws}")
+    kit = Path(".claude/skills/finagent-report/reportkit")
+    files = [p.relative_to(root) for p in (root / kit).iterdir()
+             if p.is_file() and p.suffix in {".py", ".css", ".js", ".md"}]
+    files += [Path("finagent/output/render_check.py"), Path("finagent/report_pipeline.py"),
+              Path(".claude/skills/finagent-report/SKILL.md"),
+              Path(".claude/skills/finagent-research/references/html-report.md")]
+    for rel in files:
+        target = ws / rel
+        target.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(root / rel, target)
+    return files
 
 
 # ------------------------------------------------------------------ 来源
@@ -338,7 +357,7 @@ skill 全文在 `.claude/skills/`，下文的 skill 文档路径都相对 `.clau
 | 7 | 估值运行 | `PY -m finagent valuation --input {pdf} --year {y} --company {c} --assumptions {work}/valuation_assumptions.json --facts {work}/facts.json --extras {work}/extras.json`{" --peers inputs/peers.csv" if "peers" in meta["inputs"] else f" --peers {work}/research/peers.csv（资料搜集写了可比公司表时）"} | — | 最新运行目录成功，且晚于 facts / extras / 假设 / 可比公司表的修改，并带上了它们。**分析师会话到此停止** |
 | 8 | 文稿（主笔会话） | `PY -m finagent.report_pipeline template narrative.md {work}/report/narrative.md`，按模板写“年报点评 + 深度研究”：年报点评约 1/3，深度研究（`deep_` 开头的节：行业、竞争、核心竞争力、各深度专题、预期差）约 2/3，素材来自 research/topics/ 与资料包；年报之后的最新进展单列一节；`PY -m finagent guard --run-dir runs/<run_id> --text {work}/report/narrative.md --sources {work}/research/sources.json` | `references/sections.md`，`finagent-research/references/writing.md` | guard 为 `ok: true` 且核对的是当前文稿；正文 ≥ {MIN_NARRATIVE_CHARS} 字、深度研究 ≥ {int(MIN_DEEP_SHARE * 100)}%。**主笔会话到此停止** |
 | 9 | 复核改写（复核会话） | 按 `finagent-review` skill：备份初稿为 `{work}/report/narrative.draft.md`，以编辑身份通读改写，写 `{work}/report/edit_log.md` 与复核清单 `{work}/report/review.md`；`PY -m finagent numlock --before {work}/report/narrative.draft.md --after {work}/report/narrative.md`，再重跑阶段 8 的 guard。只改文字、不删深度内容，不做排版 | `finagent-review/SKILL.md` | 三个文件都存在，数字锁通过，guard 对改写稿通过。**复核会话到此停止** |
-| 10 | 排版（排版会话） | `PY -m finagent.report_pipeline template build_report.py {work}/report/build_report.py`，参考 `templates/examples/` 的定制脚本，为本公司写图表：每张图服务一个论点，深度研究各节配外部数据图（市场空间、份额、对手对标、价格与产能），表格的同比与变动列用 `chg()` 涨跌双色；`Config.output_name` 设为 `{c}{datetime.now():%m%d}.pdf`；`PY {work}/report/build_report.py --run-dir runs/<run_id>`，逐页看 `preview/` 修大块留白、孤立标题、图文重叠 | `finagent-report/references/html-report.md` | PDF 晚于文稿和编排脚本；{MIN_PAGES}～{MAX_PAGES} 页、≥ {MIN_FIGURES} 个图表 |
+| 10 | 排版（排版会话） | `PY -m finagent.report_pipeline template build_report.py {work}/report/build_report.py`，参考 `templates/examples/` 的定制脚本，为本公司写图表：每张图服务一个论点，深度研究各节配外部数据图（市场空间、份额、对手对标、价格与产能），表格的同比与变动列用 `chg()` 涨跌双色；`Config.output_name` 设为 `{c}{datetime.now():%m%d}.pdf`；`PY {work}/report/build_report.py --run-dir runs/<run_id>`，逐页看 `preview/` 修大块留白、孤立标题、图文重叠 | `finagent-research/references/html-report.md` | PDF 晚于文稿和编排脚本；render_check.json 对当前 HTML、PDF、排版代码的宽度/字号检查通过；{MIN_PAGES}～{MAX_PAGES} 页、≥ {MIN_FIGURES} 个图表 |
 | 11 | 交付说明 | 写 `{work}/report/delivery.md`：PDF 路径、页数与图表数、核心结论、评级（取程序结果）、哪些是假设或外部数据、复核清单要点 | — | 文件存在 |
 
 改了前面阶段的文件（如补抄 extras），status 会把后面的阶段标为过期：重跑估值、guard、排版。
@@ -577,10 +596,14 @@ def status(ws: Path) -> dict[str, Any]:
         figures = len(re.findall(r'fno">图表 \d+', html_file.read_text(encoding="utf-8"))) if html_file.is_file() else 0
         pages = len(list((pdf.parent / "preview").glob("page*.png")))
         sized = MIN_PAGES <= pages <= MAX_PAGES and figures >= MIN_FIGURES
-        add("10 排版", fresh and bool(named) and sized,
+        from .output.render_check import check_render_record, digest
+        render_ok, render_detail = check_render_record(pdf.parent, ws / ".claude/skills/finagent-report/reportkit")
+        named_ok = bool(named) and all(digest(pdf.parent / name) == digest(pdf) for name in named)
+        add("10 排版", fresh and named_ok and sized and render_ok,
             f"runs/{run.name}/report/{named[0] if named else 'report.pdf'}：{pages} 页、{figures} 个图表"
             + ("" if fresh else "（早于文稿或脚本修改）") + ("" if named else "（未设 output_name）")
-            + ("" if sized else f"（要求 {MIN_PAGES}～{MAX_PAGES} 页、≥ {MIN_FIGURES} 个图表）"),
+            + ("" if sized else f"（要求 {MIN_PAGES}～{MAX_PAGES} 页、≥ {MIN_FIGURES} 个图表）")
+            + f"（{render_detail}）" + ("" if named_ok or not named else "（另存 PDF 与主文件不一致）"),
             "按 html-report.md 与 templates/examples/ 补图表、调版面后重新渲染；Config.output_name 设为公司名+日期")
     # 11 交付说明
     add("11 交付说明", delivery.is_file(), "delivery.md " + ("已写" if delivery.is_file() else "不存在"),
@@ -1051,6 +1074,8 @@ def main(argv: list[str] | None = None) -> int:
     sc.add_argument("--workspace", action="append", required=True, help="可多次指定")
     sc.add_argument("--json", action="store_true")
     sc.add_argument("--out", help="Markdown 表格另存路径")
+    sr = sub.add_parser("sync-renderer", help="升级已有工作区的公共排版设施，旧 PDF 须重新渲染")
+    sr.add_argument("--workspace", required=True)
     tp = sub.add_parser("template", help="工作区内：把 finagent-report 模板复制到 data/ 下")
     tp.add_argument("name", help="模板文件名，如 narrative.md、build_report.py")
     tp.add_argument("dest", help="目标路径（相对工作区，须在 data/ 下）")
@@ -1066,6 +1091,12 @@ def main(argv: list[str] | None = None) -> int:
         print("下一步：python -m finagent.report_pipeline refine --workspace "
               + json.dumps(str(ws), ensure_ascii=False)
               + "（只生成不质检用 run）")
+        return 0
+    if args.cmd == "sync-renderer":
+        _in_workspace("sync-renderer")
+        for path in sync_renderer(_workspace(args.workspace)):
+            print(path)
+        print("公共排版设施已升级；请重新渲染，生成当前版本的 render_check.json")
         return 0
     if args.cmd == "scorecard":
         rows = [scorecard(_workspace(w)) for w in args.workspace]

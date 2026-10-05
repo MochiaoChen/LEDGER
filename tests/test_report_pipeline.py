@@ -220,3 +220,18 @@ def test_copy_template_only_into_data(ws):
         rp.copy_template(ws, "narrative.md", "finagent/x.md")
     with pytest.raises(SystemExit, match="没有模板"):
         rp.copy_template(ws, "../SKILL.md", "data/x.md")
+
+
+def test_sync_renderer_preserves_company_work(ws):
+    work = ws / "data/extractions/贵州茅台_2025/report"
+    narrative = work / "narrative.md"
+    script = work / "build_report.py"
+    narrative.write_text("公司文稿")
+    script.write_text("# 公司脚本")
+    css = ws / ".claude/skills/finagent-report/reportkit/report.css"
+    css.write_text("旧版样式")
+    files = rp.sync_renderer(ws)
+    assert css.read_bytes() == (ROOT / ".claude/skills/finagent-report/reportkit/report.css").read_bytes()
+    assert (ws / "finagent/output/render_check.py").is_file()
+    assert narrative.read_text() == "公司文稿" and script.read_text() == "# 公司脚本"
+    assert any(p.name == "render_probe.js" for p in files)
