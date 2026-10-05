@@ -25,31 +25,11 @@ _load_dotenv(PROJECT_ROOT / ".env")
 
 @dataclass(frozen=True)
 class Settings:
-    # OpenAI 兼容接口：DeepSeek / 通义千问(DashScope) / 智谱 / 本地 vLLM 均可
-    llm_base_url: str = os.getenv("LLM_BASE_URL", "https://api.deepseek.com/v1")
-    llm_model: str = os.getenv("LLM_MODEL", "deepseek-chat")
-    llm_api_key: str = os.getenv("LLM_API_KEY", "")
-    # live: 调用模型并写缓存；replay: 只读缓存（离线复现）；off: 不使用 LLM，仅走规则通道
-    llm_mode: str = os.getenv("LLM_MODE", "live")
-    llm_temperature: float = float(os.getenv("LLM_TEMPERATURE", "0"))
-    llm_seed: int = int(os.getenv("LLM_SEED", "42"))
-    llm_timeout: float = float(os.getenv("LLM_TIMEOUT", "120"))
-    cache_dir: str = os.getenv("LLM_CACHE_DIR", str(PROJECT_ROOT / ".cache" / "llm"))
     runs_dir: str = os.getenv("RUNS_DIR", str(PROJECT_ROOT / "runs"))
 
     def public(self) -> dict:
-        """写入 manifest 的配置（隐去密钥）。"""
-        data = asdict(self)
-        data["llm_api_key"] = "***" if self.llm_api_key else ""
-        return data
-
-    @property
-    def llm_enabled(self) -> bool:
-        if self.llm_mode == "off":
-            return False
-        if self.llm_mode == "replay":
-            return True
-        return bool(self.llm_api_key)
+        """写入 manifest 的配置。"""
+        return asdict(self)
 
 
 def get_settings(**overrides) -> Settings:

@@ -35,19 +35,18 @@ def test_workspace_contains_only_skills_engine_and_one_company(ws):
 def test_workspace_guide_and_permissions(ws):
     meta = json.loads((ws / "sample.json").read_text(encoding="utf-8"))
     assert meta["verified_source"] and meta["inputs"]["market"]["current_price"] == 1500.0
-    # 说明写在 AGENTS.md，Claude Code 通过 CLAUDE.md 引用同一份；skill 在 .agents/skills 有指向全文的入口
-    assert (ws / "CLAUDE.md").read_text(encoding="utf-8") == "@AGENTS.md\n"
-    guide = (ws / "AGENTS.md").read_text(encoding="utf-8")
+    # 工作区说明写在 CLAUDE.md（无头 Claude Code 自动加载）；只复制三个执行 skill，不含编排入口
+    guide = (ws / "CLAUDE.md").read_text(encoding="utf-8")
+    assert not (ws / "AGENTS.md").exists() and not (ws / ".agents").exists()
     for name in rp.SKILLS:
-        stub = (ws / ".agents/skills" / name / "SKILL.md").read_text(encoding="utf-8")
-        assert f"name: {name}" in stub and f".claude/skills/{name}/SKILL.md" in stub
-    assert not (ws / ".agents/skills/finagent-pipeline").exists()
+        assert (ws / ".claude/skills" / name / "SKILL.md").is_file()
+    assert not (ws / ".claude/skills/finagent-pipeline").exists()
     assert "贵州茅台 2025" in guide and "1500.0" in guide and "测试行情" in guide
     assert "report_pipeline status" in guide and "读取边界" in guide
     perms = json.loads((ws / ".claude/settings.json").read_text(encoding="utf-8"))["permissions"]
     assert f"Read(/{ROOT.parent.as_posix()}/**)" in perms["deny"]
     assert "Edit(./finagent/**)" in perms["deny"] and "Write(./.claude/**)" in perms["deny"]
-    assert "Edit(./AGENTS.md)" in perms["deny"]
+    assert "Edit(./CLAUDE.md)" in perms["deny"]
     # 外部信息必须联网检索：工作区放开 WebSearch / WebFetch，说明里写明不能凭记忆
     assert "WebSearch" in perms["allow"] and "WebSearch" not in perms["deny"] and "WebFetch" not in perms["deny"]
     assert "不能用记忆" in guide and "sources.json" in guide and "review.md" in guide and "finagent-review" in guide
@@ -55,30 +54,19 @@ def test_workspace_guide_and_permissions(ws):
     assert "MPLCONFIGDIR" in (ws / "py").read_text(encoding="utf-8")
 
 
-def test_repo_agent_skill_stubs_in_sync():
-    names = sorted(p.name for p in (ROOT / ".claude/skills").iterdir() if (p / "SKILL.md").is_file())
-    assert sorted(p.name for p in (ROOT / ".agents/skills").iterdir()) == names
-    for name in names:
-        assert (ROOT / ".agents/skills" / name / "SKILL.md").read_text(encoding="utf-8") == rp.skill_stub(name, ROOT), \
-            "运行 python -m finagent.report_pipeline sync-skills"
-
-
 def test_agent_commands_and_usage(tmp_path):
-    claude = rp.agent_command("claude", "opus")
+    claude = rp.agent_command("opus")
     assert claude[:2] == ["claude", "-p"] and "stream-json" in claude and claude[-2:] == ["--model", "opus"]
-    codex = rp.agent_command("codex")
-    assert codex[:2] == ["codex", "exec"] and "--skip-git-repo-check" in codex and codex[-1] == rp.TASK_PROMPT
-    assert "tools.web_search=true" in codex and "WebSearch" in claude
-    assert rp.agent_command("claude", None, rp.REVIEW_PROMPT)[2] == rp.REVIEW_PROMPT
+    assert "WebSearch" in claude
+    assert rp.agent_command(None, rp.REVIEW_PROMPT)[2] == rp.REVIEW_PROMPT
     log = tmp_path / "c.jsonl"
     log.write_text("\n".join(json.dumps(e) for e in [
         {"type": "assistant", "message": {"content": [{"type": "text", "text": "开始"}]}},
         {"type": "result", "num_turns": 12, "total_cost_usd": 3.5,
          "usage": {"input_tokens": 10, "cache_read_input_tokens": 90, "output_tokens": 7}}]), encoding="utf-8")
-    assert rp._usage(log, "claude") == {"turns": 12, "cost_usd": 3.5, "input_tokens": 100, "output_tokens": 7}
-    log.write_text("\n".join(json.dumps({"type": "turn.completed", "usage": {"input_tokens": 5, "output_tokens": 2}})
-                             for _ in range(2)) + "\nnot json", encoding="utf-8")
-    assert rp._usage(log, "codex") == {"input_tokens": 10, "output_tokens": 4}
+    assert rp._usage(log) == {"turns": 12, "cost_usd": 3.5, "input_tokens": 100, "output_tokens": 7}
+    log.write_text("not json\n", encoding="utf-8")
+    assert rp._usage(log) == {"input_tokens": 0, "output_tokens": 0}
 
 
 def test_build_guards(tmp_path):
@@ -91,8 +79,8 @@ def test_build_guards(tmp_path):
     rp.build("贵州茅台", 2025, tmp_path)
     with pytest.raises(SystemExit, match="已存在"):
         rp.build("贵州茅台", 2025, tmp_path)
-    tagged = rp.build("贵州茅台", 2025, tmp_path, tag="codex")
-    assert tagged.name == "贵州茅台_2025_codex" and (tagged / "data/extractions/贵州茅台_2025").is_dir()
+    tagged = rp.build("贵州茅台", 2025, tmp_path, tag="sonnet")
+    assert tagged.name == "贵州茅台_2025_sonnet" and (tagged / "data/extractions/贵州茅台_2025").is_dir()
 
 
 def _collect_sources(n_queries: int = 3, published: str = "2026-09-15") -> dict:
@@ -192,18 +180,18 @@ def test_review_stage_numlock(ws):
 def test_run_agent_chains_write_then_review(ws, monkeypatch):
     """五个会话按阶段接力：前一个没做完就停下；复核用质检模型，其余用生成模型。"""
     calls = []
-    monkeypatch.setattr(rp, "_session", lambda ws_, agent, model, role, prompt: calls.append((role, model)) or 0)
-    assert rp.run_agent(ws, "claude") == 1 and calls == [("research", rp.GEN_MODEL)]
+    monkeypatch.setattr(rp, "_session", lambda ws_, model, role, prompt: calls.append((role, model)) or 0)
+    assert rp.run_agent(ws) == 1 and calls == [("research", rp.GEN_MODEL)]
     done = {"upto": 7}
     monkeypatch.setattr(rp, "_done", lambda ws_, upto: upto <= done["upto"])
     calls.clear()
-    assert rp.run_agent(ws, "claude") == 1 and calls == [("write", rp.GEN_MODEL)]
+    assert rp.run_agent(ws) == 1 and calls == [("write", rp.GEN_MODEL)]
     done["upto"] = 9
     calls.clear()
-    assert rp.run_agent(ws, "claude") == 1 and calls == [("layout", rp.GEN_MODEL)]
+    assert rp.run_agent(ws) == 1 and calls == [("layout", rp.GEN_MODEL)]
     done["upto"] = 8
     calls.clear()
-    assert rp.run_agent(ws, "claude") == 1 and calls == [("review", rp.QC_MODEL)]
+    assert rp.run_agent(ws) == 1 and calls == [("review", rp.QC_MODEL)]
 
 
 def test_extras_cache_without_verifier_fingerprint_is_rechecked(ws, monkeypatch):

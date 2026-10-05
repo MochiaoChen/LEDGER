@@ -170,10 +170,9 @@ def test_workspace_excludes_evaluation(tmp_path):
 
 
 def test_role_models():
-    assert rp._role_model("claude", "write", None) == rp.GEN_MODEL
-    assert rp._role_model("claude", "review", None) == rp.QC_MODEL
-    assert rp._role_model("claude", "review", "x") == "x" and rp._role_model("claude", "review", "x", "y") == "y"
-    assert rp._role_model("codex", "write", None) is None
+    assert rp._role_model("write", None) == rp.GEN_MODEL
+    assert rp._role_model("review", None) == rp.QC_MODEL
+    assert rp._role_model("review", "x") == "x" and rp._role_model("review", "x", "y") == "y"
 
 
 def test_refine_loop_routes_issues_and_restores_best(tmp_path, monkeypatch):
@@ -182,8 +181,8 @@ def test_refine_loop_routes_issues_and_restores_best(tmp_path, monkeypatch):
     report = ws / "data/extractions/贵州茅台_2025/report"
     (report / "review.md").write_text("# 复核清单\n", encoding="utf-8")
     calls = []
-    monkeypatch.setattr(rp, "run_agent", lambda *a, **k: calls.append(("run", a[2], a[3])) or 0)
-    monkeypatch.setattr(rp, "_session", lambda ws_, agent, model, role, prompt: calls.append((role, model, prompt)) or 0)
+    monkeypatch.setattr(rp, "run_agent", lambda *a, **k: calls.append(("run", a[1], a[2])) or 0)
+    monkeypatch.setattr(rp, "_session", lambda ws_, model, role, prompt: calls.append((role, model, prompt)) or 0)
     monkeypatch.setattr(rp, "_writing_done", lambda ws_: True)
     real_status = rp.status
     monkeypatch.setattr(rp, "status", lambda ws_: {**real_status(ws_), "done": True})

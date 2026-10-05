@@ -1,6 +1,6 @@
-"""Skill 版本：外部模型（Claude Code）读 PDF 抽取 → 程序校验 → 共用计算引擎。
+"""模型抽取（分析师会话读 PDF）→ 程序校验 → 计算引擎。
 
-用样例年报的表格内容模拟“模型抽取结果”：完美抽取时，结果必须与 Agent 版本（及原引擎快照）完全一致；
+用样例年报的表格内容模拟“模型抽取结果”：完美抽取时，结果必须与纯规则通道运行（及原引擎快照）完全一致；
 编造数字、页码错误、误取母公司报表、期间看反、漏抄核心指标都必须被校验拦下。
 """
 
@@ -56,7 +56,7 @@ def _run(tmp_path_factory, name, **extra):
     c = {"input": str(REPORT), "fiscal_year": 2024, "company": "星河智造",
          "assumptions": str(SAMPLES / "valuation_assumptions.json"), "report": str(SAMPLES / "research_draft.md"),
          "peers": str(SAMPLES / "peers.csv"), "estimates": str(SAMPLES / "estimates.csv"),
-         "guidance": str(SAMPLES / "guidance.csv"), "llm": None, **extra}
+         "guidance": str(SAMPLES / "guidance.csv"), **extra}
     with RunTracer(name, tmp_path_factory.mktemp(name)) as tr:
         pipelines.run("all", c)
     c["run_dir"] = tr.dir
@@ -68,9 +68,9 @@ def runs(tmp_path_factory, extraction, claims_payload):
     d = tmp_path_factory.mktemp("inputs")
     (d / "facts.json").write_text(json.dumps(extraction, ensure_ascii=False), encoding="utf-8")
     (d / "claims.json").write_text(json.dumps(claims_payload, ensure_ascii=False), encoding="utf-8")
-    agent = _run(tmp_path_factory, "agent")
+    rule = _run(tmp_path_factory, "rule")
     skill = _run(tmp_path_factory, "skill", facts_file=str(d / "facts.json"), claims_file=str(d / "claims.json"))
-    return agent, skill
+    return rule, skill
 
 
 # ---------------------------------------------------------------- 定位
@@ -84,7 +84,7 @@ def test_locate_finds_statement_pages(doc):
     assert loc["unit_hints"]["106"] == "元"
 
 
-# ---------------------------------------------------------------- 完美抽取 = Agent 版本
+# ---------------------------------------------------------------- 完美抽取 = 纯规则通道运行
 
 def test_perfect_extraction_passes_verification(doc, extraction):
     res = ingest(doc, extraction, fiscal_year=2024)
@@ -95,17 +95,17 @@ def test_perfect_extraction_passes_verification(doc, extraction):
 @pytest.mark.parametrize("artifact", ["valuation/three_statement.json", "valuation/scenarios.json",
                                       "valuation/comps.json", "valuation/valuation.json",
                                       "financials/earnings.json", "check/findings.json"])
-def test_skill_run_matches_agent_run(runs, artifact):
-    agent, skill = runs
-    a = json.loads((agent["run_dir"] / artifact).read_text(encoding="utf-8"))
+def test_model_extraction_run_matches_rule_run(runs, artifact):
+    rule, skill = runs
+    a = json.loads((rule["run_dir"] / artifact).read_text(encoding="utf-8"))
     b = json.loads((skill["run_dir"] / artifact).read_text(encoding="utf-8"))
     assert a == b
 
 
 def test_skill_run_truth_table_and_provenance(runs):
-    agent, skill = runs
+    rule, skill = runs
     val = lambda c: {(r["metric_id"], r["period"]): r["value"] for r in c["analysis"]["truth_table"]}  # noqa: E731
-    assert val(agent) == val(skill)
+    assert val(rule) == val(skill)
     methods = {f["method"] for f in skill["extract"]["facts"] if "." not in f["metric_id"]}
     assert methods == {"rule+llm"}  # 模型抽取与规则通道逐项一致
     assert (skill["run_dir"] / "financials" / "skill_extraction.json").exists()
@@ -147,16 +147,16 @@ def test_skill_pipeline_stops_before_valuation_on_conflict(tmp_path, extraction)
     facts_path = tmp_path / "conflicted.json"
     facts_path.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
     c = {"input": str(REPORT), "fiscal_year": 2024, "company": "星河智造",
-         "assumptions": str(SAMPLES / "valuation_assumptions.json"), "llm": None,
+         "assumptions": str(SAMPLES / "valuation_assumptions.json"),
          "facts_file": str(facts_path)}
-    with RunTracer("conflict", tmp_path), pytest.raises(ValueError, match="Skill 抽取未通过校验"):
+    with RunTracer("conflict", tmp_path), pytest.raises(ValueError, match="模型抽取未通过校验"):
         pipelines.run("valuation", c)
     assert "valuation" not in c
 
 
 def test_valuation_reads_analysis_truth_table(tmp_path):
     c = {"input": str(REPORT), "fiscal_year": 2024, "company": "星河智造",
-         "assumptions": str(SAMPLES / "valuation_assumptions.json"), "llm": None}
+         "assumptions": str(SAMPLES / "valuation_assumptions.json")}
     with RunTracer("truth", tmp_path):
         pipelines.financials_pipeline.run(c)
         c["extract"]["facts"] = []  # 下游不能绕过分析阶段的真值表
@@ -296,21 +296,21 @@ def test_pdf_locate_and_parent_statement_excluded(pdf_doc):
     assert all(f.source["page"] != 112 for f in rule)  # 规则通道不取母公司报表
 
 
-def test_pdf_model_extraction_verifies_and_matches_agent(pdf_doc, runs, tmp_path_factory):
+def test_pdf_model_extraction_verifies_and_matches_rule_run(pdf_doc, runs, tmp_path_factory):
     payload = json.loads((EXTRACTION / "facts.json").read_text(encoding="utf-8"))
     res = ingest(pdf_doc, payload, fiscal_year=2024)
     assert res["rejected"] == [] and res["missing"] == []
     assert not [i for i in res["issues"] if i["type"] in ("同一指标多处取值不一致", "规则与LLM抽取不一致")]
     pdf_run = _run(tmp_path_factory, "pdf", input=str(PDF), facts_file=str(EXTRACTION / "facts.json"),
                    claims_file=str(EXTRACTION / "claims.json"))
-    agent = runs[0]
+    rule = runs[0]
     for artifact in ("valuation/three_statement.json", "valuation/scenarios.json", "valuation/comps.json",
                      "valuation/valuation.json"):
-        a = json.loads((agent["run_dir"] / artifact).read_text(encoding="utf-8"))
+        a = json.loads((rule["run_dir"] / artifact).read_text(encoding="utf-8"))
         b = json.loads((pdf_run["run_dir"] / artifact).read_text(encoding="utf-8"))
         assert a == b, artifact
     val = lambda c: {(r["metric_id"], r["period"]): r["value"] for r in c["analysis"]["truth_table"]}  # noqa: E731
-    assert val(agent) == val(pdf_run)
+    assert val(rule) == val(pdf_run)
     verdicts = lambda c: sorted((f["metric_name"], f["claim_type"], f["raw_value"], f["verdict"])  # noqa: E731
                                 for f in c["check"]["findings"])
-    assert verdicts(agent) == verdicts(pdf_run)
+    assert verdicts(rule) == verdicts(pdf_run)

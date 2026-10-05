@@ -1,0 +1,46 @@
+% FinAgent 技术报告（NeurIPS 体例，中文）
+% 编译：cd paper && latexmk -xelatex main.tex
+\documentclass[fontset=mac,zihao=5]{ctexart}
+\usepackage{neurips_cn}
+
+% 项目正式名称待定（“FinAgent”与 2024 年一篇金融交易智能体论文同名），统一用此宏，改一处即可
+\newcommand{\sysname}{FinAgent}
+
+\title{可追溯、可校准的 A 股投研多智能体系统：\\从年报到深度研报}
+\author{%
+  \textbf{陈沫樵}\textsuperscript{1,$*$,$\dagger$}\quad
+  \textbf{许冰洁}\textsuperscript{1,$*$}\quad
+  \textbf{赵千淳}\textsuperscript{2,$*$}\quad
+  \textbf{刘盈羽}\textsuperscript{1,$*$}\\[4pt]
+  \small \textsuperscript{1}对外经济贸易大学\qquad \textsuperscript{2}中国人民大学\\[2pt]
+  \small \texttt{mochiaochen@gmail.com}\\[2pt]
+  \small 代码：\url{https://github.com/MochiaoChen/finagent}（私有仓库，评审可申请访问）}
+\reportnote{$^*$共同第一作者。\quad $^\dagger$通讯作者：陈沫樵（\texttt{mochiaochen@gmail.com}）。\\
+  2026 北京市大学生金融人工智能竞赛参赛作品（主题：金融投研智能体构建）。所有估值结论均依赖文中所列假设，不构成投资建议。}
+
+\begin{document}
+\maketitle
+
+\input{sections/00_abstract}
+\input{sections/01_introduction}
+\input{sections/02_related}
+\input{sections/03_problem}
+\input{sections/04_principles}
+\input{sections/05_architecture}
+\input{sections/06_extraction}
+\input{sections/07_valuation}
+\input{sections/08_guards}
+\input{sections/09_pipeline}
+\input{sections/10_evaluation}
+\input{sections/11_experiments}
+\input{sections/12_limitations}
+\input{sections/13_conclusion}
+
+\bibliographystyle{plainnat}
+\bibliography{refs}
+
+\clearpage
+\appendix
+\input{sections/appendix}
+
+\end{document}

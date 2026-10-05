@@ -80,7 +80,7 @@ def moutai_run(tmp_path_factory):
     runs = tmp_path_factory.mktemp("runs")
     rc = main(["valuation", "--input", str(PDF), "--year", "2025", "--company", "贵州茅台",
                "--assumptions", str(WORK / "valuation_assumptions.json"), "--facts", str(WORK / "facts.json"),
-               "--extras", str(WORK / "extras.json"), "--llm", "off", "--runs-dir", str(runs)])
+               "--extras", str(WORK / "extras.json"), "--runs-dir", str(runs)])
     assert rc == 0
     return next(runs.iterdir())
 

@@ -52,11 +52,10 @@ def to_csv(rows: list[dict[str, Any]], columns: list[str]) -> str:
 
 
 # ------------------------------------------------------------------ 财报分析
-def render_financials(company: str, extract: dict[str, Any], analysis: dict[str, Any],
-                      commentary: dict[str, Any] | None) -> str:
+def render_financials(company: str, extract: dict[str, Any], analysis: dict[str, Any]) -> str:
     p = analysis["period"]
     L = [f"# {company} {p} 财务报告分析", "",
-         f"- 抽取指标：{extract['stats']['merged']} 项（规则通道 {extract['stats']['rule_facts']}，LLM 通道 {extract['stats']['llm_facts']}）",
+         f"- 抽取指标：{extract['stats']['merged']} 项（规则通道 {extract['stats']['rule_facts']}，模型通道 {extract['stats']['llm_facts']}）",
          f"- 勾稽校验：{sum(c['status'] == 'pass' for c in analysis['tieouts'])} 通过 / "
          f"{analysis['summary']['tieout_fail']} 失败 / {sum(c['status'] == 'not_assessable' for c in analysis['tieouts'])} 无法评估",
          f"- 异常信号：{analysis['summary']['signals_total']} 条（高 {analysis['summary']['signals_high']}）", "",
@@ -104,15 +103,9 @@ def render_financials(company: str, extract: dict[str, Any], analysis: dict[str,
                                      for e in s["evidence"] if e), ""]
 
     L += ["## 四、观点与待验证事项", ""]
-    if commentary and commentary.get("text"):
-        L.append(commentary["text"])
-        if commentary.get("unverified_numbers"):
-            L += ["", f"> ⚠️ 数字护栏：解读中出现未在输入数据中的数字 {commentary['unverified_numbers']}，请人工复核。"]
-        L += ["", f"> 由 {commentary.get('model')} 生成，仅基于上表已核验数据；属于观点，不构成投资建议。"]
-    else:
-        L += ["（未启用 LLM，以下为规则生成的待验证清单）", ""]
-        for s in analysis["signals"]:
-            L.append(f"- [{s['id']}] {s['title']}：建议查阅附注/问询函核实原因。")
+    L += ["（规则生成的待验证清单；文字解读由写作会话撰写，并经 guard 数字护栏核对）", ""]
+    for s in analysis["signals"]:
+        L.append(f"- [{s['id']}] {s['title']}：建议查阅附注/问询函核实原因。")
     return "\n".join(L) + "\n"
 
 

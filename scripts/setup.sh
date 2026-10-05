@@ -44,7 +44,7 @@ fi
 echo "== 3/4 .env"
 if [ ! -f .env ]; then
   cp .env.example .env
-  echo "  已从 .env.example 生成 .env，按其中注释填写（研报流水线只需 Claude 登录；Agent 版本需 LLM_API_KEY）"
+  echo "  已从 .env.example 生成 .env，按其中注释填写（只需 Claude Code 登录或 ANTHROPIC_API_KEY）"
 else
   echo "  已存在，未改动"
 fi

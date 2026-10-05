@@ -15,8 +15,8 @@ from typing import Callable
 
 from .core.config import PROJECT_ROOT
 
-# 选题 2/4/5 的计算与 Skill 辅助命令（原 python -m finagent <task>）
-RESEARCH_TASKS = ("financials", "valuation", "check", "all", "ask", "locate", "schema", "verify-facts",
+# 选题 2/4/5 的计算、校验与护栏命令（原 python -m finagent <task>）
+RESEARCH_TASKS = ("financials", "valuation", "check", "all", "locate", "schema", "verify-facts",
                   "verify-extra", "guard", "verify-sources", "numlock")
 
 

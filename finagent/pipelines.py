@@ -1,4 +1,4 @@
-"""三条任务流水线（赛题 2 / 4 / 5）与 Agent 可调用的 Tool 注册。
+"""计算引擎的三条任务流水线（赛题 2 / 4 / 5）。不调用模型：模型会话写下的抽取、经营数据、断言文件由这里校验后接入。
 
     财报 ──parse──▶ extract ──▶ analyze ──▶ 财报分析报告           （赛题2）
                                   │
@@ -12,18 +12,14 @@
 from __future__ import annotations
 
 import json
-import re
 from pathlib import Path
 from typing import Any
 
 from .core import tracing
-from .core.llm import LLMClient, LLMError
 from .core.orchestrator import Pipeline
-from .core.tools import registry
 from .output import report as R
 from .output.xlsx import write_xlsx
 from .parsing.document import load_document
-from .prompts import load_prompt
 from .tasks.financials import earnings as earnings_mod
 from .tasks.financials.analyze import analyze
 from .tasks.financials.external import ingest
@@ -54,33 +50,6 @@ def _write(ctx: dict[str, Any], name: str, content: str | dict | list) -> None:
         tr.write_json(name, content)
 
 
-def commentary(company: str, analysis: dict[str, Any], llm: LLMClient | None) -> dict[str, Any] | None:
-    """LLM 解读 + 数字护栏：解读中每个数字都必须出现在输入数据里。"""
-    if llm is None or not llm.enabled:
-        return None
-    payload = {"company": company, "period": analysis["period"],
-               "changes": [{k: r.get(k) for k in ("metric", "value", "yoy_pct", "yoy_change_pp")} for r in analysis["changes"]],
-               "signals": [{k: s[k] for k in ("id", "title", "fact", "inference")} for s in analysis["signals"]]}
-    data_text = json.dumps(payload, ensure_ascii=False)
-    try:
-        msg = llm.chat([{"role": "system", "content": load_prompt("analysis_commentary")},
-                        {"role": "user", "content": data_text}], purpose="analysis_commentary")
-    except LLMError as exc:
-        tracing.log("commentary_failed", error=str(exc))
-        return None
-    text = msg.get("content") or ""
-    return {"text": text, "model": llm.s.llm_model, "unverified_numbers": number_guard(text, data_text)}
-
-
-def number_guard(text: str, data_text: str) -> list[str]:
-    """文字解读中的每个数字都必须出现在输入数据里；返回找不到出处的数字（年份与一位数序号除外）。"""
-    allowed = set(re.findall(r"\d+(?:\.\d+)?", data_text.replace(",", "")))
-    nums = [n for n in re.findall(r"\d+(?:\.\d+)?", text.replace(",", "")) if not re.fullmatch(r"20\d{2}|\d", n)]
-    unverified = sorted({n for n in nums if n not in allowed and not any(a.startswith(n) for a in allowed)})
-    tracing.log("number_guard", checked=len(nums), unverified=unverified)
-    return unverified
-
-
 # ------------------------------------------------------------------ 赛题2
 financials_pipeline = Pipeline("financials")
 
@@ -92,14 +61,13 @@ def _p_parse(ctx: dict[str, Any]):
 
 @financials_pipeline.step("extract", "extract")
 def _p_extract(ctx: dict[str, Any]):
-    if ctx.get("facts_file"):  # Skill 版本：接入 Claude Code 中模型读 PDF 的抽取结果，仍经确定性校验
+    if ctx.get("facts_file"):  # 分析师会话读 PDF 的抽取结果，经证据校验并与规则通道比对
         payload = json.loads(tracing.read_file(ctx["facts_file"]).decode("utf-8"))
         _write(ctx, "financials/skill_extraction.json", payload)
         out = ingest(ctx["doc"], payload, fiscal_year=ctx.get("fiscal_year"),
                      supplements=[load_document(x) for x in ctx.get("supplements") or []])
-    else:
-        out = extract_financials(ctx["doc"], fiscal_year=ctx.get("fiscal_year"), llm=ctx.get("llm"),
-                                 llm_mode=ctx.get("llm_extract", "fallback"))
+    else:  # 没有模型抽取文件时只走规则通道（样例回归与引擎测试）
+        out = extract_financials(ctx["doc"], fiscal_year=ctx.get("fiscal_year"))
     _write(ctx, "financials/facts.json", out)
     _write(ctx, "financials/facts.csv", R.to_csv(out["facts"], ["metric_id", "metric_name", "period", "value", "raw", "unit",
                                                                "label", "method", "confidence", "source"]))
@@ -118,13 +86,13 @@ def _p_analyze(ctx: dict[str, Any]):
         failed_tieouts = [t for t in out["tieouts"] if t["status"] == "fail"]
         blocking_missing = [m for m in extraction["missing"] if m["blocking"]]
         if extraction["rejected"] or conflicts or failed_tieouts or blocking_missing:
-            raise ValueError("Skill 抽取未通过校验，请先运行 verify-facts 并处理拒收、冲突、勾稽失败和核心缺失项")
+            raise ValueError("模型抽取未通过校验，请先运行 verify-facts 并处理拒收、冲突、勾稽失败和核心缺失项")
     return out
 
 
 @financials_pipeline.step("extras", "extras")
 def _p_extras(ctx: dict[str, Any]):
-    """Skill 版本补充表格：逐格核对原文，拒收即停止（与抽取校验同一标准）。"""
+    """经营数据补充表格：逐格核对原文，拒收即停止（与抽取校验同一标准）。"""
     if not ctx.get("extras_file"):
         return None
     payload = json.loads(tracing.read_file(ctx["extras_file"]).decode("utf-8"))
@@ -150,10 +118,9 @@ def _p_earnings(ctx: dict[str, Any]):
 
 @financials_pipeline.step("report", "financials_report")
 def _p_report(ctx: dict[str, Any]):
-    com = commentary(ctx["company"], ctx["analysis"], ctx.get("llm"))
-    md = R.render_financials(ctx["company"], ctx["extract"], ctx["analysis"], com) + R.render_earnings(ctx["earnings"])
+    md = R.render_financials(ctx["company"], ctx["extract"], ctx["analysis"]) + R.render_earnings(ctx["earnings"])
     _write(ctx, "financials/report.md", md)
-    return {"commentary": com is not None}
+    return {"report": "financials/report.md"}
 
 
 # ------------------------------------------------------------------ 赛题4
@@ -293,14 +260,14 @@ def _c_parse(ctx: dict[str, Any]):
 
 @check_pipeline.step("claims", "claims")
 def _c_claims(ctx: dict[str, Any]):
-    if ctx.get("claims_file"):  # Skill 版本：外部模型拆出的断言，引用须为原文片段
+    if ctx.get("claims_file"):  # 模型会话拆出的断言，引用须为原文片段
         payload = json.loads(tracing.read_file(ctx["claims_file"]).decode("utf-8"))
         _write(ctx, "check/skill_claims.json", payload)
         out, rejected = ingest_claims(ctx["report_doc"], payload, ctx.get("fiscal_year"))
         if rejected:
             _write(ctx, "check/claims_rejected.json", rejected)
     else:
-        out = extract_claims(ctx["report_doc"], default_year=ctx.get("fiscal_year"), llm=ctx.get("llm"))
+        out = extract_claims(ctx["report_doc"], default_year=ctx.get("fiscal_year"))
     _write(ctx, "check/claims.json", out)
     return out
 
@@ -348,48 +315,3 @@ def run(task: str, ctx: dict[str, Any]) -> dict[str, Any]:
     if task in ("check", "all"):
         check_pipeline.run(ctx)
     return ctx
-
-
-# ------------------------------------------------------------------ Agent 工具
-_STATE: dict[str, Any] = {}
-
-
-@registry.register("analyze_financial_report", "解析财报文件，抽取财务指标，计算同比/环比、勾稽校验与异常信号。",
-                   {"type": "object", "properties": {
-                       "path": {"type": "string", "description": "财报文件路径（PDF/MD）"},
-                       "fiscal_year": {"type": "integer"}, "company": {"type": "string"}},
-                    "required": ["path", "fiscal_year"]})
-def tool_analyze(path: str, fiscal_year: int, company: str = "目标公司") -> dict[str, Any]:
-    ctx = {"input": path, "fiscal_year": fiscal_year, "company": company, "llm": _STATE.get("llm")}
-    financials_pipeline.run(ctx)
-    _STATE["ctx"] = ctx
-    a = ctx["analysis"]
-    return {"period": a["period"], "changes": a["changes"], "tieouts": [{k: c.get(k) for k in ("check", "status")} for c in a["tieouts"]],
-            "signals": a["signals"]}
-
-
-@registry.register("run_dcf_valuation", "基于已分析的财报与估值假设文件运行 DCF 三情景估值与敏感性分析（需先调用 analyze_financial_report）。",
-                   {"type": "object", "properties": {"assumptions_path": {"type": "string"}},
-                    "required": ["assumptions_path"]})
-def tool_valuation(assumptions_path: str) -> dict[str, Any]:
-    ctx = _STATE["ctx"]
-    ctx["assumptions"] = assumptions_path
-    valuation_pipeline.run(ctx)
-    v = ctx["valuation"]
-    return {k: v.get(k) for k in ("status", "model_status", "value_range", "scenarios", "checks")}
-
-
-@registry.register("check_research_report", "将研报草稿中的数字断言与已分析财报逐条核对，输出错误与修改建议（需先调用 analyze_financial_report）。",
-                   {"type": "object", "properties": {"report_path": {"type": "string"}}, "required": ["report_path"]})
-def tool_check(report_path: str) -> dict[str, Any]:
-    ctx = _STATE["ctx"]
-    ctx["report"] = report_path
-    check_pipeline.run(ctx)
-    c = ctx["check"]
-    return {"summary": c["summary"],
-            "errors": [{k: f[k] for k in ("claim_id", "quote", "verdict", "truth_display", "suggestion")}
-                       for f in c["findings"] if f["verdict"] not in ("正确", "无法核实")]}
-
-
-def bind_llm(llm: LLMClient | None) -> None:
-    _STATE["llm"] = llm

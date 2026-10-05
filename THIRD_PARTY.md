@@ -43,15 +43,15 @@
 
 `finagent/` 其余部分仅使用 Python 标准库（含 xlsx 写出）；终端界面单独成包 `finagent_tui/`。
 
-## 3. 大语言模型
+## 3. 大语言模型与执行器
 
 | 名称 | 调用方式 | 使用范围 |
 |---|---|---|
-| 见 `.env`（如 deepseek-chat / qwen-plus / glm-4-plus） | OpenAI 兼容 Chat Completions API | 非标准表格抽取补漏、研报断言抽取补漏、分析文字解读、Agent 规划 |
-| Claude（Anthropic，经 Claude Code 使用） | Claude Code 按 `.claude/skills/finagent-research/SKILL.md` 执行 | Skill 版本：按页阅读年报 PDF 抽取数字、拆分研报断言、撰写解读；所有计算与校验仍由本项目代码完成 |
+| Claude（Anthropic）：生成侧默认 Claude Opus 5.5，复核与盲评默认 Claude Sonnet 5.5 | 无头 Claude Code（`claude -p --output-format stream-json`），由 `finagent/report_pipeline.py` 逐角色启动 | 研究助理联网检索与登记来源；分析师读年报 PDF 抽取数字、拆研报断言、起草估值假设；主笔写文稿；复核编辑改写；排版设计师写排版脚本；盲评质检员逐条评审。所有计算、校验与计分由本项目代码完成 |
+| Claude Code（Anthropic） | 外部命令行工具，用户自行安装与登录，不随源码分发 | 多 Agent 执行器（harness） |
 
 ## 4. 自主开发部分
 
-`finagent/` 下全部代码均为自主开发：编排与追踪（core）、LLM 客户端、文档解析、A 股指标字典与抽取、财务分析与异常信号、
+`finagent/` 下全部代码均为自主开发：编排与追踪（core）、多 Agent 编排器（report_pipeline）、文档解析、A 股指标字典与抽取、财务分析与异常信号、
 利润变动归因桥、业绩预期对比、DCF 引擎、三表联动引擎、情景敏感性表格、相对估值与公式工作簿、研报核查、报告与 xlsx 输出、评测与测试。
 其中第 1 节所列模块的计算规则参照原插件，如实标注于此。

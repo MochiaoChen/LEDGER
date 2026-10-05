@@ -1,0 +1,14 @@
+\section{相关工作}
+\label{sec:related}
+
+\paragraph{财报数值推理。}FinQA~\citep{chen2021finqa}、ConvFinQA~\citep{chen2022convfinqa} 与 TAT-QA~\citep{zhu2021tatqa} 构造了基于财报表格与文本的数值推理问答，FinanceBench~\citep{islam2023financebench} 进一步在真实上市公司公告上评测开放式问答。这些工作一致表明，即便是强模型，在多步数值推理和定位证据上也频繁出错。与问答不同，我们面对的是长文档生成：一份研报包含上千个数字，任何一个错都会损害整篇可信度。因此我们不追求提高模型的数值推理准确率，而是把数值推理整体移交给确定性程序，并在生成之后逐个数字核对。
+
+\paragraph{程序辅助推理与工具调用。}PAL~\citep{gao2023pal} 与 Program of Thoughts~\citep{chen2023pot} 让模型生成程序、交给解释器执行；Toolformer~\citep{schick2023toolformer} 与 ReAct~\citep{yao2023react} 让模型在推理过程中调用外部工具。这些方法把计算“交给工具”作为模型的可选行为。\sysname{} 的区别在于把它变成不可绕过的约束：即使模型在文稿中自行写出一个算对的数，只要这个数不在本次运行的计算产物中，护栏就会拦下（第 \ref{sec:guard} 节）。
+
+\paragraph{金融大模型与金融智能体。}BloombergGPT~\citep{wu2023bloomberggpt} 与 FinGPT~\citep{yang2023fingpt} 从预训练或微调角度提升模型的金融能力；FinMem~\citep{yu2023finmem} 与多模态交易智能体 FinAgent~\citep{zhang2024finagent} 面向交易决策；FinRobot~\citep{yang2024finrobot} 提出了面向金融分析的开源智能体平台。\footnote{本系统的代码名 \sysname{} 与 \citet{zhang2024finagent} 的工作同名但无关，正式名称待定。}这些工作主要关注模型能力或交易收益，较少讨论研报生产中的审计约束：数字来源、计算可复现、外部信息可追溯，以及如何客观评价一份长篇研报。
+
+\paragraph{可归因生成与幻觉。}幻觉是自然语言生成的普遍问题~\citep{ji2023survey}。检索增强生成~\citep{lewis2020rag} 与带引用的生成~\citep{gao2023alce} 通过检索证据并让模型标注引用来缓解幻觉，其可信度通常由自然语言推理模型或人工判断。我们的护栏面向数字这一更窄但更关键的对象，判定是确定性的：数字在指定精度下是否等于某个可追溯的值，指标与期间是否与真值表绑定一致。
+
+\paragraph{以模型为评审与细则化评测。}MT-Bench 与 Chatbot Arena~\citep{zheng2023judging}、G-Eval~\citep{liu2023geval}、Prometheus~\citep{kim2024prometheus} 等研究了用模型充当评审的可行性与偏差；HealthBench~\citep{arora2025healthbench} 等工作把专家知识写成逐条的评分细则，由模型逐条判定后按权重计分。已有研究也发现评审模型会偏好自己生成的文本~\citep{panickssery2024self}。我们沿用“逐条二元判定 + 程序计分”的骨架，但把能由程序判的条目（数据闭合）全部交给程序，评审模型只判分析与表达；并通过程序制造已知缺陷来检验评审的灵敏度，这比只看评审间一致性更能发现“评审漏判”。
+
+\paragraph{多智能体协作与自我修订。}AutoGen~\citep{wu2023autogen} 与 MetaGPT~\citep{hong2024metagpt} 用多个角色化的模型协作完成复杂任务；Self-Refine~\citep{madaan2023selfrefine} 与 Reflexion~\citep{shinn2023reflexion} 让模型根据反馈迭代改进。我们的编排器不是模型，而是确定性的 Python 状态机；各角色之间不共享对话，只通过工作区文件交接；评审标准对生成方不可见，回传的问题单只含理由与证据，以减轻迭代过程中对评分标准的过拟合。

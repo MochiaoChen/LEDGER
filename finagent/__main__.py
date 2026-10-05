@@ -4,11 +4,8 @@
   python -m finagent valuation  --input 年报.pdf --year 2024 --assumptions 假设.json
   python -m finagent check      --input 年报.pdf --year 2024 --report 研报草稿.md
   python -m finagent all        --input ... --assumptions ... --report ...
-  python -m finagent ask "分析这份年报并估值" （Agent 模式，需配置 LLM）
 
-通用参数：--llm {live,replay,off}  --llm-extract {fallback,all,off}
-
-Skill 版本（Claude Code 读 PDF，本程序负责定位、校验与计算，见 .claude/skills/finagent-research）：
+本程序不调用模型。模型会话（无头 Claude Code）读 PDF 写下抽取文件，本程序负责定位、校验、计算与护栏：
   python -m finagent locate       --input 年报.pdf               # 关键页定位
   python -m finagent schema                                        # 可抽取指标清单
   python -m finagent verify-facts --input 年报.pdf --year 2024 --facts extracted.json [--supplement 三季报.pdf]
@@ -27,17 +24,14 @@ import sys
 from pathlib import Path
 
 from .core.config import get_settings
-from .core.llm import LLMClient
-from .core.orchestrator import Agent
 from .core.tracing import RunTracer
 from . import pipelines
 
 
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(prog="finagent", description="金融投研智能体")
-    ap.add_argument("task", choices=["financials", "valuation", "check", "all", "ask",
+    ap.add_argument("task", choices=["financials", "valuation", "check", "all",
                                      "locate", "schema", "verify-facts", "verify-extra", "guard", "verify-sources", "numlock"])
-    ap.add_argument("instruction", nargs="?", help="ask 模式的自然语言指令")
     ap.add_argument("--input", help="财报文件（PDF / MD）")
     ap.add_argument("--year", type=int, help="主报告期年份，如 2024")
     ap.add_argument("--period", help="分析期间，默认自动识别（如 2024 / 2024Q3）")
@@ -47,14 +41,12 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--peers", help="可比公司 CSV（可选，启用相对估值）")
     ap.add_argument("--estimates", help="一致预期/内部预期 CSV（可选，启用超预期分析）")
     ap.add_argument("--guidance", help="业绩预告 CSV（可选）")
-    ap.add_argument("--llm", choices=["live", "replay", "off"], help="覆盖 LLM_MODE")
-    ap.add_argument("--llm-extract", default="fallback", choices=["fallback", "all", "off"])
     ap.add_argument("--runs-dir")
-    ap.add_argument("--facts", help="Skill 版本：外部模型抽取的财务数据 JSON")
-    ap.add_argument("--claims", help="Skill 版本：外部模型拆出的研报断言 JSON")
-    ap.add_argument("--extras", help="Skill 版本：补充表格 JSON（分产品/分渠道等经营数据，逐字核对后供研报引用）")
+    ap.add_argument("--facts", help="模型会话抽取的财务数据 JSON（facts.json）")
+    ap.add_argument("--claims", help="模型会话拆出的研报断言 JSON（claims.json）")
+    ap.add_argument("--extras", help="经营数据补充表格 JSON（分产品/分渠道等经营数据，逐字核对后供研报引用）")
     ap.add_argument("--supplement", action="append", default=[],
-                    help="Skill 版本：补充报告（一季报/半年报/三季报等），抽取条目用 source_file 指向它；可多次指定")
+                    help="补充报告（一季报/半年报/三季报等），抽取条目用 source_file 指向它；可多次指定")
     ap.add_argument("--out", help="verify-facts 校验结果输出路径")
     ap.add_argument("--run-dir", help="guard：已完成的运行目录")
     ap.add_argument("--text", help="guard：待检查的文字解读（Markdown）")
@@ -65,54 +57,43 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.task in HELPERS:
         return HELPERS[args.task](args, ap)
-    if args.supplement and not args.facts:  # Agent 版本暂不支持多份报告
-        ap.error("--supplement 目前只用于 Skill 版本，需配合 --facts")
+    if args.supplement and not args.facts:  # 规则通道不识别季报表头，多份报告须带模型抽取文件
+        ap.error("--supplement 需配合 --facts")
 
-    settings = get_settings(llm_mode=args.llm, runs_dir=args.runs_dir)
-    llm = LLMClient(settings) if settings.llm_enabled else None
-    config = {**settings.public(), "task": args.task, "llm_extract": args.llm_extract,
-              "extraction": "skill" if args.facts else "agent",
+    settings = get_settings(runs_dir=args.runs_dir)
+    config = {**settings.public(), "task": args.task,
+              "extraction": "model+rule" if args.facts else "rule",
               "argv": sys.argv[1:] if argv is None else argv}
 
     with RunTracer(args.task, settings.runs_dir, config) as tr:
-        if args.task == "ask":
-            if llm is None:
-                print("Agent 模式需要配置 LLM（LLM_API_KEY 或 --llm replay）", file=sys.stderr)
-                return 2
-            pipelines.bind_llm(llm)
-            res = Agent(pipelines.registry, llm).run(args.instruction or "")
-            tr.write_json("agent_transcript.json", res["messages"])
-            tr.write_artifact("answer.md", res["answer"] or "")
-            print(res["answer"])
-        else:
-            need = {"valuation": ["assumptions"], "check": ["report"], "all": ["assumptions", "report"]}
-            missing = [k for k in ["input", *need.get(args.task, [])] if not getattr(args, k)]
-            if missing:
-                ap.error("缺少参数：" + ", ".join("--" + m for m in missing))
-            ctx = {"input": args.input, "fiscal_year": args.year, "period": args.period, "company": args.company,
-                   "assumptions": args.assumptions, "report": args.report, "llm": llm,
-                   "peers": args.peers, "estimates": args.estimates, "guidance": args.guidance,
-                   "llm_extract": args.llm_extract, "facts_file": args.facts, "claims_file": args.claims,
-                   "extras_file": args.extras,
-                   "supplements": args.supplement}
-            pipelines.run(args.task, ctx)
-            summary = {"run_dir": str(tr.dir), "financials": ctx["analysis"]["summary"]}
-            if "valuation" in ctx:
-                summary["valuation"] = {"model_status": ctx["valuation"].get("model_status"),
-                                        "value_range": ctx["valuation"].get("value_range")}
-            if ctx.get("comps") and ctx["comps"].get("range"):
-                summary["comps_range"] = ctx["comps"]["range"]
-            if ctx.get("three_statement"):
-                summary["three_statement"] = {"model_status": ctx["three_statement"]["model_status"],
-                                              "integrity_all_pass": all(c["status"] == "pass" for c in ctx["three_statement"]["integrity"])}
-            if "check" in ctx:
-                summary["check"] = ctx["check"]["summary"]
-            tr.write_json("summary.json", summary)
-            print(json.dumps(summary, ensure_ascii=False, indent=2))
+        need = {"valuation": ["assumptions"], "check": ["report"], "all": ["assumptions", "report"]}
+        missing = [k for k in ["input", *need.get(args.task, [])] if not getattr(args, k)]
+        if missing:
+            ap.error("缺少参数：" + ", ".join("--" + m for m in missing))
+        ctx = {"input": args.input, "fiscal_year": args.year, "period": args.period, "company": args.company,
+               "assumptions": args.assumptions, "report": args.report,
+               "peers": args.peers, "estimates": args.estimates, "guidance": args.guidance,
+               "facts_file": args.facts, "claims_file": args.claims,
+               "extras_file": args.extras,
+               "supplements": args.supplement}
+        pipelines.run(args.task, ctx)
+        summary = {"run_dir": str(tr.dir), "financials": ctx["analysis"]["summary"]}
+        if "valuation" in ctx:
+            summary["valuation"] = {"model_status": ctx["valuation"].get("model_status"),
+                                    "value_range": ctx["valuation"].get("value_range")}
+        if ctx.get("comps") and ctx["comps"].get("range"):
+            summary["comps_range"] = ctx["comps"]["range"]
+        if ctx.get("three_statement"):
+            summary["three_statement"] = {"model_status": ctx["three_statement"]["model_status"],
+                                          "integrity_all_pass": all(c["status"] == "pass" for c in ctx["three_statement"]["integrity"])}
+        if "check" in ctx:
+            summary["check"] = ctx["check"]["summary"]
+        tr.write_json("summary.json", summary)
+        print(json.dumps(summary, ensure_ascii=False, indent=2))
     return 0
 
 
-# ------------------------------------------------------------------ Skill 版本辅助命令（不生成运行目录）
+# ------------------------------------------------------------------ 校验与护栏命令（不生成运行目录）
 def _need(ap: argparse.ArgumentParser, args: argparse.Namespace, *names: str) -> None:
     missing = [n for n in names if not getattr(args, n.replace("-", "_"))]
     if missing:

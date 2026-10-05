@@ -1,7 +1,6 @@
 """评测脚本：字段抽取准确率（赛题2）+ 研报纠错的准确率/召回率/误报（赛题5）。
 
-    python eval/run_eval.py            # 规则通道
-    python eval/run_eval.py --llm live # 启用 LLM 通道
+    python eval/run_eval.py            # 计算引擎规则通道，不调用模型
 结果写入 runs/<run_id>/eval_result.json，并打印汇总。
 """
 
@@ -18,7 +17,6 @@ sys.path.insert(0, str(ROOT))
 
 from finagent import pipelines  # noqa: E402
 from finagent.core.config import get_settings  # noqa: E402
-from finagent.core.llm import LLMClient  # noqa: E402
 from finagent.core.tracing import RunTracer  # noqa: E402
 from finagent.tasks.report_check.verify import ERROR_VERDICTS  # noqa: E402
 
@@ -57,16 +55,13 @@ def eval_check(findings: list[dict], labels: dict) -> dict:
 
 
 def main() -> int:
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--llm", default="off", choices=["live", "replay", "off"])
-    args = ap.parse_args()
+    argparse.ArgumentParser(description=__doc__).parse_args()
     gold = json.loads((ROOT / "eval/gold_financials.json").read_text(encoding="utf-8"))
     labels = json.loads((ROOT / "eval/labels.json").read_text(encoding="utf-8"))
-    settings = get_settings(llm_mode=args.llm)
-    llm = LLMClient(settings) if settings.llm_enabled else None
+    settings = get_settings()
     with RunTracer("eval", settings.runs_dir, settings.public()) as tr:
         ctx = {"input": str(ROOT / gold["document"]), "fiscal_year": gold["fiscal_year"], "company": "样例公司",
-               "report": str(ROOT / labels["report"]), "llm": llm}
+               "report": str(ROOT / labels["report"])}
         pipelines.run("check", ctx)
         result = {"extraction": eval_extraction(ctx["extract"]["facts"], gold),
                   "report_check": eval_check(ctx["check"]["findings"], labels)}

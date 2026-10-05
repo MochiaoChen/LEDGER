@@ -1,0 +1,45 @@
+\section{系统总览}
+\label{sec:arch}
+
+\begin{figure}[t]
+  \centering
+  \figslot{fig1_architecture}{6.2cm}
+  \caption{\sysname{} 的四层结构。自下而上：\textbf{①计算引擎}（确定性 Python，抽取校验、真值表、三表、DCF、可比公司、护栏与数字锁，全程追踪哈希）；\textbf{②技能层}（规定模型在各角色中“怎么做”的四份技能说明）；\textbf{③研报流水线}（隔离工作区、五个互不继承上下文的会话、11 道程序闸门）；\textbf{④质检循环}（程序检查与盲评、问题单路由、回滚到最佳轮次）。蓝色为确定性组件，橙色为模型会话，红色为闸门。}
+  \label{fig:arch}
+\end{figure}
+
+图 \ref{fig:arch} 展示了系统的四层结构。分工原则贯穿各层：模型负责读、抄、写、判断；程序负责校验、计算、拦截。
+
+\paragraph{① 计算引擎。}引擎只依赖 Python 标准库与 PDF 解析库 pdfplumber，提供三条固定流水线：财报分析（解析 → 抽取 → 分析 → 经营数据 → 业绩对比 → 报告）、估值（三表 → 估值计划 → DCF → 情景 → 预测摘要 → 可比公司 → 估值报告）与研报纠错（解析研报 → 抽断言 → 核查）。每一步通过 \code{Pipeline.step} 注册，产物写入 \file{runs/<run\_id>/} 并记录哈希。引擎另提供一组供模型调用的校验命令：\code{locate}（定位关键页、母公司报表页、单位与扫描页）、\code{verify-facts}、\code{verify-extra}、\code{verify-sources}、\code{guard} 与 \code{numlock}。
+
+\paragraph{② 技能层。}技能（skill）是写给模型的工作说明书，包括步骤、约束、命令与反例。四份技能各管一类角色：\code{finagent-research}（抽取、校验、估值、纠错）、\code{finagent-report}（资料搜集与深度调研方法、分析框架推导、文稿模板与排版工具包 reportkit）、\code{finagent-review}（复核编辑的改写边界与对账方法）、\code{finagent-pipeline}（编排入口，本身不写研报）。
+
+\paragraph{③ 研报流水线。}\code{report\_pipeline} 为单家公司在仓库之外搭建隔离工作区，依次启动五个无头会话，并用 11 道闸门核对每个阶段的产物（第 \ref{sec:pipeline} 节）。
+
+\paragraph{④ 质检循环。}\code{refine} 在全部闸门通过后启动独立的盲评会话，按评分标准逐条判定并由程序计分；未达交付标准时把问题单按类型回传给相应角色，最多迭代三轮并回滚到得分最高的一轮（第 \ref{sec:eval} 节）。
+
+\subsection{模型与引擎的接口}
+模型与引擎之间只有一种交互方式：模型会话在工作区里读文件、写文件，并以命令行调用引擎；引擎读模型写下的文件，给出校验结果或计算产物。模型从不直接写真值表、估值结果或评分，引擎也从不生成文字。表 \ref{tab:interface} 列出了这种交接在各环节的具体形式。
+
+\begin{table}[h]
+\centering
+\caption{模型会话与计算引擎之间的交接。}
+\label{tab:interface}
+\small
+\begin{tabularx}{\linewidth}{@{}p{1.8cm}XX@{}}
+\toprule
+环节 & 模型写下 & 引擎给出 \\
+\midrule
+抽取 & \file{facts.json}：指标、期间、原文写法、页码 & \code{verify-facts}：逐字回查、规则通道比对、勾稽；通过后生成真值表 \\
+经营数据 & \file{extras.json}：逐格抄录的表格，派生比率只写声明 & \code{verify-extra}：逐格回查，比率由程序计算 \\
+外部资料 & \file{sources.json}：检索词、网址、日期、摘句 & \code{verify-sources}：结构与“数字在摘句中”检查 \\
+估值 & \file{valuation\_assumptions.json}：参数与依据 & 三表、DCF、可比公司、反向 DCF、程序评级 \\
+纠错 & \file{claims.json}：从研报拆出的数字断言 & 逐条核查与错误类型诊断 \\
+文稿 & \file{narrative.md} & \code{guard}：出处、绑定、来源编号；\code{numlock}：改写前后数字 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection{追踪与复现}
+\label{sec:tracing}
+所有输入文件都经由 \code{tracing.read\_file()} 读取，所有产物经由 \code{tracer.write\_artifact()} 写出。每次运行生成 \file{events.jsonl}（逐条记录文件读取、工具调用、模型调用、产物与备注，大对象截断并保留哈希）与 \file{manifest.json}（输入与产物哈希、配置、命令行参数、版本与耗时）。研报流水线的每个会话另把模型事件流保存在 \file{.pipeline/agents/*.jsonl}。因此复现分为两层：已保存输入上的全部程序计算可以离线逐位复算；重新生成文稿或重新盲评则需要相应的模型环境，我们不宣称能离线复现模型输出。

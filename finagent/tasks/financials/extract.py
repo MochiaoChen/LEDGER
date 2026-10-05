@@ -1,9 +1,7 @@
-"""财务数据抽取：规则通道（表格科目匹配）+ LLM 通道（非标准表格/文本），交叉校验后合并。
+"""财务数据抽取的规则通道（表格科目匹配）与双通道合并。
 
-设计原则：
-- 规则通道确定性强，作为主结果；LLM 通道用于补漏，其每条结果都必须能在原文 chunk 中找到对应数字
-  （证据校验），否则丢弃——防止模型“编数”。
-- 两条通道对同一指标给出不同数值时，不静默取舍，而是记录为 issue 交由人工复核。
+模型通道是分析师会话按页读 PDF 写下的 facts.json，由 external.ingest 做证据校验后与本模块的规则通道合并：
+两条通道对同一指标给出不同数值时，不静默取舍，而是记录为 issue 交由人工复核。
 """
 
 from __future__ import annotations
@@ -13,10 +11,8 @@ from dataclasses import asdict, dataclass, field
 from typing import Any
 
 from ...core import tracing
-from ...core.llm import LLMClient, LLMError
 from ...core.numbers import UNIT_FACTORS, close, parse_number
 from ...parsing.document import Chunk, Document
-from ...prompts import load_prompt
 from .schema import BY_ID, METRICS, match_label
 
 
@@ -195,55 +191,9 @@ def _loc(ch: Chunk, **extra: Any) -> dict[str, Any]:
     return loc
 
 
-# ------------------------------------------------------------------ llm channel
-def extract_llm(doc: Document, chunks: list[Chunk], llm: LLMClient,
-                fiscal_year: int | None = None) -> tuple[list[Fact], list[Issue]]:
-    system = load_prompt("extract_financials")
-    metric_list = "\n".join(f"- {m.id}: {m.name}" for m in METRICS if m.statement != "derived")
-    facts: list[Fact] = []
-    issues: list[Issue] = []
-    for ch in chunks:
-        user = (
-            f"## 指标清单\n{metric_list}\n\n## 报告期\n本报告主报告期为 {fiscal_year or '未知'} 年。\n\n"
-            f"## 待抽取片段（chunk_id={ch.chunk_id}，第{ch.page}页，单位提示：{ch.unit_hint or '未标注'}，"
-            f"所在章节：{ch.caption or '—'}）\n{ch.text}"
-        )
-        try:
-            out = llm.chat_json(system, user, purpose=f"extract_financials:{ch.chunk_id}")
-        except LLMError as exc:
-            issues.append(Issue("low", "LLM抽取失败", str(exc), [_loc(ch)]))
-            continue
-        for item in (out.get("facts") if isinstance(out, dict) else out) or []:
-            fact = _validate_llm_item(item, ch)
-            if isinstance(fact, Fact):
-                facts.append(fact)
-            elif fact:
-                issues.append(Issue("low", "LLM结果未通过证据校验", fact, [_loc(ch)]))
-    return facts, issues
-
-
-def _validate_llm_item(item: dict[str, Any], ch: Chunk) -> Fact | str | None:
-    mid = item.get("metric_id")
-    if mid not in BY_ID:
-        return f"未知指标 {mid}"
-    raw = str(item.get("raw_value", item.get("value", ""))).strip()
-    v = parse_number(raw)
-    if v is None:
-        return f"{mid} 数值无法解析：{raw}"
-    # 证据校验：原始数字（去掉千分位）必须出现在该 chunk 文本中
-    haystack = ch.text.replace(",", "").replace("，", "")
-    if raw.replace(",", "").strip("()") not in haystack:
-        return f"{mid}={raw} 未在原文中找到"
-    unit = item.get("unit") or ch.unit_hint or "元"
-    metric = BY_ID[mid]
-    return Fact(mid, str(item.get("period", "")), _scale(v, metric.kind, unit), raw,
-                _unit_label(metric.kind, unit), _loc(ch), str(item.get("label", metric.name)),
-                "llm", confidence="medium")
-
-
 # ------------------------------------------------------------------ merge
 def merge(rule_facts: list[Fact], llm_facts: list[Fact], prefer: str = "rule") -> tuple[list[Fact], list[Issue]]:
-    """prefer：两通道不一致时保留哪一方（Agent 版本规则为主；Skill 版本模型读原文为主）。均记 issue。"""
+    """prefer：两通道不一致时暂时保留哪一方（流水线里为模型读原文的结果 "llm"）。不论保留哪方都记 issue，阻断估值。"""
     merged: dict[tuple[str, str], Fact] = {}
     issues: list[Issue] = []
     for f in rule_facts:
@@ -274,35 +224,14 @@ def merge(rule_facts: list[Fact], llm_facts: list[Fact], prefer: str = "rule") -
     return list(merged.values()), issues
 
 
-def llm_candidates(doc: Document, rule_facts: list[Fact], mode: str = "fallback") -> list[Chunk]:
-    """选择送入 LLM 的片段。fallback：只送规则通道没抽到数据、但疑似含财务数据的片段。"""
-    if mode == "all":
-        return [c for c in doc.chunks if re.search(r"\d", c.text)]
-    hit = {f.source["chunk_id"] for f in rule_facts}
-    keywords = [a for m in METRICS for a in m.aliases if len(a) >= 4]
-    out = []
-    for c in doc.chunks:
-        if c.chunk_id in hit or not re.search(r"\d{2,}", c.text):
-            continue
-        if any(k in c.text for k in keywords):
-            out.append(c)
-    return out
-
-
 @tracing.traced("extract_financials")
-def extract_financials(doc: Document, *, fiscal_year: int | None, llm: LLMClient | None,
-                       llm_mode: str = "fallback") -> dict[str, Any]:
+def extract_financials(doc: Document, *, fiscal_year: int | None) -> dict[str, Any]:
+    """只用规则通道抽取（没有模型抽取文件时，如样例回归与引擎测试）。"""
     rule_facts, issues = extract_rule(doc, fiscal_year)
-    llm_facts: list[Fact] = []
-    if llm is not None and llm.enabled and llm_mode != "off":
-        cands = llm_candidates(doc, rule_facts, llm_mode)
-        tracing.log("llm_candidates", count=len(cands), chunk_ids=[c.chunk_id for c in cands])
-        llm_facts, llm_issues = extract_llm(doc, cands, llm, fiscal_year)
-        issues += llm_issues
-    facts, merge_issues = merge(rule_facts, llm_facts)
+    facts, merge_issues = merge(rule_facts, [])
     issues += merge_issues
     return {
         "facts": [f.to_dict() for f in sorted(facts, key=lambda x: (x.metric_id, x.period))],
         "issues": [i.to_dict() for i in issues],
-        "stats": {"rule_facts": len(rule_facts), "llm_facts": len(llm_facts), "merged": len(facts)},
+        "stats": {"rule_facts": len(rule_facts), "llm_facts": 0, "merged": len(facts)},
     }

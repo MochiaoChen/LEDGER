@@ -1,4 +1,4 @@
-"""研报断言抽取：规则通道（中文数字模式）+ 可选 LLM 通道。
+"""研报断言抽取：规则通道（中文数字模式）+ 模型会话拆出的断言（claims.json，经证据校验后合并）。
 
 每条断言带原文引用与位置（页码/chunk/句序号），核查结论可定位到研报具体句子。
 """
@@ -10,9 +10,7 @@ from dataclasses import asdict, dataclass
 from typing import Any
 
 from ...core import tracing
-from ...core.llm import LLMClient, LLMError
 from ...parsing.document import Document
-from ...prompts import load_prompt
 from ..financials.schema import BY_ID, METRICS, claim_alias_list
 
 NUM = r"(-?\d+(?:,\d{3})*(?:\.\d+)?)"
@@ -119,38 +117,8 @@ def _mk(claims: list[Claim], mid: str, period: str, ctype: str, raw: str, unit: 
                  quote.strip(), sent.strip(), loc, is_fc)
 
 
-def extract_llm(doc: Document, llm: LLMClient, default_year: int | None) -> list[Claim]:
-    system = load_prompt("extract_claims")
-    metric_list = "\n".join(f"- {m.id}: {m.name}（常见说法：{'、'.join(m.claim_aliases)}）"
-                            for m in METRICS if m.claim_aliases)
-    out: list[Claim] = []
-    for ch in doc.texts():
-        if not re.search(r"\d", ch.text):
-            continue
-        user = f"## 指标清单\n{metric_list}\n\n默认报告期：{default_year}\n\n## 研报片段（chunk_id={ch.chunk_id}）\n{ch.text}"
-        try:
-            res = llm.chat_json(system, user, purpose=f"extract_claims:{ch.chunk_id}")
-        except LLMError as exc:
-            tracing.log("llm_claims_failed", chunk_id=ch.chunk_id, error=str(exc))
-            continue
-        for it in (res.get("claims") if isinstance(res, dict) else res) or []:
-            quote = str(it.get("quote", ""))
-            raw = str(it.get("value", ""))
-            if it.get("metric_id") not in BY_ID or not quote or quote not in ch.text:
-                continue  # 证据校验：引用必须是原文连续片段
-            try:
-                val = float(raw.replace(",", ""))
-            except ValueError:
-                continue
-            out.append(Claim(f"L{len(out) + 1:03d}", it["metric_id"], str(it.get("period") or default_year),
-                             it.get("claim_type", "level"), raw.lstrip("-"), val, it.get("unit", ""), quote, quote,
-                             {"source": ch.source, "page": ch.page, "chunk_id": ch.chunk_id},
-                             bool(it.get("is_forecast")), "llm"))
-    return out
-
-
 def merge_claims(rule: list[Claim], llm: list[Claim]) -> list[Claim]:
-    """LLM 补充规则通道漏掉的断言（按 指标+期间+类型+数值 去重）。"""
+    """模型拆出的断言补充规则通道漏掉的部分（按 指标+期间+类型+数值 去重）。"""
     seen = {(c.metric_id, c.period, c.claim_type, round(c.value, 6)) for c in rule}
     merged = list(rule)
     for c in llm:
@@ -167,7 +135,7 @@ CLAIM_TYPES = ("level", "yoy", "ratio", "pp_change")
 
 def ingest_claims(doc: Document, payload: dict[str, Any] | list[Any],
                   default_year: int | None) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
-    """Skill 版本：接入外部模型拆出的断言。引用须为原文连续片段且包含该数字，否则拒绝；与规则通道去重合并。"""
+    """接入模型会话拆出的断言。引用须为原文连续片段且包含该数字，否则拒绝；与规则通道去重合并。"""
     items = payload.get("claims", []) if isinstance(payload, dict) else payload
     ext: list[Claim] = []
     rejected: list[dict[str, Any]] = []
@@ -200,8 +168,6 @@ def ingest_claims(doc: Document, payload: dict[str, Any] | list[Any],
 
 
 @tracing.traced("extract_claims")
-def extract_claims(doc: Document, *, default_year: int | None, llm: LLMClient | None) -> list[dict[str, Any]]:
-    claims = extract_rule(doc, default_year)
-    if llm is not None and llm.enabled:
-        claims = merge_claims(claims, extract_llm(doc, llm, default_year))
-    return [c.to_dict() for c in claims]
+def extract_claims(doc: Document, *, default_year: int | None) -> list[dict[str, Any]]:
+    """只用规则通道拆断言（没有 claims.json 时）。"""
+    return [c.to_dict() for c in extract_rule(doc, default_year)]
