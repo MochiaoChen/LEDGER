@@ -33,7 +33,7 @@ description: 为 A 股公司生成卖方体例的年报点评暨深度研究 PDF
    `writing.md`。拿不准但重要的内容写进 `report/review.md` 复核清单，不进正文；拿不准又不重要的不写。
    文稿写完后由独立会话按 `finagent-review` skill 复核改写（只改措辞与结构，数字锁保证不碰数字）。
 5. **评级取程序结果**（`forecast_summary.rating`），不自己定。“不构成投资建议”只出现在免责声明里。
-6. **字体与免责声明共用**：正文 Times New Roman + 楷体；表格、图表的数字用 Helvetica，汉字用楷体。
+6. **字体与免责声明共用**：正文固定 10.5pt，Times New Roman + 楷体；表格、图表的数字用 Helvetica，汉字用楷体。
    免责声明用 `reportkit/disclaimer.md`，不要逐份改写。交付前确认 PDF 里没有意外嵌入其他中文字体。
    配色统一用红色主题（`core.py` 颜色常量 + `report.css`），不再提供主题切换；公司脚本画图取 `core` 的颜色常量，不写死色值。
 
@@ -81,6 +81,9 @@ description: 为 A 股公司生成卖方体例的年报点评暨深度研究 PDF
    `run.ratios` 取数后调用原语。关键假设表的“依据”列要写明对应正文第几节。
 6. **渲染与自检。** `PY data/extractions/<公司>_<年度>/report/build_report.py --run-dir runs/<run_id>`，
    脚本会两遍打印（回填目录页码），输出逐页预览和每 8 页一张的缩略图 `preview/sheet*.png`。
+   公共渲染器打印前检查 A4 版心溢出、正文 10.5pt 和图表加载，打印后在 PDF 正文原文中实测字号；
+   通过才替换 PDF，并写 `report/render_check.json`（绑定 HTML、PDF 与排版代码的哈希）。失败时修表头换行、
+   表格宽度或改整栏；不要缩小正文、设置 zoom/transform，或用裁切隐藏溢出。流水线排版闸门核对这份凭证。
    先看缩略图找大块留白、孤立标题、只溢出一两行的页；再逐页看图表文字是否重叠、数字是否清楚。
    留白多时：缩小图高、调整图文顺序、给长表格加 `cls="split"` 允许跨页。
 7. **交付。** 确认 `report/review.md` 复核清单已写（finagent-review 产出），
@@ -138,7 +141,7 @@ description: 为 A 股公司生成卖方体例的年报点评暨深度研究 PDF
 ```
 .claude/skills/finagent-report/
   SKILL.md                     本文件
-  reportkit/                   共用代码：core / charts / tables / layout / report.css / disclaimer.md
+  reportkit/                   共用代码：core / charts / tables / layout / render / render_probe.js / report.css / disclaimer.md
   templates/build_report.py    编排脚本模板（标准章节已接好，公司专属部分留 TODO）
   templates/narrative.md       文稿模板（分节与写作提示）
   references/analysis.md       从年报推导分析框架的方法（framework.md 写法；茅台推导示例）

@@ -411,10 +411,9 @@ def build(run: Run, cfg: Config, S: dict[str, str], body: Callable[[Doc, dict], 
 
 
 def to_pdf(html_path: Path) -> Path:
-    pdf = html_path.with_suffix(".pdf")
-    subprocess.run([chrome(), "--headless=new", "--no-pdf-header-footer", f"--print-to-pdf={pdf}",
-                    "--virtual-time-budget=10000", html_path.resolve().as_uri()], check=True, capture_output=True)
-    return pdf
+    from .render import to_pdf as checked_pdf
+
+    return checked_pdf(html_path, chrome())
 
 
 def preview(pdf: Path) -> list[Path]:

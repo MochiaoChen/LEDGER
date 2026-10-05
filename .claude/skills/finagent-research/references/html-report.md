@@ -118,7 +118,7 @@ runs/<run_id>/report/  # build_report.py 的输出
 ## 版式（CSS 分页）
 
 ```css
-@page { size: A4; margin: 18mm 16mm 18mm 16mm;
+@page { size: A4; margin: 17mm 15mm 15mm 15mm;
   @top-left { content: "贵州茅台（600519.SH）2025 年报分析"; font: 7.5pt var(--sans); color: #6B7280; }
   @bottom-right { content: counter(page) " / " counter(pages); font: 7.5pt var(--sans); color: #6B7280; } }
 @page :first { @top-left { content: none; } }
@@ -137,6 +137,11 @@ thead { display: table-header-group; }          /* 跨页表格重复表头 */
 `PATH` 中查找 Chrome / Chromium / Edge。非默认安装位置用 `FINAGENT_CHROME` 指向可执行文件。页眉页码用上面的
 CSS `@page` 边距盒（Chrome 131 及以上支持），不要用 Chrome 自带的页眉页脚。
 
+公共渲染器固定正文为 10.5pt；打印前检查 180mm 版心内的元素和文字范围，打印后实测 PDF 正文字号，
+输出绑定当前 HTML、PDF 与排版代码的 `render_check.json`。长表头和来源网址换行，六期财务附表整栏；
+数字列尽量保留一行。仍然超宽的自定义表格要改整栏或拆表，不得靠减小正文、zoom 或裁切解决。
+检查失败会保留上一份 PDF，但凭证记为失败，流水线不能把旧 PDF 当作新交付。
+
 ## 自检（交付前必须做）
 
 1. 把 PDF 每页渲染成 PNG（`pdfplumber.open(pdf).pages[i].to_image(resolution=110).save(...)`），用 Read 逐页看：
@@ -144,7 +149,7 @@ CSS `@page` 边距盒（Chrome 131 及以上支持），不要用 Chrome 自带�
    - 图、表有没有被分页切开；有没有孤立的标题、空白页、溢出版心的表格；
    - 页眉、页码是否正确，首页没有页眉；
    - 图中文字是否清晰，字号是否与正文协调。
-2. 用 pdfplumber 读 `page.chars` 的 `fontname`，确认嵌入字体符合预期（西文 Charter/Helvetica，中文思源宋体/苹方等）。
+2. 用 pdfplumber 读 `page.chars` 的 `fontname`，确认嵌入字体符合预期（正文 Times New Roman + 楷体，表格数字 Helvetica）。
 3. 再跑一次 `guard` 确认 `narrative.md` 通过；抽查 3 个表格数字能对回 `analysis.json` / `valuation.json`。
 4. 发现问题改 HTML/CSS 或图表后重新生成，直到逐页检查没有问题。
 
