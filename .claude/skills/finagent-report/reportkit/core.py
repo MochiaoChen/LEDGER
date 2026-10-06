@@ -39,7 +39,7 @@ logging.getLogger("matplotlib.font_manager").setLevel(logging.ERROR)  # 字重�
 
 # ------------------------------------------------------------------ 数据
 class Run:
-    """一次 finagent 运行的产物。缺失的产物读成空字典，对应图表由调用方跳过。"""
+    """一次 LEDGER 运行的产物。缺失的产物读成空字典，对应图表由调用方跳过。"""
 
     def __init__(self, run_dir: Path):
         self.dir = Path(run_dir)

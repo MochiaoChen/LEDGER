@@ -110,7 +110,7 @@
 
 - 年报之外的数字和判断必须来自 `research/sources.json`（检索方法见 finagent-report 的 `references/research.md`），
   句末加 `[S编号]`，排版时变成上标，附录自动列出“外部资料来源”。
-- 用外部数据画的图，`doc.fig(..., src="Clarksons [S2]，FinAgent 整理")` 写明来源。
+- 用外部数据画的图，`doc.fig(..., src="Clarksons [S2]，LEDGER 整理")` 写明来源。
 - 外部数字照来源原文写（单位、口径、期间一致），不要自己换算或推算；需要换算的，写成 extras 比率或干脆不用。
 - 不同来源说法矛盾时，取更权威、更新的那个，矛盾本身写进 review.md。
 

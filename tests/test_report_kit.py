@@ -60,6 +60,13 @@ def _figs(html):
 
 def test_template_on_another_company(sample_run, tmp_path):
     html = _build_template(sample_run, tmp_path)
+    assert '<div class="brand">LEDGER<small>投资研究</small></div>' in html
+    assert "公司公告，LEDGER" in html and "LEDGER 预测（基准情景）" in html
+    assert "本报告由 LEDGER 投研智能体系统生成" in html
+    assert "LEDGERTOCEND" in html
+    # 输入文件路径须保留真实名称，正文中的品牌不应再出现旧名。
+    report_text = re.sub(r"<code>.*?</code>", "", html, flags=re.S)
+    assert not re.search("finagent", report_text, re.I)
     figs = _figs(html)
     assert figs == [str(i) for i in range(1, len(figs) + 1)] and len(figs) >= 18  # 连续编号
     assert "可比公司估值倍数与利润率" in html and "免责声明" in html

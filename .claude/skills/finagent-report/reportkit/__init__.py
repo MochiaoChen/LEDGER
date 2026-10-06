@@ -1,4 +1,4 @@
-"""FinAgent 研报排版工具包（Skill：finagent-report）。
+"""LEDGER 研报排版工具包（Skill：finagent-report）。
 
 core    读运行产物、格式化、narrative.md → HTML、画图参数
 charts  标准图（读产物）与图表原语（分组柱、堆叠柱、横条、环形、进度条……）
