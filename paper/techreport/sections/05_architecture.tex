@@ -1,0 +1,709 @@
+% ============================================================================
+% 第 5 章 系统架构
+% ============================================================================
+\section{系统架构}
+\label{sec:arch}
+
+% ---- 本章局部宏（前缀 ar）
+\newcommand{\arT}[1]{{\let\arUS\_\def\_{\arUS\allowbreak}\code{#1}}}  % 可在下划线处断行的标识符
+\sloppy  % 本章大量长标识符，章末恢复 \fussy
+
+第~\ref{sec:principles} 节把设计原则写成了不变量；本章描述承载这些不变量的软件结构。重点是\emph{计算引擎}这一层：
+它如何与模型会话交接、内部如何组织步骤与留痕、如何对外提供命令行与界面、如何保证跨平台与可复现，以及靠什么测试体系维持上述性质。
+多 Agent 编排（五个会话、十一道闸门、\code{refine} 循环）与质检体系另有专章（\S\ref{sec:pipeline}、\S\ref{sec:eval}），本章只交代它们在整体中的位置和接口。
+
+% ----------------------------------------------------------------------------
+\subsection{四层结构}
+\label{sec:arch-layers}
+
+\sysname{} 由四层组成（图~\ref{fig:arch-layers}）。自下而上：
+
+\begin{enumerate}
+  \item \textbf{计算引擎}（\file{finagent/}，不含 \file{evaluation/}）：确定性 Python，\emph{不调用任何模型}。负责文档解析与定位、抽取校验、财务分析、
+        估值、研报核查、文稿护栏与数字锁，全程留痕。依赖仅为标准库与 \code{pdfplumber}。
+  \item \textbf{技能层}（\file{.claude/skills/} 四个 skill + 编排器为每个工作区生成的 \file{CLAUDE.md}）：用自然语言写给模型会话的方法与约束，
+        规定每个角色读什么、写什么、跑哪条命令、闸门是什么。技能层不含代码逻辑，只引用引擎的命令。
+  \item \textbf{多 Agent 编排}（\file{finagent/report\_pipeline.py}）：确定性 Python 编排器。\code{build} 为一家公司搭隔离工作区，\code{run} 依次起五个无头 Claude Code 会话，
+        \code{status} 判 11 道闸门，\code{collect} 收回产物，\code{scorecard} 对比多个工作区。
+  \item \textbf{质检循环}（\file{finagent/evaluation/} + \code{refine}）：程序检查（L0/L1）+ 盲评会话（L2/L3/负向）+ Python 计分 + 问题单路由与回滚。
+\end{enumerate}
+
+分工可以用一句话概括：\emph{模型读、抄、写、判断；程序校验、计算、拦截。}图中橙色节点是模型会话，蓝色节点是确定性程序，红色菱形是程序闸门。
+所有跨层交互都经过两种媒介之一：工作区里的文件，或引擎的命令行（及其退出码）。没有任何一层通过共享内存或对话上下文与另一层交互。
+
+\begin{figure}[!htbp]
+\centering
+\resizebox{\linewidth}{!}{%
+\begin{tikzpicture}[
+  layer/.style={draw=midgray,rounded corners=4pt,fill=#1,inner sep=6pt},
+  ltitle/.style={font=\small\bfseries,anchor=north west,text=nipsblue},
+  e/.style={prog,minimum width=21mm,font=\scriptsize},
+  a/.style={agent,minimum width=21mm,font=\scriptsize},
+  s/.style={draw=nipsblue!60,fill=white,rounded corners=1pt,align=center,font=\scriptsize,minimum width=24mm,minimum height=6mm},
+  g/.style={gate,minimum width=9mm,minimum height=5mm},
+  f/.style={file,font=\tiny\ttfamily,minimum width=17mm}]
+
+% ---------------- ① 计算引擎
+\node[e] (parse) at (0,0) {解析与定位\\\texttt{parsing/}};
+\node[e,right=3mm of parse] (ext) {抽取校验\\\texttt{financials/}};
+\node[e,right=3mm of ext] (ana) {分析\\真值表 $\mathcal{T}$};
+\node[e,right=3mm of ana] (val) {估值\\\texttt{valuation/}};
+\node[e,right=3mm of val] (chk) {研报核查\\\texttt{report\_check/}};
+\node[e,right=3mm of chk] (grd) {护栏与数字锁\\\texttt{output/}};
+\node[e,below=4mm of ana,minimum width=60mm] (core) {\texttt{core/}：config · numbers · orchestrator（Pipeline.step）· tracing};
+\node[f,below=4mm of grd] (runs) {runs/<id>/\\events.jsonl\\manifest.json};
+\draw[arr] (parse)--(ext); \draw[arr] (ext)--(ana); \draw[arr] (ana)--(val); \draw[arr] (val)--(chk); \draw[arr] (chk)--(grd);
+\draw[darr,midgray] (core.east) -- (runs.west);
+\begin{scope}[on background layer]
+\node[layer=nipsblue!4,fit=(parse)(grd)(core)(runs)] (L1) {};
+\end{scope}
+\node[ltitle] at ([yshift=4.5mm]L1.north west) {① 计算引擎（确定性，不调用模型；标准库 + pdfplumber）};
+
+% ---------------- ② 技能层
+\node[s] (sk1) at (0.6,3.0) {finagent-pipeline\\编排入口};
+\node[s,right=4mm of sk1] (sk2) {finagent-research\\分析师};
+\node[s,right=4mm of sk2] (sk3) {finagent-report\\研究助理 / 主笔 / 排版};
+\node[s,right=4mm of sk3] (sk4) {finagent-review\\复核编辑};
+\node[s,right=4mm of sk4,fill=nipsblue!8] (wsg) {工作区 CLAUDE.md\\11 阶段 · 读取边界};
+\begin{scope}[on background layer]
+\node[layer=lightgray,fit=(sk1)(wsg)] (L2) {};
+\end{scope}
+\node[ltitle] at ([yshift=4.5mm]L2.north west) {② 技能层（方法与约束，不含代码逻辑）};
+
+% ---------------- ③ 多 Agent 编排
+\node[a] (r1) at (0,6.0) {研究助理\\阶段 1};
+\node[a,right=7mm of r1] (r2) {分析师\\阶段 2～7};
+\node[a,right=7mm of r2] (r3) {主笔\\阶段 8};
+\node[a,right=7mm of r3] (r4) {复核编辑\\阶段 9};
+\node[a,right=7mm of r4] (r5) {排版设计师\\阶段 10～11};
+\foreach \x/\y in {r1/r2,r2/r3,r3/r4,r4/r5}{
+  \node[g] at ($(\x.east)!0.5!(\y.west)$) (g\x) {};
+  \draw[arr] (\x.east) -- (g\x.west); \draw[arr] (g\x.east) -- (\y.west);}
+\node[e,above=4mm of r3,minimum width=88mm] (orch) {编排器 \texttt{report\_pipeline}：build · run · status（11 道闸门）· collect · scorecard};
+\begin{scope}[on background layer]
+\node[layer=modelorange!4,fit=(r1)(r5)(orch)] (L3) {};
+\end{scope}
+\node[ltitle] at ([yshift=4.5mm]L3.north west) {③ 多 Agent 编排（隔离工作区 + 五个无头 Claude Code 会话）};
+
+% ---------------- ④ 质检循环
+\node[e] (l01) at (0,10.0) {程序检查\\L0 / L1};
+\node[a,right=6mm of l01] (judge) {盲评会话\\L2 / L3 / 负向};
+\node[e,right=6mm of judge] (score) {Python 计分};
+\node[g,right=6mm of score] (dlv) {达标?};
+\node[e,right=6mm of dlv] (route) {问题单路由\\回滚最佳轮};
+\draw[arr] (l01)--(judge); \draw[arr] (judge)--(score); \draw[arr] (score)--(dlv); \draw[arr] (dlv)--(route);
+\begin{scope}[on background layer]
+\node[layer=gatered!3,fit=(l01)(route)] (L4) {};
+\end{scope}
+\node[ltitle] at ([yshift=4.5mm]L4.north west) {④ 质检循环（\texttt{refine} + \texttt{finagent/evaluation/}）};
+
+% ---------------- 跨层接口
+\draw[arr,nipsblue] ([yshift=-2mm]L3.west) -- ++(-7mm,0) |- node[pos=0.25,left,font=\scriptsize,align=right]{命令行\\\texttt{./py -m finagent ...}\\退出码 0/1} ([yshift=2mm]L1.west);
+\draw[arr,modelorange!90!black] ([yshift=-2mm]L1.east) -- ++(7mm,0) |- node[pos=0.25,right,font=\scriptsize,align=left]{产物 /\\校验结果} ([yshift=-3mm]L3.east);
+\draw[darr,midgray] ([xshift=-30mm]L2.north) -- node[left,font=\scriptsize]{会话启动时读取} ([xshift=-30mm]L3.south -| L2.north);
+\draw[arr] (L3.north) -- node[right,font=\scriptsize,align=left]{交付物（只读副本）} (L4.south);
+\draw[arr,gatered] (L4.east) -- ++(7mm,0) |- node[pos=0.25,right,font=\scriptsize,align=left]{问题单\\（仅理由\\与证据）} ([yshift=3mm]L3.east);
+\end{tikzpicture}}
+\caption{\sysname{} 的四层结构。蓝色：确定性程序；橙色：模型会话；红色菱形：程序闸门。会话之间不共享上下文，只靠工作区文件交接；
+模型与引擎的唯一接口是文件与命令行（\S\ref{sec:arch-interface}）。质检层的评分标准与完整结果不进入工作区，回传的只有问题单。}
+\label{fig:arch-layers}
+\end{figure}
+
+\paragraph{为什么是四层而不是“一个 agent + 一组工具”。}这种分层直接来自第~\ref{sec:principles} 节的原则：P1/P4 要求计算集中在一个不调用模型的层；
+P10 要求会话之间只靠文件交接，因此需要一个确定性编排器负责“谁先谁后、何时放行”；P11 要求方法与约束以自然语言给出而不预设行业框架，于是有独立的技能层；
+评分标准对生成方不可见（\S\ref{sec:eval-isolation}），于是质检单独成层并物理隔离。每一层可以单独替换：换 harness 只动编排器中的两个函数，
+换评分标准只动 \file{eval/rubrics/}，引擎对二者一无所知。
+
+% ----------------------------------------------------------------------------
+\subsection{模型与引擎的唯一接口：文件与命令行}
+\label{sec:arch-interface}
+
+\begin{definition}[引擎接口]\label{def:arch-interface}
+引擎对模型会话暴露的接口是一个二元组 $(\mathcal{F},\mathcal{H})$：$\mathcal{F}$ 为交接文件集合（模型写、引擎读），$\mathcal{H}$ 为命令集合
+\begin{align*}
+\mathcal{H}=\;&\{\texttt{locate},\texttt{schema},\texttt{verify-facts},\texttt{verify-extra},\texttt{verify-sources},\texttt{guard},\texttt{numlock}\}\\
+&\cup\{\texttt{financials},\texttt{valuation},\texttt{check},\texttt{all}\}.
+\end{align*}
+前七个为\emph{校验命令}：不生成运行目录，结果打印为 JSON，退出码 0 表示通过、1 表示存在阻断项；后四个为\emph{流水线任务}：生成 \file{runs/<run\_id>/} 并完整留痕。
+\end{definition}
+
+模型会话只能以 \code{./py -m finagent <命令>} 的形式调用引擎（工作区权限白名单只放行这一前缀，\S\ref{sec:pipe-build}），不能 import 引擎模块、不能修改引擎代码。
+因此“模型能对计算施加的影响”被严格限定为它写下的交接文件内容；而交接文件的每一个字段，都会在进入计算之前经过 $\mathcal{H}$ 中的某个校验命令。
+退出码是这一接口的关键：闸门（\S\ref{sec:pipe-gates}）与模型都能以同一个比特判断“是否可以继续”，不需要解析自然语言输出。
+
+\paragraph{六个模型交接文件。}表~\ref{tab:arch-handoff} 列出模型写给引擎的六个文件。它们的共同设计是：\emph{模型只写“读到了什么”和“假设是什么”，不写“算出了什么”}。
+完整 JSON 模式见附录~\ref{app:schemas}。
+
+{\small
+\begin{longtable}{@{}p{0.2\linewidth}p{0.11\linewidth}p{0.36\linewidth}p{0.25\linewidth}@{}}
+\caption{模型写、引擎读的六个交接文件。}\label{tab:arch-handoff}\\
+\toprule
+文件 & 写入者 & 内容与约束 & 校验 / 接入 \\
+\midrule
+\endfirsthead
+\toprule
+文件 & 写入者 & 内容与约束 & 校验 / 接入 \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+\file{facts.json} & 分析师 & 逐条 \code{\{metric\_id, period, raw\_value, unit, page, scope, label, table, source\_file\}}；
+\code{raw\_value} 照抄原文，不换算；\code{metric\_id} 取自 \code{schema} 命令给出的指标清单，派生指标不抄 &
+\code{verify-facts}（证据、口径、双通道、勾稽、核心缺失）；流水线 \code{-{}-facts} \\
+\file{extras.json} & 分析师 & 经营数据表（分产品、分渠道、产销量等）：每表声明列与列单位、逐行 \code{values} 与页码；
+\code{ratios} 只写比率的定义（分子、分母引用的格），不写数值 & \code{verify-extra} 逐格回查；\code{\_ratios} 由程序计算；流水线 \code{-{}-extras} \\
+\file{sources.json} & 研究助理（分析师追加） & \code{questions}（检索问题、类别、检索词、状态）与 \code{sources}（网址、发布方、发布与访问日期、
+摘句 $\le160$ 字、数值）；数值须原样出现在摘句中 & \code{verify-sources}；\code{guard -{}-sources}；阶段 1 覆盖度闸门 \\
+\file{claims.json} & 分析师 & 研报断言 \code{\{metric\_id, period, claim\_type, value, unit, quote, is\_forecast\}}；
+\code{quote} 必须是研报原文连续片段且含该数值 & \code{claims.ingest\_claims}；流水线 \code{-{}-claims} \\
+\file{valuation\_ \allowbreak assumptions.json} & 分析师 & 情景向量（收入增速、资本开支率、终值增长、WACC 调整）、WACC 参数、三表驱动、
+可选分部量价 \code{segment\_forecast}、非经营性资产明细、\code{current\_price} 与 \code{price\_source}、依据（引用 \code{[S编号]}） &
+三表与 DCF 引擎的结构校验；非经营性资产逐项回查原文 \\
+\file{narrative.md} & 主笔 → 复核编辑 & 研报文稿，按 \code{<!-{}- section: 名称 -{}->} 分节；数字只能抄产物展示值或带 \code{[S编号]} 的外部数 &
+\code{guard}（阶段 8）、\code{numlock}（阶段 9） \\
+\end{longtable}
+}
+
+引擎写给模型的文件同样有约定：\file{locate.json}（关键页与单位，\code{build} 时预先生成放进工作区）、\file{facts.verified.json}（校验结论，闸门据此判断）、
+运行目录中的结论性产物（\file{analysis.json}、\file{valuation.json}、\file{forecast\_summary.json} 等，主笔从中抄数），以及 \file{commentary\_guard.json}。
+会话之间的交接（资料包、分析框架、专题笔记、复核清单等）属于编排层，见 \S\ref{sec:pipe-roles} 与表~\ref{tab:pipe-handoff}。
+
+\paragraph{一个 \file{facts.json} 条目。}下面是样例公司一条营业收入抽取（中文字段值以 LaTeX 转义插入，原文件为 UTF-8 JSON）：
+
+\begin{lstlisting}
+{"metric_id": "revenue", "period": "2024", "raw_value": "5,862,340,125.36",
+ "unit": "(*@元@*)", "page": 6, "scope": "consolidated",
+ "label": "(*@营业收入@*)", "table": "(*@主要会计数据和财务指标@*)"}
+\end{lstlisting}
+
+引擎对它依次执行：指标合法性（\code{revenue} 在指标字典中且非派生）、期间格式、口径（\code{consolidated}）、数值解析、页码存在、
+\code{find\_evidence(doc, 6, "5,862,340,125.36")} 在第 6 页按数字边界找到、单位换算为元，最后与规则通道同键结果比对（\S\ref{sec:extract}）。
+
+\begin{tradeoff}[：接口形式]
+\textbf{函数调用接口（MCP 服务或 function calling）。}结构化程度更高，参数可做模式校验。但它把引擎绑定到某一种 harness 协议上；
+而命令行 + JSON 文件可以被任何能执行 shell 的 agent 使用，也可以被人直接在终端里复现。另一个考虑是\emph{留痕}：文件是持久的，闸门可以比较
+“校验结果文件的修改时间是否晚于被校验文件”，从而发现“改了输入却没重新校验”的情况（\S\ref{sec:pipe-gates}）；函数调用的返回值只存在于会话日志里。
+\textbf{让模型直接 import 引擎写 Python 脚本。}灵活，但模型可以绕过校验直接构造真值表，P2/P3 就失效了。工作区权限只允许 \code{./py -m finagent} 与少数只读命令，
+\code{./py -c} 虽被允许（用于排版脚本），但工作区禁止写 \file{finagent/}，且流水线只从交接文件读模型输入。
+\textbf{选择}：文件 + 命令行 + 退出码。代价是模型需要学会一组命令与文件格式，这由 skill 文档承担，并由 \arT{test\_skill\_docs\_in\_sync\_with\_code} 保证文档与代码同步。
+\end{tradeoff}
+
+% ----------------------------------------------------------------------------
+\subsection{计算引擎的内部结构}
+\label{sec:arch-engine}
+
+\begin{table}[t]
+\centering
+\caption{\file{finagent/} 的模块组织（行数为 2026-10-05 版本，含注释）。}
+\label{tab:arch-modules}
+\small
+\begin{tabularx}{\linewidth}{@{}l X r@{}}
+\toprule
+目录 / 模块 & 职责 & 行数 \\
+\midrule
+\file{core/} & 配置、数字与单位、步骤编排、追踪 & 341 \\
+\file{parsing/} & PDF / Markdown 切块（带页码、chunk 锚点、单位、表题、续表）；关键页定位 & 396 \\
+\file{tasks/financials/} & 指标字典、规则抽取、模型抽取接入、经营数据、分析与真值表、业绩对比 & 1,367 \\
+\file{tasks/valuation/} & 分部预测、三表引擎、DCF、反向 DCF、情景表、可比公司、工作簿 & 3,931 \\
+\file{tasks/report\_check/} & 断言抽取、核查、内部一致性 & 560 \\
+\file{output/} & 报告渲染、xlsx 写出、护栏、来源登记、数字锁、渲染检查 & 1,462 \\
+\file{pipelines.py}、\file{\_\_main\_\_.py}、\file{cli.py} & 三条流水线、命令行入口、统一命令行 & 672 \\
+\file{catalog.py}、\file{doctor.py} & 产物目录（命令行与界面共用）、环境自检 & 292 \\
+\file{report\_pipeline.py} & 多 Agent 编排器（第 \ref{sec:pipeline} 节） & 1,139 \\
+\file{evaluation/} & 质检：程序检查、盲评、计分、校准（第 \ref{sec:eval} 节；不进工作区） & 1,838 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+表~\ref{tab:arch-modules} 给出模块组织，合计约一万两千行。下面依次说明 \file{core/} 的四个模块，它们是第~\ref{sec:principles} 节多条不变量的直接载体。
+
+\subsubsection{\file{core/config.py}：只来自环境变量的配置}
+配置只有一个字段 \code{runs\_dir}（运行目录根，默认仓库 \file{runs/}），全部来自环境变量或仓库根目录 \file{.env}。\code{\_load\_dotenv} 用 \code{os.environ.setdefault}
+读取 \file{.env}，所以\emph{显式环境变量优先于文件}，评审可以在不改文件的情况下覆盖配置。\code{Settings.public()} 返回写入 manifest 的配置副本。
+历史上这里还有模型名、温度、随机种子、缓存目录等字段（内嵌模型路线），在单一路线清理时一并删除（\S\ref{sec:pr-route}）；
+现在与模型有关的配置（\code{FINAGENT\_GEN\_MODEL}、\code{FINAGENT\_QC\_MODEL}）只存在于编排器，引擎配置中没有任何模型相关项——这本身就是 P1“引擎不调用模型”的一个构造性体现。
+
+\subsubsection{\file{core/numbers.py}：中文财报的数字与单位}
+所有数字解析经过 \code{parse\_number}：接受千分位（含全角逗号）、括号负数“(1,234.50)”、多种负号（\texttt{-}、\texttt{−}、\texttt{–}）、百分号（去掉但不除以 100），
+把“—”“不适用”“N/A”等识别为缺失。\code{half\_ulp(raw, factor)} 按原文小数位数给出舍入容差，是 P7 与护栏的共同基础；
+\code{pct\_change} 在基期为负时用绝对值作分母；\code{UNIT\_FACTORS} 定义元、千元、万元、百万元、亿元、万亿元与股、万股、亿股的换算。
+这些函数都是纯函数，由 \arT{test\_parse\_number}、\arT{test\_half\_ulp}、\arT{test\_pct\_change\_negative\_base} 覆盖。
+
+\subsubsection{\file{core/orchestrator.py}：步骤注册与执行}
+引擎内部的流水线是一个极简的“步骤表”：
+
+\begin{lstlisting}[language=Python]
+@dataclass
+class Pipeline:
+    name: str
+    steps: list[Step] = field(default_factory=list)
+
+    def step(self, name, output_key=None):          # decorator: register a step
+        def deco(fn):
+            self.steps.append(Step(name, fn, output_key or name))
+            return fn
+        return deco
+
+    def run(self, ctx):
+        for i, st in enumerate(self.steps, 1):
+            tracing.log("step_start", pipeline=self.name, step=st.name, index=i, total=len(self.steps))
+            try:
+                ctx[st.output_key] = st.fn(ctx)        # each step reads ctx, writes one key
+            except Exception as exc:
+                tracing.log("step_error", pipeline=self.name, step=st.name, error=...)
+                raise
+            tracing.log("step_end", pipeline=self.name, step=st.name, elapsed_ms=...)
+        return ctx
+\end{lstlisting}
+
+每个步骤是一个 \code{ctx -> 值} 的函数，返回值写入 \code{ctx[output\_key]}；步骤按注册顺序执行，任何异常都先记 \code{step\_error} 再向上抛出，不吞异常。
+这个设计有意没有做依赖解析、并行或缓存：三条流水线总共 18 个步骤，样例全流程在 0.06 秒内完成（真实年报的耗时主要在 PDF 解析），
+复杂调度带来的收益远小于它给“可读、可复现”带来的成本。阻断（P3、P4）通过步骤内抛出 \code{ValueError} 或返回 \code{status="blocked"} 实现，
+异常会使 \code{RunTracer} 以 \code{status="error"} 结束并写出 manifest，失败的运行同样留痕。
+
+\subsubsection{\file{core/tracing.py}：留痕}
+\label{sec:arch-tracing}
+
+\code{RunTracer} 是一个上下文管理器。进入时生成 \code{run\_id = <YYYYMMDD-HHMMSS>-<task>}，创建运行目录，打开 \file{events.jsonl}，并把自己放进 \code{ContextVar}；
+退出时写 \code{run\_end} 事件与 \file{manifest.json}，异常退出时先写 \code{run\_error}。模块代码通过模块级函数 \code{tracing.log}、\code{tracing.read\_file}、\code{tracing.current()}
+访问当前追踪器，不需要层层传参；没有活动追踪器时这些函数退化为空操作或普通读取，因此同一份分析代码可以被单元测试直接调用。
+
+\begin{table}[t]
+\centering
+\caption{\file{events.jsonl} 的事件种类。每条事件含递增的 \code{seq}、毫秒级时间戳 \code{ts} 与 \code{kind}。}
+\label{tab:arch-events}
+\small
+\begin{tabularx}{\linewidth}{@{}l l X@{}}
+\toprule
+\code{kind} & 产生位置 & 载荷 \\
+\midrule
+\code{run\_start} / \code{run\_end} / \code{run\_error} & \code{RunTracer} & 任务名、配置（含 argv）；状态与耗时；异常类型与信息 \\
+\code{step\_start} / \code{step\_end} / \code{step\_error} & \code{Pipeline.run} & 流水线名、步骤名、序号/总数；耗时（毫秒）；异常 \\
+\code{tool\_start} / \code{tool\_end} / \code{tool\_error} & \code{@traced} & 工具名、入参摘要；出参摘要与耗时；异常与耗时 \\
+\code{file\_read} & \code{read\_file} & 路径、字节数、SHA-256 \\
+\code{document\_parsed} & \code{load\_document} & 来源、哈希、chunk 数、表格数、页数 \\
+\code{artifact} & \code{register\_artifact} & 运行目录内相对路径（POSIX 形式）、SHA-256、字节数 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\paragraph{manifest。}\file{manifest.json} 汇总一次运行：\code{run\_id}、任务、状态、开始时间、耗时、Python 版本、平台、配置（含完整 argv 与抽取方式
+\code{"model+rule"} 或 \code{"rule"}）、输入文件哈希表、产物哈希表、事件总数。输入哈希来自 \code{read\_file}，产物哈希来自 \code{register\_artifact}；
+二者共同构成运行的“指纹”，复现时比对指纹即可确认输入与产出是否一致（\S\ref{sec:arch-repro}）。
+
+\paragraph{哈希与截断。}所有哈希为 SHA-256。事件载荷经 \code{\_summarize} 处理：先序列化为 JSON，若长度不超过 \code{MAX\_LOG\_CHARS}${}=2000$ 字符则原样记录，
+否则记为 \code{\{"\_truncated": true, "sha256": <全文哈希>, "preview": <前 2000 字符>\}}。完整内容由产物文件保存且产物本身登记了哈希，所以截断不损失可验证性。
+下面是样例全流程运行的前几条事件（节选，哈希截短）：
+
+\begin{lstlisting}
+{"seq": 2, "kind": "step_start", "pipeline": "financials", "step": "parse", "index": 1, "total": 6}
+{"seq": 3, "kind": "file_read", "path": "data/samples/annual_report_2024.md",
+ "bytes": 5898, "sha256": "a77370e5...97468"}
+{"seq": 4, "kind": "document_parsed", "chunks": 29, "tables": 6, "pages": 110, ...}
+{"seq": 7, "kind": "tool_start", "tool": "extract_financials",
+ "args": {"_truncated": true, "sha256": "f2fe6405...1d04f", "preview": "..."}}
+{"seq": 9, "kind": "artifact", "path": "financials/facts.json",
+ "sha256": "6808a385...c9160", "bytes": 60730}
+\end{lstlisting}
+
+\paragraph{跨平台路径。}产物键用运行目录内的相对路径并统一为 POSIX 形式（\code{as\_posix()}），否则 Windows 上会写出反斜杠，同一运行在两个平台上的 manifest 不可比（提交 \code{861ab84}）。
+
+\begin{insight}[：留痕要在 manifest 上测]
+\code{comps} 步骤的公式工作簿 \file{comps\_formula\_workbook.xlsx} 与估值报告步骤的 \file{model.xlsx} 由 xlsx 写出函数直接落盘，不经过 \code{write\_artifact}，
+因此两处都显式调用 \code{register\_artifact} 补登记。只检查“文件存在”的测试发现不了漏登记，所以 \arT{test\_run\_artifacts\_and\_manifest} 直接断言 manifest 中有 \file{valuation/model.xlsx}：
+留痕的完整性要在 manifest 上测，而不是在文件系统上测。
+\end{insight}
+
+% ----------------------------------------------------------------------------
+\subsection{三条流水线}
+\label{sec:arch-pipelines}
+
+\file{pipelines.py} 用 \code{Pipeline.step} 注册三条流水线，对应财报分析、估值建模与纠错核查（图~\ref{fig:arch-dag}）。入口 \code{pipelines.run(task, ctx)} 总是先跑财报流水线，
+再按任务名追加估值与核查：\code{financials} 只跑第一条，\code{valuation} 跑前两条，\code{check} 跑第一与第三条，\code{all} 三条全跑。
+这保证了 P4：估值与核查永远建立在同一次分析产出的真值表上。
+
+\begin{figure}[!htbp]
+\centering
+\resizebox{\linewidth}{!}{%
+\begin{tikzpicture}[
+  st/.style={prog,font=\scriptsize,minimum width=17mm,minimum height=6.5mm,inner sep=2pt},
+  op/.style={prog,font=\scriptsize,minimum width=17mm,minimum height=6.5mm,inner sep=2pt,dashed},
+  inp/.style={file,font=\tiny\ttfamily,minimum width=14mm},
+  blk/.style={gate,font=\tiny,minimum width=8mm,minimum height=4mm},
+  lane/.style={font=\scriptsize\bfseries,text=nipsblue,anchor=east}]
+% 赛题2
+\node[lane] at (-1.0,0) {财报分析};
+\node[st] (parse) at (0.2,0) {parse};
+\node[st,right=4mm of parse] (extract) {extract};
+\node[st,right=5mm of extract] (analyze) {analyze\\$\Rightarrow\mathcal{T}$};
+\node[op,right=5mm of analyze] (extras) {extras};
+\node[st,right=4mm of extras] (earn) {earnings};
+\node[st,right=4mm of earn] (frep) {report};
+\draw[arr] (parse)--(extract); \draw[arr] (extract)--(analyze); \draw[arr] (analyze)--(extras); \draw[arr] (extras)--(earn); \draw[arr] (earn)--(frep);
+\node[blk] at ($(extract)!0.5!(analyze)$) (b1) {};
+\node[inp,above=3mm of extract] (facts) {facts.json};
+\node[inp,above=3mm of extras] (extrasf) {extras.json};
+\node[inp,above=3mm of parse] (pdf) {年报 PDF};
+\draw[darr] (facts)--(extract); \draw[darr] (extrasf)--(extras); \draw[darr] (pdf)--(parse);
+% 赛题4
+\node[lane] at (-1.0,-2.1) {估值建模};
+\node[st] (ts) at (0.2,-2.1) {three\_\\statement};
+\node[st,right=4mm of ts] (plan) {build\_plan};
+\node[st,right=4mm of plan] (dcf) {dcf};
+\node[op,right=4mm of dcf] (rdcf) {reverse\_\\dcf};
+\node[st,right=4mm of rdcf] (scen) {scenarios};
+\node[st,right=4mm of scen] (fs) {forecast\_\\summary};
+\node[op,right=4mm of fs] (comps) {comps};
+\node[st,right=4mm of comps] (vrep) {valuation\_\\report};
+\draw[arr] (ts)--(plan); \draw[arr] (plan)--(dcf); \draw[arr] (dcf)--(rdcf); \draw[arr] (rdcf)--(scen); \draw[arr] (scen)--(fs); \draw[arr] (fs)--(comps); \draw[arr] (comps)--(vrep);
+\node[blk] at ($(plan)!0.5!(dcf)$) (b2) {};
+\node[inp,below=3mm of ts] (ass) {valuation\_\\assumptions};
+\node[inp,below=3mm of comps] (peers) {peers.csv};
+\draw[darr] (ass)--(ts); \draw[darr] (peers)--(comps);
+% 赛题5
+\node[lane] at (-1.0,-4.4) {纠错核查};
+\node[st] (prep) at (0.2,-4.4) {parse\_\\report};
+\node[st,right=4mm of prep] (claims) {claims};
+\node[st,right=5mm of claims] (verify) {verify};
+\node[st,right=4mm of verify] (cons) {consistency};
+\draw[arr] (prep)--(claims); \draw[arr] (claims)--(verify); \draw[arr] (verify)--(cons);
+\node[inp,below=3mm of claims] (cl) {claims.json};
+\node[inp,below=3mm of prep] (draft) {研报草稿};
+\draw[darr] (cl)--(claims); \draw[darr] (draft)--(prep);
+% 真值表依赖
+\draw[arr,gatered,thick] (analyze.south) -- ++(0,-0.6) -| ([xshift=2mm]ts.north);
+\draw[arr,gatered,thick] (analyze.south) ++(0,-0.6) -| ([xshift=3mm]plan.north);
+\draw[arr,gatered,thick] (analyze.south) ++(0,-0.6) -| (fs.north);
+\node[font=\scriptsize,text=gatered,anchor=south] at ($(fs.north)+(-1.4,0.6)$) {truth\_table $\mathcal{T}$};
+\node[font=\scriptsize,text=gatered,above=2.5mm of verify] (tv) {$\mathcal{T}$};
+\draw[arr,gatered,thick] (tv) -- (verify);
+\draw[arr,nipsblue] (extras.south) -- ++(0,-0.3) -| ([xshift=-4mm]ts.north);
+\end{tikzpicture}}
+\caption{引擎三条流水线的步骤（实线框）与数据依赖。虚线框为可选步骤（无对应输入时返回 \code{None}），虚线箭头为模型交接文件或外部输入，
+红色为真值表 $\mathcal{T}$ 的扇出（核查流水线的 verify 同样读取 $\mathcal{T}$），蓝色细线为经营数据驱动分部预测，小菱形为阻断点：analyze 之前（P2/P3：拒收、冲突、勾稽失败、核心缺失），build\_plan 与 dcf 之间（P4：DCF 与三表逐期核对）。}
+\label{fig:arch-dag}
+\end{figure}
+
+\paragraph{财报流水线（6 步）。}\code{parse} 调 \code{load\_document} 切块；\code{extract} 在有 \file{facts.json} 时调 \code{external.ingest}（证据校验 + 与规则通道合并），
+否则只走规则通道 \code{extract\_financials}；\code{analyze} 计算派生指标、同比、勾稽、异常信号、单季拆分并产出真值表，带模型抽取时在此检查阻断条件；
+\code{extras} 逐格核对经营数据并由程序计算比率，有拒收即停止；\code{earnings} 做实际 vs 一致预期 / 业绩预告与 EPS 质量；\code{report} 渲染财报分析报告。
+
+\paragraph{估值流水线（8 步）。}\code{three\_statement} 读假设文件，若有 \code{segment\_forecast} 则先由分部量价生成收入增速、毛利率与费用率向量（要求提供 \code{-{}-extras}），
+若非经营性资产以明细给出则逐项回查原文后加总，然后构建并运行三表模型；\code{build\_plan} 把真值表、假设与三表输出组装为 DCF 引擎的 plan（百万元）；
+\code{dcf} 运行三情景 FCFF DCF 与敏感性，并按式~\eqref{eq:pr-tie} 与三表逐期核对；\code{reverse\_dcf} 在有参考股价时逐个反解隐含参数；
+\code{scenarios} 生成情景与敏感性表格；\code{forecast\_summary} 汇总预测并给出程序评级；\code{comps} 在有同业文件时做可比公司估值并写公式工作簿；
+\code{valuation\_report} 渲染估值报告并写出联动工作簿 \file{model.xlsx}。
+
+\paragraph{核查流水线（4 步）。}\code{parse\_report} 切块研报草稿；\code{claims} 接入 \file{claims.json}（引用须为原文片段）或用规则抽取断言；
+\code{verify} 按算法~\ref{alg:pr-diag} 逐条核对真值表；\code{consistency} 检查研报内部一致性（评级、各情景每股价值、预测年度公司整体收入与利润），
+对 PDF 研报把行号换算回页码。
+
+\begin{table}[t]
+\centering
+\caption{上下文字典 \code{ctx} 的主要键。步骤之间只通过这些键传递数据。}
+\label{tab:arch-ctx}
+\small
+\begin{tabularx}{\linewidth}{@{}l l X@{}}
+\toprule
+键 & 写入步骤 & 读取步骤 \\
+\midrule
+\code{doc} & parse & extract、extras、three\_statement（非经营性资产回查） \\
+\code{extract} & extract & analyze（只用于阻断判定与 issue） \\
+\code{analysis}（含 \code{truth\_table}） & analyze & extras、earnings、全部估值步骤、verify、consistency \\
+\code{extras} & extras & three\_statement（分部预测）、valuation\_report \\
+\code{three\_statement} & three\_statement & build\_plan、dcf、forecast\_summary、valuation\_report \\
+\code{plan} / \code{valuation} & build\_plan / dcf & reverse\_dcf、scenarios、comps、valuation\_report \\
+\code{claims} / \code{check} & claims / verify & verify / consistency \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+表~\ref{tab:arch-ctx} 说明：\code{extract} 的结果在 \code{analyze} 之后不再被任何步骤读取（\arT{test\_valuation\_reads\_analysis\_truth\_table} 清空它后估值照常成功），
+这就是不变量~\ref{inv:pr-truth} 在代码层面的样子。
+
+% ----------------------------------------------------------------------------
+\subsection{命令行、产物目录与环境自检}
+\label{sec:arch-cli}
+
+\paragraph{两级入口。}\file{finagent/\_\_main\_\_.py} 定义选题命令与校验命令（定义~\ref{def:arch-interface}），用一个 \code{HELPERS} 字典把七个校验命令分派到各自的函数，
+它们不创建 \code{RunTracer}；四个流水线任务在 \code{RunTracer} 中执行，结束时写 \file{summary.json} 并打印摘要。\code{-{}-supplement} 必须与 \code{-{}-facts} 同时给出，
+因为规则通道不识别季报表头（开发指南“已知问题”）。\file{finagent/cli.py} 是统一命令行，把原来分散的入口收在一处（表~\ref{tab:arch-cli}）；
+旧入口（\code{python -m finagent all ...}、\code{python -m finagent.report\_pipeline ...}）照旧可用，以 \code{finagent financials} 这类旧任务名开头的调用自动转发到 \code{research} 组。
+
+\begin{table}[t]
+\centering
+\caption{统一命令行 \code{finagent <命令组>} 的九个命令组。}
+\label{tab:arch-cli}
+\small
+\begin{tabularx}{\linewidth}{@{}l X l@{}}
+\toprule
+命令组 & 作用 & 原入口 \\
+\midrule
+\code{research} & 财报 / 估值 / 核查流水线与校验、护栏命令 & \code{python -m finagent} \\
+\code{report} & 研报流水线：build、run、status、refine、collect、scorecard、template & \code{finagent.report\_pipeline} \\
+\code{eval} & 研报评测：盲评、重算分数、对比、质检包 & \code{finagent.evaluation} \\
+\code{calibrate} & 评审校准：重复评审、劣化命中、人工一致 & \code{evaluation.calibrate} \\
+\code{bench} & 样例评测集：抽取准确率与纠错召回/准确率 & \file{eval/run\_eval.py} \\
+\code{test} & 运行全部测试 & \code{pytest -q tests} \\
+\code{doctor} & 运行环境自检 & \code{finagent.doctor} \\
+\code{ls} & 列出研报工作区与运行目录（含闸门进度与最近质检分） & 新增 \\
+\code{tui} & 终端界面 & 新增 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\paragraph{免安装启动脚本。}\file{bin/finagent}（POSIX shell）与 \file{bin/finagent.cmd}（Windows）优先使用仓库 \file{.venv} 的解释器，找不到时退回系统 Python，
+并把仓库根加入 \code{PYTHONPATH}，因此评审克隆仓库后不必 \code{pip install} 也能运行；\file{pyproject.toml} 同时注册了 \code{finagent = finagent.cli:main} 入口，
+可选依赖分为 \code{report}（matplotlib、pillow）、\code{tui}（textual）、\code{dev}（pytest、fpdf2）三组。
+
+\paragraph{产物目录 \file{catalog.py}。}命令行 \code{ls} 与终端界面共用一个只读的产物目录：\code{workspaces()} 扫描工作区根目录（默认 \file{\textasciitilde/finagent-samples}），
+以含 \file{sample.json} 为准；\code{runs()} 列出仓库 \file{runs/} 中含财务分析产物的运行（排除样例评测运行）；\code{gates()} 调用编排器的 \code{status()} 取闸门进度，
+工作区不完整时返回 \code{None} 而不是报错；\code{scores()} 把 \code{refine} 各轮、\file{eval/results/} 与 \file{eval/calibration/} 中评的是同一运行的结果按评测时间排序；
+\code{events()}、\code{agent\_runs()}、\code{agent\_log()} 读取引擎事件流与会话事件流。目录只读文件、不改任何东西，因此可以在流水线运行时安全使用。
+
+\paragraph{环境自检 \file{doctor.py}。}\code{finagent doctor} 逐项检查并以 \texttt{✓}（就绪）、\texttt{!}（可选功能缺失）、\texttt{✗}（必须修复）标注：
+Python 版本（$\ge3.10$，建议 3.12）；\code{pdfplumber}、\code{matplotlib}（必需）与 \code{PIL}、\code{pytest}（可选）；Claude Code 是否安装、是否登录（\code{ANTHROPIC\_API\_KEY} 或 \code{claude auth status}）；
+生成与质检模型分工；排版所需的浏览器（HTML → PDF）；matplotlib 可见的中文字体（楷体、宋体、黑体等十种候选）；\file{.env} 是否存在。
+\code{-{}-live} 额外向生成与质检模型各发一次最小请求（\code{claude -p "只回复 OK" -{}-max-turns 1}），确认模型真的可用。任何一项 \texttt{✗} 时退出码为 1，且从不打印密钥。
+自检把“环境问题”与“系统问题”分开：评审复现失败时，先跑 \code{doctor} 就能区分是缺浏览器还是代码出错。
+
+% ----------------------------------------------------------------------------
+\subsection{终端界面}
+\label{sec:arch-tui}
+
+\file{finagent\_tui/}（约 720 行，Textual 实现）是产物的只读看板。左侧树列出研报工作区与运行目录，右侧七页：
+
+\begin{itemize}
+  \item \textbf{概览}：11 道闸门状态、估值区间条、程序评级、最近质检分；
+  \item \textbf{真值表}：指标 $\times$ 期间表格，选中一个数显示其来源（文件、页码、表题、chunk、是否续表）、抽取方式（规则 / 模型 / 二者一致）与派生公式；
+  \item \textbf{估值}：三情景每股价值、预测摘要、敏感性矩阵热力表；
+  \item \textbf{质检}：逐条判定、证据与理由，可切换不同轮次或评测；
+  \item \textbf{追溯}：按 \code{seq} 回放 \file{events.jsonl}，可按关键词过滤（读了哪些文件、调用了哪些工具、写了哪些产物）；
+  \item \textbf{Agent}：各会话的模型、轮数、耗时、token 与费用，以及事件流摘要；
+  \item \textbf{命令}：在界面内运行任意 \code{finagent} 命令并流式显示输出。
+\end{itemize}
+
+界面遵守 P1：渲染模块 \file{render.py} 只做格式化（金额按亿/万展示、比率加百分号），不做任何计算；数值全部来自引擎产物。
+Textual 是可选依赖，\code{finagent/} 本身不依赖它；未安装时 \code{finagent tui} 提示安装命令并返回 2，而不是抛出导入错误。
+\arT{test\_tui\_renders\_every\_tab} 在无头模式下渲染全部七页。选择 TUI 而非网页前端的理由（与流水线“文件即状态”的形态吻合、同语言直接调用 \code{status()}、
+可经 \code{textual serve} 发布到浏览器）记录在 \file{docs/design/2026-10-04-frontend-tui.md}；网页前端由其他成员另行开发。
+
+% ----------------------------------------------------------------------------
+\subsection{跨平台}
+\label{sec:arch-platform}
+
+开发在 macOS 上进行，但评审可能使用 Windows。跨平台问题集中在四处，均有对应的代码与测试：
+
+\begin{enumerate}
+  \item \textbf{解释器包装。}工作区生成两个包装器：\file{py}（POSIX shell，设置 \code{MPLCONFIGDIR} 后 exec 解释器）与 \file{py.cmd}（Windows 批处理）。
+        编排器用 \code{PY\_WRAPPER = "py.cmd" if os.name == "nt" else "./py"} 生成会话提示与权限白名单，使同一份工作区说明在两个平台上都可执行。
+  \item \textbf{路径表示。}manifest 的产物键统一为 POSIX 形式（\S\ref{sec:arch-tracing}）；工作区元数据中的年报路径用 \code{as\_posix()} 写入。
+  \item \textbf{编码。}所有文本读写显式指定 \code{encoding="utf-8"}；Windows CI 设置 \code{PYTHONUTF8=1}，因为 GitHub Windows Runner 可能把重定向输出设为 cp1252，
+        估值评测打印中文时会出错（提交 \code{c69a047}）。
+  \item \textbf{外部程序定位。}浏览器与中文字体不依赖 macOS 固定目录：\code{FINAGENT\_CHROME}、\code{FINAGENT\_CJK\_FONT} 环境变量优先。
+\end{enumerate}
+
+\file{.github/workflows/windows.yml} 在 \code{windows-latest}、Python 3.12 上安装依赖、运行全部测试与样例评测，并做一次冒烟测试：
+在 Runner 临时目录建贵州茅台工作区，用 \file{py.cmd} 运行 \code{status}，断言新工作区闸门未通过时退出码为 1（这一断言本身曾因 PowerShell 把非零退出码传成步骤失败而需要显式 \code{exit 0}，提交 \code{289c818}）。
+\file{tests/test\_windows\_compat.py} 的三个测试检查：字体环境变量可接受 Windows 风格路径、浏览器环境变量跨平台生效、README 与工作流文件中写明了 Windows 虚拟环境路径与 UTF-8 设置。
+
+% ----------------------------------------------------------------------------
+\subsection{依赖最小化}
+\label{sec:arch-deps}
+
+\begin{table}[t]
+\centering
+\caption{各部分的依赖。“必需”指运行该部分不可缺少。}
+\label{tab:arch-deps}
+\small
+\begin{tabularx}{\linewidth}{@{}l X l@{}}
+\toprule
+部分 & 依赖 & 性质 \\
+\midrule
+计算引擎 \file{finagent/} & Python 3.12 标准库；\code{pdfplumber}$\ge$0.11（仅 PDF 解析） & 必需 \\
+xlsx 写出 & 标准库 \code{zipfile} + 手写 OOXML（\file{output/xlsx.py}，含公式单元格与缓存值） & 无第三方 \\
+研报排版 reportkit & matplotlib、pillow、本机 Chrome / Chromium / Edge & 研报流水线必需 \\
+终端界面 & Textual（附带 Rich） & 可选 \\
+测试与开发 & pytest；fpdf2（仅重建样例 PDF） & 开发时 \\
+多 Agent 执行 & Claude Code 命令行（用户自行安装、登录） & 研报流水线必需 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+引擎只依赖标准库与 \code{pdfplumber}（表~\ref{tab:arch-deps}）。在去除原插件依赖的提交（\code{2300cfc}）中，\file{requirements.txt} 去掉了 pandas、openpyxl 与 XlsxWriter：
+三表引擎与情景表格改为纯 Python 实现，xlsx 由 \file{output/xlsx.py} 用 \code{zipfile} 直接写 OOXML。
+
+\begin{tradeoff}[：依赖最小化的理由与代价]
+\textbf{理由。}(1) 评审复现：赛题要求评审能复现，依赖越少，安装失败的概率越低；引擎在任何有 Python 3.12 的机器上 \code{pip install pdfplumber} 即可运行。
+(2) 工作区复制：编排器把整个引擎复制进每个隔离工作区，引擎越自包含，工作区越小、越不受外部环境影响。
+(3) 可审计：数值计算全部在可读的 Python 代码里，没有隐藏在 DataFrame 运算或第三方库的默认行为中（例如 pandas 的缺失值传播与舍入规则）。
+(4) 逐位一致：与参照引擎逐位比对时，减少一层库版本带来的浮点差异。
+\textbf{代价。}(1) 自己写 OOXML：公式单元格、样式、数字格式、图表都要手写，\file{xlsx.py} 与两个工作簿模块合计约一千六百行；工作簿审计（\file{evaluation/workbook\_audit.py}）也要自己解析 XML。
+(2) 没有向量化，三表与 DCF 都是显式循环；对单家公司 5～10 年预测的规模而言耗时可忽略。
+(3) PDF 解析能力受 \code{pdfplumber} 限制：稀疏网格错列、跨页续表、科目折行都需要自研后处理（\code{compact\_columns}、\code{link\_continuation}、\code{merge\_wrapped\_labels}，见 \S\ref{sec:extract}），扫描页无法处理。
+我们认为在比赛规模下理由明显占优；如果引擎需要处理批量公司或高频更新，引入 DataFrame 与专业 PDF 解析器是自然的扩展。
+\end{tradeoff}
+
+% ----------------------------------------------------------------------------
+\subsection{可复现性的两层定义}
+\label{sec:arch-repro}
+
+赛题要求“可追溯、可复现”。对一个以大模型为核心推理引擎的系统，“可复现”需要分层定义，否则要么承诺过度（声称模型输出可复现），要么承诺不足（因为模型不可复现就放弃整体复现）。
+
+\begin{definition}[两层可复现]\label{def:arch-repro}
+\textbf{A 层（逐位复算）}：给定一次运行的输入文件（哈希与 manifest 一致）、交接文件（\file{facts.json}、\file{extras.json}、\file{claims.json}、假设文件）、命令行参数与代码版本，
+在任何受支持的平台上重新运行引擎，所有结论性产物的内容逐位相同（时间戳与运行编号除外）。
+\textbf{B 层（可审计但不可重放）}：模型会话的完整事件流（每次工具调用、读取的文件、写下的内容、轮数、token、费用）被原样保存，任何人可以逐步查看模型做了什么；
+但在没有模型的环境下无法重新生成相同的交接文件与文稿。
+\end{definition}
+
+\begin{table}[t]
+\centering
+\caption{各层记录与可复现程度。}
+\label{tab:arch-repro}
+\small
+\begin{tabularx}{\linewidth}{@{}l X l@{}}
+\toprule
+层 & 记录 & 可复现程度 \\
+\midrule
+计算引擎 & \file{runs/<id>/events.jsonl}、\file{manifest.json}（输入与产物哈希、argv、Python 版本、平台） & A 层 \\
+校验命令 & 结论文件（\file{facts.verified.json}、\file{commentary\_guard.json}）+ 会话事件流中的调用 & A 层（给定输入） \\
+模型会话 & \file{.pipeline/agents/*.jsonl} 原始事件流、\file{agent\_runs.json}（模型、轮数、耗时、token、费用） & B 层 \\
+工作区 & \file{sample.json}（年报 SHA-256、仓库提交号 \code{repo\_commit}、创建时间、外部输入） & 定位代码与输入版本 \\
+质检 & \file{judgments.json}、\file{score.json}、\file{issues.json}、\file{loop.json} & 计分 A 层；盲评 B 层 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\begin{proposition}[引擎确定性]\label{prop:arch-det}
+引擎的流水线任务不读取时钟、随机数或网络，不调用模型；除运行编号、时间戳与耗时字段外，其输出是输入文件字节与命令行参数的函数。
+\end{proposition}
+\begin{proof}[论证]
+按模块检查：\file{core/} 中只有 \code{RunTracer} 读取时钟，且只写入 \code{run\_id}、\code{ts}、\code{started\_at}、\code{elapsed}；引擎中没有对 \code{random} 的使用
+（随机输入只出现在对照测试 \file{test\_parity\_reference.py} 中，且固定种子 20260924）；网络访问只发生在模型会话（WebSearch / WebFetch）中，不在引擎中。
+集合与字典的迭代顺序在 CPython 3.7+ 中按插入顺序确定，产物 JSON 中的列表按 \code{(metric\_id, period)} 等键显式排序。
+\arT{test\_deterministic} 对同一输入运行两次，断言核查结论与估值区间相同；Windows CI 运行与 macOS 相同的 golden 测试，要求产物与快照\emph{完全相等}，从而在两个平台上检验了浮点结果的一致性。
+\end{proof}
+
+\paragraph{为什么不追求模型输出的 A 层复现。}内嵌模型路线曾经提供过：\code{core/llm.py} 以请求体的 SHA-256 为键缓存响应，\code{LLM\_MODE=replay} 时只读缓存、缓存缺失即报错，
+因此整条链路可离线重放（\S\ref{sec:pr-route}）。无头 Claude Code 的会话是多轮工具调用，环境（文件系统、联网检索结果）随时间变化，缓存单次请求不足以重放整个会话。
+我们的处理是：(1) 让模型输出\emph{尽早落地为文件}（交接文件、文稿），一旦落地，其后的所有计算都是 A 层；(2) 收回仓库时（\code{collect}）把抽取文件、调研资料与文稿复制到
+\file{data/extractions/<公司>\_<年度>/}，评审可以跳过模型、直接用这些文件逐位复算全部产物；(3) 会话事件流原样保存，作为 B 层审计材料。
+换言之，系统承诺的是“给定模型交出的文件，后面每个数都能复算”，而不是“模型每次交出同样的文件”。复现步骤见附录~\ref{app:repro}。
+
+% ----------------------------------------------------------------------------
+\subsection{golden 快照与参照对照：自研引擎与原插件的关系}
+\label{sec:arch-golden}
+
+\sysname{} 的若干估值与业绩分析引擎在\emph{计算规则}上参照了 OpenAI Public Equity Investing 插件（0.1.31，许可证标注为 Proprietary – Internal Use Only）。
+仓库最早通过 \file{third\_party/} 原样引入并调用该插件（\code{vendor.py}），在提交 \code{2300cfc} 中全部删除，改为自研实现；仓库现在不包含原插件的任何代码，
+\file{THIRD\_PARTY.md} 如实列出参照关系（表~\ref{tab:arch-third}，完整版见附录~\ref{app:thirdparty}）。
+
+\begin{table}[t]
+\centering
+\caption{参照原插件的自研引擎与一致性校验方式（据 \file{THIRD\_PARTY.md}）。}
+\label{tab:arch-third}
+\small
+\begin{tabularx}{\linewidth}{@{}X l l@{}}
+\toprule
+参照内容 & 自研实现 & 一致性 \\
+\midrule
+三表联动、营运资本、PP\&E、债务与现金归集、勾稽、模型状态 & \file{ts\_engine.py} & 浮点逐位相等 \\
+三情景目标价与偏度、各类敏感性、跟踪触发表 & \file{scenario\_tables.py} & 输出逐字节相等 \\
+beat/miss、业绩预告中值对比、EPS 质量规则 & \file{earnings.py} & 逐字段相等 \\
+FCFF DCF & \file{dcf.py} & 相对误差 $<10^{-9}$ \\
+EV 桥、倍数配对、NM、IQR 离群值、P25/P75 区间 & \file{comps.py} & 按文档规则自研 \\
+反解思路、重复数字对账、论点框架、工作簿控制、证据标签 & \file{reverse\_dcf.py}、\file{consistency.py} 等 & 仅借方法 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+两类测试共同维持“自研 = 参照”这一性质：
+
+\paragraph{golden 快照（\file{tests/test\_golden.py}，无需原插件）。}\file{tests/golden/} 下的四个 JSON（\file{three\_statement.json}、\file{scenarios.json}、\file{comps.json}、\file{earnings.json}）
+是 2026-09-24 用原插件引擎跑样例数据得到的产物。\arT{test\_matches\_original\_engine} 按这四个文件参数化，要求自研引擎的对应产物与快照\emph{完全相等}（Python 对象 \code{==}，即逐字段、浮点逐位）。
+另外三个测试检查可比公司公式工作簿：估值区间缓存值与 \file{comps.json} 一致、敏感性表的 0\% 列等于隐含股价、来源台账覆盖目标公司与全部同业、摘要页含两张原生 Excel 图表。
+快照的作用是：即使仓库不再保留原插件，任何对引擎的修改只要改变了样例产物就会被发现。
+
+\paragraph{参照对照（\file{tests/test\_parity\_reference.py}，需本地原插件）。}原插件不入库；\file{tests/\_reference.py} 按环境变量 \code{FINAGENT\_REFERENCE\_PLUGIN} 或仓库上级目录查找，
+找不到则整组跳过。找到时按文件路径加载原插件脚本（多个 skill 有同名模块 \file{skill\_core.py}，因此赋予唯一模块名并临时调整 \code{sys.path}），
+用样例、边界值与随机输入逐项对照五个方面：三表模型（样例 + 边界 + 60 组随机 plan，覆盖收入/成本/营运资本/PP\&E 各口径、亏损与可抵扣亏损、循环贷与现金归集、分红回购增发等）、
+三表 plan 能通过原插件自己的校验器、情景表格（180 组随机输入）、业绩规则（300 组随机输入）、DCF（20 组随机情景）。随机输入使用固定种子，失败可复现。
+在本文写作时的环境中这五个测试全部通过。
+
+\paragraph{有意修改口径的流程。}2026-09-28 我们有意修改了三处口径：EBIT 改为利润总额 + 财务费用 − 投资收益 − 公允价值变动收益；三表经营费用改为轧差项（毛利 − EBIT − 折旧摊销），
+以消除原口径中折旧摊销被重复扣减的问题；DCF 改由三表驱动。修改发生在\emph{口径映射层}（\file{three\_statement.py}、\file{build\_plan.py}），引擎本身（\file{ts\_engine.py} 等）未改，
+因此参照对照仍逐项相等；golden 快照因输入映射变化而重新生成，变更原因记录在 \file{tests/golden/README.md} 与 \file{THIRD\_PARTY.md}。
+这条流程把“与参照一致”和“修正口径”分到两层：引擎算法保持一致，口径映射可以改，但每次改都留下记录（另见 \S\ref{sec:pr-tension} 张力五）。
+
+\begin{tradeoff}[：保留原插件调用、复刻代码，还是自研并对照]
+\textbf{直接调用原插件。}实现最快，早期版本即如此；但原插件许可证为内部使用，参赛提交不能包含其代码，且其依赖（pandas、openpyxl 等）与引擎最小依赖目标冲突。
+\textbf{复制修改原代码。}同样有许可问题，且会让“哪些是自研”变得模糊，违反赛题“不得冒充自研”的要求。
+\textbf{选择}：按计算规则自研，用 golden 快照 + 本地参照对照保证结果一致，在 \file{THIRD\_PARTY.md} 逐项说明参照关系与校验方式。
+代价是需要维护两套测试，并接受“为保持一致而保留原口径中的不合理之处”（如流动性压力测试在 FCF 为负时方向相反，已在报告中注明）。
+\end{tradeoff}
+
+% ----------------------------------------------------------------------------
+\subsection{测试体系}
+\label{sec:arch-tests}
+
+\file{tests/} 下共 27 个测试文件、约 3,100 行，收集到 173 个测试用例（含参数化）。在本文写作的环境中（macOS、Python 3.12.14、本地有原插件），
+运行 \code{python -m pytest -q tests} 的结果为 \textbf{167 通过、6 跳过}；跳过的 6 个是 \file{test\_report\_render.py} 中需要真实 Chrome 打印的回归测试
+（需设置 \code{FINAGENT\_BROWSER\_TESTS=1}）。本地没有原插件时，\file{test\_parity\_reference.py} 的 5 个测试也会跳过。表~\ref{tab:arch-tests} 按覆盖面分组。
+
+\begin{table}[t]
+\centering
+\caption{测试按覆盖面分组（括号内为收集到的用例数）。}
+\label{tab:arch-tests}
+\small
+\begin{tabularx}{\linewidth}{@{}l X r@{}}
+\toprule
+覆盖面 & 测试文件 & 用例 \\
+\midrule
+解析与数字 & \file{test\_pdf\_tables}（7）、\file{test\_evidence\_spacing}（1）、\file{test\_numbers\_and\_schema}（5）、\file{test\_resources}（1） & 14 \\
+抽取接入与护栏（skill 路线） & \file{test\_skill}（26）、\file{test\_real\_report}（14） & 40 \\
+财务分析 & \file{test\_quarterly\_ebit}（13）、\file{test\_financial\_model\_todos}（2）、\file{test\_pipeline}（6） & 21 \\
+估值 & \file{test\_new\_modules}（4）、\file{test\_reverse\_dcf}（6）、\file{test\_segment\_units}（2）、\file{test\_workbook\_audit}（3） & 15 \\
+参照一致 & \file{test\_golden}（7）、\file{test\_parity\_reference}（5） & 12 \\
+纠错、一致性与出处 & \file{test\_consistency}（11）、\file{test\_guard\_caliber}（2）、\file{test\_provenance}（3）、\file{test\_sources\_numlock}（3） & 19 \\
+多 Agent 流水线与排版 & \file{test\_report\_pipeline}（10）、\file{test\_report\_kit}（6）、\file{test\_report\_render}（8）、\file{test\_review\_docs}（4） & 28 \\
+质检与校准 & \file{test\_evaluation}（12）、\file{test\_calibrate}（4） & 16 \\
+命令行、界面与平台 & \file{test\_cli}（5）、\file{test\_windows\_compat}（3） & 8 \\
+\midrule
+合计 & 27 个文件 & 173 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\paragraph{测试的四种角色。}按它们守护的对象，测试分为四类：
+(1) \emph{不变量测试}：直接对应第~\ref{sec:principles} 节的原则，如 \arT{test\_valuation\_reads\_analysis\_truth\_table}（P4）、\arT{test\_wrong\_row\_number\_caught\_as\_conflict}（P3）、
+\arT{test\_workspace\_excludes\_evaluation}（P10），总表见表~\ref{tab:pr-summary}；
+(2) \emph{对抗测试}：构造模型可能犯的错误并要求被拦截，如编造数字、错页、母公司口径、只抄了半个数字、期间看反、伪造研报引用、植入 7 处错误的研报草稿；
+(3) \emph{真实数据回归}：\file{test\_real\_report.py} 在仓库内的贵州茅台年报 PDF 上跑规则通道、模型抽取校验、非经营性资产回查、经营数据核对、联动工作簿公式，
+保证真实版式上的改进（稀疏网格、跨页续表、科目折行）不退化；
+(4) \emph{一致性测试}：golden 快照、参照对照、文档与代码同步（\arT{test\_skill\_docs\_in\_sync\_with\_code}：skill 中提到的每条命令都存在、抽取清单与指标字典一致、核心指标标记一致）。
+
+\paragraph{测试替身。}多 Agent 流水线的测试不调用真实模型：\file{test\_report\_pipeline.py} 与 \file{test\_evaluation.py} 用模拟会话（monkeypatch \code{\_session}，在工作区写入预设文件）
+检验会话串联、闸门判定、问题单路由与回滚；盲评的计分与重算用预设的 \file{judgments.json}。因此全部测试可以离线、在半分钟内跑完（本环境约 24～31 秒）。
+
+\paragraph{样例评测。}测试之外还有 \file{eval/run\_eval.py}（\code{finagent bench}）：在虚构样例公司“星河智造”上计算抽取准确率（对照 \file{eval/gold\_financials.json}）
+与纠错的准确率、召回率、误报（对照 \file{eval/labels.json} 中的埋错标签）。开发指南规定“改完代码必须跑测试和评测，样例评测指标下降视为回归”；
+样例数据内部完全自洽，真实数据效果会明显下降，真实数据上的实验见 \S\ref{sec:exp}。
+
+\begin{tradeoff}[：测试覆盖什么]
+测试只覆盖确定性部分与编排逻辑，不覆盖模型输出质量。后者由质检循环（\S\ref{sec:eval}）衡量，二者职责分开：
+测试回答“如果模型交出了这些文件，系统是否正确处理”，质检回答“模型交出的东西好不好”。
+我们没有把真实模型调用放进测试（例如录制一次会话做回放测试），因为会话依赖联网检索与 harness 版本，回放极易因无关变化而失败，维护成本高于收益。
+\end{tradeoff}
+
+% ----------------------------------------------------------------------------
+\subsection{小结}
+\label{sec:arch-summary}
+
+\sysname{} 的架构可以归纳为三点。第一，\emph{计算引擎是一个不调用模型的确定性程序}，与模型的唯一接口是文件和命令行，
+每个交接文件进入计算前都要过校验命令，退出码让闸门与模型用同一个比特判断能否继续。第二，\emph{引擎内部刻意简单}：
+18 个按顺序执行的步骤、一个上下文字典、一个基于 \code{ContextVar} 的追踪器，换来的是可读、可复算、全程留痕；依赖只有标准库与 \code{pdfplumber}。
+第三，\emph{可复现被分为两层}：引擎逐位复算（由确定性、golden 快照与跨平台 CI 保证），模型会话可审计但不可重放（由原始事件流保证）；
+系统的承诺是“给定模型交出的文件，后面每个数都能复算”。在此之上，多 Agent 编排与质检循环分别在第~\ref{sec:pipeline} 节与第~\ref{sec:eval} 节展开。
+
+\fussy

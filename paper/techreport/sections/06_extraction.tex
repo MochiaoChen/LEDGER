@@ -1,0 +1,1027 @@
+% 第 6 章：文档解析与证据约束抽取
+\section{文档解析与证据约束抽取}
+\label{sec:extract}
+
+本章讲\sysname{}怎样从一份上百页的 A 股年报 PDF 得到一张“每个数字都能指回原文”的事实表。
+第~\ref{sec:problem} 节已经给出证据谓词 $\operatorname{Ev}$（定义~\ref{def:prob-evidence}）、数字边界匹配（定义~\ref{def:prob-match}）、
+可接受条目（定义~\ref{def:prob-accept}）、两通道一致性与冲突集（定义~\ref{def:prob-channels}）和抽取通过条件（定义~\ref{def:prob-extract-pass}）。
+这里不重复这些定义，而是展开它们背后的算法、实现与真实年报上的版式难点：
+文档被切成什么样的单元（\S\ref{sec:ext-doc}），模型该读哪几页（\S\ref{sec:ext-locate}），指标与期间怎样识别（\S\ref{sec:ext-schema}、\S\ref{sec:ext-period}），
+规则通道怎样应付稀疏网格、跨页续表、科目折行和同页多单位（\S\ref{sec:ext-rule}），
+模型通道写下的 \file{facts.json} 怎样逐条过证据校验（\S\ref{sec:ext-llm}），两个通道怎样合并而不静默取舍（\S\ref{sec:ext-merge}），
+经营数据表与季报的接入（\S\ref{sec:ext-extras}、\S\ref{sec:ext-quarterly}），以及 \code{verify-facts} / \code{verify-extra} 两个命令的完整流程（\S\ref{sec:ext-verify}）。
+最后报告三家真实年报上的结果（\S\ref{sec:ext-results}）并讨论失败案例（\S\ref{sec:ext-fail}）。
+
+% ============================================================
+\subsection{问题与总体设计}
+\label{sec:ext-overview}
+
+\paragraph{真实输入是什么样子。}
+表~\ref{tab:ext-docs} 列出本章用到的三份真实年报在解析后的规模（本文在当前代码上重新解析得到）。一份年报 143～246 页，
+pdfplumber 识别出 270～655 张表格，其中 42～82 张是跨页续表。需要抽取的核心数字分布在“主要会计数据和财务指标”“分季度主要财务指标”
+“非经常性损益项目及金额”、三张合并报表及现金流量表补充资料中，合计约 10～15 页；其余页面里有大量与报表科目同名、口径不同的附注明细表
+（受限资产、费用明细、关联方往来、母公司报表），是误取的主要来源。
+
+\begin{table}[t]
+\centering
+\caption{三份真实年报的解析规模（\code{load\_document} 在本机实测；“续表”指 \code{continued\_from} 非空的表格 chunk）。}
+\label{tab:ext-docs}
+\small
+\begin{tabular}{lrrrr}
+\toprule
+年报（2025 年度） & 页数 & 表格 chunk & 续表 & 解析耗时（秒） \\
+\midrule
+贵州茅台（600519） & 143 & 270 & 42 & 5.5 \\
+宁德时代（300750） & 232 & 655 & 59 & 10.0 \\
+招商轮船（601872） & 246 & 325 & 82 & 9.4 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{两种直觉方案各自的问题。}
+第一种是\emph{纯规则}：按科目名在表格里查数。它确定、可复现，但真实 PDF 的表格结构经常被解析器切坏——宁德时代的报表在解析后科目和数字错开一列，
+规则通道在修复前一个数都取不到（表~\ref{tab:ext-before-after}）。第二种是\emph{让模型读 PDF 直接给出数字}。模型对版式的鲁棒性好得多，
+但它可能抄错一位、看错一列、把母公司报表当成合并报表，或者干脆写出原文没有的数字~\citep{ji2023survey}。
+金融场景中这些错误代价很高，又很难事后发现。
+
+\paragraph{设计。}
+\sysname{}让两种方案同时运行、互相约束，并把模型的输出限制在“可以被程序逐字核对”的形式上（图~\ref{fig:ext-overview}）：
+\begin{enumerate}
+\item 程序先把 PDF 切成带页码的 chunk，并用 \code{locate} 告诉模型该读哪几页、哪些页是母公司报表、哪些页没有文本层；
+\item 分析师会话（模型）按页读 PDF，把数字按原文写法抄进 \file{facts.json}，并写明页码、单位与口径；它不做任何换算或计算；
+\item 程序对每一条做证据校验：原文写法必须按数字边界出现在所写页码的文本中，否则拒收；
+\item 规则通道独立地从同一份 PDF 取数，与模型通道逐键比对；一致记为相互佐证，冲突记为 issue 并阻断估值；
+\item 合并后的事实进入真值表，经勾稽校验与核心缺失检查后才能被下游使用。
+\end{enumerate}
+这里模型承担的是“读”和“抄”，程序承担的是“找证据”“比对”“计算”。这种分工与程序辅助推理~\citep{gao2023pal,chen2023pot}的思路一致：
+不信任模型做算术；但我们更进一步，连模型抄下来的数字也不直接信任，而是要求它带着页码交给程序回查，接近“带引用生成”~\citep{gao2023alce}在数字层面的严格版本。
+
+\begin{figure}[t]
+\centering
+\begin{tikzpicture}[font=\small]
+\tikzset{every node/.append style={text width=21mm}}
+\node[file,text width=13mm] (pdf) at (0,0) {年报.pdf\\季报.pdf};
+\node[prog] (parse) at (2.8,0) {\code{load\_document}\\分页·chunk·表格};
+\node[prog] (locate) at (5.8,0) {\code{locate}\\关键页·母公司页};
+\node[agent] (agent) at (8.8,0) {分析师会话\\按页读 PDF};
+\node[file,text width=14mm] (facts) at (11.6,0) {facts.json};
+\node[prog] (rule) at (2.8,-2) {规则通道\\\code{extract\_rule}};
+\node[prog] (merge) at (5.8,-2) {双通道合并\\\code{merge}};
+\node[prog] (ev) at (8.8,-2) {证据校验\\\code{find\_evidence}};
+\node[prog] (rej) at (11.6,-2) {拒收清单 Rej};
+\node[prog] (an) at (5.8,-3.9) {勾稽·核心缺失\\\code{analyze}};
+\node[gate,text width=10mm] (g) at (2.8,-3.9) {Pass$_{\text{ext}}$};
+\node[file,text width=14mm] (truth) at (0,-3.9) {真值表 $\Truth$};
+\draw[arr] (pdf) -- (parse);
+\draw[arr] (parse) -- (locate);
+\draw[arr] (locate) -- (agent);
+\draw[arr] (agent) -- (facts);
+\draw[arr] (facts.south) -- ++(0,-0.5) -| (ev.north);
+\draw[arr] (parse) -- (rule);
+\draw[arr] (rule) -- (merge);
+\draw[arr] (ev) -- (merge);
+\draw[darr] (ev) -- (rej);
+\draw[arr] (merge) -- (an);
+\draw[arr] (an) -- (g);
+\draw[arr] (g) -- node[above,font=\scriptsize,text width=]{通过} (truth);
+\draw[darr] (g.south) -- ++(0,-0.6) -| node[pos=0.25,below,font=\scriptsize,text width=40mm]{失败：拒收、冲突、勾稽失败、缺失清单回到会话} (13.0,0) -- (facts.east);
+\end{tikzpicture}
+\caption{证据约束抽取的数据流。蓝色为确定性程序，橙色为模型会话，红色菱形为闸门。模型只写 \file{facts.json}，
+其余步骤都不调用模型；闸门不通过时，\code{verify-facts} 的拒收、冲突、勾稽失败与缺失清单回到分析师会话。}
+\label{fig:ext-overview}
+\end{figure}
+
+\begin{insight}
+本章所有组件都服从同一条约束：\emph{进入真值表的每个数字，要么由规则通道从某个表格单元格取得（带行列坐标），
+要么由模型抄写且在所写页码的原文中按数字边界找到，要么由程序从前两类数字派生（带公式与输入来源）}。
+第~\ref{sec:problem} 节不变量~\ref{inv:evidence} 是这条约束的形式化版本。
+\end{insight}
+
+% ============================================================
+\subsection{文档模型：分页、chunk 与表格}
+\label{sec:ext-doc}
+
+\paragraph{Chunk。}
+解析器（\file{finagent/\allowbreak{}parsing/\allowbreak{}document.py}）把文档变成 chunk 序列。每个 chunk 带 \code{chunk\_id}（按出现顺序编号 \code{c0001}、\code{c0002}……）、
+\code{source}（文件路径）、\code{page}（PDF 物理页码，从 1 开始）、\code{kind}（\code{text} 或 \code{table}）、\code{text}（文本，表格则为其 Markdown 渲染）、
+\code{rows}（单元格矩阵）、\code{unit\_hint}（单位提示）、\code{caption}（表格标题），以及续表专用的 \code{header\_rows} 与 \code{continued\_from}。
+文档整体带 SHA-256 哈希，读文件经 \code{tracing.read\_file()}，哈希写入运行目录的 \file{events.jsonl}。
+
+页码选物理页而不是年报印刷页码，是因为模型会话用 Claude Code 的 Read 工具读 PDF 时看到的就是物理页；两边用同一个页码，
+模型写下的 \code{page} 才能被程序直接回查。抽取规范（\file{references/extraction.md}）明确要求“PDF 页码（从 1 开始，Read 工具的页码），不是年报印刷页码”。
+
+\paragraph{PDF 解析流程。}
+对每一页，\code{\_parse\_pdf} 依次做：
+\begin{enumerate}
+\item 用 \code{page.extract\_text()} 取整页文本，用正则 \code{UNIT\_RE}（“单位：[人民币]元/千元/万元/百万元/亿元”）找出本页全部单位声明；
+\item 用 \code{page.find\_tables()} 找出表格，逐张抽取单元格并去掉全空行；
+\item 为每张表找标题（\code{\_caption\_above}）、定单位（见 \S\ref{sec:ext-units}）、判断是否为上一页表格的续表（见 \S\ref{sec:ext-cont}）；
+      不是续表时做稀疏列合并与折行合并（\S\ref{sec:ext-sparse}、\S\ref{sec:ext-wrap}）；
+\item 记录页末标题（表格从下一页开始的情形），供下一页首张表使用；
+\item 按空行切分整页文本，生成文本 chunk。
+\end{enumerate}
+文本 chunk 与表格 chunk 并存：同一个数字会同时出现在表格 chunk 的 Markdown 和文本 chunk 里。证据校验对表格优先（\S\ref{sec:ext-llm}），
+这样定位尽量落在结构化的表格上。
+
+\paragraph{表格标题。}
+标题决定规则通道是否从这张表取数（\S\ref{sec:ext-whitelist}），也是区分合并报表与母公司报表的主要依据。
+\code{\_caption\_above} 在表格上方、上一张表底部以下的区域里自下而上最多看 6 行：跳过“单位：”行和 \code{SKIP\_RE} 匹配的行
+（“编制单位”、报表日期如“2025年12月31日”、“√适用 □不适用”、币种、页眉“年度报告”）；第一个长度不超过 40 字、
+含“表”字或形如“一、”“（一）”“1、”“(1)”的编号标题即为标题；遇到超过 40 字的行（正文段落）就放弃。
+找不到标题的表格沿用上一张表的标题——这对续表正确，对“同一节下的第二张小表”也大体正确。
+
+\paragraph{Markdown 与 TXT 输入。}
+样例数据与测试用 Markdown（\code{\_parse\_markdown}）：\code{<!-- page: N -->} 注释模拟 PDF 页码，管道表格按表格解析，
+最近的“\#”标题作为表格标题，“单位：”行更新后续表格的单位。这让全部样例回归和大部分单元测试不依赖 PDF 解析器，
+也让我们能用虚构但内部自洽的样例（\file{data/\allowbreak{}samples/\allowbreak{}build\_samples.py}）精确构造勾稽与季度拆分场景。
+
+\paragraph{扫描页。}
+扫描页没有文本层，\code{extract\_text()} 返回空，该页不产生任何 chunk。\code{locate} 把这些页列在 \code{no\_text\_layer\_pages}；
+任何声明来自这些页的数字都会因 $\operatorname{Ev}=\bot$ 被拒收。我们\emph{不做} OCR。
+
+\begin{tradeoff}[：扫描页拒收而不做 OCR]
+OCR 能让扫描页的数字“可抽取”，但 OCR 的输出本身是模型推断，用它来核对另一个模型抄下的数字，等于用不可靠的证据证明不可靠的结论；
+OCR 错把“8”认成“3”时，证据校验反而会把模型的正确抄写判为拒收，或把同样认错的抄写判为通过。
+沪深交易所要求的定期报告基本是带文本层的 PDF，扫描页罕见；遇到时 skill 要求分析师会话“告诉用户，由用户决定是否人工录入”。
+我们宁可让流程停下来，也不让无法逐字核对的数字进入真值表。
+\end{tradeoff}
+
+% ============================================================
+\subsection{关键页定位：\code{locate}}
+\label{sec:ext-locate}
+
+\paragraph{动机。}
+把整本年报送进模型上下文既贵又容易出错：模型会在 200 页里找到多个“营业收入”，其中有母公司报表的、有分部明细的、有附注的。
+\code{locate}（\file{finagent/\allowbreak{}parsing/\allowbreak{}locate.py}）用章节标题关键词告诉模型“该读哪几页”，把阅读范围压到 10～20 页。
+
+\paragraph{算法。}
+先把每页所有 chunk 的标题与文本拼起来并去掉空白，得到页文本 $s_p$。对表~\ref{tab:ext-locate} 的每个节，命中页为
+$\{p : \exists\,\text{关键词} \in s_p\}$。三张主表（资产负债表、利润表、现金流量表）常跨 2～3 页，建议阅读范围从命中页向后延伸 \code{SPAN}=2 页；
+其余节只读命中页。另外：
+\begin{itemize}
+\item \code{parent\_only\_pages}：含“母公司资产负债表 / 利润表 / 现金流量表”的页，提示模型这些页的数字不要抄；
+\item \code{unit\_hints}：建议阅读页上的第一个单位声明；
+\item \code{no\_text\_layer\_pages}：总页数（由 pdfplumber 给出）中没有任何 chunk 的页。
+\end{itemize}
+延伸页可能同时包含合并报表末尾与母公司报表开头（茅台第 58 页就是这种情况），\code{locate} 照样建议阅读，
+口径由 \code{parent\_only\_pages} 提示与条目的 \code{scope} 字段把关。
+
+\begin{table}[t]
+\centering
+\caption{\code{locate} 的节与关键词（\code{SECTIONS}），以及在贵州茅台 2025 年报上的命中页（\file{report/resources/贵州茅台/locate.json}）。}
+\label{tab:ext-locate}
+\small
+\begin{tabularx}{\linewidth}{l X l}
+\toprule
+节 & 关键词（任一命中即可） & 茅台命中页 \\
+\midrule
+\code{key\_data} & 主要会计数据和财务指标；主要会计数据；主要财务指标 & 4, 5, 6 \\
+\code{quarterly} & 分季度主要财务指标；分季度主要财务数据；分季度主要会计数据 & 7, 8 \\
+\code{non\_recurring} & 非经常性损益项目及金额；非经常性损益项目；非经常性损益明细 & 7, 8, 111, 142, 143 \\
+\code{balance} & 合并资产负债表 & 56 \\
+\code{income} & 合并利润表 & 61 \\
+\code{cashflow} & 合并现金流量表 & 64 \\
+\code{cashflow\_supplement} & 现金流量表补充资料；补充资料 & 114, 115, 142 \\
+\code{share\_capital} & 股本变动情况；股份变动情况；普通股股份总数 & 47, 48 \\
+\midrule
+\multicolumn{2}{l}{建议阅读（三张主表向后延伸 2 页后合并为区间）} & \makecell[l]{4--8, 47--48, 56--58,\\ 61--66, 111, 114--115, 142--143} \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+茅台年报 143 页，建议阅读 25 页，约为全书的 17\%。关键词检索是粗粒度的：“补充资料”会命中附注里其他补充资料，“非经常性损益”会命中附录。
+这些误命中只会多读几页，不会让错误数字进入真值表；漏命中（关键词写法不同）则由模型自行翻页补足。
+
+\begin{tradeoff}[：关键词定位 vs.\ 版面分析模型]
+版面分析与表格结构识别有成熟的学习方法~\citep{smock2022pubtables,nassar2022tableformer,auer2024docling}，它们能给出更准确的表格边界与单元格结构。
+我们没有采用，原因有三：(1)~\code{locate} 的产物只是“建议阅读页”，读错一页的代价是多花一点 token，不影响正确性，不值得引入重模型依赖；
+(2)~计算引擎约定只用标准库加 pdfplumber，便于评审在任意机器上复现；(3)~表格结构错误由规则通道的稀疏列合并与续表算法处理，
+并且最终由模型通道交叉兜底。若后续需要处理大量非标准版式（如港股年报），可以在不改动证据校验的前提下替换解析器。
+\end{tradeoff}
+
+% ============================================================
+\subsection{指标字典}
+\label{sec:ext-schema}
+
+指标字典（\file{finagent/\allowbreak{}tasks/\allowbreak{}financials/\allowbreak{}schema.py}）共 49 个指标：42 个可抽取（利润表 13、资产负债表 18、主要会计数据 5、现金流量表 4、非经常性损益 2），
+7 个派生（毛利率、净利率、资产负债率、销售/管理/研发费用率、净现比）。每个指标是一个不可变 \code{Metric}：
+\code{id}、中文名 \code{name}、所属报表 \code{statement}、类型 \code{kind}（39 个金额、7 个比率、每股、股数、倍数各 1 个）、
+财报科目别名 \code{aliases} 与研报说法别名 \code{claim\_aliases}。前者建成 58 项的别名索引供规则通道匹配表格行名，
+后者共 56 个说法供研报纠错（第~\ref{sec:reportcheck} 节）识别“营收”“归母净利润”“经营现金流”等口语化写法。
+其中 14 个是\emph{核心指标}（\code{external.CORE\_METRICS}），本期缺失即阻断估值，上期缺失只作警示。
+
+\paragraph{行名清洗与精确匹配。}
+报表行名带大量装饰：编号前缀（“一、”“三、”）、连接词前缀（“其中：”“加：”“减：”）、单位后缀（“（元／股）”“（\%）”）、
+填列说明（“（损失以“－”号填列）”“（亏损以“-”号填列）”）、全角空格与 PDF 折行产生的换行符。\code{clean\_label} 依次去空白与换行、
+去前缀（\code{\_PREFIX\_RE}）、去填列说明（\code{\_SIGN\_NOTE\_RE}，要求括号内同时含“以”与“号填列”）；\code{match\_label} 先查清洗后的整串，
+再查去掉单位后缀的串。两次都是\emph{精确}查表，不做子串或模糊匹配。
+
+\begin{example}[精确匹配避免的误配]
+“归属于母公司股东的净利润”包含子串“净利润”，“其中：对联营企业和合营企业的投资收益”包含子串“投资收益”。
+子串匹配会把前者配成 \code{net\_profit}、把后者配成 \code{investment\_income}，两者都是真实年报中会出现的错取。
+精确匹配下前者命中 \code{np\_parent} 的别名，后者不命中任何指标（\file{tests/\allowbreak{}test\_quarterly\_ebit.py} 中 \code{test\_\allowbreak{}sign\_\allowbreak{}note\_\allowbreak{}suffix\_\allowbreak{}matches\_\allowbreak{}metric}）。
+\end{example}
+
+\paragraph{作用域别名。}
+“合计”是非经常性损益表的合计行，但年报里有上百张表都有“合计”。\code{SCOPED\_ALIASES} 把“合计”限定为只在标题含“非经常性损益”的表中生效：
+\code{match\_label("合计")} 为空，\code{match\_label("合计", "九、非经常性损益项目及金额")} 为 \code{non\_recurring}。
+
+\paragraph{发生额与时点数。}
+\code{is\_flow(m)} 判断指标能否跨期相减：金额类且不属于资产负债表或派生指标。它决定季度拆分（第~\ref{sec:analysis} 节）作用于哪些指标；
+资产负债表科目、每股收益、比率、股本永远不拆分。
+
+% ============================================================
+\subsection{表头期间识别}
+\label{sec:ext-period}
+
+规则通道需要知道每一列对应哪个期间。\code{parse\_period(cell, fiscal\_year)} 把表头单元格映射为期间标识或特殊标记，规则见表~\ref{tab:ext-period}。
+
+\begin{table}[t]
+\centering
+\caption{表头期间识别规则（\code{extract.parse\_period}），按判断顺序排列。$Y$ 为报告年度。}
+\label{tab:ext-period}
+\small
+\begin{tabularx}{\linewidth}{c X l l}
+\toprule
+顺序 & 条件（去掉全部空白后） & 输出 & 例 \\
+\midrule
+1 & 含“增减”“变动”“同比”“变化” & \code{chg} & 本年比上年增减(\%) \\
+2 & 含“比例”“比重”“占” & 无（结构比列） & 本期期末数占总资产的比例 \\
+3 & 含“调整前” & \code{skip}（并记追溯调整 issue） & 2024年（调整前） \\
+4 & 含 20xx 年份 & 该年份 & 2025年12月31日 \\
+5 & 无年份，含“本期/本年/期末/本报告期” & $Y$ & 期末余额 \\
+6 & 无年份，含“上期/上年/期初/上年同期” & $Y-1$ & 期初余额 \\
+7 & 无年份，含季度关键词 & $Y$ & 第一季度（1-3月份） \\
+8 & 年份确定后再查季度/半年/前三季度关键词 & 加后缀 \code{Q1}…\code{Q4}、\code{H1}、\code{Q1-3} & 2024年1-9月 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+几个细节来自真实年报：
+\begin{itemize}
+\item \textbf{表头折行。}PDF 中“本期比上年同期增减”常被折成“本期比上年同期增\textbackslash n减(\%)”，所以先去掉全部空白再判断（\code{test\_\allowbreak{}parse\_\allowbreak{}period\_\allowbreak{}skips\_\allowbreak{}ratio\_\allowbreak{}columns\_\allowbreak{}and\_\allowbreak{}wrapped\_\allowbreak{}headers}）。
+\item \textbf{结构比列。}资产负债表分析表的“本期期末数占总资产的比例（\%）”含“期末”，若不先排除会被识别成本期数值列，把占比当成金额。规则 2 放在规则 5 之前。
+\item \textbf{变动列先于年份。}“2025 年比 2024 年增减”同时含年份与“增减”，必须先判为变动列。
+\item \textbf{“期末”作为季度关键词。}季度关键词表 \code{\_Q} 中“3月31日”“6月30日”“9月30日”分别对应 Q1、H1、Q1-3，用于识别季报资产负债表的日期表头。
+\end{itemize}
+
+表头行由 \code{\_header} 在表格前 3 行中寻找：第一行中除首列外存在一个合法期间（不是 \code{chg}、\code{skip}、空）的行即为表头。
+找不到表头且没有续表表头的表格整张跳过。
+
+财报自带的“本年比上年增减”列不丢弃：规则通道把它记为 \code{<指标>.reported\_yoy} 伪指标（期间取表头中最新的期间），
+供第~\ref{sec:analysis} 节的“列示同比 vs 计算同比”勾稽使用。这是一个廉价但有效的抽取自检：如果两列期间识别反了，或者单位错了一个量级，
+列示同比与计算同比会立刻不一致。
+
+% ============================================================
+\subsection{规则通道与真实年报版式难点}
+\label{sec:ext-rule}
+
+规则通道 \code{extract\_rule(doc, fiscal\_year)} 的主循环很短（算法~\ref{alg:ext-rule}），真正的工作量在解析阶段对表格结构的修复。
+本节先给主循环，再逐个讲版式难点。
+
+\begin{algorithm}[t]
+\caption{规则通道 \code{extract\_rule}}
+\label{alg:ext-rule}
+\begin{algorithmic}[1]
+\Function{ExtractRule}{$\Doc, Y$}
+  \State $F\gets\emptyset$；$I\gets\emptyset$
+  \For{每个表格 chunk $c\in\Doc$}
+    \State $(i,\pi)\gets$ \Call{Header}{$c.\text{rows}, Y$}；若无则 $(\cdot,\pi)\gets$ \Call{Header}{$c.\text{header\_rows}, Y$}，数据从第 0 行起
+    \If{无表头} \textbf{continue} \EndIf
+    \If{$\texttt{skip}\in\pi$} 记 issue“追溯调整” \EndIf
+    \If{\textbf{not} \Call{IsSourceTable}{$c$}} \textbf{continue} \EndIf \Comment{白名单、母公司、关联方}
+    \State $u\gets c.\text{unit}$（缺省为元）；$h\gets$ 表中是否同时有“营业收入”与“营业总收入”
+    \For{表头之后的每一行 $\text{row}$（行号 $r$）}
+      \State $m\gets$ \Call{MatchLabel}{$\text{row}[0], c.\text{caption}$}
+      \If{$m=\bot$ \textbf{or} ($m=\text{revenue}$ \textbf{and} $h$ \textbf{and} 行名含“营业总收入”) \textbf{or} 行名含“收益以”} \textbf{continue} \EndIf
+      \For{每列 $j\ge1$，$\pi_j$ 为合法期间}
+        \State $x\gets\operatorname{parse}(\text{row}[j])$；若 $x\neq\bot$：$F\gets F\cup\{(m,\pi_j,\phi(u)x \text{ 或 } x, \Src=(c,r,j))\}$
+      \EndFor
+      \For{每列 $j$，$\pi_j=\texttt{chg}$} \State 记 $(m.\text{reported\_yoy}, \max\pi, \operatorname{parse}(\text{row}[j]))$ \EndFor
+    \EndFor
+  \EndFor
+  \State \Return $(F, I)$
+\EndFunction
+\end{algorithmic}
+\end{algorithm}
+
+规则通道产生的每条事实都有完整的 $\Src=(\text{source},\text{page},\text{chunk\_id},\text{row},\text{col})$，是全系统定位最细的事实。
+续表上的事实还带 \code{continued\_from}，指向表头所在的上一页表格。
+
+\subsubsection{表格白名单与合并/母公司区分}
+\label{sec:ext-whitelist}
+
+\code{\_is\_source\_table} 只接受三类表：(1)~标题含“主要会计数据”“主要财务指标”“分季度”“非经常性损益”“资产负债表”“利润表”“现金流量表”“补充资料”之一；
+(2)~没有标题（解析器没找到时不贸然丢弃）；同时排除 (3)~标题含“母公司”的表，以及 (4)~首行任一单元格含“关联方”的表（行名是科目、列是关联方，结构完全不同）。
+
+白名单是在真实年报上调出来的。附注里的受限资产表、费用明细表、存货分类表都有“货币资金”“销售费用”“存货”这样的行名，
+其数值是明细或期末某一分类，与报表科目口径不同。在白名单引入之前，这些表让同一键出现多个不同取值，规则通道内部就会产生大量“同一指标多处取值不一致”的冲突。
+
+标题识别对合并与母公司的区分至关重要。茅台年报中合并资产负债表在第 56 页、母公司资产负债表在第 59 页，合并利润表在第 61 页、母公司利润表在第 63 页，
+两组表科目完全同名。\code{test\_\allowbreak{}statement\_\allowbreak{}captions\_\allowbreak{}distinguish\_\allowbreak{}parent\_\allowbreak{}and\_\allowbreak{}consolidated} 断言解析出的标题正确区分了四张表。
+
+\paragraph{营业收入与营业总收入。}
+茅台合并利润表有“一、营业总收入”与“其中：营业收入”两行：营业总收入包含集团财务公司的利息收入，而“主要会计数据”和“分季度数据”里的营业收入是不含的口径。
+若两行都配到 \code{revenue}，同一键就有两个值。规则通道的处理是：同表中两者都出现时只取“营业收入”。
+茅台 2025 年 \code{revenue} 的取值因此唯一，为 168,838,102,514.79 元（\code{test\_\allowbreak{}rule\_\allowbreak{}channel\_\allowbreak{}on\_\allowbreak{}real\_\allowbreak{}pdf}）。
+
+\paragraph{补充资料中的调节项。}
+现金流量表补充资料把净利润调节为经营现金流，其中有“财务费用（收益以“－”号填列）”“投资损失（收益以“－”号填列）”等行。
+它们与利润表科目同名（清洗后都是“财务费用”），但数值是现金流口径的调节额。规则通道跳过行名含“收益以”的行；
+注意利润表上的“投资收益（损失以“－”号填列）”是“损失以”，不受影响。
+
+\subsubsection{稀疏网格：\code{compact\_columns}}
+\label{sec:ext-sparse}
+
+\paragraph{现象。}
+pdfplumber 依据线条与文字位置推断单元格。部分年报（宁德时代最典型）的报表线条稀疏，解析结果把一个逻辑列切成几列：
+科目落在第 2 列、表头“期末余额”比下面的数字向右错开一列、其余列全空。下面是按宁德时代版式构造的片段（\code{test\_\allowbreak{}compact\_\allowbreak{}columns\_\allowbreak{}aligns\_\allowbreak{}header\_\allowbreak{}and\_\allowbreak{}numbers}）：
+
+\begin{center}
+\scriptsize
+\begin{tabular}{|c|c|c|c|c|c|c|c|c|}
+\hline
+ & 项目 & & & 期末余额 & & & 期初余额 & \\ \hline
+ & 货币资金 & & 333,512,927 & & & 303,511,993 & & \\ \hline
+投资活动产生的现金流量净额 & & & -79,421,912 & & & -19,213,430 & & \\ \hline
+\end{tabular}
+\end{center}
+
+按列号直接对齐，“期末余额”（第 5 列）下面没有数字，数字所在的第 4 列没有表头，规则通道一个数都取不到；第三行的科目名甚至跑到了第 1 列。
+
+\paragraph{算法。}
+观察到：同一个逻辑列被切成的几个物理列中，任意一行\emph{至多一个}非空。据此做贪心的从左到右分组（算法~\ref{alg:ext-compact}）。
+
+\begin{algorithm}[t]
+\caption{稀疏列合并 \code{compact\_columns}}
+\label{alg:ext-compact}
+\begin{algorithmic}[1]
+\Function{Compact}{$G$, force}
+  \State 把 $G$ 补齐为 $n\times w$ 矩阵
+  \If{\textbf{not} force \textbf{and} 不存在全空列} \Return $G$ \Comment{规整表格原样返回} \EndIf
+  \State $\mathcal{G}\gets[\,]$
+  \For{$c=1,\dots,w$}
+    \If{$\mathcal{G}$ 非空 \textbf{and} $\forall i:\ \neg(G_{ic}\neq\varnothing \wedge \exists g\in\mathcal{G}_{\text{last}}: G_{ig}\neq\varnothing)$}
+      \State $\mathcal{G}_{\text{last}}\gets\mathcal{G}_{\text{last}}\cup\{c\}$ \Comment{并入当前组：没有任何一行两边都有值}
+    \Else
+      \State 新开一组 $\{c\}$
+    \EndIf
+  \EndFor
+  \State $G'_{i,j}\gets$ 组 $j$ 内各列在第 $i$ 行的拼接（至多一个非空）
+  \State \Return 删去全空组后的 $G'$
+\EndFunction
+\end{algorithmic}
+\end{algorithm}
+
+上例中第 1、2、3 列在每一行至多一个非空，合成一组（科目列）；第 4、5、6 列合成一组（期末余额：表头在第 5 列，数字在第 4 列）；第 7、8、9 列合成一组（期初余额）。
+结果正好是规整的三列表：
+
+\begin{center}
+\scriptsize
+\begin{tabular}{|l|r|r|}
+\hline
+项目 & 期末余额 & 期初余额 \\ \hline
+货币资金 & 333,512,927 & 303,511,993 \\ \hline
+投资活动产生的现金流量净额 & -79,421,912 & -19,213,430 \\ \hline
+\end{tabular}
+\end{center}
+
+\begin{proposition}[规整表格不变；合并不丢信息]
+\label{prop:ext-compact}
+(a)~若 $G$ 不含全空列且 force 为假，\textsc{Compact} 返回同一对象（\code{test\_\allowbreak{}compact\_\allowbreak{}columns\_\allowbreak{}leaves\_\allowbreak{}regular\_\allowbreak{}tables\_\allowbreak{}alone} 断言 \code{is}）。
+(b)~任意情况下，$G$ 的每个非空单元格恰好出现在 $G'$ 的一个单元格中，且同一行的非空单元格的左右顺序保持不变。
+\end{proposition}
+\begin{proof}
+(a)~由第 3 行直接得出。(b)~分组是对列下标 $1..w$ 的有序划分，每列恰属于一组；并入条件保证组内每行至多一个非空，故拼接不会把两个值粘在一起；
+组按列下标递增产生，行内顺序保持。删除的只是全空组。
+\end{proof}
+
+性质 (a) 很重要：它保证修复只作用于“病态”表格，不会改变已经正确的表格。触发条件选“存在全空列”，是因为规整的报表不会有整列为空的情况（附注列在续页上全空是例外，
+由续表算法用 force 处理）。贪心分组不是唯一可行的划分，但在“表头错开一列”这种版式下，它恰好把表头与数字并到一起；
+若某行在两列都有值，分组会在这里断开，宁可多一列也不把两个值合并。
+
+\subsubsection{科目折行：\code{merge\_wrapped\_labels}}
+\label{sec:ext-wrap}
+
+\paragraph{现象。}
+科目名长于列宽时，PDF 把它折成多行，每行成为表格的一行；数字只在第一行（或最后一行）。常见形态：
+
+\begin{center}
+\scriptsize
+\begin{tabular}{|l|r|r|}
+\hline
+项目 & 2025年 & 2024年 \\ \hline
+归属于上市公司股东 & 72,201,282 & 50,744,682 \\ \hline
+的扣除非经常性损益 & & \\ \hline
+的净利润 & & \\ \hline
+购建固定资产、无形资产和其他长 & 42,344,558 & 31,179,943 \\ \hline
+期资产支付的现金 & & \\ \hline
+流动负债： & & \\ \hline
+\end{tabular}
+\end{center}
+
+不处理时，第二行的行名“归属于上市公司股东”配到的是……什么也配不到（别名表里没有这个截断形式）；更糟的情况是截断形式恰好是另一个科目的别名。
+
+\paragraph{判据。}
+\code{\_is\_fragment(row, prev\_label, limit)} 判断一行是否是上一行科目名的折行尾巴。前提：本行只有标签、没有任何数值；本行不以冒号结尾（“流动负债：”是小节标题）；上一行有标签。
+满足前提后，以下任一成立即视为折行：
+\begin{enumerate}
+\item 上一行括号未闭合（“（”与“(”的个数多于“）”与“)”）；
+\item 上一行最后一个物理行写满了列宽：$\text{limit}\ge 8$ 且上一行末行长度 $\ge \text{limit}-1$，其中 limit 为表内科目名单行最长字数（\code{\_label\_width}）；
+\item 本行以不会作为科目开头的字开头：“的”“）”“)”“率”“号”“列”“股）”“流量”“填列”“益）”“”””“以“”。
+\end{enumerate}
+\code{merge\_wrapped\_labels} 自上而下扫描，把满足判据的行用换行符接到上一行的标签后面。保留换行符是有意的：判据 2 要看“上一行最后一个物理行”的长度，
+连续折成三行时，第三行的判断要基于第二行的长度而不是拼接后的总长。匹配别名前 \code{clean\_label} 会删掉换行符。
+
+上例经处理后得到“归属于上市公司股东的扣除非经常性损益的净利润”“购建固定资产、无形资产和其他长期资产支付的现金”“流动负债：”三行
+（\code{test\_\allowbreak{}wrapped\_\allowbreak{}labels\_\allowbreak{}rejoin\_\allowbreak{}the\_\allowbreak{}row\_\allowbreak{}with\_\allowbreak{}numbers}），前两行分别命中 \code{np\_parent\_deducted} 与 \code{capex}。
+
+\begin{tradeoff}[：启发式判据 vs.\ 版面坐标]
+另一种做法是用字符的纵坐标与行距判断两行是否属于同一单元格。pdfplumber 的 \code{extract\_table} 已经丢掉了单元格内部的行信息，
+重新从字符层恢复需要自己做表格结构识别，复杂度高很多。三条判据都是“该接却没接”方向保守的：
+判据 3 的开头字表是在真实年报上逐个收集的，不在表中的折行（例如“期资产支付的现金”以“期”开头）靠判据 2 的“写满列宽”兜住。
+误接的风险在于把一个独立科目接到上一行，但独立科目行通常有数字，而前提要求本行没有数值，这排除了绝大多数误接。
+\end{tradeoff}
+
+\subsubsection{跨页续表：\code{link\_continuation}}
+\label{sec:ext-cont}
+
+\paragraph{现象。}
+合并资产负债表、利润表、现金流量表都跨 2～3 页。续页的表格\emph{没有表头}：第 57 页有“项目 / 附注 / 2025年12月31日 / 2024年12月31日”，
+第 58 页直接从“应付账款”开始。规则通道找不到表头就整张跳过，续页上的全部科目都取不到。修复前，茅台的营业利润、存货、资产总计、经营现金流、净利润
+都在续页上，规则通道一律缺失（\code{test\_\allowbreak{}rule\_\allowbreak{}channel\_\allowbreak{}on\_\allowbreak{}real\_\allowbreak{}pdf} 中的注释记录了这一点）。
+
+更麻烦的是两页的列切分可能不同：续页的附注列全空、或续页把“2024年度”一列劈成两列。下面是按茅台利润表版式构造的例子（\code{test\_\allowbreak{}continuation\_\allowbreak{}with\_\allowbreak{}different\_\allowbreak{}cell\_\allowbreak{}split}）：
+
+\begin{center}
+\scriptsize
+\begin{tabular}{l}
+第 61 页（首页，4 列）：\quad \texttt{[项目 | 附注 | 2025年度 | 2024年度]}，\texttt{[信用减值损失（损失以“-” | 54 | 17.00 | -23.00]} \\
+第 62 页（续页，5 列）：\quad \texttt{[号填列） |  |  |  | ]} \\
+\qquad\qquad\qquad\qquad\qquad \texttt{[四、利润总额（亏损总额以“－”号填列） |  | 120.00 | 110.00 | ]} \\
+\qquad\qquad\qquad\qquad\qquad \texttt{[五、净利润（净亏损以“－”号填列） |  | 90.00 |  | 85.00]} \\
+\end{tabular}
+\end{center}
+
+续页第一行“号填列）”是上一页末行科目名的折行尾巴；2024 年的数字在第 4 列或第 5 列，取决于这一行被怎么切。
+
+\paragraph{何时认作续表。}
+解析时，一张表被尝试作为续表，当且仅当同时满足：它是本页第一张表；它上方没有自己的标题；上一页末尾没有“页末标题”（有页末标题说明下一页首张表是新表）；
+上一张表恰好在前一页。满足这些前提后调用 \code{link\_continuation}（算法~\ref{alg:ext-cont}）。
+
+\begin{algorithm}[t]
+\caption{续表链接 \code{link\_continuation}}
+\label{alg:ext-cont}
+\begin{algorithmic}[1]
+\Function{Link}{cur, raw, prev, head}
+  \State want $\gets$ prev 的列数（已合并列）；$w\gets$ raw 的列数；$w_h\gets$ head 的列数 \Comment{head 为 prev 未合并列的前 3 行}
+  \If{$w_h\le w$}
+    \State $J\gets$ \Call{Compact}{head（补齐到 $w$ 列）$\Vert$ raw, force $=(w_h\neq w)$}；hdr, rows $\gets J$ 的前 $|$head$|$ 行与其余行
+  \EndIf
+  \If{rows 为空 \textbf{or} rows 的列数 $\neq$ want}
+    \State hdr $\gets$ \Call{Compact}{head}；rows $\gets$ \Call{Compact}{raw} \Comment{两页切分完全不同时各自合并}
+    \If{hdr 或 rows 的列数 $\neq$ want} \Return \textsc{False} \Comment{宁可漏取也不错配期间} \EndIf
+  \EndIf
+  \While{rows[0] 是 prev 末行科目的折行尾巴}
+    \State prev 末行标签 $\mathrel{+}=$ ``\textbackslash n'' $+$ rows[0][0]；删除 rows[0]
+  \EndWhile
+  \State cur.rows $\gets$ \Call{MergeWrapped}{rows}；cur.header\_rows $\gets$ hdr；cur.continued\_from $\gets$ prev.chunk\_id
+  \State \Return \textsc{True}
+\EndFunction
+\end{algorithmic}
+\end{algorithm}
+
+算法的关键在第 4 行：把上一页的原始表头和本页的原始数据\emph{放在一起}做稀疏列合并。这样两页共享同一个列分组，表头的“2024年度”与续页劈开的两列会被并入同一组。
+只有联合合并失败（列数与上一张表不一致）时，才退回到各自合并；各自合并的列数也必须与上一张表一致。上例中联合合并把续页 5 列压成 4 列，与首页一致，
+“号填列）”接回首页末行，得到“信用减值损失（损失以“-”\textbackslash n号填列）”；2024 年的利润总额 110.00 与净利润 85.00 都落在“2024年度”列。
+
+\paragraph{性质。}
+\begin{itemize}
+\item \textbf{只记关系，不合并行。}续页的行留在续页 chunk 中，每条事实的 \code{page} 是它实际所在的页（\code{test\_\allowbreak{}continuation\_\allowbreak{}inherits\_\allowbreak{}header\_\allowbreak{}and\_\allowbreak{}keeps\_\allowbreak{}its\_\allowbreak{}own\_\allowbreak{}page}：
+      应付账款取自第 58 页，\code{continued\_from=c1}）。这保证规则通道的定位与模型通道的页码可以直接比较，也保证证据校验查的是正确的页。
+\item \textbf{链式续表。}三页的表，第三页的 prev 是第二页的续表 chunk，head 沿用第一页的原始表头（解析循环中 \code{last} 的第二个分量在链接成功时保持不变）。
+\item \textbf{拒绝错位。}列数对不上时返回 \textsc{False}（\code{test\_\allowbreak{}continuation\_\allowbreak{}rejected\_\allowbreak{}when\_\allowbreak{}columns\_\allowbreak{}do\_\allowbreak{}not\_\allowbreak{}line\_\allowbreak{}up}），续页按普通表处理；
+      它没有表头，规则通道会跳过它。漏取的科目由模型通道补齐。
+\end{itemize}
+
+\begin{tradeoff}[：续表上漏取 vs.\ 错配]
+续表链接中最危险的错误不是“取不到”，而是“取错列”：如果把 2024 年的数字放在 2025 年的列下，规则通道会给出一个看起来合理、数值却属于另一期间的事实。
+如果模型通道恰好也抄错了同一格，两条通道会“一致地错”；如果模型通道是对的，就会出现冲突并阻断估值，需要人来排查。
+因此算法的每一个出口都偏向“不认作续表”：列数必须严格相等，不允许“差一列也凑合”。规则通道覆盖率因此低于理论上限，
+但在三家真实年报的全部重叠键上没有出现一次错配（\S\ref{sec:ext-results}）。
+\end{tradeoff}
+
+\subsubsection{同页多单位声明}
+\label{sec:ext-units}
+
+\paragraph{现象。}
+年报中同一页可能有两张表用不同单位：上表“单位：亿元”的经营概况，下表“单位：元”的主要会计数据。若整页只取第一个单位，下表的全部金额会被放大 $10^8$ 倍。
+
+\paragraph{算法。}
+当一页的单位声明多于一种时，\code{\_unit\_marks} 用 \code{page.search} 取出每个“单位：”声明的纵坐标，每张表取\emph{表格上边界以上最近的}声明；
+上方没有声明的表沿用上一页结束时的单位。只有一种单位时整页统一，不调用坐标检索（旧版 pdfplumber 无 \code{search} 时也退回整页单位）。
+跨页时，上一页最后一个单位声明延续到下一页没有声明的表格，这对续表是正确的。
+
+单位只影响规则通道的换算（$\phi(u)$）。模型通道的单位来自条目自己的 \code{unit} 字段，缺省时才用证据 chunk 的 \code{unit\_hint}——这一点的风险见 \S\ref{sec:ext-fail}。
+
+\subsubsection{已知问题：季报表头}
+\label{sec:ext-q-header}
+
+季报的表头写“本报告期”“年初至报告期末”“上年同期”。按表~\ref{tab:ext-period}，“本报告期”命中规则 5，被识别为年度 $Y$，
+“年初至报告期末”同样含“报告期末”。结果是三季报的单季数和前三季度累计数都会被当成全年数，与年报的全年数冲突。
+规则通道没有可靠的办法从表头本身区分单季与累计（要结合报告类型与列的位置），因此我们选择\emph{不让季报进入规则通道}：
+季报只能作为 \code{--supplement} 补充文件传入，并且命令行要求必须同时有 \code{--facts}（\code{\_\_main\_\_.main} 中的 \code{ap.error("--supplement 需配合 --facts")}）。
+季报的数字只来自模型通道，由模型按抽取规范把“本报告期”写成 \code{2024Q3}、“年初至报告期末”写成 \code{2024Q1-3}。
+年报的“分季度主要财务指标”表不受影响：它的表头是“第一季度（1-3月份）”这样的形式，由规则 7、8 正确识别。
+
+% ============================================================
+\subsection{数字解析与规范化}
+\label{sec:ext-numbers}
+
+\file{finagent/\allowbreak{}core/\allowbreak{}numbers.py} 是全系统共享的数字工具，内部金额统一为元（单位约定见表~\ref{tab:prob-units}）。
+
+\paragraph{\code{parse\_number}。}
+输入可以是数值或字符串。字符串依次：去半角与全角空格；占位符（空、“-”“—”“–”“--”“不适用”“N/A”“/”）返回 \code{None}；全角逗号转半角，
+Unicode 减号“−”与短横“–”转 ASCII 减号；用正则
+\[
+\texttt{\^{}\textbackslash(?[-]?\textbackslash d[\textbackslash d,]*(\textbackslash .\textbackslash d+)?\textbackslash)?\%?\$}
+\]
+整串校验，不符合（如“增加1.23个百分点”）返回 \code{None}；括号包裹视为负数；去括号、去百分号、去千分位后转浮点。百分号\emph{不除以 100}：
+14.49\% 存为 14.49，与比率的内部约定一致。
+
+整串校验是刻意的：一个单元格里如果混了文字，宁可解析失败让这一格缺失，也不从中“抠出”一个数字。年报中“增加 1.23 个百分点”这类单元格在 ROE 的变动列里很常见，
+它们不会被误当作 1.23\% 的相对增速。
+
+\paragraph{其他工具。}
+\code{UNIT\_FACTORS} 给出元、千元、万元、百万元、亿元、万亿元与股、万股、亿股的换算系数；
+\code{decimals\_of} 与 \code{half\_ulp} 按原文写法的小数位数计算展示精度（式~\ref{eq:prob-ulp}），供勾稽与研报纠错使用；
+\code{pct\_change} 实现式~\ref{eq:prob-pct}，基期为 0 或缺失时返回 \code{None}；\code{close(a,b,rel,abs)} 是 \code{math.isclose} 的薄封装，
+两通道一致性用 \code{rel=1e-6, abs=0.01}。
+
+% ============================================================
+\subsection{模型通道：\file{facts.json} 与证据校验}
+\label{sec:ext-llm}
+
+\subsubsection{分析师会话写什么}
+
+模型通道由分析师会话（第~\ref{sec:pipeline} 节阶段 2）完成：它运行 \code{locate} 拿到建议阅读页，用 Read 工具逐页读 PDF，
+按 \code{schema} 命令给出的指标清单把数字抄进 \file{facts.json}。每一条是一个对象：
+
+\begin{lstlisting}
+{"metric_id": "revenue", "period": "2024", "raw_value": "5,862,340,125.36",
+ "unit": "yuan", "page": 106, "label": "...", "table": "...", "scope": "consolidated"}
+\end{lstlisting}
+（实际文件中 \code{unit} 写中文单位“元”，\code{label} 与 \code{table} 写原文科目名与表名；此处为避免代码清单中的中文排版问题改写。）
+
+抽取规范对模型提出的要求都指向同一个目标——让程序能核对：\code{raw\_value} 与原文逐字一致（保留千分位与小数位，括号负数照写）；
+\code{page} 写 PDF 物理页；\code{unit} 按该表的“单位：”声明写；\code{scope} 固定为合并口径；毛利率等派生指标不要抽取；不要换算、不要相减；
+公司没有的科目不写，不要填 0。最后一条防止“填 0”混入真值表后在勾稽或估值中被当成真实数值。
+
+\subsubsection{条目校验 \code{\_to\_fact}}
+
+\code{external.ingest} 对每个条目依次检查定义~\ref{def:prob-accept} 的七个条件，任一失败即拒收并给出中文理由（表~\ref{tab:ext-reject}）。
+理由写得具体，是因为它们会原样回到分析师会话，作为修正指令。
+
+\begin{table}[t]
+\centering
+\caption{拒收理由（\code{external.\_to\_fact} 与 \code{\_pick\_doc}），按检查顺序排列。}
+\label{tab:ext-reject}
+\small
+\begin{tabularx}{\linewidth}{l X}
+\toprule
+检查 & 拒收理由模板 \\
+\midrule
+文件 & \code{source\_file} 未作为主文件或补充文件（\code{--supplement}）传入 \\
+指标 & 未知或不需抽取的指标（派生指标也在此拒收） \\
+期间 & 期间格式不合法（应为 2024 / 2024H1 / 2024Q3 / 2024Q1-3） \\
+口径 & 取自非合并报表（scope=…），只接受合并报表口径 \\
+数值 & 数值无法解析 \\
+页码 & 缺少页码 \\
+证据 & \code{<指标> <期间>=<原文写法>} 未在第 $p$ 页原文中找到 \\
+单位 & 单位不合法（金额类单位必须可换算为元） \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+通过的条目成为 \code{method="llm"}、\code{confidence="medium"} 的事实，来源记录证据 chunk 的页码、\code{chunk\_id}、标题、模型声明的表名以及抽取器标识
+（环境变量 \code{FINAGENT\_EXTRACTOR}，默认 \code{claude-code-skill}）。模型通道内部，同一键出现多次时：一致则记为佐证，不一致记 high 级 issue“同一指标多处取值不一致”。
+年报里同一数字常在“主要会计数据”和报表中各出现一次，模型两处都抄是允许的，而且两处一致本身就是一次核对。
+
+\subsubsection{证据校验 \code{find\_evidence}}
+
+\code{find\_evidence(doc, page, raw)} 实现证据谓词 $\operatorname{Ev}$：
+\begin{enumerate}
+\item \code{\_num\_pattern(raw)}：去空格、全角逗号转半角、去千分位、去首尾括号、去末尾百分号、统一减号后去掉前导负号，得到数字核 $\operatorname{core}(r)$；
+      核不是 \texttt{\textbackslash d+(\textbackslash .\textbackslash d+)?} 时返回 \code{None}（直接拒收）；否则编译正则
+      \texttt{(?<![\textbackslash d.])core(?![\textbackslash d])}；
+\item 取该页全部 chunk，表格在前、文本在后；
+\item 对每个 chunk 的文本做 \code{\_norm}（只删千分位逗号，\emph{保留}空白），用正则搜索，返回第一个命中的 chunk。
+\end{enumerate}
+
+表~\ref{tab:ext-evidence} 列出若干写法在一个单元格文本 \texttt{| 货币资金 | 3,884.59 | -1,234.56 | (77.10) |} 上的行为（本文实测）。
+
+\begin{table}[t]
+\centering
+\caption{证据匹配的边界行为（同一页只有该表格时）。}
+\label{tab:ext-evidence}
+\small
+\begin{tabularx}{\linewidth}{l c X}
+\toprule
+模型写的原文 & 结果 & 说明 \\
+\midrule
+\texttt{3,884.59} & \cmark & 千分位双方都去掉 \\
+\texttt{-1,234.56} / \texttt{(1,234.56)} / \texttt{1234.56} & \cmark & 符号与括号不参与匹配，三种写法都命中 \\
+\texttt{77.10} & \cmark & 逐字一致 \\
+\texttt{77.1} & \xmark & 右侧紧邻“0”是数字，边界不成立：要求保留原文小数位 \\
+\texttt{884.59} & \xmark & 左侧紧邻“3”是数字：防止子串误配 \\
+\texttt{3884} & \cmark & 右侧紧邻“.”不在右边界的排除集中（见 \S\ref{sec:ext-fail}） \\
+\texttt{12.34\%} & \xmark & 页面上没有 12.34 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\paragraph{为什么保留空白。}
+早期实现为了容忍 PDF 中数字内部偶尔出现的空格，在匹配前删除了全部空白。在招商轮船年报的船队表上，这导致相邻两格“235”与“3884.59”被拼成“2353884.59”，
+两个正确的抄写都因右边界不成立而被拒收。修复后 \code{\_norm} 只删逗号，并以 \file{tests/\allowbreak{}test\_evidence\_spacing.py} 固定：
+五个相邻数字逐一命中，拼接串 \code{2353884.59} 不命中。
+
+\paragraph{为什么符号不参与匹配。}
+年报对负数有三种写法：“-1,234.56”“(1,234.56)”“－1,234.56”，模型抄写时可能统一成其中一种。符号若参与匹配，会拒收大量正确抄写；
+符号的正确性由数值层面保证：\code{parse\_number} 按模型写的符号取值，再与规则通道和勾稽比对。若模型把负数抄成正数，证据校验会通过，
+但该键若同时被规则通道取到就会冲突；若只在模型通道（如政府补助），则依赖勾稽与人工复核（\S\ref{sec:ext-fail}）。
+
+\paragraph{为什么查页而不查格。}
+证据谓词只要求数字出现在\emph{那一页}，不要求它出现在\emph{那一行那一列}。原因是模型通道的条目不带行列坐标：让模型给出解析器意义下的行列号既不可靠，
+也会把解析器的切分错误转嫁给模型。页级证据挡住了“编造”和“抄错数字”两类错误，“抄对了数字但抄错了位置”（例如把上期列当本期）则交给规则通道比对与勾稽。
+这一分工在第~\ref{sec:problem} 节的证据谓词定义之后已有讨论；\S\ref{sec:ext-results} 的结果表明，两层检查叠加后，三家年报的 301 个模型核验值没有残留冲突。
+
+\begin{tradeoff}[：页级证据 vs.\ 单元格级证据]
+单元格级证据（要求模型同时给出行名，程序在该页表格中找到行名匹配且该行含此数字的单元格）更严格，可以直接挡住“看错一列”。
+我们评估过这一方案：(1)~模型写的行名与解析器得到的行名经常不同（折行、填列说明、全半角括号），需要再引入模糊匹配，模糊匹配又带来新的误配；
+(2)~续表上行名在续页、表头在上一页，单元格级证据需要跨页拼接；(3)~页级证据加规则通道比对已经覆盖了 93\% 的核验值（这部分等价于单元格级核对），
+剩下 7\% 集中在规则通道不覆盖的少数表（股本变动、政府补助、季度扣非）。边际收益不足以抵消复杂度，因此保留页级证据，把单元格级核对交给规则通道。
+\end{tradeoff}
+
+% ============================================================
+\subsection{双通道合并}
+\label{sec:ext-merge}
+
+\code{extract.merge(rule\_facts, llm\_facts, prefer)} 实现定义~\ref{def:prob-channels} 的合并规则，算法~\ref{alg:ext-merge} 给出完整过程。
+
+\begin{algorithm}[t]
+\caption{双通道合并 \code{merge}（流水线中 prefer = llm）}
+\label{alg:ext-merge}
+\begin{algorithmic}[1]
+\Function{Merge}{$F_R, F_L$, prefer}
+  \State $M\gets\{\}$；$I\gets[\,]$
+  \For{$f\in F_R$} \Comment{规则通道内部去重}
+    \If{$f.\kappa\notin M$} $M[f.\kappa]\gets f$
+    \ElsIf{\Call{Close}{$M[f.\kappa].v, f.v$}} $M[f.\kappa]$.corroborated\_by $\mathrel{+}= f.\Src$
+    \Else\ $I$ 追加 (high, 同一指标多处取值不一致)
+    \EndIf
+  \EndFor
+  \For{$f\in F_L$} \Comment{与模型通道比对}
+    \State $b\gets M.\text{get}(f.\kappa)$
+    \If{$b=\bot$} $M[f.\kappa]\gets f$ \Comment{只有模型通道：method = llm}
+    \ElsIf{\Call{Close}{$b.v, f.v$}} $b.\mu\gets$ rule+llm；$b$.corroborated\_by $\mathrel{+}= f.\Src$
+    \Else
+      \State $I$ 追加 (medium, 规则与LLM抽取不一致, 两侧原文与来源)
+      \If{prefer = llm} $M[f.\kappa]\gets f$ \EndIf
+    \EndIf
+  \EndFor
+  \State \Return $(M, I)$
+\EndFunction
+\end{algorithmic}
+\end{algorithm}
+
+合并的四种结局与它们对下游的影响列在表~\ref{tab:ext-merge}。
+
+\begin{table}[t]
+\centering
+\caption{双通道合并的结局。“阻断”指 \code{verify-facts} 返回非零、\code{pipelines.\_p\_analyze} 抛出异常，估值不会运行。}
+\label{tab:ext-merge}
+\small
+\begin{tabularx}{\linewidth}{l l l X}
+\toprule
+结局 & \code{method} & 阻断 & 说明 \\
+\midrule
+两通道一致 & \code{rule+llm} & 否 & 保留规则通道事实（定位细到行列），模型来源记为佐证 \\
+只有规则通道 & \code{rule\_table} & 否 & 多为上上年数据与 \code{reported\_yoy} 伪指标；模型只抄了本期与上期 \\
+只有模型通道 & \code{llm} & 否 & 已过证据校验；规则通道不覆盖的表（股本、政府补助、季度扣非） \\
+两通道冲突 & 保留 \code{llm} & 是 & 记 issue，含两侧原文与来源，由分析师会话回原文核对 \\
+同通道多处不一致 & — & 是 & 规则通道：多表同名科目口径不同；模型通道：两处抄写不一致 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\paragraph{为什么冲突时保留模型通道的值。}
+冲突时总得暂存一个值，后续的勾稽和报告才能运行，以便把冲突与其他问题一并展示给分析师会话。保留模型通道的值是因为它来自模型逐页读原文并已过证据校验，
+而规则通道在冲突处往往是版式问题（错列、续表未识别）；但这只是展示用的暂存，冲突本身照样阻断估值。注释中“不静默取舍”的含义是：\emph{取舍可以有，但必须留下记录并阻止下游使用}。
+
+\begin{proposition}[无静默取舍]
+\label{prop:ext-noselect}
+设 \code{merge} 的输出为 $(M, I)$。对任意键 $\kappa$，若两通道各有一条事实且不一致，则 $I$ 中存在一条以 $\kappa$ 的两侧原文为消息、以两侧来源为证据的 issue；
+进而 \code{verify-facts} 的 \code{ok} 为假，\code{pipelines.\_p\_analyze} 在 \code{--facts} 模式下抛出异常。
+\end{proposition}
+\begin{proof}
+由算法第 12～14 行，不一致时必追加 issue，其类型为“规则与LLM抽取不一致”。\code{cmd\_verify\_facts} 与 \code{\_p\_analyze} 都把类型属于
+\{同一指标多处取值不一致, 规则与LLM抽取不一致\} 的 issue 计入冲突，冲突非空时分别令 \code{ok} 为假、抛出 \code{ValueError}。
+\end{proof}
+
+这条性质是第~\ref{sec:principles} 节设计规范“双通道不静默取舍”在代码层面的保证，对应第~\ref{sec:problem} 节不变量~\ref{inv:noselect}。
+
+\paragraph{一致的容差。}
+\code{close(rel=1e-6, abs=0.01)}：相对误差 $10^{-6}$ 或绝对误差 1 分。两通道读的是同一份 PDF 的同一个数字，正常情况下应完全相等；
+容差只用于吸收浮点换算误差（例如“万元”乘 $10^4$ 后的二进制舍入）。它远小于任何一种真实的抄写错误（最小的是末位差 1，即 0.01 元，恰在边界上；
+末位差 2 以上即判冲突）。
+
+\paragraph{核心缺失。}
+合并后，\code{ingest} 检查 14 个核心指标在本期与上期是否存在。本期缺失标记为 \code{blocking}，上期缺失只报告。
+报告年度取 \code{fiscal\_year}，缺省时取事实中最新的年度。核心指标的选择依据是下游的硬依赖：估值的历史基数（收入、成本、EBIT 的组成、资本开支、经营现金流、货币资金）、
+股权桥（资产、负债、权益）和每股指标。
+
+% ============================================================
+\subsection{勾稽校验在抽取中的角色}
+\label{sec:ext-tieout}
+
+勾稽校验的定义（定义~\ref{def:prob-tieout}）与具体等式在第~\ref{sec:analysis} 节展开；这里只说明它在抽取环节的作用。
+\code{verify-facts} 在合并后立即对本期跑一次 \code{analyze()}，任何勾稽失败都阻断。勾稽能发现两通道比对发现不了的错误：
+\begin{itemize}
+\item \textbf{只在模型通道的数字}：例如资产负债表在续页而规则通道取不到时，“资产总计 = 负债和所有者权益总计”是唯一的自动核对；
+\item \textbf{两通道一致地错}：例如两条通道都把母公司报表的数字当成合并报表（白名单与 \code{scope} 都没拦住时），
+      “所有者权益合计 = 归母权益 + 少数股东权益”在母公司报表上通常不成立（母公司报表没有少数股东权益），会暴露出来；
+\item \textbf{期间看反}：列示同比与计算同比的核对对“本期列与上期列看反”极其敏感，同比的符号会直接相反。
+\end{itemize}
+
+% ============================================================
+\subsection{经营数据表：\code{extras}}
+\label{sec:ext-extras}
+
+\paragraph{动机。}
+深度研报需要的不只是三张报表：分产品、分渠道、分地区的收入与毛利率，产销量，经销商数量，吨价，分红率。这些数据格式千差万别，无法也不应该塞进 49 个指标的字典。
+但它们同样会出现在研报正文里，同样需要可追溯。\file{finagent/\allowbreak{}tasks/\allowbreak{}financials/\allowbreak{}extras.py} 为它们提供一条单独的通道：模型按原表逐字抄录，程序逐格回查；
+这些数据\emph{不进入真值表}、不参与估值的基础计算（分部预测除外，见第~\ref{sec:valuation} 节），只作为运行产物 \file{financials/extras.json} 供研报引用，guard 也以它为出处。
+
+\paragraph{格式。}
+一份 \file{extras.json} 包含若干表与若干比率。表有 \code{id}、\code{title}、\code{page} 与列定义（列名与单位）；每行有 \code{label}、可选 \code{alias}（正文简称，如“i茅台”）、
+可选行级 \code{page}，以及与列一一对应的原文写法。比率给出分子、分母引用与运算。
+
+\paragraph{逐格回查。}
+\code{verify\_extras} 对每张表：先检查列单位是否可接受（\code{\_unit\_ok}：在换算表中的金额单位，或不以“元”结尾的任意计量单位，如“\%”“pp”“吨”“载重吨”“元/吨”；
+以“元”结尾却不在换算表中的，如“美元”“千万元”，拒收——外币与少见量级必须换算后另写）；再逐行检查列数；再逐格：占位符记空，
+其余调用同一个 \code{find\_evidence} 在行级或表级页码上回查，找不到即拒收该格。金额列换算为元，其他单位原值保存。每个通过的格子都记录自己的证据 chunk。
+
+\paragraph{比率由程序算。}
+吨价、收入占比、分红率、同比增速、占比变动都\emph{不允许模型自己算}，只能写成比率声明，由 \code{\_ratios} 计算：
+\[
+\text{div}:\ \frac{\text{num}}{\text{den}}\times s,\qquad
+\text{growth}:\ \Big(\frac{\text{num}}{\text{den}}-1\Big)\times100,\qquad
+\text{diff}:\ \text{num}-\text{den}.
+\]
+系数 $s$ 由单位决定（\% 为 100，万元/吨为 $10^{-4}$，倍、元、元/吨、pp 为 1），其他单位必须显式写 \code{scale}；growth 只允许单位 \%。
+引用有三种：\code{[表 id, 行名, 列名]} 引用本文件中已核对的格子；\code{["truth", 指标, 期间]} 引用真值表；\code{["ratio", 比率 id]} 引用前面已算出的比率（按声明顺序，允许链式）。
+找不到引用、分母为零（diff 除外）、运算或单位不支持时，该比率记入拒收。
+
+\begin{example}[茅台酒吨价]
+茅台 2025 年报第 18 页“主营业务分产品”表中茅台酒营业收入 146,499,906,480.49 元，第 16～17 页销量表中茅台酒销量 46,750.66 吨。
+比率声明 \code{price\_moutai}：分子 \code{["product",} \code{"茅台酒","营业收入"]}，分母 \code{["volume","茅台酒","销量"]}，单位“万元/吨”。
+程序计算 $146{,}499{,}906{,}480.49 / 46{,}750.66 \times 10^{-4}$ 万元/吨（\code{test\_\allowbreak{}extras\_\allowbreak{}verified\_\allowbreak{}and\_\allowbreak{}ratios\_\allowbreak{}computed}），研报中的“茅台酒吨价 313.36 万元/吨”
+由 guard 在这一比率上按展示精度核对通过；若把收入抄错两位（\code{...480.94}），该格即被拒收，理由是“未在所写页码的原文中找到该数字”。
+\end{example}
+
+\paragraph{预检与正式运行。}
+\code{verify-extra} 命令在没有真值表的情况下运行（预检），引用真值表的比率以及依赖它们的链式比率被跳过（\code{\_ready}），只核对格子与表内比率；
+流水线的 \code{extras} 步骤在真值表就绪后运行，全部比率都会计算，任何拒收都会让流水线停止。
+
+\paragraph{规模。}
+三家真实年报的经营数据表规模见表~\ref{tab:ext-extras}，预检全部通过、拒收为 0。
+
+\begin{table}[t]
+\centering
+\caption{三家真实年报经营数据表（\file{data/\allowbreak{}extractions/\allowbreak{}<公司>\_2025/\allowbreak{}extras.json}）预检结果（本文重跑）。“比率”列为声明数 / 预检中计算数（其余引用真值表，正式运行时计算）。}
+\label{tab:ext-extras}
+\small
+\begin{tabular}{lrrrrr}
+\toprule
+公司 & 表 & 行 & 核对通过的格子 & 比率（声明 / 预检计算） & 拒收 \\
+\midrule
+贵州茅台 & 37 & 108 & 286 & 93 / 63 & 0 \\
+宁德时代 & 40 & 141 & 343 & 91 / 62 & 0 \\
+招商轮船 & 36 & 143 & 447 & 55 / 18 & 0 \\
+\midrule
+合计 & 113 & 392 & 1{,}076 & 239 / 143 & 0 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% ============================================================
+\subsection{季报与补充文件}
+\label{sec:ext-quarterly}
+
+\paragraph{多文件。}
+年报之外，分析常需要当年的一季报、半年报或三季报（例如用“全年 $-$ 前三季度累计”得到第四季度单季）。季报通过 \code{--supplement} 传入，可多次指定；
+\file{facts.json} 中来自季报的条目用 \code{source\_file} 写明文件名（按文件名匹配，不要求路径一致），证据在该文件中核对；
+未写 \code{source\_file} 的条目视为来自主文件。条目指向的文件没有传入时整条拒收，理由是“未作为主文件或补充文件传入”。
+\code{test\_\allowbreak{}supplement\_\allowbreak{}must\_\allowbreak{}be\_\allowbreak{}passed} 验证同一份 \file{facts.json} 不带 \code{--supplement} 时 \code{verify-facts} 返回 1，带上后返回 0。
+
+\paragraph{只走模型通道。}
+如 \S\ref{sec:ext-q-header} 所述，规则通道只跑主文件。季报事实全部是 \code{method="llm"}，期间标识由模型按抽取规范映射：
+一季报“本报告期”为 \code{Q1}、半年报为 \code{H1}、三季报“本报告期”为 \code{Q3} 单季、“年初至报告期末”为 \code{Q1-3}，季报资产负债表的期末数与该报告的累计期同期间。
+抽取规范还特别提醒：三季报没有第三季度单季的经营现金流，不要把累计数填成 \code{Q3}。
+
+\paragraph{单季拆分。}
+季报事实进入真值表后，单季拆分与分季度勾稽由 \code{analyze} 完成（第~\ref{sec:analysis} 节）。样例中三季报的营业成本只有前三季度累计，
+程序推出第四季度营业成本 $= 4{,}034{,}118{,}660.40 - 2{,}815{,}640{,}000.00$ 元，公式记为“全年 − 前三季度累计”；
+年报分季度表的第四季度营业收入与“全年 − 三季报前三季度累计”相互印证，勾稽全部通过（\code{test\_\allowbreak{}supplement\_\allowbreak{}q4\_\allowbreak{}equals\_\allowbreak{}full\_\allowbreak{}year\_\allowbreak{}minus\_\allowbreak{}q1\_\allowbreak{}3}）。
+
+% ============================================================
+\subsection{\code{verify-facts} 与 \code{verify-extra} 的完整流程}
+\label{sec:ext-verify}
+
+两个命令是分析师会话与计算引擎之间的接口，也是流水线阶段 2、5 的闸门判据（附录~\ref{app:gates}）。它们不生成运行目录，可以反复调用。
+
+\begin{figure}[t]
+\centering
+\begin{tikzpicture}[node distance=4mm and 5mm, font=\small]
+\node[file] (in) {年报.pdf · facts.json\\{[}季报.pdf{]}};
+\node[prog, right=of in] (load) {解析主文件\\与补充文件};
+\node[prog, right=of load] (ing) {\code{ingest}\\逐条校验};
+\node[prog, below=of ing] (rule) {规则通道\\(仅主文件)};
+\node[prog, below=of rule] (mg) {\code{merge}\\prefer=llm};
+\node[prog, left=of mg] (miss) {核心缺失\\本期/上期};
+\node[prog, left=of miss] (an) {\code{analyze}\\勾稽};
+\node[gate, below=6mm of miss] (ok) {ok?};
+\node[file, right=10mm of ok] (vf) {facts.verified.json};
+\draw[arr] (in) -- (load); \draw[arr] (load) -- (ing); \draw[arr] (ing) -- (rule); \draw[arr] (rule) -- (mg);
+\draw[arr] (mg) -- (miss); \draw[arr] (miss) -- (an);
+\draw[arr] (an) |- (ok); \draw[arr] (ok) -- (vf);
+\node[below=3mm of ok, font=\scriptsize, align=center] {ok $=$ Rej$=\emptyset$ $\wedge$ Conf$=\emptyset$ $\wedge$ 无勾稽失败 $\wedge$ 无本期核心缺失；退出码 0 / 1};
+\end{tikzpicture}
+\caption{\code{verify-facts} 的执行流程。结果（含全部事实、issue、拒收与缺失清单）写入 \file{facts.verified.json}，摘要打印到标准输出供模型会话读取。}
+\label{fig:ext-verify}
+\end{figure}
+
+\paragraph{\code{verify-facts}。}
+\code{python -m finagent verify-facts --input 年报.pdf --year 2025 --facts facts.json [--supplement 季报.pdf] [--out 路径]}：
+\begin{enumerate}
+\item 解析主文件与每个补充文件；
+\item \code{ingest}：逐条校验（表~\ref{tab:ext-reject}）、模型通道内去重、跑规则通道、\code{merge(prefer="llm")}、统计拒收、计算核心缺失；
+\item 若有事实，以 \code{--period}（缺省为最新的有营业收入的年度）跑 \code{analyze()}，取勾稽失败项；
+\item 汇总 \code{ok} $=$ 无拒收 $\wedge$ 无冲突 $\wedge$ 无勾稽失败 $\wedge$ 无本期核心缺失（定义~\ref{def:prob-extract-pass}）；
+\item 把完整结果与检查摘要写入 \file{facts.verified.json}（缺省与 \file{facts.json} 同目录），打印摘要（\code{ok}、统计、拒收、冲突、勾稽失败、缺失清单）；
+\item \code{ok} 为真返回 0，否则返回 1。
+\end{enumerate}
+分析师会话的工作方式是“抄写—校验—按清单修正—再校验”，直到返回 0。流水线状态检查（\code{report\_pipeline status}）对阶段 2 的判据除了 \code{ok}，
+还要求 \file{facts.verified.json} 晚于 \file{facts.json}，防止改了抽取文件却没重新校验。
+
+\paragraph{流水线中的同一检查。}
+正式运行 \code{python -m finagent all ... --facts facts.json} 时，\code{extract} 步骤调用同一个 \code{ingest}，\code{analyze} 步骤在算完勾稽后做同样的四项检查，
+任一不满足即抛出“模型抽取未通过校验，请先运行 verify-facts 并处理拒收、冲突、勾稽失败和核心缺失项”。因此即使跳过了 \code{verify-facts}，
+未通过校验的抽取也无法进入估值。不带 \code{--facts} 时只走规则通道（样例回归与引擎测试），此时不做阻断检查，冲突与勾稽结果照常写进报告。
+
+\paragraph{\code{verify-extra}。}
+\code{python -m finagent verify-extra --input 年报.pdf --extras extras.json}：调用 \code{verify\_extras}（无真值表，预检模式），打印 \code{ok}、表数、核对通过的格子数与拒收清单；
+有拒收返回 1。流水线的 \code{extras} 步骤在真值表就绪后再跑一次完整版本，拒收即停止。
+
+\paragraph{追溯。}
+正式运行时，模型提交的原始 \file{facts.json} 被原样写入运行目录 \file{financials/\allowbreak{}skill\_\allowbreak{}extraction.json}，合并后的事实写入 \file{financials/facts.json} 与 \file{facts.csv}，
+全部文件读写经 \code{tracing} 记录哈希。评审复现不需要调用任何模型：仓库 \file{data/\allowbreak{}extractions/\allowbreak{}<公司>\_<年度>/\allowbreak{}} 保存了模型写下的抽取文件，
+用 \code{--facts} 重跑即可重新做全部证据校验、规则比对与计算（\file{data/\allowbreak{}extractions/\allowbreak{}README.md}）。
+
+% ============================================================
+\subsection{真实年报上的结果}
+\label{sec:ext-results}
+
+\paragraph{样例回归。}
+虚构样例公司“星河智造”（\file{data/\allowbreak{}samples/\allowbreak{}annual\_report\_2024.md}）的 35 个金标准字段（\file{eval/\allowbreak{}gold\_financials.json}）在纯规则通道下全部正确取到
+（\file{eval/\allowbreak{}run\_eval.py}：字段准确率 100.0\%，35/35）。样例内部完全自洽，只用于回归，不代表真实版式上的效果。
+
+\paragraph{三家真实年报。}
+贵州茅台、宁德时代、招商轮船 2025 年报的模型抽取文件由分析师会话写出并随代码提交。表~\ref{tab:ext-real} 是本文在当前代码上对这三份文件重新运行 \code{ingest} 的结果。
+
+\begin{table}[t]
+\centering
+\caption{三家真实年报的双通道结果（当前代码重跑）。“佐证”为 \code{rule+llm}，即模型核验值中规则通道独立取到且一致的数量；
+“仅规则”多为上上年数据与列示同比伪指标。}
+\label{tab:ext-real}
+\small
+\begin{tabular}{lrrrrrrrr}
+\toprule
+公司 & 模型条目 & 拒收 & 规则事实 & 佐证 & 仅模型 & 仅规则 & 冲突 & 勾稽（通过/总） \\
+\midrule
+贵州茅台 & 98 & 0 & 136 & 90 & 8 & 18 & 0 & 20/20 \\
+宁德时代 & 106 & 0 & 119 & 101 & 5 & 8 & 0 & 15/15 \\
+招商轮船 & 97 & 0 & 144 & 89 & 8 & 23 & 0 & 21/21 \\
+\midrule
+合计 & 301 & 0 & 399 & 280 & 21 & 49 & 0 & 56/56 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+三家共 301 个模型核验值，全部通过证据校验；规则通道独立取到并一致的 280 个，覆盖率 93.0\%；两通道都有值但不一致的键为 0；全部 56 项勾稽通过。
+仓库提交记录（\code{aee4274}）在稍早版本的抽取文件上报告的口径是“314 个核验值，规则通道取到 293 个（原 128 个），错配 0”，覆盖率 93.3\%；
+两者的差别来自其后抽取文件的修订，结论一致。
+
+\paragraph{规则通道没取到的 21 个值。}
+逐个看“仅模型”的事实（表~\ref{tab:ext-gap}），它们集中在规则通道已知不覆盖的位置，与项目文档“已知问题”一节的记录一致。
+
+\begin{table}[t]
+\centering
+\caption{规则通道未取到的 21 个模型核验值。}
+\label{tab:ext-gap}
+\small
+\begin{tabularx}{\linewidth}{l l r X}
+\toprule
+指标 & 公司 & 个数 & 原因 \\
+\midrule
+总股本 \code{total\_shares} & 三家 & 6 & 在股本变动表（茅台第 47 页等），表头不是期间，规则通道不识别 \\
+政府补助 \code{gov\_subsidy} & 茅台、招商 & 4 & 非经常性损益表中的科目名带长括号说明，别名不完全覆盖各家写法 \\
+季度扣非净利润 & 茅台、招商 & 8 & 分季度表里写成“归属于上市公司股东的扣除非经常性损益后的净利润”等别名变体 \\
+折旧 \code{depreciation} & 宁德 & 2 & 第 201 页补充资料版式 \\
+资产总计 2023 & 宁德 & 1 & 主要会计数据表中的上上年数据位置特殊 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\paragraph{修复前后。}
+表~\ref{tab:ext-before-after} 比较了版式修复（稀疏列合并、续表链接、折行合并）前后的规则通道。修复前的数字取自仓库中更早生成、随代码提交的 \file{facts.verified.json}，
+修复后为表~\ref{tab:ext-real} 的重跑结果。最大的变化在宁德时代：修复前规则通道一个事实也取不到，原因正是 \S\ref{sec:ext-sparse} 的稀疏网格；
+茅台与招商轮船的提升主要来自续表链接，三张主表的续页科目从“全部缺失”变为可取。
+
+\begin{table}[t]
+\centering
+\caption{版式修复前后的规则通道（“佐证”为模型核验值中被规则通道独立取到且一致的数量）。}
+\label{tab:ext-before-after}
+\small
+\begin{tabular}{lrrrr}
+\toprule
+ & \multicolumn{2}{c}{规则事实数} & \multicolumn{2}{c}{佐证数} \\
+\cmidrule(lr){2-3}\cmidrule(lr){4-5}
+公司 & 修复前 & 修复后 & 修复前 & 修复后 \\
+\midrule
+贵州茅台 & 98 & 136 & 60 & 90 \\
+宁德时代 & 0 & 119 & 0 & 101 \\
+招商轮船 & 97 & 144 & 55 & 89 \\
+\midrule
+合计 & 195 & 399 & 115 & 280 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{如何读这些数字。}
+“错配 0”的含义是：在两条通道都给出值的 280 个键上，没有一个键的两个值不同。它不是对“抽取完全正确”的证明——两条通道可能一致地错——
+但两条通道的出错机制几乎独立（一个是解析器的结构错误，一个是模型的阅读错误），一致地错需要两者在同一格上犯同一个错，概率很低；
+再叠加勾稽，资产负债表恒等式、非经常性损益恒等式、列示同比、分季度加总四组共 56 项核对全部通过。
+三家年报只是开发集，结论的外推受限于样本量；更大规模的评测集正在收集中（第~\ref{sec:limits} 节）。
+
+\paragraph{一个样例：茅台的营业收入。}
+茅台 2025 年营业收入 168,838,102,514.79 元在真值表中的主来源是第 6 页“近三年主要会计数据和财务指标”表（规则通道，带行列坐标），
+佐证来源有三处：第 9 页的同一数字，以及第 61 页合并利润表“其中：营业收入”行（规则通道与模型通道各一次；营业总收入被排除）。
+同表列示的同比 $-1.21\%$ 与计算同比 $(1{,}688.38-1{,}708.99)/1{,}708.99=-1.206\%$ 在 $\halfulp+0.01$ 容差内一致。
+这个数字在真值表中有四处来源记录和一项勾稽。
+
+% ============================================================
+\subsection{失败案例与边界情况}
+\label{sec:ext-fail}
+
+\begin{failcase}[：整数写法的前缀匹配]
+数字边界正则的右边界只排除数字，不排除小数点（\texttt{(?![\textbackslash d])}）。因此原文是“3,884.59”时，模型若写成整数“3884”，证据校验\emph{会通过}（表~\ref{tab:ext-evidence}）。
+这是有意的妥协：年报正文中的整数常紧跟句号（“员工 3,884 人。”），把小数点也列为右边界会拒收这类正确抄写。代价是“截掉小数部分”的抄写不被证据层挡住。
+实际影响有限：截断后的数值与规则通道（若覆盖）差值远超容差，会判冲突；报表金额都带两位小数，抽取规范要求保留小数位。
+更严格的做法是右边界改为“非数字，且若为小数点则其后不是数字”，我们记为待改进项。
+\end{failcase}
+
+\begin{failcase}[：模型声明的单位未与页面单位核对]
+\code{\_to\_fact} 取单位的顺序是“条目的 \code{unit} 字段，缺省才用证据 chunk 的 \code{unit\_hint}”，两者不一致时不报错。
+若模型把“单位：万元”的表格写成“元”，证据校验通过、数值小了 $10^4$ 倍。防线依次是：规则通道覆盖的键会冲突；资产负债表恒等式要求同一张表的科目单位一致才能成立；
+列示同比对单位不敏感（分子分母同时缩放），挡不住“两年都写错单位”的情况。仅模型通道的指标（如政府补助）缺少自动防线。
+把 \code{unit} 与 \code{unit\_hint} 比对并在不一致时拒收是直接的改进，但 \code{unit\_hint} 本身来自整页或最近声明，同页多单位时可能不准，需要先评估误拒率。
+\end{failcase}
+
+\begin{failcase}[：页级证据接受“看错一列”]
+资产负债表“期末余额 / 期初余额”两列都在同一页，模型把期初数写成本期，证据校验通过。抽取规范把“期间列”列为第二个易错点。
+规则通道覆盖时冲突；不覆盖时，若是资产负债表科目，恒等式通常仍成立（两列各自平衡），挡不住。这正是 \S\ref{sec:ext-llm} 权衡中单元格级证据的优势所在。
+在三家真实年报的开发过程中，这类错误\fab{出现过 2 次}，都被规则通道的冲突检出。
+\end{failcase}
+
+\begin{failcase}[：表格标题识别失败导致白名单失效]
+无标题的表默认被视为来源表（白名单条件 2）。若一张附注明细表的标题没被识别到，又沿用了上一张主表的标题，它会被当成主表取数。
+在真实年报上，这表现为规则通道内部的“同一指标多处取值不一致”，会阻断，并在 issue 中给出两处来源，便于定位。
+它不会静默污染真值表，但会产生需要人工判断的阻断；当前三家年报上该类 issue 为 0。
+\end{failcase}
+
+\paragraph{版式之外的边界。}
+(1)~招股书（宇树科技）没有“主要会计数据和财务指标”这一节，而是“主要财务数据和财务指标”，\code{locate} 的 \code{key\_data} 关键词“主要财务指标”仍能命中；
+报告期为三年一期，期间标识照常适用。(2)~港股年报（农夫山泉）为英文或繁体版式、单位为“人民币千元”，不在当前适配范围内。
+(3)~追溯调整：主要会计数据表含“调整前 / 调整后”两列时，调整前列被标为 \code{skip} 不取数，并记一条 medium 级 issue“追溯调整”，提醒同比使用调整后数据；
+该 issue 同时被第~\ref{sec:analysis} 节的会计口径信号 S8 引用。
+
+% ============================================================
+\subsection{小结}
+\label{sec:ext-summary}
+
+本章的抽取设计可以概括为三层约束：模型抄写的数字必须在所写页码找到（证据层），必须与独立的规则通道一致（交叉层），必须满足会计恒等式与财报自带的同比（勾稽层）；
+任何一层的问题都以带来源的 issue 形式阻断估值，而不是被静默修正。为了让交叉层真正起作用，规则通道必须在真实年报上有足够覆盖，
+这推动了稀疏网格合并、跨页续表链接、科目折行合并与同页多单位定位等一系列针对真实版式的算法；它们共同的原则是“宁可漏取，不可错配”。
+在三家真实年报的 301 个模型核验值上，证据层零拒收，交叉层覆盖 93.0\% 且零冲突，勾稽层 56 项全部通过。
+得到的真值表是第~\ref{sec:analysis} 节财报分析、第~\ref{sec:valuation} 节估值与第~\ref{sec:reportcheck} 节研报纠错的唯一数据来源。

@@ -1,0 +1,959 @@
+% 第 8 章 自动化估值建模
+\section{估值建模}
+\label{sec:valuation}
+
+自动化估值建模选题要求系统给出“分部预测、三表联动、DCF 与可比公司估值、情景与敏感性分析”，并写明假设、适用范围与风险。
+这件事交给大语言模型直接做，会在三个地方出错。第一是算术：一张五年期三表模型加三情景 DCF 涉及上千次乘除与累加，
+模型逐格心算必然出现进位、符号与单位错误。第二是口径：模型写出的 DCF 利润率、营运资本占比与它在“盈利预测”表里
+写的三表数字往往互不相干，研报读者看到的估值与预测表来自两套隐含假设。第三是结论：评级、目标价由模型“综合判断”
+给出，既无法复算，也容易与正文估值数字矛盾。
+
+\sysname{} 的估值链按第~\ref{sec:principles}~节“理解与计算分离”的原则组织：分析师会话只写一份估值假设文件
+\file{valuation\_assumptions.json}（全部是观点与假设，附逐项依据），其余由不调用模型的确定性 Python 引擎完成。
+本章逐模块写清公式与实现，重点放在第~\ref{sec:prob-task4}~节形式化定义之外的算法细节、工程取舍和数值实例。
+第~\ref{sec:prob-task4}~节已经给出三表约束（式~\eqref{eq:prob-bs}～\eqref{eq:prob-fixpoint}）、股权价值桥
+（式~\eqref{eq:prob-bridgeeq}）、评级函数（式~\eqref{eq:prob-rating}）、反向 DCF 定义（式~\eqref{eq:prob-rdcf}）
+与正确性准则 (V1)～(V6)；第~\ref{sec:related}~节给出 FCFF、EV 与 EBIT 的教科书定义（式~\eqref{eq:rel-fcff}、
+\eqref{eq:rel-ev}、\eqref{eq:rel-ebit}）。本章不重复推导，只在实现与教科书口径不同的地方展开。
+
+本章的主要设计可以概括为四点：
+\begin{enumerate}
+\item \textbf{单一驱动源}：DCF 的六个预测向量（收入增速、EBIT 利润率、税率、折旧摊销率、资本开支率、营运资本占比）
+全部取自三表模型同一情景的输出，DCF 运行后再逐期核对还原值与三表输出，偏差超过 $10^{-6}$ 百万元即判硬性失败（第~\ref{sec:val-dcf}~节）。
+\item \textbf{经营性 EBIT 与轧差经营费用}：EBIT 剔除投资收益与公允价值变动，三表模型把经营费用定义为“毛利 − EBIT − 折旧摊销”的轧差项，
+使历史期三表 EBIT 与 DCF 基期 EBIT 恒等；被剔除损益对应的资产经逐项证据核对后在股权桥加回（第~\ref{sec:val-ts}~节）。
+\item \textbf{程序给评级、程序解反向问题}：评级由基准情景每股价值相对参考股价的空间按固定阈值给出；“现价隐含了什么”由网格扫描加二分法逐变量求解，
+并按历史区间分档，文字只能引用分档（第~\ref{sec:val-reverse}、\ref{sec:val-rating}~节）。
+\item \textbf{可审计的公式工作簿}：用标准库手写 OOXML，生成输入蓝、公式黑、跨表引用绿的投行排版 Excel，预测期每格都是公式且带缓存值；
+质检侧用只读审计器独立复算五组勾稽并检查跨期公式一致性（第~\ref{sec:val-workbook}~节）。
+\end{enumerate}
+
+% ======================================================================
+\subsection{估值链总览}
+\label{sec:val-overview}
+
+图~\ref{fig:val-chain} 是估值链的全貌。主链自上而下：真值表 $\Truth$ 与经营数据表（\file{extras.json}）提供基期，
+估值假设文件提供驱动；分部预测把“销量 × 单价”折算成收入增速、综合毛利率与经营费用率并覆盖假设文件中的对应向量；
+三表引擎在三个情景下各跑一遍，导出 DCF 驱动；DCF 引擎只负责折现、终值与股权价值桥；最后由程序给出每股价值区间与评级。
+旁路有四条：反向 DCF、情景偏度表、可比公司估值、公式工作簿。
+
+\begin{figure}[t]
+\centering
+\begin{tikzpicture}[node distance=5mm and 6mm, every node/.style={font=\scriptsize}]
+\node[file] (truth) {真值表 $\Truth$\\analysis.json};
+\node[file, right=of truth] (extras) {extras.json\\经营数据};
+\node[agent, right=of extras, text width=30mm] (assump) {分析师会话\\valuation\_assumptions.json};
+\node[prog, below=7mm of extras, text width=34mm] (seg) {分部预测\\segment\_forecast.py};
+\node[prog, below=of seg, text width=34mm] (ts) {三表联动 $\times$ 3 情景\\three\_statement.py / ts\_engine.py};
+\node[prog, below=of ts, text width=34mm] (plan) {DCF 计划\\build\_plan.py};
+\node[prog, below=of plan, text width=34mm] (dcf) {FCFF DCF + 敏感性\\dcf.py / run.py};
+\node[gate, right=6mm of dcf] (tie) {三表\\核对};
+\node[prog, below=of dcf, text width=34mm] (rate) {每股价值区间与评级\\forecast\_summary.py};
+\node[prog, left=10mm of plan, text width=24mm] (nonop) {非经营性资产\\逐项证据核对};
+\node[prog, left=10mm of dcf, text width=24mm] (rdcf) {反向 DCF\\reverse\_dcf.py};
+\node[prog, left=10mm of rate, text width=24mm] (scen) {情景偏度表\\scenarios.py};
+\node[prog, right=6mm of rate, text width=24mm] (comps) {可比公司\\comps.py};
+\node[prog, below=6mm of rate, text width=78mm] (wb) {公式联动工作簿 model.xlsx、comps\_formula\_workbook.xlsx\\workbook.py、workbook\_ts.py、output/xlsx.py};
+\draw[arr] (extras) -- (seg);
+\draw[arr] (truth) |- (seg);
+\draw[arr] (assump) |- (seg);
+\draw[arr] (seg) -- node[right]{增速 / 毛利率 / 费用率} (ts);
+\draw[arr] (ts) -- node[right]{dcf\_drivers} (plan);
+\draw[arr] (plan) -- (dcf);
+\draw[darr] (dcf) -- (tie);
+\draw[darr] (ts.east) -| (tie.north);
+\draw[arr] (dcf) -- (rate);
+\draw[arr] (assump.south) |- (nonop.north east);
+\draw[arr] (nonop) -- (plan);
+\draw[arr] (dcf) -- (rdcf);
+\draw[arr] (dcf.south west) -- (scen.north east);
+\draw[arr] (dcf.south east) -- (comps.north west);
+\draw[arr] (rate) -- (wb);
+\end{tikzpicture}
+\caption{估值链。蓝色为确定性程序，橙色为模型会话，红色菱形为程序核对点。模型只写假设文件；
+非经营性资产明细要逐项回查年报原文；DCF 预测向量取自三表模型并在运行后逐期核对。}
+\label{fig:val-chain}
+\end{figure}
+
+表~\ref{tab:val-modules} 列出各模块的职责、规模与守护测试。整条链在 \code{finagent/pipelines.py} 中注册为 \code{valuation}
+流水线的八个步骤（\code{three\_statement → build\_plan → dcf → reverse\_dcf → scenarios → forecast\_summary → comps → valuation\_report}），
+每步产物经 \code{tracer.write\_artifact} 落盘并记录哈希（第~\ref{sec:arch}~节）。样例公司全流程（含财报分析与研报纠错）在本机耗时 0.06 秒，
+三家真实公司的估值流水线（含 PDF 解析与证据回查）各 5～10 秒。
+
+\begin{table}[t]
+\centering
+\caption{估值模块一览（行数为源文件行数，含注释）。}
+\label{tab:val-modules}
+\footnotesize
+\begin{tabularx}{\linewidth}{@{}>{\raggedright\arraybackslash}p{3.0cm} r X >{\raggedright\arraybackslash}p{3.7cm}@{}}
+\toprule
+模块 & 行数 & 职责 & 主要测试 \\
+\midrule
+\file{segment\_forecast.py} & 111 & 分部量价 → 收入增速、综合毛利率、费用率 & \file{test\_segment\_units} \\
+\file{three\_statement.py} & 296 & A 股科目 → 引擎 plan；导出 DCF 驱动 & \file{test\_quarterly\_ebit} \\
+\file{ts\_engine.py} & 661 & 三表联动、不动点、勾稽、情景、单因素敏感性 & \file{test\_golden} \file{test\_parity\_reference} \\
+\file{build\_plan.py} & 160 & 经营性 EBIT、DCF plan、非经营性资产核对 & \file{test\_financial\_model\_todos} \\
+\file{dcf.py} \file{run.py} & 285 88 & FCFF 折现、终值、股权桥、敏感性、三表核对 & \file{test\_parity\_reference} \file{test\_quarterly\_ebit} \\
+\file{reverse\_dcf.py} & 193 & 单变量反向 DCF（网格 + 二分） & \file{test\_reverse\_dcf} \\
+\file{scenarios.py} \file{scenario\_tables.py} & 110 405 & 情景偏度、倍数/EPS/KPI/流动性敏感性、触发表 & \file{test\_golden} \file{test\_parity\_reference} \\
+\file{comps.py} & 476 & 可比公司倍数、IQR 离群、利润率对比、公式工作簿 & \file{test\_golden} \file{test\_quarterly\_ebit} \\
+\file{forecast\_summary.py} & 94 & 盈利预测表、市场数据、程序评级 & \file{test\_new\_modules} \\
+\file{workbook.py} \file{workbook\_ts.py} & 594 458 & model.xlsx 各页（公式联动三表、DCF、WACC） & \file{test\_quarterly\_ebit} \file{test\_workbook\_audit} \\
+\file{output/xlsx.py} & 525 & 标准库 OOXML 写出与投行排版 & \file{test\_golden} \\
+\file{workbook\_audit.py} & 266 & （evaluation/）工作簿只读审计（公式结构、五组勾稽） & \file{test\_workbook\_audit} \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\paragraph{单位约定。} 财务事实在真值表内统一以元存储；进入估值链时除以 $10^6$ 换算为百万元，股本为百万股，每股价值与股价为元，
+比率在估值模块内部存小数（0.082 表示 8.2\%），输出到盈利预测表时再按全书约定换成百分数值。这条边界在 \code{three\_statement.\_hist}
+与 \code{build\_plan.\_v} 两处集中完成，下游不再做单位判断。
+
+\paragraph{谁写什么。} 表~\ref{tab:val-inputs} 是假设文件的字段与生效方式。它的设计目标是“模型只能写观点，不能写计算结果”：
+文件里没有每股价值、没有 EBIT 利润率路径，也没有非经营性资产合计数——这些要么由程序算，要么由程序从原文数字加总。
+
+\begin{table}[t]
+\centering
+\caption{估值假设文件字段（分析师会话起草，全部为观点/假设）。}
+\label{tab:val-inputs}
+\small
+\begin{tabularx}{\linewidth}{@{}l X@{}}
+\toprule
+字段 & 含义与生效方式 \\
+\midrule
+\code{current\_price}、\code{price\_source} & 参考股价及来源（外部数据，须登记在 $\Sources$）；用于上行空间、反向 DCF、倍数 \\
+\code{wacc.*} & $R_f$、$\beta$、ERP、规模/特定/国别溢价、税前债务成本、边际税率、目标资本结构权重（和须为 1） \\
+\code{terminal\_value} & 终值方法（永续增长或退出倍数）、永续增长率、退出 EV/EBITDA 倍数 \\
+\code{scenarios.\{base,downside,upside\}} & 只保留 \code{revenue\_growth}、\code{capex\_percent\_revenue}、\code{terminal\_growth\_rate}、\code{wacc\_adjustment} 与情景说明 \\
+\code{three\_statement.*} & 可选：毛利率/费用率路径、\code{gross\_margin\_shift}、\code{ar\_days\_shift}、\code{dividend\_payout} \\
+\code{segment\_forecast} & 可选：各分部各情景的销量增速、单价增速、毛利率变动（百分点）与分项费用率；生效时覆盖收入增速、毛利率、费用率 \\
+\code{non\_operating\_assets} & 数字（百万元）或明细列表 \code{[\{label, raw\_value, unit, page, sign\}]}；明细逐项回查原文 \\
+\code{scenario\_probabilities}、\code{rating\_rule} & 可选：情景概率（默认 25/50/25）与评级阈值覆盖 \\
+\code{sensitivities} & 敏感性轴（WACC、永续增长率、退出倍数、收入增速、利润率的变动档位） \\
+\code{rationale.*} & 逐项依据，须引用资料包 \code{[S编号]}（阶段 6 闸门检查，第~\ref{sec:pipeline}~节） \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+% ======================================================================
+\subsection{分部量价预测}
+\label{sec:val-segment}
+
+\paragraph{动机。} 卖方研报的预测逻辑通常从业务驱动出发：白酒拆成茅台酒与系列酒的“吨数 × 吨价”，动力电池拆成“GWh × 单价”。
+如果假设文件直接写合并收入增速，经营分析里讲的量价故事与估值里的数字之间没有可检查的对应关系。分部预测把这种对应关系变成程序约束：
+文稿里写到的变化必须在 \code{segment\_forecast} 的参数里出现，收入增速由程序从量价推出。
+
+\paragraph{基期。} 设分部 $j$ 的基期收入 $R_{j,0}$、营业成本 $C_{j,0}$ 取自经营数据表 \code{product} 行，销量 $Q_{j,0}$ 取自 \code{volume} 行
+（两张表都经 \code{verify-extra} 逐格回查原文，第~\ref{sec:extract}~节）。程序计算
+\begin{equation}
+P_{j,0}=\frac{R_{j,0}}{Q_{j,0}}\times 100,\qquad m_{j,0}=1-\frac{C_{j,0}}{R_{j,0}},
+\label{eq:val-seg-base}
+\end{equation}
+其中 $R$ 以百万元计、$Q$ 以吨计时 $P$ 的单位是万元/吨（百万元/吨 $\times 100$）。未拆分部分记为“其他业务”：
+$R^{\text{oth}}=R_0-\sum_j R_{j,0}$，$C^{\text{oth}}=C_0-\sum_j C_{j,0}$，预测期保持基期金额不变。
+
+\paragraph{递推。} 情景 $s$ 下给定销量增速 $v_{j,t}^s$、单价增速 $p_{j,t}^s$、毛利率变动 $\Delta m_{j,t}^s$（百分点），
+\begin{align}
+Q_{j,t}&=Q_{j,t-1}(1+v_{j,t}^s), & P_{j,t}&=P_{j,t-1}(1+p_{j,t}^s), & m_{j,t}&=m_{j,t-1}+\Delta m^s_{j,t}/100,\\
+R_{j,t}&=Q_{j,t}P_{j,t}/100, & C_{j,t}&=R_{j,t}(1-m_{j,t}), &
+R_t&=R^{\text{oth}}+\textstyle\sum_j R_{j,t},
+\end{align}
+综合毛利率 $m_t=1-(C^{\text{oth}}+\sum_j C_{j,t})/R_t$，收入增速 $g_t=R_t/R_{t-1}-1$（$R_0$ 为报表营业收入）。
+
+\paragraph{费用率。} 三表口径的经营费用率（不含折旧摊销）拆为五项：税金及附加率、销售、管理、研发费用率，以及“其他”——
+基期轧差 $o^{\text{oth}}_0 = o_0 - (o^{\text{tax}}_0+o^{\text{sell}}_0+o^{\text{adm}}_0+o^{\text{rd}}_0)$，预测期保持不变。
+假设文件可按情景覆盖任一分项（标量、向量或按情景的字典），未覆盖的取基期值。$o_0$ 的定义见第~\ref{sec:val-ts}~节式~\eqref{eq:val-opex}。
+
+\paragraph{生效方式。} \code{segment\_forecast.apply} 把 $g^s_t$ 写入 \code{scenarios.*.revenue\_growth}，把 $m^s_t$、$o^s_t$ 写入
+\code{three\_statement.gross\_margin\_by\_scenario} 与 \code{opex\_pct\_by\_scenario}，三表模型优先使用这两个按情景的向量。
+假设文件里同名的 \code{revenue\_growth} 因此只是占位，三家真实公司的假设文件都在 \code{rationale.revenue\_growth} 中写明了这一点。
+
+\paragraph{单位处理。} 分部销量的单位因行业而异。假设文件可写 \code{volume\_unit}、\code{price\_label}、\code{price\_unit}
+（宁德时代写 GWh、单价、万元/GWh），缺省为吨、吨价、万元/吨。这三个字段只影响工作簿“分部预测”页的表头，不进入计算：
+式~\eqref{eq:val-seg-base} 中的“$\times 100$”对任何销量单位都成立，因为它只是把“百万元/单位”改写为“万元/单位”。
+\file{tests/test\_segment\_units.py} 检查两点：未指定时产物不出现 \code{volume\_unit} 字段（茅台的既有产物不变）；
+指定 GWh 时工作簿行标签全部换成“销量（GWh）”“单价（万元/GWh）”，且不残留“吨”字。
+
+\begin{table}[t]
+\centering
+\caption{两家真实公司的分部基期（2025 年，程序由经营数据表计算；金额百万元）。}
+\label{tab:val-seg-real}
+\small
+\begin{tabular}{@{}llrrrrr@{}}
+\toprule
+公司 & 分部 & 收入 & 成本 & 销量 & 单价 & 毛利率 \\
+\midrule
+\multirow{2}{*}{贵州茅台} & 茅台酒 & 146,499.9 & 9,484.8 & 46,750.66 吨 & 313.36 万元/吨 & 93.5\% \\
+ & 系列酒 & 22,274.7 & 5,321.1 & 38,353.48 吨 & 58.08 万元/吨 & 76.1\% \\
+\multirow{2}{*}{宁德时代} & 动力电池系统 & 316,506.4 & 241,064.4 & 541.0 GWh & 58,503.95 万元/GWh & 23.8\% \\
+ & 储能电池系统 & 62,439.8 & 45,763.7 & 121.0 GWh & 51,603.16 万元/GWh & 26.7\% \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+表~\ref{tab:val-seg-real} 是两家公司的基期。茅台“其他业务”收入 63.5 百万元、成本 86.4 百万元，是一块很小的毛亏；
+宁德“其他业务”（电池材料及回收、矿产资源等）收入 44,755.6 百万元，占营业收入 10.6\%，预测期按基期金额持平。
+茅台基期费用率分项为税金及附加 16.20\%、销售 4.30\%、管理 4.93\%、研发 0.11\%、其他 $-3.09\%$，合计 22.45\%；
+宁德为 0.67\%、0.88\%、2.75\%、5.23\%、$-6.26\%$，合计 3.27\%。“其他”为负并非错误，原因见第~\ref{sec:val-ts}~节的失败案例 1。
+
+\begin{tradeoff}[：只拆收入与毛利，不拆分部费用]
+另一种做法是给每个分部单独预测销售、管理费用，得到分部利润。我们没有这样做：A 股年报几乎不披露分部期间费用，模型只能凭空分摊，
+分摊比例本身就是不可核对的数字；而收入与营业成本在“主营业务分产品情况”表中有逐格可核对的原文。
+因此分部层面只做到毛利，费用率在公司层面按五个分项预测。代价是无法回答“哪个分部更赚钱”的问题，只能回答“哪个分部毛利更高”。
+\end{tradeoff}
+
+\begin{tradeoff}[：其他业务按基期金额持平]
+把未拆分部分按合并收入增速同步增长也说得通，但这会让“其他业务”跟随主营的量价假设自动膨胀，相当于偷偷给它一个没写出来的假设。
+持平是最少假设的选择，并在 \code{rationale} 中写明（宁德的 10.6\% 就属于这种情况）。占比过大时，分析师应把它拆成单独分部。
+\end{tradeoff}
+
+% ======================================================================
+\subsection{三表联动模型}
+\label{sec:val-ts}
+
+三表模型分两层：\code{three\_statement.py} 负责把 A 股科目映射成引擎的计划（plan），\code{ts\_engine.py} 负责联动求解。
+引擎的计算口径与原 Public Equity Investing 插件的三表引擎逐位一致（第~\ref{sec:val-parity}~节），只保留年度预测与 \code{total\_growth} 收入模型。
+
+\subsubsection{口径映射与经营性 EBIT}
+
+\begin{definition}[经营性 EBIT]
+\label{def:val-ebit}
+对期间 $k$，
+\[
+\text{EBIT}_k=\text{利润总额}_k+\text{财务费用}_k-\text{投资收益}_k-\text{公允价值变动收益}_k .
+\]
+资产处置收益、其他收益、信用与资产减值、营业外收支留在 EBIT 内。代码中这一定义只在一处出现（\code{build\_plan.EBIT\_PARTS}），
+三表历史基数、DCF 基期、反向 DCF 的历史区间、盈利预测表与可比公司目标行都引用它。
+\end{definition}
+
+与式~\eqref{eq:rel-ebit} 的教科书口径相比，这里多剔除了投资收益与公允价值变动。理由是这两项对应的资产（长期股权投资、交易性金融资产等）
+不在 FCFF 的经营资产里；留在 EBIT 中会被永续资本化，同时对应资产若又在股权桥加回，就是重复计算。剔除后对应资产必须在股权桥加回，
+否则估值偏保守——\code{build\_plan} 在发现本期投资收益与公允价值变动之和非零、而假设文件未设置 \code{non\_operating\_assets} 时，
+写入一条推论类说明“每股价值偏保守”，进入估值报告。
+
+表~\ref{tab:val-map} 是其余科目的映射。
+
+\begin{table}[t]
+\centering
+\caption{A 股报表科目到三表引擎的映射（\code{three\_statement.\_hist}，百万元）。}
+\label{tab:val-map}
+\small
+\begin{tabularx}{\linewidth}{@{}l X@{}}
+\toprule
+引擎字段 & A 股口径 \\
+\midrule
+revenue / cogs & 营业收入 / 营业成本 \\
+da & 固定资产折旧 + 无形资产摊销（现金流量表补充资料） \\
+opex & 轧差：营业收入 − 营业成本 − 经营性 EBIT − 折旧摊销（式~\ref{eq:val-opex}） \\
+interest & 财务费用（可为负：净利息收入） \\
+ppe\_net & 固定资产 + 在建工程 \\
+debt & 短期借款 + 一年内到期的非流动负债 + 长期借款 + 应付债券 + 租赁负债 \\
+other\_assets & 资产总计 − 货币资金 − 应收账款 − 存货 − PP\&E（轧差） \\
+other\_liabilities & 负债合计 − 应付账款 − 有息负债（轧差） \\
+common\_equity & 所有者权益合计（含少数股东权益） \\
+retained\_earnings & 期初置 0，预测期累计 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\paragraph{经营费用为什么是轧差项。} A 股利润表没有“折旧摊销”这一行，折旧摊销分散在营业成本与各项期间费用里；而引擎的利润表结构是
+$\text{EBIT}=\text{毛利}-\text{opex}-\text{D\&A}$。若把 opex 写成“销售 + 管理 + 研发”，折旧摊销会被扣两次。原插件按这种方式映射时，
+样例公司的历史 EBIT 被系统性低估（\file{tests/golden/README.md} 记录了 2026-09-28 的口径修正）。我们改为
+\begin{equation}
+\text{opex}_0=R_0-C_0-\text{EBIT}_0-\text{DA}_0,
+\label{eq:val-opex}
+\end{equation}
+这样历史期引擎 EBIT 与定义~\ref{def:val-ebit} 恒等。税金及附加、减值、其他收益、资产处置收益、营业外收支这些未单列的项目也一并进入轧差项。
+
+\begin{proposition}[历史期 EBIT 同口径]
+\label{prop:val-ebit}
+在式~\eqref{eq:val-opex} 下，三表引擎对基期计算的 $\text{毛利}_0-\text{opex}_0-\text{DA}_0$ 等于定义~\ref{def:val-ebit} 的 $\text{EBIT}_0$；
+若预测期 opex 率、毛利率取基期实际值，则 DCF 基期 EBIT 利润率与三表首期之前的利润率一致，预测期利润率变化全部来自显式写出的假设。
+\end{proposition}
+\begin{proof}
+代入即得 $(R_0-C_0)-(R_0-C_0-\text{EBIT}_0-\text{DA}_0)-\text{DA}_0=\text{EBIT}_0$。第二句由预测期 $\text{EBIT}_t=R_t(m_t-o_t)-\text{DA}_t$ 与基期同形得到。
+\end{proof}
+\file{tests/test\_quarterly\_ebit.py::test\_ebit\_excludes\_investment\_income\_and\_fair\_value} 用样例数字核对：
+$\text{EBIT}_0=760.12+45.30-23.50-41.20=740.72$ 百万元，且 $R_0\cdot m_0-R_0\cdot o_0-340.5$ 与之相等。
+
+\subsubsection{联动方程组}
+
+记 $t=1,\dots,N$ 为预测期，$t=0$ 为最近实际年度。在本项目使用的功能范围内（无循环贷、无现金扫还、无可抵扣亏损），引擎求解：
+\begin{align}
+&R_t=R_{t-1}(1+g_t),\quad C_t=R_t(1-m_t),\quad O_t=R_t\,o_t, \label{eq:val-ts-is1}\\
+&\text{Capex}_t=R_t\kappa_t,\quad \text{Dep}_t=\big(\text{PPE}_{t-1}+\tfrac12\text{Capex}_t\big)\delta_t,\quad
+\text{PPE}_t=\max\!\big(0,\ \text{PPE}_{t-1}+\text{Capex}_t-\text{Dep}_t\big), \label{eq:val-ts-ppe}\\
+&\text{AR}_t=R_t\tfrac{\text{DSO}_t}{365},\quad \text{INV}_t=C_t\tfrac{\text{DIO}_t}{365},\quad \text{AP}_t=C_t\tfrac{\text{DPO}_t}{365},\quad
+\text{NWC}_t=\text{AR}_t+\text{INV}_t-\text{AP}_t, \label{eq:val-ts-wc}\\
+&\text{Int}_t=\max\!\big(0,\ D_{t-1}+\tfrac12\text{draw}_t-\tfrac12\text{mand}_t\big)\,r_t,\quad D_t=D_{t-1}+\text{draw}_t-\text{mand}_t, \label{eq:val-ts-debt}\\
+&\text{EBIT}_t=R_t-C_t-O_t-\text{Dep}_t,\quad \text{EBT}_t=\text{EBIT}_t-\text{Int}_t,\quad
+\text{NI}_t=\text{EBT}_t-\tau\max(0,\text{EBT}_t), \label{eq:val-ts-is2}\\
+&\text{Div}_t=\max(0,\text{NI}_t)\,\pi_t,\quad \text{CFO}_t=\text{NI}_t+\text{Dep}_t-(\text{NWC}_t-\text{NWC}_{t-1}), \label{eq:val-ts-cf}\\
+&\text{Cash}_t=\text{Cash}_{t-1}+\text{CFO}_t-\text{Capex}_t-\text{Div}_t+\text{draw}_t-\text{mand}_t,\quad \text{RE}_t=\text{RE}_{t-1}+\text{NI}_t-\text{Div}_t, \label{eq:val-ts-cash}\\
+&\text{TA}_t=\text{Cash}_t+\text{AR}_t+\text{INV}_t+\text{PPE}_t+\text{OA},\quad
+\text{TLE}_t=\text{AP}_t+D_t+\text{OL}+\text{CE}+\text{RE}_t . \label{eq:val-ts-bs}
+\end{align}
+变量含义：$g$ 收入增速，$m$ 毛利率，$o$ 经营费用率（不含折旧摊销），$\kappa$ 资本开支率，$\delta$ 折旧率（作用于期初 PP\&E 加半年资本开支），
+DSO/DIO/DPO 为应收、存货、应付周转天数（存货与应付按营业成本），$r$ 利率，$\tau$ 税率，$\pi$ 分红率，OA/OL 为其他资产、其他负债（保持基期），
+CE 为权益（含少数股东，基期取所有者权益合计），$\text{RE}_0=0$。默认驱动全部取基期实际值：
+$\text{DSO}_0=\text{AR}_0/R_0\cdot365$，$\delta_0=\text{DA}_0/(\text{PPE}_{-1}+\tfrac12\text{Capex}_0)$，
+$\tau=\text{所得税}_0/(\text{所得税}_0+\text{净利润}_0)$，$r_0=\text{财务费用}_0/\overline{D}$（$\overline{D}$ 为期初期末有息负债均值）。
+分红率 $\pi$ 是本项目对原引擎的扩展（\code{dividend\_payout\_ratio}），原引擎只接受分红金额。
+
+\paragraph{现金是平衡项。} 资产负债表上没有任何一项被“倒挤”：现金由现金流量表滚动得到（式~\eqref{eq:val-ts-cash}），
+其他资产与其他负债保持基期，权益由留存收益滚动。平衡是方程组的推论，而不是被强行写平的。
+
+\begin{proposition}[预测期恒平衡]
+\label{prop:val-balance}
+若基期 $\text{TA}_0=\text{TLE}_0$，且预测期 PP\&E 未触发式~\eqref{eq:val-ts-ppe} 中的 $\max(0,\cdot)$ 截断、无资产处置，则对所有 $t$，$\text{TA}_t=\text{TLE}_t$。
+\end{proposition}
+\begin{proof}
+对相邻两期作差：$\Delta\text{TA}_t=\Delta\text{Cash}_t+\Delta\text{AR}_t+\Delta\text{INV}_t+\text{Capex}_t-\text{Dep}_t$，
+$\Delta\text{TLE}_t=\Delta\text{AP}_t+\text{draw}_t-\text{mand}_t+\text{NI}_t-\text{Div}_t$。代入式~\eqref{eq:val-ts-cf}、\eqref{eq:val-ts-cash}
+的 $\Delta\text{Cash}_t$，两式之差为 $-\Delta\text{NWC}_t+\Delta\text{AR}_t+\Delta\text{INV}_t-\Delta\text{AP}_t=0$。基期平衡由映射保证：
+other\_assets 与 other\_liabilities 是轧差项，$\text{CE}_0$ 取所有者权益合计，所以 $\text{TA}_0=\text{TLE}_0$ 按构造成立。
+\end{proof}
+
+截断与处置这两个前提在本项目的使用范围内总是成立（资本开支为正、处置未启用），但引擎并不依赖这个推理，而是每期显式计算六项勾稽误差
+（第~\ref{sec:prob-task4}~节 (V1)）：资产负债平衡、现金衔接、留存收益滚动、债务滚动、PP\&E 滚动、营运资本滚动；
+任一项绝对误差超过 $0.05$ 百万元即判硬性失败。容差取 0.05 百万元（5 万元）而不是 $10^{-9}$，是因为招股书类文件以“万元、两位小数”披露，
+期初报表本身就带 0.01 万元量级的舍入差（\code{three\_statement.run} 的注释）。
+
+\paragraph{利息的不动点。} 原引擎支持循环贷与现金扫还：利息依赖期末债务，期末债务依赖现金是否低于最低现金线，现金又依赖税后利润，
+这就是式~\eqref{eq:prob-fixpoint} 的循环。引擎用算法~\ref{alg:val-fixpoint} 迭代求解。
+
+\begin{algorithm}[t]
+\caption{三表联动求解（\code{ts\_engine.run\_model}）}
+\label{alg:val-fixpoint}
+\begin{algorithmic}[1]
+\State $R\gets$ 按增速滚动收入；$\text{IS}^{(0)}\gets$ 以零折旧零利息初算利润表（只为取营业成本 $C$）
+\State $\text{PPE}\gets$ 式~\eqref{eq:val-ts-ppe}；$\text{WC}\gets$ 式~\eqref{eq:val-ts-wc}（用 $C$）
+\State $\text{Int}\gets \mathbf{0}$
+\For{$k=1,\dots,20$}
+  \State $\text{IS}\gets$ 利润表（折旧 $\text{Dep}$、利息 $\text{Int}$）；按分红率重算分红
+  \State $\text{CFO}\gets \text{NI}+\text{Dep}+\text{DT}-\Delta\text{NWC}$
+  \State $\text{Int}'\gets$ 债务表（提款、强制还款、循环贷补足最低现金、超额现金扫还）
+  \If{$\max_t|\text{Int}'_t-\text{Int}_t|<10^{-8}$} \State $\text{Int}\gets\text{Int}'$; \textbf{break} \EndIf
+  \State $\text{Int}\gets\text{Int}'$
+\EndFor
+\State 以收敛利息再算一遍利润表、债务表、利润表；生成现金流量表、资产负债表、偿债指标与勾稽误差
+\end{algorithmic}
+\end{algorithm}
+
+在本项目实际使用的配置下，利息只依赖期初债务（式~\eqref{eq:val-ts-debt}），而期初债务不依赖当期现金，因此第二轮即收敛；
+迭代框架保留下来，是为了与原引擎逐位一致——对照测试专门构造了一个利率 $0.005623\ldots$、第 4 轮利息变动约 $6.8\times10^{-7}$ 的边界用例，
+检验收敛阈值 $10^{-8}$ 与原引擎相同。浮点运算顺序也保持一致（例如先算 $\text{ebt}\times\text{rate}$ 再相减），否则逐位相等无法成立。
+
+\paragraph{情景。} 三个情景共用同一个 plan，悲观与乐观通过 \code{overrides} 深合并（\code{deep\_merge}）覆盖：收入增速与资本开支率取自假设文件的情景；
+毛利率优先取分部预测给出的情景向量，否则在基准毛利率上加 \code{gross\_margin\_shift}；应收天数在基准上加 \code{ar\_days\_shift}；
+经营费用率只在分部预测给出时按情景区分。样例中悲观情景毛利率为 $31.19\%-2\%=29.19\%$、应收天数 $123.63+15=138.63$ 天，
+乐观情景为 32.19\% 与 113.63 天。
+
+\paragraph{判定与模型状态。} \code{ts\_engine.evaluate} 输出硬性失败与警示（表~\ref{tab:val-ts-checks}），\code{model\_status} 据此分为
+\code{not-decision-ready}、\code{screen-grade}、\code{senior-review-ready}、\code{decision-grade} 四档。
+所有判定码与英文提示语保持原插件的写法，便于逐字节对照。
+
+\begin{table}[t]
+\centering
+\caption{三表引擎的硬性失败与警示（阈值与原插件一致）。}
+\label{tab:val-ts-checks}
+\small
+\begin{tabularx}{\linewidth}{@{}l X@{}}
+\toprule
+代码 & 触发条件 \\
+\midrule
+\multicolumn{2}{@{}l}{\textit{硬性失败}} \\
+六项勾稽失败 & 任一情景任一期误差 $>0.05$ 百万元 \\
+\code{SCENARIO\_SWITCH\_NO\_OUTPUT\_CHANGE} & 三情景末期收入两两相差 $<0.05$：情景只改了标签 \\
+\code{SOURCE\_BASIS\_MISSING} 等 & 来源台账缺失、未覆盖历史数据或预测驱动 \\
+\midrule
+\multicolumn{2}{@{}l}{\textit{警示}} \\
+\code{AGGRESSIVE\_REVENUE\_RAMP} & 基准情景收入复合增速 $>20\%$ \\
+\code{STEP\_UP\_REVENUE} & 首个预测期收入较最近实际年度增长 $>25\%$ \\
+\code{UNSUPPORTED\_MARGIN\_EXPANSION} & 预测期末毛利率较首期扩张 $>500$ bp \\
+\code{CAPEX\_TOO\_LOW\_FOR\_GROWTH} & 收入增长 $>10\%$ 而末期资本开支 $<0.75\times$ 折旧 \\
+\code{WORKING\_CAPITAL\_RELEASE...} & 营运资本占收入比较历史下降 $>5$ 个百分点 \\
+\code{STALE\_*\_SOURCE} & 预测来源超 120 天、历史来源超 270 天，或来源跨度超一年 \\
+\code{NEGATIVE\_CASH}、\code{LIQUIDITY\_OR\_COVENANT\_ISSUE} & 期末现金为负；流动性或契约余量不足 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\paragraph{单因素敏感性。} \code{run\_sensitivities} 在基准情景上依次冲击收入增速（$\pm5\%$）、毛利率（$\pm2\%$）、应收天数（$\pm15$ 天）、
+资本开支率（$\pm1\%$）、利率（$\pm1\%$），重跑整张三表，报告末期收入、EBITDA、自由现金流、期末现金、流动性低点与净杠杆峰值。
+它回答的是“哪个驱动最影响现金”，与 DCF 的每股价值敏感性互补。样例中应收天数 +15 天使期末现金从 3,526.6 降到 3,169.8 百万元，
+影响大于利率 +1\%（降到 3,454.2 百万元）。
+
+\begin{tradeoff}[：期初留存收益置 0，权益合并列示]
+映射时把所有者权益合计（含少数股东权益）整体放进 \code{common\_equity}，留存收益期初置 0。这样资产负债表上的“留存收益”
+其实是“预测期累计留存”，不是报表上的未分配利润，列示上不好看。替代方案是把权益拆成股本、资本公积、盈余公积、未分配利润、少数股东权益，
+但这五项在预测期只有未分配利润和少数股东权益会动，后者还需要单独预测少数股东损益；拆开既不改变任何勾稽，也不改变 DCF，
+只增加需要抽取和校验的科目。我们选择简化列示，在工作簿表头写明“留存收益（预测期累计）”。少数股东损益的处理放到盈利预测摘要
+（第~\ref{sec:val-rating}~节）里用基期占比近似。
+\end{tradeoff}
+
+\begin{tradeoff}[：周转天数法而非占收入比]
+营运资本有两种常见写法：各项占收入比例，或周转天数。我们沿用原引擎的天数法，存货与应付按营业成本折算。
+对茅台这类毛利率 91\% 的公司，两种写法差别很大：存货按收入折算约 133 天，按成本折算为 1,505.5 天（基酒要窖藏多年）。
+按成本的天数更贴近经营含义，也让毛利率情景（成本变化）自动传导到存货和应付。DCF 层仍需要“营运资本占收入比”，由三表输出折算，见第~\ref{sec:val-dcf}~节。
+\end{tradeoff}
+
+\begin{failcase}[ 1：经营费用率为负（招商轮船）]
+招商轮船 2025 年的轧差经营费用率为 $-7.16\%$。原因有两个：航运公司的船舶折旧几乎全部计入营业成本，而式~\eqref{eq:val-opex} 又扣了一次
+$\text{DA}_0/R_0=8.5\%$；资产处置收益（卖船，占收入 2.41\%）以负费用的形式进入轧差项。EBIT 与 EBITDA 都是正确的，
+只是“经营费用”这一行失去了字面含义。分析师会话在假设文件里把预测期费用率写成 $-5\%$，并在依据中解释为“剔除卖船收益后的经常性水平”。
+茅台与宁德的“其他费用率”为负是同一机制：$o^{\text{oth}}=(\text{减值}-\text{其他收益}-\text{处置收益}-\text{DA})/R$，
+宁德的 $\text{DA}_0/R_0=5.86\%$ 几乎解释了 $-6.26\%$ 的全部。我们在工作簿行注释中写明“经营费用率不含折旧摊销”，但没有改变口径：
+任何把折旧从成本里拆出来的做法都需要年报未披露的分项。
+\end{failcase}
+
+\begin{failcase}[ 2：负利率]
+茅台的财务费用为负（利息收入大于利息支出），而有息负债只有数千万元，按 $r_0=\text{财务费用}_0/\overline{D}$ 得到 $r=-247.2\%$；
+宁德为 $-6.2\%$。引擎照常运行，预测期“利息费用”为 $-577.7$ 与 $-7{,}420.6$ 百万元，税前利润高于 EBIT。
+这不影响 FCFF 与每股价值（DCF 从 EBIT 出发），但影响盈利预测表的归母净利润与 EPS：利息收入被绑在不变的有息负债上，
+不随现金增长而增长。工作簿把这一行标注为“财务费用为净利息收入时为负”。更合理的做法是把利息收入挂在平均现金上单列，
+这需要扩展引擎结构，也会破坏与原引擎的逐位一致，列为后续工作（第~\ref{sec:limits}~节）。
+\end{failcase}
+
+% ======================================================================
+\subsection{FCFF DCF}
+\label{sec:val-dcf}
+
+\subsubsection{从三表到 DCF 计划}
+
+\code{build\_plan.build\_plan} 把真值表、假设文件与三表输出组装成 DCF 引擎的 plan（百万元）。它做三件事。
+
+\paragraph{历史基数。} 基期收入、经营性 EBIT、折旧摊销、资本开支、营运资本（$\text{AR}+\text{INV}-\text{AP}$，与三表同口径）、有效税率
+（所得税/利润总额）全部来自真值表；缺失项不静默补 0，而是写一条 \code{placeholder} 说明并进入报告。基期 FCFF 只作列示，不参与折现。
+
+\paragraph{预测向量。} 三表模型对每个情景 $s$ 导出 \code{dcf\_drivers}（\code{three\_statement.\_dcf\_drivers}）：
+\begin{equation}
+\Big(g^s_t,\ \tfrac{\text{EBIT}^s_t}{R^s_t},\ \tau,\ \tfrac{\text{Dep}^s_t}{R^s_t},\ \tfrac{\text{Capex}^s_t}{R^s_t},\ \tfrac{\text{NWC}^s_t}{R^s_t}\Big)_{t=1..N},
+\label{eq:val-drivers}
+\end{equation}
+\code{build\_plan.\_scenarios} 用它们整体替换假设文件情景中的六个向量字段，假设文件只剩情景说明、永续增长率与 WACC 调整。
+若旧假设文件里还写着 \code{ebit\_margin} 等字段，程序写一条说明“已不再驱动 DCF”，而不是报错——旧文件仍能跑，但不会悄悄生效。
+DCF 的税率取三表的现金税率，即无杠杆税负：FCFF 不含利息抵税，利息抵税体现在 WACC 的 $K_d(1-T)$ 里。
+
+\paragraph{股权价值桥。} 现金、有息负债（不含租赁）、租赁负债、少数股东权益、摊薄股本来自真值表；非经营性资产来自假设文件。
+明细写法下由 \code{resolve\_non\_operating\_items} 逐项处理（算法~\ref{alg:val-nonop}）：每项的 \code{raw\_value} 必须在所写页码的原文中
+按数字边界找到（与事实抽取同一个证据谓词 \code{external.find\_evidence}，第~\ref{sec:extract}~节），单位换算与加总由程序完成，
+\code{sign=-1} 表示类负债项。找不到原文的条目直接报错，整个估值流水线停止。
+
+\begin{algorithm}[t]
+\caption{非经营性资产明细核对（\code{build\_plan.resolve\_non\_operating\_items}）}
+\label{alg:val-nonop}
+\begin{algorithmic}[1]
+\Function{Resolve}{items, $\Doc$}
+  \State total $\gets 0$；rows $\gets[\,]$
+  \For{each $(\ell, x, u, p, \sigma)\in$ items}
+    \State $v\gets$ \Call{ParseNumber}{$x$}；\textbf{if} $v$ 无法解析 \textbf{or} $u\notin$ 单位表 \textbf{then raise}
+    \State ch $\gets$ \Call{FindEvidence}{$\Doc, p, x$} \Comment{原文第 $p$ 页按数字边界查找原写法}
+    \If{ch $=\bot$} \State \textbf{raise} “第 $p$ 页未找到 $\ell$ $x$” \EndIf
+    \State $w\gets \operatorname{sign}(\sigma)\cdot v\cdot \text{factor}(u)/10^6$；total $\gets$ total $+w$
+    \State rows.append$(\ell,x,u,\sigma,w,\text{source}=(\text{ch.source},\text{ch.page},\text{ch.chunk\_id}))$
+  \EndFor
+  \State \Return total, rows \Comment{写入 non\_operating\_assets.json，工作簿逐项列示}
+\EndFunction
+\end{algorithmic}
+\end{algorithm}
+
+茅台的假设文件列了九项：拆出资金 99,096.2、买入返售金融资产 8,879.7、一年内到期的非流动资产 26,871.1、发放贷款和垫款 1,553.5、
+债权投资 1,113.0、其他债权投资 3,496.5、长期股权投资 147.2、其他非流动金融资产 4,105.1 百万元，以及作为类负债扣减的吸收存款及同业存放
+$-18{,}038.4$ 百万元，程序加总为 127,224.1 百万元。这些科目来自其控股的集团财务公司，性质接近货币资金。模型没有写合计数，
+合计是程序算的；任何一项页码或写法不对，流水线都会停下。
+
+\subsubsection{折现、终值与股权价值}
+
+\code{dcf.forecast} 由驱动向量逐期还原：
+\begin{gather}
+R_t=R_{t-1}(1+g_t+\Delta g),\qquad \text{EBIT}_t=R_t(\mu_t+\Delta\mu),\qquad \text{NWC}_t=R_t\,n_t,\nonumber\\
+\text{FCFF}_t=\text{EBIT}_t(1-\tau_t)+R_t d_t-R_t\kappa_t-(\text{NWC}_t-\text{NWC}_{t-1}), \label{eq:val-fcff}
+\end{gather}
+$\Delta g$、$\Delta\mu$ 是敏感性与反向 DCF 用的平移量，正常运行时为 0。这是式~\eqref{eq:rel-fcff} 的逐期写法。折现率为
+\begin{equation}
+W_s=w_E\big(R_f+\beta\cdot\text{ERP}+\text{SP}+\text{CSP}+\text{CRP}\big)+w_D K_d(1-T)+w_P K_p+\text{adj}_s ,
+\label{eq:val-wacc}
+\end{equation}
+其中 SP、CSP、CRP 为规模、公司特定、国别溢价，$\text{adj}_s$ 为情景调整（样例悲观 $+0.5\%$、乐观 $-0.25\%$）。企业价值
+\begin{equation}
+\text{EV}_s=\sum_{t=1}^{N}\frac{\text{FCFF}_t}{(1+W_s)^{t-1/2}}+\frac{\text{TV}_N}{(1+W_s)^{N}},\qquad
+\text{TV}_N=\begin{cases}\dfrac{\text{FCFF}_N(1+g_\infty)}{W_s-g_\infty} & \text{永续增长法}\\[6pt] \text{EBITDA}_N\times M & \text{退出倍数法}\end{cases}
+\label{eq:val-ev}
+\end{equation}
+预测期现金流用年中折现（第 $t$ 年折现 $t-\tfrac12$ 年），终值按第 $N$ 年末折现。程序同时报告两种方法互相隐含的参数：
+永续增长法隐含退出倍数 $\text{TV}/\text{EBITDA}_N$，以及隐含永续增长率 $(\text{TV}\cdot W-\text{FCFF}_N)/(\text{TV}+\text{FCFF}_N)$。
+股权价值按式~\eqref{eq:prob-bridgeeq} 逐项加减（加：现金、非经营性资产、联营投资；减：有息负债、租赁、少数股东权益、养老金、优先股、期权、其他类债务），
+每股价值等于股权价值除以摊薄股本。
+
+\paragraph{结构校验。} \code{validate\_plan\_structure} 在计算前拒绝以下输入：必需字段缺失；预测期不是 1～15 的整数；基期收入或股本不为正；
+资本结构权重之和偏离 1 超过 $10^{-6}$；任一情景向量长度与预测期不符；任一情景 $W_s\le0$；永续增长法下任一情景 $W_s\le g_\infty$。
+最后一条是 Gordon 公式~\cite{gordon1959dividends} 收敛的必要条件，必须在三个情景上分别检查，因为情景 WACC 调整与情景永续增长率是分开写的：
+基准满足不代表乐观满足。
+
+\subsubsection{三表核对与模型检查}
+
+\begin{invariant}[DCF 与三表同口径]
+\label{inv:val-tie}
+对每个情景 $s$、每个预测期 $t$ 与每个科目 $x$（营业收入、EBIT、折旧摊销、资本开支、营运资本），
+DCF 由式~\eqref{eq:val-fcff} 还原的 $x^s_t$ 与三表模型输出之差的绝对值不超过 $10^{-6}$ 百万元。
+\end{invariant}
+
+这是第~\ref{sec:prob-task4}~节 (V2) 的实现。驱动以比率形式传递，DCF 再乘回收入，浮点上不必然逐位相等，所以要显式核对。
+\code{run.\_tie\_to\_three\_statement} 计算全部 $3\times N\times5$ 个偏差的最大值；超过 $10^{-6}$ 时把消息放进硬性失败，模型状态变为 \code{blocked}。
+样例运行的最大偏差为 $4.55\times10^{-13}$，三家真实公司为 $1.5\times10^{-11}$、$3.6\times10^{-12}$、$1.8\times10^{-12}$ 百万元。
+\file{tests/test\_quarterly\_ebit.py::test\_dcf\_blocked\_when\_three\_statement\_disagrees} 把三表基准情景首期 EBIT 人为加 1 百万元，
+断言核对失败且状态为 \code{blocked}。
+
+\code{compute\_checks} 还给出以下判定：情景排序不满足 $V_{\text{down}}\le V_{\text{base}}\le V_{\text{up}}$（警示）；基准股权价值 $\le0$（硬性失败）；
+终值现值占 EV 超过 75\%（警示）；预测期末 EBIT 利润率较历史提升超过 3 个百分点（警示）；永续增长法隐含 EV/EBITDA 超过 20 倍（警示）；
+关键输入来自分析师假设（警示）；敏感性方向性检查未通过（硬性失败）。由于预测、WACC、终值三类输入在本项目中总是分析师假设，
+DCF 的模型状态最好只能是 \code{screen-grade}。我们保留了这个“天花板”：它如实说明估值依赖观点，而不是事实。
+
+\subsubsection{敏感性矩阵与方向性检查}
+
+\code{run\_sensitivities} 在基准情景上生成三张 $5\times5$ 矩阵：WACC × 永续增长率、WACC × 退出倍数、收入增速 × EBIT 利润率。
+WACC × $g$ 矩阵中 $W\le g$ 的格子置空并注明“无意义”，而不是给出负数或无穷大。方向性检查（\code{\_directionality}）对矩阵逐行逐列检查单调性：
+每股价值沿 WACC 递减、沿永续增长率递增、沿利润率递增。这对应第~\ref{sec:prob-task4}~节 (V4) 的后半句。
+
+\begin{insight}[：收入增速不在方向性检查里]
+方向性检查有意不要求“每股价值随收入增速递增”。在 FCFF 模型里，增长需要投入：
+式~\eqref{eq:val-fcff} 中营运资本增加为 $n_t(R_t-R_{t-1})$，资本开支为 $\kappa_t R_t$。当税后利润率较低时，多增长一个百分点带来的 NOPAT
+不足以覆盖多占用的营运资本，价值反而下降。样例的收入增速 × 利润率矩阵正好出现了这种情况：
+利润率下调 3 个百分点那一行，收入增速从 $-2\%$ 到 $+2\%$，每股价值从 7.74 元单调降到 7.39 元；
+利润率上调 3 个百分点那一行则从 15.23 元升到 16.23 元。增长创造价值的条件是投入资本回报率高于 WACC~\cite{koller2020valuation}，
+程序不应把它当作恒成立的方向。
+\end{insight}
+
+\begin{tradeoff}[：DCF 情景向量全部取自三表，而不是假设文件的 \code{ebit\_margin}]
+早期版本让分析师在假设文件里直接写各情景的 EBIT 利润率、折旧率、资本开支率、营运资本占比，三表模型另跑一套。
+结果是研报首页的盈利预测表（来自三表）与估值（来自 DCF）用的是两套利润率，复核编辑无法判断哪个对。我们考虑过三种修法：
+(a) 保留两套输入，加一条“差异不超过 $x$”的检查——阈值无从设定，而且仍有两份可能矛盾的假设；
+(b) 让 DCF 驱动三表——DCF 只有六个比率，推不出资产负债表；
+(c) 让三表驱动 DCF。我们选了 (c)：三表输入更细（毛利率、费用率、周转天数、折旧率），能推出 DCF 需要的全部比率，反之不行。
+代价是假设文件的情景表达变间接：要让悲观情景利润率更低，必须改毛利率或费用率，而不能直接写 EBIT 利润率。
+这正是我们想要的——利润率变化必须落到可解释的经营驱动上。
+\end{tradeoff}
+
+\begin{tradeoff}[：FCFF，而不是 FCFE 或股利贴现]
+FCFF 与资本结构无关，资本结构只在 WACC 里出现，三表模型的债务假设（大多数情况下是“维持不变”）不会直接改变估值；
+FCFE 需要逐期预测净借款，三表模型里债务是外生假设，估值会被一个分析师随手写的还款计划左右。股利贴现模型对 A 股高分红公司（茅台分红率 79\%）
+可以作为交叉验证，但对不分红或分红政策多变的公司不可用。我们只实现 FCFF，与原插件一致。
+这个选择对金融企业不成立：银行、保险的负债是经营原料，没有“经营资产 + 有息负债”的划分，FCFF 无定义。代码中没有银行分支，
+估值链只覆盖非金融企业；茅台集团财务公司这类“非金融企业里的金融子公司”通过非经营性资产明细（含类负债项）近似处理，并在依据中写明利息收入仍在 EBIT 内、存在少量重复计算。
+金融企业需要剩余收益或股利贴现模型~\cite{damodaran2012investment}，列为后续工作。
+\end{tradeoff}
+
+\begin{tradeoff}[：年中折现从财年末起算，终值按年末折现]
+引擎的折现起点是最近财年末，不是估值基准日。茅台、宁德、招商轮船的估值日都在 2026 年 9 月下旬，距 2025 年末已有 9 个月，
+严格做法应把第一期现金流按剩余期间折现（stub period），并把股权价值滚动到估值日。另外，年中折现下终值仍按第 $N$ 年末折现，
+与“第 $N+1$ 年现金流在年中到达”的假设不完全一致。这两处都沿用原插件口径，以保持 (V6) 的一致性，并在估值报告的口径说明中披露。
+按一般经验，忽略约 0.75 年的滚动会使每股价值偏低约 $0.75\times W\approx6\%$；这是一个方向确定、量级可估的系统偏差，
+比引入一个与参照实现不同的日期约定更容易向评审解释。
+\end{tradeoff}
+
+% ======================================================================
+\subsection{情景、敏感性表与流动性压力测试}
+\label{sec:val-scenarios}
+
+DCF 三情景给出每股价值区间，\code{scenarios.py} 再把它与财报结果组装成六张“情景偏度与敏感性”表，表格计算在 \code{scenario\_tables.py} 中完成，
+口径、列名与判定规则与原插件逐字节一致。缺少输入时单元格写 \code{input required}，不臆造数值。
+
+\paragraph{三情景目标价与偏度。} 设参考股价 $P$，情景目标价 $V_s$ 与概率 $q_s$（默认 25/50/25，概率须齐全、在 $[0,1]$ 内且和为 1，容差 $10^{-4}$），
+门槛收益率 $h$（默认 10\%）。程序计算：情景收益 $r_s=V_s/P-1$；概率加权目标价 $\bar V=\sum_s q_sV_s$；
+下行/上行比 $\rho=|\min_s r_s^-|/\max_s r_s^+$；盈亏平衡概率 $p^\ast=(P-V_{\min})/(V_{\max}-V_{\min})$（落在 $[0,1]$ 外记为空）。
+偏度标签与动作规则：$r\ge h$ 且 $\rho\le0.75$ 为 underwriteable upside；$r>0$ 为 optical upside / needs proof；$r<0$ 为 negative skew；
+动作规则在 $r\le-15\%$ 时为 trim / exit。样例中 $V=(6.17,11.67,17.73)$，$P=12.80$，加权目标价 11.81 元（$-7.8\%$），$\rho=1.35$，
+$p^\ast=57.4\%$：乐观情景的发生概率要超过 57.4\% 才值得持有，这比单看基准情景 $-8.9\%$ 更直观。
+
+\paragraph{其余四张表。} 估值倍数表按 EV/EBITDA 与 P/E 倍数轴给出隐含股价（EV 法扣净债务：有息负债 + 租赁 + 少数股东权益 − 现金 − 非经营性资产）；
+EPS 修正 × 倍数变化表给出 $\text{EPS}(1+e)\times\text{PE}(1+c)$；KPI 表给出收入冲击与利润率冲击下的 EBIT 变动
+$R(1+\Delta R)(\mu+\Delta\mu)-R\mu$（样例收入 $-10\%$、利润率 $-300$ bp 时为 $-232.4$ 百万元）；跟踪触发表把财报异常信号（第~\ref{sec:analysis}~节 S1～S8）
+映射为阈值与下一步动作，例如 S3“净现比 $<0.5$ → 排查应收与存货，下调现金流假设”。最后由 \code{classify\_readiness} 给出就绪度。
+
+\paragraph{流动性压力测试与已知问题。} 第六张表按收入冲击档位 $s$ 计算受压自由现金流 $\text{FCF}\times(1+s)$，再算
+$\text{现金}+\text{循环贷余额}+\text{受压 FCF}-\text{一年内到期债务}$ 与最低流动性要求的差额。
+
+\begin{failcase}[ 3：FCF 为负时冲击方向相反]
+样例公司 2024 年经营现金流减资本开支为 $-446.7$ 百万元。按 $\text{FCF}\times(1+s)$，$-10\%$ 的“不利”冲击得到 $-402.1$ 百万元，
+流动性余量从基准的 140.0 升到 184.6 百万元；$+5\%$ 冲击反而使余量降到 117.6 百万元。冲击方向与直觉相反。
+正确的写法是 $\text{FCF}+s\cdot|\text{FCF}|$ 或直接冲击收入再传导。我们没有改：该表与原插件逐字节一致是 (V6) 的一部分，
+修改后 golden 快照与对照测试都要放宽；而研报里这张表只作附录参照，不进入评级。处理方式是在 \code{equity\_liquidity\_downside} 的 docstring、
+本项目 \file{CLAUDE.md} 的“已知问题”与估值报告中注明。这是“与参照一致”和“口径正确”冲突时我们少数选择前者的地方，理由是影响范围可控且已披露。
+\end{failcase}
+
+% ======================================================================
+\subsection{反向 DCF：参考股价隐含了什么}
+\label{sec:val-reverse}
+
+正向 DCF 回答“按这些假设值多少钱”，反向 DCF 回答“按现价，市场隐含了什么假设”\cite{rappaport2001expectations}。
+第~\ref{sec:prob-task4}~节式~\eqref{eq:prob-rdcf} 把它定义为单变量方程 $V(\theta)=P$。实现上有三个要点：选哪些变量、怎样参数化、怎样在非单调时求解。
+
+\paragraph{四个杠杆。} 固定其余假设为基准情景，分别平移一个变量：
+(1) 收入增速：每期同加常数 $\Delta g\in[-0.9,2.0]$，保持基准的年度形态，报告隐含的预测期复合增速 $(R_N/R_0)^{1/N}-1$；
+(2) EBIT 利润率：每期同加 $\Delta\mu\in[-1,1]$，报告隐含的预测期平均利润率；
+(3) 折现率：$\Delta W\in[g_\infty-W+10^{-4},\,1]$，解出的 $W+\Delta W$ 就是“按基准现金流、以现价买入的隐含年化回报率”；
+(4) 终值参数：永续增长法下 $\Delta g_\infty\in[-0.5,\,W-g_\infty-10^{-4}]$，退出倍数法下 $\Delta M\in[-M,200]$。
+区间端点留出 $10^{-4}$，保证 Gordon 公式在整个搜索区间内有定义。
+
+\paragraph{为什么不能直接二分。} 每股价值对利润率、折现率、永续增长率单调，但对收入增速不一定单调。除了第~\ref{sec:val-dcf}~节的投入资本效应，
+还有一个更隐蔽的原因：终值以最后一年的 FCFF 为基数，而最后一年的营运资本增加 $n_N(R_N-R_{N-1})$ 随该年增速放大。
+在稳态增速 $\gamma$ 下，$\text{FCFF}_N/R_N=\mu(1-\tau)+d-\kappa-n\gamma/(1+\gamma)$；样例 $n\approx0.32$，$\gamma$ 从 5\% 升到 20\% 时，
+最后一项从 1.5\% 升到 5.4\%，吃掉了 $\mu(1-\tau)+d-\kappa\approx9.8\%$ 中的一大半，而永续增长率仍是 2\%。高增长被“冻结”在终值年，
+终值基数反而变小。因此先扫描、再二分（算法~\ref{alg:val-rdcf}）。
+
+\begin{algorithm}[t]
+\caption{单变量反向 DCF（\code{reverse\_dcf.\_solve}）}
+\label{alg:val-rdcf}
+\begin{algorithmic}[1]
+\Function{Solve}{$f(\theta)=V(\theta)-P$, $[\ell,u]$}
+  \State $\theta_i\gets \ell+(u-\ell)\,i/400,\ i=0..400$；$y_i\gets f(\theta_i)$（ZeroDivision 时记为未定义，丢弃）
+  \State best $\gets\arg\max_i y_i$ \Comment{无解时报告“该变量最多能把每股价值推到多少”}
+  \State $\mathcal{B}\gets\{[\theta_i,\theta_{i+1}] : y_i=0 \lor y_iy_{i+1}<0\}$
+  \If{$\mathcal{B}=\varnothing$} \State \Return $\bot$, best \EndIf
+  \State $[a,b]\gets\arg\min_{[a,b]\in\mathcal{B}}\min(|a|,|b|)$ \Comment{取离基准（$\theta=0$）最近的变号区间}
+  \For{$k=1..200$} \Comment{二分}
+    \State $c\gets(a+b)/2$；\textbf{if} $|f(c)|\le10^{-6}$ \textbf{or} $b-a\le10^{-12}$ \textbf{then return} $c$
+    \State 按 $f(c)$ 与 $f(a)$ 同号与否收缩区间
+  \EndFor
+\EndFunction
+\end{algorithmic}
+\end{algorithm}
+
+选“离基准最近的根”有明确的经济含义：若存在多个根，离基准最近的那个是“现价要求的最小改变量”。
+
+\paragraph{分档。} 每个解出的隐含值由程序与基准、历史区间（真值表最近五个年度，EBIT 口径同定义~\ref{def:val-ebit}）比较后分档：
+“不高于基准假设”“高于基准假设，但在历史区间内”“超出历史最好水平”“单独调整达不到参考股价”；折现率单独分为“现价隐含回报率高于/不高于基准 WACC”。
+主笔会话只能引用这些分档，不能自行判断“市场预期过于乐观”之类的结论——那是 guard 能拦下的观点类数字（第~\ref{sec:guards}~节）。
+
+\begin{table}[t]
+\centering
+\caption{反向 DCF 结果（基准 → 现价隐含值，程序分档）。}
+\label{tab:val-rdcf}
+\footnotesize
+\begin{tabularx}{\linewidth}{@{}l l X X X X@{}}
+\toprule
+公司 & 价格/基准 & 收入复合增速 & 平均 EBIT 利润率 & 隐含回报率 & 永续增长率 \\
+\midrule
+星河智造（样例） & 12.80 / 11.67 & 8.17\% → 无解（最高 11.94 元） & 12.91\% → 13.75\%，超出历史最好 & 8.21\% → 7.72\% & 2.00\% → 2.59\% \\
+贵州茅台 & 1237.0 / 1531.4 & 4.32\% → $-1.91\%$ & 67.34\% → 53.78\% & 7.65\% → 9.03\% & 2.50\% → 0.73\% \\
+宁德时代 & 291.11 / 383.31 & 12.75\% → 4.09\% & 16.44\% → 12.27\% & 8.31\% → 10.64\% & 2.50\% → $-0.67\%$ \\
+招商轮船 & 20.15 / 7.51 & 4.02\% → 25.91\%，超出历史最好（9.22\%） & 28.64\% → 52.48\%，超出历史最好（25.12\%） & 8.36\% → 4.53\% & 1.50\% → 5.75\% \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+表~\ref{tab:val-rdcf} 是四次运行的结果。茅台与宁德的现价低于基准每股价值，所有杠杆的隐含值都“不高于基准”，解读为现价已计入比基准更保守的预期。
+招商轮船相反：现价要求预测期收入年均增长 25.9\% 或平均 EBIT 利润率 52.5\%，都远超公司历史最好水平，或者接受 4.5\% 的隐含回报率。
+样例公司的收入增速杠杆无解：网格上每股价值在复合增速约 14.6\% 时达到最高 11.94 元，仍低于 12.80 元，正是上文非单调性的实例。
+\file{tests/test\_reverse\_dcf.py} 把每个解代回正向 DCF，断言每股价值与参考股价相差不超过 $10^{-5}$ 元；并断言样例的增速杠杆最高点位于搜索区间内部、
+高于基准每股价值、低于参考股价。
+
+\begin{tradeoff}[：逐变量单独求解，只动 DCF 层]
+联合求解（例如同时调增速与利润率）有无穷多解，需要再加一个目标函数（最小改变量范数），而不同变量的量纲不同，范数没有自然的权重。
+单变量解虽然不是“市场的真实预期”，但每个都有明确含义，可以直接写成一句话。另一个简化是只平移 DCF 的驱动向量，不回推三表：
+提高收入增速时，三表里的营运资本天数、折旧率不随之重算，而是沿用 DCF 层的占收入比。完整回推需要每次迭代重跑三表（每个杠杆 400 个网格点加二分），
+成本可以接受，但会使反向 DCF 的结果依赖三表中“哪些假设随增速变动”这一新的、未写出的假设。两条简化都写入产物的 \code{notes}。
+\end{tradeoff}
+
+% ======================================================================
+\subsection{可比公司估值}
+\label{sec:val-comps}
+
+\code{comps.py} 实现相对估值，计算规则依据原插件 comps 参考文档（EV 桥、倍数配对、NM、IQR 离群、P25/P75 区间），代码自研。
+
+\paragraph{倍数。} 对目标公司与每家同业：$\text{EqV}=P\times\text{股本}$，$\text{EV}=\text{EqV}+\text{有息负债}+\text{少数股东权益}-\text{现金}-\text{非经营性资产}$
+（式~\eqref{eq:rel-ev}）。EV 类倍数配 EV 口径分母（营业收入、EBITDA、EBIT），P/E 配归母净利润；分母 $\le0$ 记 \code{NM}，
+不参与统计。目标公司行由 \code{target\_row} 从 DCF plan 生成：EBIT 用经营性口径，有息负债含租赁，非经营性资产与 DCF 股权桥相同，保证两种方法用同一座桥。
+
+\paragraph{分层与统计。} 同业分为核心（Core）、次要（Secondary）、剔除（Excluded，须写理由）。只有核心同业驱动估值区间。分位数用
+\code{statistics.quantiles(method="inclusive")}，与 Excel 的 \code{QUARTILE}/\code{PERCENTILE.INC} 相同，使工作簿公式能复现。
+离群值用 Tukey 栅栏~\cite{tukey1977eda}：$[Q_1-1.5\,\text{IQR},\,Q_3+1.5\,\text{IQR}]$ 之外标记为离群，只在核心样本 $\ge4$ 家时启用，
+标记后剔除重算分位数，但原始数据保留在表中。
+
+\paragraph{隐含股价与区间。} 对 EV/EBITDA 与 P/E（LTM）两个主倍数，取核心同业（剔除离群）的 P25、中位数、P75 乘以目标公司分母；
+EV 倍数再减去股权桥调整后除以股本。区间下限为两种方法 P25 隐含价的较小者，上限为 P75 的较大者，中枢为两个中位数隐含价的中位数。
+若有 DCF 区间，再报告 DCF 基准相对 comps 中枢的偏离与两个区间是否重叠。
+
+\paragraph{利润率对比。} 倍数的溢价或折价常常由利润率差异解释。程序计算目标公司与核心同业的 EBITDA、EBIT、净利率，以及目标与核心中位数之差（百分点），
+写入 \code{margins} 与工作簿“利润率对比”页。亏损同业的净利率照录为负值而不是 NM（收入为正即可计算），测试 \code{test\_comps\_margin\_sheet} 对此有断言。
+
+\begin{table}[t]
+\centering
+\caption{样例公司的可比公司估值（核心同业 5 家，次要 1 家，剔除 1 家）。}
+\label{tab:val-comps}
+\small
+\begin{tabular}{@{}lrrrrr@{}}
+\toprule
+倍数 & 核心 P25 & 核心中位数 & 核心 P75 & 目标公司 & 相对中位数 \\
+\midrule
+EV/营业收入 & 2.11x & 2.15x & 2.33x & 1.86x & $-13.4\%$ \\
+EV/EBITDA & 10.30x & 11.55x & 11.66x & 10.08x & $-12.7\%$ \\
+EV/EBIT & 13.44x & 14.94x & 16.20x & 14.71x & $-1.5\%$ \\
+P/E（LTM） & 18.29x & 19.79x & 22.67x & 16.72x & $-15.5\%$ \\
+\midrule
+\multicolumn{6}{@{}l}{隐含股价（元）：EV/EBITDA 13.10 / 14.79 / 14.94；P/E 14.00 / 15.15 / 17.36；区间 13.10～17.36，中枢 14.97} \\
+\multicolumn{6}{@{}l}{利润率差（目标 − 核心中位数）：EBITDA $-1.56$ pp，EBIT $-2.97$ pp，净利率 $-0.94$ pp} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+表~\ref{tab:val-comps} 是样例结果。EV/营业收入一栏中恒川重工（8.4x EV/EBITDA、收入规模最大）被 IQR 栅栏标为离群，剔除后核心样本为 4 家。
+DCF 基准 11.67 元比 comps 中枢低 22.0\%，但两个区间重叠（DCF 6.17～17.73 元）。目标公司各倍数普遍低于同业中位数，利润率差给出了一个可检查的解释：
+EBIT 利润率低于同业中位数 2.97 个百分点。
+
+\begin{tradeoff}[：中位数与 P25/P75，离群只标记]
+同业样本通常只有 4～8 家，均值会被一家高估值公司拉偏，所以以中位数为中枢、四分位为区间~\cite{liu2002multiples}。
+离群值“标记并在统计中剔除，但不删数据”，是为了让读者看见被剔除的是谁，并能在工作簿里改分层后重算。
+样本少于 4 家时 IQR 本身不稳定，不做离群判断，同时把状态降为 \code{screen-grade}。
+\end{tradeoff}
+
+% ======================================================================
+\subsection{盈利预测摘要与程序评级}
+\label{sec:val-rating}
+
+\code{forecast\_summary.build} 生成研报首页“盈利预测与估值”表的数据：实际年度取真值表，预测年度取三表基准情景。
+三表模型只有合并净利润，归母净利润用基期占比近似：
+\begin{equation}
+\text{NP}^{\text{parent}}_t=\text{NI}_t\times\frac{\text{NP}^{\text{parent}}_0}{\text{NI}_0},\qquad
+\text{EPS}_t=\frac{\text{NP}^{\text{parent}}_t}{\text{总股本}_0},\qquad \text{PE}_t=\frac{P}{\text{EPS}_t}.
+\end{equation}
+样例占比为 0.9478，2025E 归母净利润 634.2 百万元，EPS 0.793 元。两条简化（少数股东损益占比不变、股本按期末总股本不考虑回购注销）写入 \code{notes}。
+
+评级按式~\eqref{eq:prob-rating}：$u=V_{\text{base}}/P-1$，阈值下限含本数，默认 $u\ge20\%$ 买入、$\ge5\%$ 增持、$\ge-5\%$ 中性、$\ge-20\%$ 减持、其余卖出；
+假设文件可用 \code{rating\_rule} 覆盖阈值，覆盖后的规则文字随评级一起输出。表~\ref{tab:val-real} 汇总四次运行。
+
+\begin{table}[t]
+\centering
+\caption{四家公司估值结果（金额百万元，每股元；WACC 与 $g_\infty$ 为基准情景）。}
+\label{tab:val-real}
+\footnotesize
+\begin{tabular}{@{}lrrrrrrr@{}}
+\toprule
+ & 星河智造 & 贵州茅台 & 宁德时代 & 招商轮船 \\
+\midrule
+参考股价 & 12.80 & 1237.00 & 291.11 & 20.15 \\
+WACC / $g_\infty$ & 8.21\% / 2.0\% & 7.65\% / 2.5\% & 8.31\% / 2.5\% & 8.36\% / 1.5\% \\
+预测期 FCFF 现值 & 1,873.6 & 377,694.9 & 298,325.9 & 18,238.0 \\
+终值现值 & 8,116.5 & 1,370,676.8 & 1,128,020.1 & 58,789.4 \\
+企业价值 & 9,990.1 & 1,748,371.7 & 1,426,346.0 & 77,027.4 \\
+\quad + 现金 & 1,356.7 & 51,690.6 & 333,512.9 & 4,720.9 \\
+\quad + 非经营性资产 & 0.0 & 127,224.1 & 143,057.0 & 7,999.1 \\
+\quad − 有息负债 & 1,670.0 & 44.2 & 116,851.4 & 27,271.2 \\
+\quad − 租赁负债 & 35.0 & 189.5 & 2,805.1 & 1,126.7 \\
+\quad − 少数股东权益 & 308.3 & 9,321.4 & 33,918.6 & 749.2 \\
+股权价值 & 9,333.5 & 1,917,731.2 & 1,749,340.9 & 60,600.3 \\
+摊薄股本（百万股） & 800.0 & 1,252.3 & 4,563.8 & 8,074.5 \\
+每股价值 悲观/基准/乐观 & 6.17/11.67/17.73 & 1118.10/1531.40/1879.69 & 246.98/383.31/527.30 & 2.61/7.51/12.59 \\
+终值占 EV & 81.2\% & 78.4\% & 79.1\% & 76.3\% \\
+隐含退出 EV/EBITDA & 7.5x & 13.8x & 10.0x & 7.8x \\
+上行空间 & $-8.9\%$ & $+23.8\%$ & $+31.7\%$ & $-62.8\%$ \\
+程序评级 & 减持 & 买入 & 买入 & 卖出 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{tradeoff}[：评级由程序给]
+卖方评级本质上是观点，交给模型“综合判断”似乎更自然。我们不这样做，有三个理由。其一，评级必须与估值数字一致（(V5)、评分标准 L0-05），
+程序评级使一致性按构造成立，guard 只需核对正文评级字符串与产物相等。其二，模型给评级时有“向上取整”的倾向：\fab{在早期旧流程的稿件里，曾出现基准每股价值低于现价的公司仍被写成“增持”、理由是“长期空间”的情况}，这类表述无法核对。其三，阈值规则透明，读者可以自己代入。
+代价是评级对假设极其敏感——它只是基准情景的函数，忽略了情景偏度与可比公司。我们的处理是把偏度表、comps 区间与反向 DCF 并列放在估值章，
+由主笔在正文解释评级与这些交叉验证的关系，但不能改评级本身；如果分析师认为评级不合理，唯一的途径是修改并书面说明假设，再重跑。
+\end{tradeoff}
+
+\begin{failcase}[ 4：强周期公司的机械评级（招商轮船）]
+招商轮船的基准情景假设 2026 年收入增长 40\%、毛利率 44\%，随后两年运价回落、2029 年起毛利率回到 28\%，基准每股价值 7.51 元，比参考股价低 62.8\%，程序评级“卖出”。
+反向 DCF 显示现价要求的收入增速和利润率都超出历史最好水平，结论在模型内部是一致的。但强周期股的定价常常反映的是周期高点的盈利与重置成本，
+而不是五年期 FCFF；终值以 2030 年回归中枢后的现金流为基数，几乎把当前景气全部折掉了。这类公司更合适的锚可能是 P/B 或重置成本，本项目尚未实现。
+我们在研报中保留了程序评级，同时要求主笔把“估值方法对周期股的适用性”写进风险与局限一节。这是一个程序评级“算对了但未必有用”的例子。
+\end{failcase}
+
+% ======================================================================
+\subsection{公式联动工作簿}
+\label{sec:val-workbook}
+
+估值的交付物除了 JSON 与 Markdown 报告，还有一本投行排版的 Excel 模型 \file{model.xlsx} 和可比公司工作簿 \file{comps\_formula\_workbook.xlsx}。
+评审更习惯在 Excel 里检查估值，所以工作簿必须是“活的”：改一个输入，下游全部重算。
+
+\paragraph{标准库写出。} \code{finagent/} 只允许依赖标准库（pdfplumber 除外，第~\ref{sec:principles}~节），所以 \file{output/xlsx.py} 用 \code{zipfile}
+加手写 OOXML 生成 xlsx：工作表 XML、共享样式表、图表与绘图关系。三类单元格：普通数值（\code{Cell}，可标为输入，字色蓝）、
+公式（\code{Formula(expr, value)}，写 \code{<f>} 与缓存值 \code{<v>}，字色黑；纯跨表引用为绿），以及数组公式（CSE，用于 \code{MEDIAN(IF(...))}）。
+含公式的工作簿在 \code{workbook.xml} 里设 \code{fullCalcOnLoad}，Excel 打开时全量重算；缓存值让不重算的阅读器（预览、审计脚本）也能显示正确数字。
+样式按卖方模型惯例：Arial 配楷体的富文本分段（中文段楷体、西文段 Arial），金额千分位一位小数、负数括号、零显示“-”，关闭网格线、冻结表头、横向打印。
+
+\paragraph{页面结构。} \file{model.xlsx} 依次为估值汇总、盈利预测、DCF、WACC、敏感性、非经营性资产（有明细时）、分部预测（有分部时）、
+三表-假设、三表-利润表、三表-资产负债表、三表-现金流量表、历史财务、分季度、经营数据、可比公司、模型检查。DCF 页的 NOPAT、FCFF、折现因子、
+终值、股权桥与每股价值，WACC 页的股权成本与 WACC，都是公式。
+
+\paragraph{公式联动三表与情景开关。} \code{workbook\_ts.linked\_three\_statement} 把三表写成公式：利润表取驱动与辅助计算，资产负债表取利润表、
+辅助计算与现金流量表，现金流量表取利润表与辅助计算，勾稽检查也是公式（\code{ROUND(资产-负债权益,6)}）。三表-假设页 B5 是情景开关（1 悲观 / 2 基准 / 3 乐观），
+每个情景驱动一行，选用行写成 \code{CHOOSE(\$B\$5, 悲观, 基准, 乐观)}，DCF 页的经营行引用三表页，于是改 B5 即联动重算三表与 DCF，
+结果与引擎各情景输出一致。实现上先用占位符 \code{«IS.rev.C»} 写跨表引用，全部页面建好、行号确定后再统一替换为 \code{'三表-利润表'!C7} 这样的地址。
+引擎中本项目不使用的功能（循环贷、现金扫还、可抵扣亏损、回购增发、非默认折旧或成本方法）不写公式；\code{detail()} 返回的 \code{supported} 为假时退回数值表，
+避免写出与引擎不一致的公式。
+
+\paragraph{只读审计。} 质检侧的 \code{evaluation/workbook\_audit.py} 不改写工作簿，只做三类检查：
+(1) 结构：公式数、缺缓存、错误值、\code{\#REF!}；
+(2) 公式控制：跨期公式“孤岛”（把相对引用换成 R1C1 式偏移后，某期写法与左右两期都不同而左右两期相同，例如中间一年被手工改成数值）判失败，
+公式内写死的数字（约定常数 0、0.5、1、2、4、12、100、365，ROUND 精度、QUARTILE 分位序号与 $\le0.01$ 的勾稽容差除外）与易变函数（NOW、OFFSET、INDIRECT 等）列为警告；
+(3) 五组勾稽：对每个预测列，用来源单元格的缓存值独立复算资产负债平衡、现金衔接、留存收益滚动、固定资产滚动、有息负债滚动，
+同时要求勾稽单元格的公式文本与预期完全一致（防止“缓存为 0 但公式被改坏”）。只有被评 PDF 同目录下字节一致的 \file{sheet.xlsx} 才会被审计。
+
+\begin{table}[t]
+\centering
+\caption{\file{model.xlsx} 审计结果（本章四次运行）。}
+\label{tab:val-audit}
+\small
+\begin{tabular}{@{}lrrrrrl@{}}
+\toprule
+公司 & 工作表 & 公式数 & 勾稽项 & 孤岛 & 写死数字 & 结论 \\
+\midrule
+星河智造 & 13 & 603 & 25 & 0 & 0 & 通过 \\
+贵州茅台 & 15 & 988 & 25 & 0 & 0 & 通过 \\
+宁德时代 & 15 & 969 & 25 & 0 & 0 & 通过 \\
+招商轮船 & 14 & 624 & 25 & 0 & 0 & 通过 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+表~\ref{tab:val-audit} 中四本工作簿的最大勾稽残差均为 0。审计的局限写在结果的 \code{limitation} 字段里：它没有在 Excel 或 LibreOffice 中重算全部公式，
+只验证公式结构、缓存、跨期写法与五组勾稽。公式与引擎的等价性由另一条路径保证：\file{test\_quarterly\_ebit.py} 断言 DCF 页“每股价值 = 股权价值/股本”的公式缓存值
+等于引擎基准每股价值；团队\fab{在 Excel for Mac 与 LibreOffice 中各手工切换三次情景开关}，核对了三表与 DCF 的重算结果。
+
+\begin{tradeoff}[：手写 OOXML，而不是 openpyxl]
+openpyxl 能省去大量 XML 细节，但它写出的公式没有缓存值（需要 Excel 打开后才有数），而审计器与测试都要读缓存；
+它也是一个需要写进 \file{THIRD\_PARTY.md} 的运行时依赖。手写的代价是 525 行代码和对 OOXML 细节（富文本、数组公式、图表关系）的维护。
+我们接受这个代价，因为“打开即有正确数字、不打开也能审计”是工作簿可追溯的前提。
+\end{tradeoff}
+
+% ======================================================================
+\subsection{与参照引擎的口径一致性}
+\label{sec:val-parity}
+
+估值引擎的早期版本直接调用原 OpenAI Public Equity Investing 插件的脚本。该插件许可证为内部使用，不能随参赛源码分发，
+因此我们参照其计算规则重写了全部引擎，仓库不含其代码（附录~\ref{app:thirdparty}）。重写引入的风险是“看起来一样、细节不同”。
+我们用两层测试守护第~\ref{sec:prob-task4}~节的 (V6)，见表~\ref{tab:val-parity}。
+
+\begin{table}[t]
+\centering
+\caption{一致性守护（\file{THIRD\_PARTY.md} 第 1 节）。}
+\label{tab:val-parity}
+\footnotesize
+\begin{tabularx}{\linewidth}{@{}>{\raggedright\arraybackslash}p{2.6cm} >{\raggedright\arraybackslash}p{2.4cm} X l@{}}
+\toprule
+参照引擎 & 自研实现 & 对照方式 & 标准 \\
+\midrule
+三表联动 & \file{ts\_engine.py} & 样例 + 3 个边界 + 60 组随机 plan（收入/成本/营运资本/PP\&E 各口径、亏损与可抵扣亏损、循环贷与扫还、分红回购增发、契约、来源时效边界）；另用原插件的 plan 校验器检查生成的 plan & 浮点逐位相等 \\
+情景敏感性表 & \file{scenario\_tables.py} & 样例 + 边界 + 180 组随机 payload（收益恰等于门槛、下行/上行比恰为 0.75、溢出为 inf） & JSON 逐字节相等 \\
+FCFF DCF & \file{dcf.py} & 20 组随机 plan × 3 情景；EV、股权价值、每股价值、终值占比与全部敏感性格 & 相对误差 $<10^{-9}$ \\
+业绩分析 & \file{earnings.py} & 300 组随机输入（见第~\ref{sec:analysis}~节） & 逐字段相等 \\
+\midrule
+golden 快照 & 全部 & \file{tests/golden/} 四个 JSON（三表、情景表、comps、业绩），用 \code{all} 命令跑样例后与快照逐字段比较；无需原插件 & 完全相等 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\paragraph{两层的分工。} 对照测试（\file{test\_parity\_reference.py}）在本地存在原插件时运行，检验“引擎函数在任意输入上与原引擎相同”；
+golden 快照（\file{test\_golden.py}）不需要原插件，检验“本项目整条流水线在样例上的产物没有意外变化”。前者守护引擎，后者守护口径映射。
+2026-09-28 我们有意修改了口径（经营性 EBIT、轧差经营费用、DCF 由三表驱动、comps 增加利润率），重新生成了快照并在快照 README 记录差异原因；
+引擎本身未改，对照测试照常逐位通过。撰写本章时在本机运行估值相关的 8 个测试文件，共 42 个测试全部通过（含对照测试）。
+
+\begin{tradeoff}[：逐位相等，而不是容差相等]
+三表与情景表要求逐位相等，DCF 要求相对误差 $<10^{-9}$。逐位相等迫使我们复刻浮点运算顺序（例如 \code{(begin + 0.5*capex)*rate} 不能写成
+\code{begin*rate + 0.5*capex*rate}），写代码时更费事；好处是任何差异都是真差异，不必讨论“$10^{-7}$ 算不算一致”。DCF 放宽到 $10^{-9}$：DCF 模块是按原插件的公式重新组织的（例如情景向量统一在 \code{forecast} 中展开），没有逐行复刻运算顺序，
+而 $10^{-9}$ 的相对误差远小于任何展示精度（$\halfulp$，第~\ref{sec:guards}~节），不会改变任何对外数字。
+\end{tradeoff}
+
+% ======================================================================
+\subsection{端到端数值示例：星河智造}
+\label{sec:val-example}
+
+本节用虚构样例公司星河智造（\file{data/samples/}）走一遍完整链条，所有数字取自命令
+\code{python -m finagent all --input data/samples/annual\_report\_2024.md --year 2024 ...}（完整参数见附录~\ref{app:repro}）的实际产物。样例数据内部完全自洽，
+真实数据的效果会差一些，这一点在第~\ref{sec:val-realcases}~节讨论。
+
+\paragraph{第 1 步：历史基数。} 2024 年营业收入 5,862.34 百万元，利润总额 760.12、财务费用 45.30、投资收益 23.50、公允价值变动收益 41.20 百万元，
+经营性 EBIT $=740.72$ 百万元（利润率 12.64\%）；折旧摊销 340.5、资本开支 685.2 百万元，营运资本 1,895.7 百万元（较上年增加 588.2）。
+基期 FCFF 为 $740.72\times(1-15\%)+340.5-685.2-588.2=-303.3$ 百万元：公司处于扩产期，经营现金被应收与资本开支吃掉。
+
+\paragraph{第 2 步：三表驱动。} 程序从报表反算：毛利率 31.19\%，轧差经营费用率 12.74\%，应收、存货、应付周转天数 123.63、101.38、109.51 天，
+折旧率 11.05\%，税率 15.00\%，利率 2.83\%。假设文件只给收入增速（12\%、10\%、8\%、6\%、5\%）与资本开支率（10\%～6.5\%），
+其余驱动保持基期。三表基准情景见表~\ref{tab:val-ex-ts}；六项勾稽最大误差 $3.6\times10^{-12}$ 百万元，三表状态 \code{senior-review-ready}，无警示。
+
+\begin{table}[t]
+\centering
+\caption{星河智造三表模型基准情景（百万元）。}
+\label{tab:val-ex-ts}
+\small
+\begin{tabular}{@{}lrrrrr@{}}
+\toprule
+ & FY2025 & FY2026 & FY2027 & FY2028 & FY2029 \\
+\midrule
+营业收入 & 6,565.8 & 7,222.4 & 7,800.2 & 8,268.2 & 8,681.6 \\
+EBITDA & 1,211.0 & 1,332.1 & 1,438.6 & 1,524.9 & 1,601.2 \\
+EBIT & 835.6 & 926.0 & 1,007.0 & 1,074.6 & 1,137.5 \\
+净利润 & 669.2 & 746.0 & 814.9 & 872.3 & 925.8 \\
+营运资本增加 & 227.5 & 212.3 & 186.8 & 151.3 & 133.7 \\
+资本开支 & 656.6 & 650.0 & 624.0 & 578.8 & 564.3 \\
+期末现金 & 1,517.2 & 1,806.9 & 2,242.6 & 2,835.1 & 3,526.6 \\
+资产 − 负债与权益 & 0.0 & 0.0 & 0.0 & 0.0 & 0.0 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{第 3 步：FCFF 与折现。} WACC：$K_e=1.8\%+1.10\times6.5\%+1.0\%=9.95\%$，$K_d(1-T)=3.5\%\times0.85=2.975\%$，
+$W=0.75\times9.95\%+0.25\times2.975\%=8.206\%$。各年 FCFF 为 201.6、330.8、476.7、633.6、732.6 百万元，年中折现后合计 1,873.6 百万元。
+终值 $732.58\times1.02/(8.206\%-2\%)=12{,}040.0$ 百万元，折现后 8,116.5 百万元，占 EV 的 81.2\%（触发终值占比警示）。
+EV $=9{,}990.1$ 百万元；股权价值 $=9{,}990.1+1{,}356.7-1{,}670.0-35.0-308.3=9{,}333.5$ 百万元；每股价值 $9{,}333.5/800=11.67$ 元。
+隐含退出倍数 7.5x，低于假设文件中作交叉验证的 10x；用 10x 退出倍数法得到 15.01 元，这个差距本身就是一条应写进研报的信息。
+
+\paragraph{第 4 步：情景与敏感性。} 悲观情景（收入增速 5\%/3\%…、毛利率 −2 个百分点、应收天数 +15、WACC +0.5\%、$g_\infty=1.5\%$）每股 6.17 元；
+乐观情景 17.73 元。WACC × $g_\infty$ 矩阵的四角为 12.11（$W-1\%$, $g-1\%$）、17.42（$W-1\%$, $g+1\%$）、8.72（$W+1\%$, $g-1\%$）、11.24 元（$W+1\%$, $g+1\%$），
+方向性检查全部通过。
+
+\paragraph{第 5 步：交叉验证与评级。} 可比公司区间 13.10～17.36 元（表~\ref{tab:val-comps}）；反向 DCF 显示现价要求平均 EBIT 利润率 13.75\%，
+超出历史最好水平（13.03\%）；概率加权目标价 11.81 元。基准上行空间 $11.67/12.80-1=-8.9\%$，落在 $[-20\%,-5\%)$，程序评级“减持”。
+
+% ======================================================================
+\subsection{真实公司：茅台、宁德时代、招商轮船}
+\label{sec:val-realcases}
+
+三家公司的假设文件由分析师会话起草（状态字段写明“以下全部为观点/假设，不是财报事实”），抽取文件与假设随代码提交在 \file{data/extractions/}，
+评审无需模型即可复现表~\ref{tab:val-real}。三家展示了估值链的三种用法。
+
+\paragraph{贵州茅台：分部驱动 + 大额非经营性资产。} 收入按茅台酒、系列酒量价推演：基准情景茅台酒销量年增 3\%、吨价 2026 年持平后年增 1\%～2\%，
+系列酒 2026 年吨价下降 6\%、销量增 3\%。程序算出的合并收入增速为 2.18\%、3.89\%、5.18\%、5.18\%、5.18\%，综合毛利率维持 91.2\% 左右；
+悲观情景 2026 年收入下降 5.66\%。公司无有息借款，按全股权融资，WACC 即股权成本 7.65\%。非经营性资产 127,224.1 百万元占股权价值的 6.6\%，
+若不加回，每股价值会低约 102 元。终值占 EV 78.4\%，隐含退出倍数 13.8x，低于依据中写的交叉验证倍数 18x。
+
+\paragraph{宁德时代：GWh 量价 + 高资本开支。} 动力电池与储能电池按 GWh × 单价预测，基准情景合并收入增速 20.0\%、15.2\%、12.7\%、9.2\%、7.2\%，
+毛利率从 25.7\% 缓降到 25.1\%（单价下行、毛利率逐年下调 0.3～0.5 个百分点）。资本开支率 10\% 起逐年回落，末年资本开支是折旧的 1.32 倍。
+非经营性资产为交易性金融资产、长期股权投资、其他权益工具投资与其他非流动金融资产四项，合计 143,057.0 百万元；货币资金 333,512.9 百万元全额加回
+（含保证金等受限资金，依据中注明“口径简化”）。三表模型触发 \code{STALE\_HISTORICAL\_SOURCE}：历史数据截至 2025 年末，估值日为 2026 年 9 月 30 日，超过 270 天。
+
+\paragraph{招商轮船：无法量价拆分时的合并驱动。} 年报未披露各船型营运天数与等价期租租金，无法写 \code{segment\_forecast}。
+分析师直接给出合并收入增速（40\%、$-10\%$、$-8\%$、2\%、3\%）与毛利率路径（44\%、36\%、30\%、28\%、28\%），以及负的经营费用率（失败案例 1）。
+三表模型触发 \code{STEP\_UP\_REVENUE}（首年收入增长超过 25\%）。长期应付款（主要为租赁公司借款）作为类负债项在非经营性资产明细中扣减 677.4 百万元。
+评级与适用性讨论见失败案例 4。
+
+\begin{insight}[：终值占比在四家公司中都超过 75\%]
+四次运行的终值现值占 EV 在 76\%～81\% 之间，都触发了警示。这不是某家公司的特殊问题，而是“五年显式预测 + 永续增长”结构在低利率环境下的共同特征：
+$W-g_\infty$ 只有 5.5～6.9 个百分点，终值倍数 $1/(W-g)$ 约为 15～18 倍。因此敏感性矩阵里 WACC 与 $g_\infty$ 的影响远大于收入增速，
+研报的估值讨论应把篇幅放在折现率与长期增长上。评分标准 L1 的“终值占比”条目（第~\ref{sec:eval}~节）检查的正是正文有没有披露这一点。
+\end{insight}
+
+% ======================================================================
+\subsection{局限与小结}
+\label{sec:val-summary}
+
+本章的估值链有以下已知局限，均已在估值报告口径说明或 \file{CLAUDE.md} 中披露：
+(1) 折现从财年末起算，未处理估值日之前的 stub period；终值按年末折现。
+(2) 资产处置收益、其他收益、减值与营业外收支留在 EBIT 中，会被永续化；招商轮船的卖船收益靠分析师在费用率假设中手工剔除。
+(3) 利息收入通过负利率挂在有息负债上，不随现金变动（失败案例 2），影响预测期 EPS，不影响 FCFF。
+(4) 流动性压力测试在 FCF 为负时方向相反（失败案例 3）。
+(5) 只覆盖非金融企业；银行、保险需要剩余收益或股利贴现模型。
+(6) 终值年未做“正常化”（资本开支向折旧收敛、营运资本增加按永续增速重算），高增长假设会被冻结进终值。
+(7) 反向 DCF 逐变量求解且不回推三表。
+
+这些局限的共同点是：它们都是确定性的口径选择，方向可知、可以复算、可以在报告中逐条说明；而本章要消除的问题——模型心算错误、DCF 与预测表两套假设、
+无法复算的评级——都是不可复算的。把估值的全部数值工作交给约四千行标准库 Python，模型只负责写一份带依据的假设文件，
+是 \sysname{} 在估值建模上的核心取舍：模型的判断仍然决定估值结论，但每一个判断都落在一个具名字段上，每一个数字都能从这些字段与年报原文复算出来。

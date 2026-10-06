@@ -1,0 +1,50 @@
+% LEDGER 完整技术报告（NeurIPS 体例，中文，长版）
+% 编译：cd paper/techreport && latexmk -xelatex main.tex
+\documentclass[fontset=mac,zihao=5]{ctexart}
+\usepackage{neurips_cn}
+\input{macros}
+
+\title{\sysname{}：理解与计算分离的可追溯 A 股投研多智能体系统\\[6pt]\large \textbf{L}LM-driven \textbf{E}quity Research with \textbf{D}eterministic \textbf{G}rounding, \textbf{E}valuation and \textbf{R}eporting\\[4pt]\large 完整技术报告}
+\author{%
+  \textbf{陈沫樵}\textsuperscript{1,$*$,$\dagger$}\quad
+  \textbf{许冰洁}\textsuperscript{1,$*$}\quad
+  \textbf{赵千淳}\textsuperscript{2,$*$}\quad
+  \textbf{刘盈羽}\textsuperscript{1,$*$}\\[4pt]
+  \small \textsuperscript{1}对外经济贸易大学\qquad \textsuperscript{2}中国人民大学\\[2pt]
+  \small \texttt{mochiaochen@gmail.com}\\[2pt]
+  \small 代码：\url{https://github.com/MochiaoChen/finagent}}
+\reportnote{$^*$共同第一作者。\quad $^\dagger$通讯作者。\\
+  2026 北京市大学生金融人工智能竞赛参赛作品（主题：金融投研智能体构建）。文中估值结论均依赖所列假设，不构成投资建议。}
+
+\begin{document}
+\maketitle
+\input{sections/00_abstract}
+\clearpage
+\setcounter{tocdepth}{2}
+\tableofcontents
+\clearpage
+
+\input{sections/01_introduction}
+\input{sections/02_related}
+\input{sections/03_problem}
+\input{sections/04_principles}
+\input{sections/05_architecture}
+\input{sections/06_extraction}
+\input{sections/07_analysis}
+\input{sections/08_valuation}
+\input{sections/09_reportcheck}
+\input{sections/10_guards}
+\input{sections/11_pipeline}
+\input{sections/12_evaluation}
+\input{sections/13_experiments}
+\input{sections/14_discussion}
+\input{sections/15_limitations}
+\input{sections/16_conclusion}
+
+\bibliographystyle{plainnat}
+\bibliography{allrefs}
+
+\clearpage
+\appendix
+\input{sections/appendix}
+\end{document}

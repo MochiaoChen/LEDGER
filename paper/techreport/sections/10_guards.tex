@@ -1,0 +1,718 @@
+% ============================================================
+% 第 10 节  数字护栏、数字锁与来源校验
+% ============================================================
+\section{数字护栏、数字锁与来源校验}
+\label{sec:guards}
+
+前几章的机制管的是\emph{程序产出}的数字：抽取有证据谓词，分析与估值由确定性代码计算，纠错按展示精度比对。
+但交付物的大部分篇幅是\emph{模型写的文字}——一份深度研报正文三万字左右、八九百个数字，由主笔会话写成、复核编辑会话改写。
+本章讲系统如何把“模型写的文字”纳入与“模型抄的数字”同等强度的约束。共五个机制：
+\begin{enumerate}
+\item \textbf{数字护栏}（guard，\file{finagent/output/guard.py}）：文稿中每个数字必须按展示精度在本次运行的结论性产物 $\Art$ 或外部来源登记 $\Sources$ 中找到出处；
+  能识别指标与期间的表述还要与真值表绑定核对；每个有出处的数字按出处归为事实、推论或观点。
+\item \textbf{来源登记}（\file{finagent/output/sources.py}）：年报之外的事实只能来自 \file{research/sources.json}，每条摘句必须原样包含所登记的数字；
+  只能在外部来源中找到出处的数字，所在句子必须带对应的 \code{[S编号]}。
+\item \textbf{前后矛盾}：护栏调用第~\ref{sec:rc-consistency} 节的内部一致性检查。
+\item \textbf{数字锁}（numlock，\file{finagent/output/numlock.py}）：复核改写稿中的数字与来源编号必须是初稿的子集。
+\item \textbf{渲染凭证}（\file{finagent/output/render\_check.py}）：PDF 的版面检查结果与 HTML、PDF、排版代码的哈希绑定，任何一方改动都使凭证失效。
+\end{enumerate}
+这些机制的系统性质（数字闭合、引用完备、绑定正确、出处类型、数字锁保持闭合）已在第~\ref{sec:prob-props} 节定义，
+相应的原则与不变量见第~\ref{sec:pr-p8}、\ref{sec:pr-p9} 节。本章讲实现、算法、在五份真实交付文稿上的实测，以及每个机制的假阴性与假阳性来源。
+
+\begin{figure}[t]
+\centering
+\resizebox{\linewidth}{!}{%
+\begin{tikzpicture}[font=\small]
+  \node[agent] (w) at (0,0) {主笔会话\\写 $\Narr^0$};
+  \node[agent] (e) at (0,-3.2) {复核编辑\\改写 $\Narr$};
+  \node[agent] (r) at (0,1.8) {研究助理 / 分析师\\登记 $\Sources$};
+  \node[gate] (vs) at (3.4,1.8) {verify-\\sources};
+  \node[file] (S) at (6.6,1.8) {\file{sources.json}};
+  \node[file] (A) at (6.6,0.6) {运行产物 $\Art$\\(结论性文件)};
+  \node[prog, minimum width=34mm] (g) at (6.6,-1.0) {guard：出处 / 绑定 /\\引用 / 矛盾 / 分类};
+  \node[gate] (g8) at (3.4,-1.0) {闸门 8};
+  \node[gate] (nl) at (3.4,-3.2) {numlock};
+  \node[gate] (g9) at (6.6,-3.2) {闸门 9\\重跑 guard};
+  \node[agent] (t) at (10.4,-3.2) {排版设计师\\渲染 PDF};
+  \node[gate] (rc) at (10.4,-1.4) {渲染\\凭证};
+  \node[gate] (g10) at (10.4,0.4) {闸门 10};
+  \draw[arr] (r) -- (vs); \draw[arr] (vs) -- (S);
+  \draw[arr] (S.east) -- ++(0.5,0) |- (g.east);
+  \draw[arr] (A) -- (g);
+  \draw[arr] (w) -- (g8); \draw[arr] (g8) -- (g);
+  \draw[arr] (w) -- (e);
+  \draw[arr] (e) -- (nl); \draw[arr] (nl) -- (g9);
+  \draw[darr] (g) -- (g9);
+  \draw[arr] (g9) -- (t); \draw[arr] (t) -- (rc); \draw[arr] (rc) -- (g10);
+\end{tikzpicture}}
+\caption{文字侧的检查点。橙色为模型会话，蓝色为确定性程序，红色为闸门或拒收检查。外部来源先过结构与“摘句含数”检查才能成为出处；
+初稿过 guard（闸门 8）；改写稿先过数字锁、再重跑 guard（闸门 9）；PDF 须带与当前产物和排版代码匹配的渲染凭证（闸门 10）。}
+\label{fig:guards-overview}
+\end{figure}
+
+% ------------------------------------------------------------
+\subsection{威胁与检查的对应}
+\label{sec:guards-threat}
+
+第~\ref{sec:prob-threat} 节把模型会话视为“不可信但有用”的组件，列出九类故障。文字侧涉及其中五类：
+T1 写出不存在的数字、T2 写出属于其他口径或期间的数字、T3 写出心算的派生数、T4 写出无出处的外部数字或错误的来源编号、T5 在改写中改动数字。
+表~\ref{tab:guards-threat} 给出每一类由哪个检查负责，以及检查覆盖不到的部分。最后一列是本章的主线之一：每个检查都有结构性的盲区，
+我们不试图用一个检查堵住全部，而是让盲区互不重合，并把剩余部分交给盲评与人工复核清单。
+
+\begin{table}[t]
+\centering
+\caption{文字侧故障与检查。“主检查”列出最先拦截的机制。}
+\label{tab:guards-threat}
+\small
+\begin{tabularx}{\linewidth}{@{}p{2.4cm}p{3.0cm}X@{}}
+\toprule
+故障 & 主检查 & 覆盖不到的部分 \\
+\midrule
+T1 编造数字 & guard 出处（\code{check\_text}） & 巧合落入某个产物值的容差窗口（\S\ref{sec:guards-coinc}）；中文数词 \\
+T2 口径 / 期间错配 & guard 绑定（\code{check\_binding}） & 分部、季度、预测、跨年句不绑定；数字配到另一个也有出处的量上 \\
+T3 心算派生数 & guard 出处 & 心算结果恰好等于某产物值；“约三倍”等中文数词 \\
+T4 外部数字无出处 & 来源登记 + \code{check\_citations} & 摘句本身是否真实出自网页（程序不联网回查） \\
+T5 改写改数 & numlock + 重跑 guard & 数字在句间挪动、换绑指标（集合语义） \\
+前后矛盾 & 内部一致性 & 分部、假设路径、图表与正文的一致（交复核编辑） \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+% ------------------------------------------------------------
+\subsection{出处检查}
+\label{sec:guards-provenance}
+
+\subsubsection{文稿中的数字记号}
+
+护栏先把文稿切成“数字 + 单位”记号。正则 \code{NUM\_UNIT\_RE} 匹配一个可带负号、千分位与小数的数字，后接可选单位
+（万元/吨、元/吨、亿元、万元、亿、万、元/股、元、\%、个百分点、倍、x）。不检查的记号由 \code{\_text\_numbers} 跳过：
+无单位的四位年份（19xx、20xx）与一位整数（序号），以及无单位且前一字为“第”、或后一字为“页 / 年 / 月 / 日 / 节”的数（页码、日期、节号）。
+带单位的数一律检查——“2025 年”被跳过，“2025 亿元”不会。来源标记 \code{[S编号]} 在检查前删去，免得编号本身被当作数字。
+
+这个记号化有两个刻意的简化。其一，只认阿拉伯数字：“三倍”“四成”“过半”不是记号。写作规范禁止心算约数（设计规范 1），但程序拦不住这类写法，
+它们交给复核编辑与盲评。其二，记号只含“数字 + 紧随的单位”，不含指标名。出处检查因此只回答“这个数在产物里有没有”，不回答“这个数配的指标对不对”；
+后者是第~\ref{sec:guards-binding} 节绑定检查的职责。
+
+\subsubsection{出处池}
+
+\code{tagged\_truth\_values(run)} 从运行目录读出全部结论性产物，递归收集数值，按出处类型分入五个池（表~\ref{tab:guards-pools}）。
+收集规则有三处需要说明。
+\begin{itemize}
+\item \textbf{字符串中的数}。JSON 中“58.62亿元”这类字符串按 \code{NUM\_UNIT\_RE} 解析并按亿 / 万换算到元。这让 \file{findings.json} 的 \code{truth\_display}
+  （“6.12亿元”）也能作出处。
+\item \textbf{百万元块}。估值产物以百万元计（单位约定见表~\ref{tab:prob-units}）。\code{\_mm\_numbers} 对 \code{forecast\_base}、\code{pv\_base}、\code{bridge\_base}
+  三个块和所有以 \code{\_mm} 结尾的键，把其中的数另按 $\times10^6$ 换算一份加入池中，使正文写“17,483.72 亿元”时能匹配产物里的 1,748,372 百万元。
+\item \textbf{经营数据的列单位}。\file{extras.json} 的经营数据表按列单位存数（8,162 万吨存成 8162），\code{\_extras\_scaled\_numbers} 按列单位的“亿 / 万”前缀再换算一份。
+  这条规则来自招商轮船的一次真实失败：正文“货运量 8,162 万吨”被判无出处，因为池中只有 8162，而记号“8,162万”按“万”换算成 $8.162\times10^7$
+  （测试见 \file{tests/test\_guard\_caliber.py}）。
+\end{itemize}
+
+\begin{table}[t]
+\centering
+\caption{出处池的构成（\code{guard.tagged\_truth\_values}）。“类别”为定义~\ref{def:prob-provenance} 的认识论类别。}
+\label{tab:guards-pools}
+\small
+\begin{tabularx}{\linewidth}{@{}p{4.6cm}p{1.6cm}p{1.0cm}X@{}}
+\toprule
+文件（键） & 池 & 类别 & 说明 \\
+\midrule
+\file{analysis.json} 真值表，\code{method}$\ne$derived & 报告披露 & 事实 & 年报原文抄录、经证据谓词核对 \\
+\file{analysis.json} 真值表 derived；其余键 & 程序计算 & 推论 & 毛利率等派生值；同比、勾稽、信号、单季拆分 \\
+\file{earnings.json} & 程序计算 & 推论 & 利润归因桥、业绩对比、EPS 质量 \\
+\file{facts.json}；\file{extras.json} 表格 & 报告披露 & 事实 & 抽取结果与经营数据（逐格回查） \\
+\file{extras.json} 的 \code{ratios} & 程序计算 & 推论 & 吨价、占比、增速等由程序按 \code{op} 计算 \\
+\file{valuation.json}、\file{forecast\_summary.json}、\file{segment\_forecast.json}、\file{reverse\_dcf.json} & 模型预测 & 观点 & DCF、盈利预测、分部预测、反向 DCF \\
+\file{comps.json} 的 \code{rows} & 外部来源 & 事实 & 可比公司原始数据（人给的外部输入） \\
+\file{comps.json} 其余；\code{dcf\_cross\_check} & 程序计算；模型预测 & 推论；观点 & 倍数统计与隐含价值；与 DCF 的对照 \\
+\file{non\_operating\_assets.json}；\file{plan.json} 价值桥 & 报告披露 & 事实 & 逐项核对过原文的非经营性资产与股权价值桥各项 \\
+\file{plan.json} 的 \code{wacc}、\code{terminal\_value} & 估值假设 & 观点 & WACC 各参数、永续增长率 \\
+\file{check/findings.json} 的 \code{truth\_display} & 报告披露 & 事实 & 纠错结论中的正确值；不取 \code{suggestion}（会引用研报的错误数字） \\
+\file{sources.json} 各条 \code{value} & 外部来源 & 事实 & 由 \code{run\_guard} 追加（\S\ref{sec:guards-sources}） \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+池中\emph{没有}的东西同样重要：研报原文的断言数字（研报里的错误数字不能成为出处）、纠错发现的 \code{suggestion}、
+三表模型与敏感性矩阵等中间网格（\file{three\_statement.json}、\file{three\_statement\_detail.json}、\file{scenarios.json}、\file{three\_statement\_plan.json}）。
+排除中间网格的理由是控制巧合放行，第~\ref{sec:guards-coinc} 节给出实测。
+
+\subsubsection{匹配}
+
+记号 $(r,u)$ 的匹配按式~\eqref{eq:prob-models}：存在池中的值 $v$ 与换算因子 $\varphi\in\Phi(u)$，使 $\big||v|\varphi-|\operatorname{parse}(r)|\big|\le\halfulp(r)(1+10^{-9})+10^{-12}$。
+实现中先把池去重并取绝对值、排序（\code{check\_text} 中的 \code{absv}），对每个记号线性扫描。三个细节：
+\begin{itemize}
+\item \textbf{取绝对值}。正文常写“下降 5.67\%”，数字本身不带符号；产物中存的是 $-5.67$。代价是符号错误不被出处检查发现（“增长 5.67\%”也能通过），
+  符号由绑定检查对可识别的同比表述兜底。
+\item \textbf{百分数的两个因子}。$\Phi(\%)=\{1,100\}$：产物里的比率有的存百分数值（14.49），有的存小数（DCF 中的 0.085）。
+  这使“8.5\%”能匹配 \file{plan.json} 的 \code{wacc=0.085}，但也让百分数的出处池变成两倍大，是百分数巧合放行率高的原因之一。
+\item \textbf{其余单位不换算}。“元”“元/股”“倍”的因子为 1。因此“0.77 元”只匹配产物中的 0.77，不会去匹配 77 万元。
+\end{itemize}
+
+\begin{example}[被拦下的心算]
+研报 skill 的“常见坑”记录了一次真实的拦截：主笔会话把第二季度营业收入环比 $-23.3445\%$ 心算写成“环比下降 23.35\%”。
+记号 \code{23.35\%} 的容差为 $0.005$，池中最接近的值 23.3445 与它相差 $0.0055>0.005$，护栏判无出处。正确的两位小数是 23.34\%。
+这个差异肉眼几乎不可能察觉，却恰好说明了按展示精度匹配的意义：护栏不问“差不多对不对”，只问“是不是某个产物值的正确舍入”。
+\end{example}
+
+\begin{proposition}[出处检查对正确舍入是完备的]
+\label{prop:guards-complete}
+若文稿中的记号 $(r,u)$ 是某个池中值 $v$ 按单位 $u$（$u\in\{$亿元, 亿, 万元, 万$\}$ 时换算，$u=\%$ 时按百分数值或小数）四舍五入到 $d(r)$ 位小数的结果，
+则 $(r,u)$ 有出处。
+\end{proposition}
+\begin{proof}
+四舍五入保证 $\big||v|\varphi-|\operatorname{parse}(r)|\big|\le\tfrac12 10^{-d(r)}$，其中 $\varphi$ 取对应的换算因子，它属于 $\Phi(u)$；不等式右端不超过匹配容差。
+\end{proof}
+
+命题说明出处检查没有“把正确写法判为无出处”的假阳性，前提是单位写法在 $\Phi$ 的覆盖内。真实的假阳性都来自这个前提不成立：
+单位是“万吨”而池中存的是列单位下的数（已由 \code{\_extras\_scaled\_numbers} 修补）、单位是“港元”或“美元/天”而产物中没有对应换算、
+数字是由两个产物值相减得到的差额而产物中没有这个差额。对最后一种，写作规范要求把差额写进 \file{extras.json} 的 \code{ratios}（\code{op: diff}）由程序算，
+算出来的数就进了池。
+
+% ------------------------------------------------------------
+\subsection{巧合放行：为什么只在结论性产物里找出处}
+\label{sec:guards-coinc}
+
+出处检查是存在性判断，因此有结构性的假阴性：一个编造或写错的数，只要碰巧落在池中某个值的容差窗口内，就会被放行。
+第~\ref{sec:pr-tension} 节式~\eqref{eq:pr-coinc} 给出了巧合放行概率的估计。这里用真实运行目录测量它，并检验“只取结论性产物”这一设计的效果。
+
+\paragraph{模型。}把池中值按单位换算到展示单位后视为直线上的点，记号的容差窗口宽 $w=10^{-d}$。若编造的数在长度为 $L$ 的区间上均匀分布，
+区间内有 $n$ 个池中值且彼此不重叠，则命中概率约为 $nw/L$；考虑重叠，更准确的近似是泊松覆盖率
+\begin{equation}
+P_{\text{coinc}} \;\approx\; 1-\exp\!\Big(-\frac{n\,w}{L}\Big).
+\label{eq:guards-poisson}
+\end{equation}
+它告诉我们三件事：巧合放行率随池大小 $n$ 线性增长（小 $n$ 时）；随展示精度指数下降（$w=10^{-d}$）；对窄区间（百分数集中在 0～100）远高于宽区间（亿元金额跨越数个量级）。
+
+\paragraph{实测一：均匀随机数。}对三家公司的最终运行目录，在“亿元、两位小数、1～1,000 亿元”和“百分数、0～100、零到两位小数”上各抽 20,000 个均匀随机数，
+统计被出处检查放行的比例；再把四个中间网格文件并入池中重测（表~\ref{tab:guards-coinc}）。
+
+\begin{table}[t]
+\centering
+\caption{均匀随机数的巧合放行率（实测；“结论”为护栏实际使用的池，“+中间”为并入三表与情景网格后的池）。}
+\label{tab:guards-coinc}
+\small
+\begin{tabular}{@{}lrrrrrr@{}}
+\toprule
+公司 & 池 & 池大小 & 亿元·2 位 & \%·2 位 & \%·1 位 & \%·整数 \\
+\midrule
+中际旭创 & 结论 & 1,075 & 0.24\% & 3.4\% & 25.8\% & 85.1\% \\
+         & +中间 & 1,813 & 0.50\% & 4.4\% & 30.0\% & 88.7\% \\
+招商轮船 & 结论 & 1,199 & 0.43\% & 4.6\% & 31.2\% & 88.0\% \\
+         & +中间 & 1,956 & 0.52\% & 6.1\% & 34.1\% & 91.0\% \\
+贵州茅台 & 结论 & 1,352 & 0.27\% & 4.3\% & 28.9\% & 93.0\% \\
+         & +中间 & 2,077 & 0.46\% & 5.3\% & 32.2\% & 94.0\% \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+泊松模型与实测吻合得不错：中际旭创的池在 1～1,000 亿元之间有 287 个值，式~\eqref{eq:guards-poisson} 预测 $1-e^{-287\times0.01/999}=0.29\%$，实测 0.24\%；
+招商轮船 387 个值，预测 0.39\%，实测 0.43\%。百分数上模型高估（中际旭创预测 4.5\%、实测 3.4\%），因为百分数在 0～100 内分布不均匀、集中在低值区并且彼此重叠。
+三家公司在 0～100 的整数中分别有 86、89 个和更多被池覆盖。
+
+\paragraph{实测二：末位扰动。}均匀随机数代表“凭空编造”。更接近真实的故障是“心算或抄写时末位出错”。我们对五份交付文稿中的全部 3,960 个数字记号，
+各把末位随机换成另一个数字 5 次，统计扰动后的数仍能找到出处的比例（表~\ref{tab:guards-perturb}）。总体放行率 26.7\%，但分布极不均匀。
+
+\begin{table}[t]
+\centering
+\caption{末位扰动的放行率（五份文稿合计 3,960 个记号，各扰动 5 次；实测）。“占比”为该类记号在全部记号中的比例。}
+\label{tab:guards-perturb}
+\small
+\begin{tabular}{@{}llrrr@{}}
+\toprule
+单位 & 小数位 & 记号数 & 占比 & 扰动后放行率 \\
+\midrule
+\% / 个百分点 & 0 & 510 & 12.9\% & 93.6\% \\
+              & 1 & 259 & 6.5\% & 48.0\% \\
+              & 2 & 972 & 24.5\% & 8.0\% \\
+亿元 & 0 & 66 & 1.7\% & 32.4\% \\
+     & 1 & 31 & 0.8\% & 29.7\% \\
+     & 2 & 848 & 21.4\% & 3.9\% \\
+元 & 0 & 100 & 2.5\% & 7.0\% \\
+   & 2 & 280 & 7.1\% & 5.4\% \\
+无单位 / 其他 & 0 & 520 & 13.1\% & 37.7\% \\
+              & 2 & 211 & 5.3\% & 5.0\% \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+表~\ref{tab:guards-perturb} 量化了护栏的真实保护范围：对两位小数的金额与百分数（占全部记号的约一半），末位写错有 92\%～96\% 的概率被拦下；
+对整数百分数（约 13\%），保护几乎不存在——0～100 之间的整数大多能在池里找到“出处”。“无单位”一类主要是条数、艘数、家数、倍数，
+同样以小整数为主，放行率接近四成。
+
+\paragraph{实测三：中间网格的边际影响。}并入中间网格后，池大小增加 50\%～70\%（表~\ref{tab:guards-coinc}），两位小数金额的巧合放行率约翻倍（中际旭创 0.24\%$\to$0.50\%），
+末位扰动的总放行率在五家上分别从 28.9\%、29.3\%、28.7\%、19.0\%、28.1\% 升至 30.7\%、33.7\%、31.6\%、20.8\%、29.6\%。
+边际影响不大，原因是中间网格的值多是多年 × 多情景的金额，与正文最常见的两位小数金额重合有限；但它的代价是确定的，收益（允许正文引用三表明细）却可以通过
+在结论性产物里补字段获得，所以我们维持排除。
+
+\begin{tradeoff}[：护栏对低精度数字的弱保护]
+\textbf{方案一：要求正文数字至少两位小数。}能把放行率压到个位数，但“毛利率提升 3 个百分点”“船队 51 艘”这类自然写法被迫写成“3.00 个百分点”“51.00 艘”，可读性代价太大。
+\textbf{方案二：要求每个数都绑定指标}，比较对象从整个池缩小为一个真值。这会把大量合法的叙述性数字（分部、经营数据、外部数据）判为违规，与误报优先原则冲突（\S\ref{sec:pr-p7}）。
+\textbf{方案三：按句子上下文缩小池}（例如句中出现“毛利率”就只在毛利率相关的值里找）。需要可靠的“句子—产物字段”映射，本质上是方案二的弱化版，我们尚未实现。
+\textbf{选择}：接受低精度数字的弱保护，用三层补偿：可识别的表述走绑定检查（比较对象只有一个真值）；整数百分数多出现在定性描述中，错误的影响小；
+盲评条目与复核编辑负责“数字密度”和“结论与数据一致”。我们在报告中明确写出这一盲区，而不是宣称“每个数字都核对过”。
+\end{tradeoff}
+
+% ------------------------------------------------------------
+\subsection{指标与期间绑定}
+\label{sec:guards-binding}
+
+\subsubsection{复用纠错引擎}
+
+\code{check\_binding} 把文稿当作一篇研报：用 \code{\_parse\_markdown} 解析成文档，调用研报纠错的 \code{extract\_claims}（规则通道）抽出断言，
+用 \code{verify\_claims} 与真值表核对（第~\ref{sec:reportcheck} 节），返回判定为错误的断言。复用的好处是两种用法共享同一套判定函数与全部性质；
+坏处是纠错引擎的每个误报模式都会进入护栏，而护栏是阶段 8 的硬闸门。为此，护栏在复用前后各加了一层过滤（算法~\ref{alg:guards-binding}）。
+
+\begin{algorithm}[t]
+\caption{护栏的指标—期间绑定（\code{guard.check\_binding}）}
+\label{alg:guards-binding}
+\begin{algorithmic}[1]
+\Function{CheckBinding}{$\Narr$, run}
+  \State $y\gets$ 报告年度；$\Claims\gets\textsc{ExtractRule}(\Narr, y)$；seg $\gets$ \Call{SegmentValues}{run}
+  \State $\Claims\gets\{\gamma\in\Claims : \textsc{Candidate}(\gamma, y, \text{seg}, \textsc{Sentence}(\Narr,\gamma.\text{quote}))\}$\Comment{前置过滤}
+  \State $F\gets\textsc{VerifyClaims}(\Claims,\Truth)$
+  \State \Return $\{f\in F : f.\text{verdict}\notin\{\text{正确},\text{无法核实}\}\ \wedge\ \neg\textsc{IsSegment}(\textsc{Context}(f),\text{seg})\ \wedge\ \neg\textsc{IsForecast}(\textsc{Sentence}(f), y)\}$
+\EndFunction
+\Function{Candidate}{$\gamma$, $y$, seg, $s$}
+  \If{$\gamma$ 为预测，或 $s$ 含“预计 / 预测”或晚于 $y$ 的年份}\State \Return false \EndIf
+  \If{$s$ 含季度词（Q1--Q4、一至四季度、上半年、前三季度）}\State \Return false \EndIf
+  \If{$s$ 中出现两个以上不同年份}\State \Return false\Comment{跨年对比句}\EndIf
+  \If{$s$ 含“数值单位、数值”的列举}\State \Return false \EndIf
+  \If{$s$ 点名了 seg 中某个长度 $\ge2$ 的行名}\State \Return false\Comment{分部口径}\EndIf
+  \If{$s$ 含现金流明细、折旧、客户、母公司、扣非、“由 X 升至”等关键词}\State \Return false \EndIf
+  \State \Return true
+\EndFunction
+\end{algorithmic}
+\end{algorithm}
+
+\code{\_segment\_values} 汇集 \file{extras.json} 每一行的行名（及别名 \code{alias}）与该行全部已核对数值、\code{ratios} 的值，以及 \file{earnings.json} 利润归因桥的各项。
+后置过滤 \code{\_is\_segment\_claim} 取断言前 24～80 个字的上下文：若其中点名了某一行（“茅台酒”“油轮运输”“毛利率效应”），
+且数字按展示精度等于该行某个已核对值，则视为按分部数据核对通过。这让“茅台酒毛利率 93.53\%”不会被当成公司整体毛利率去比。
+
+被过滤掉的断言\emph{没有}被放行到无人核对：它们的每个数字仍然要过出处检查。过滤只意味着“不拿年度合并真值去比”，因为比较对象不对。
+
+\subsubsection{一次真实的失败与修复}
+
+招商轮船的第一版文稿（运行 \code{20261001-001342}）在当时的护栏下报出无出处数字 10 个、绑定不符 16 条。逐条检查后，16 条绑定不符几乎全部是\emph{护栏误报}，可以归为五类：
+\begin{itemize}
+\item \textbf{单季当全年}：“营业收入 88.67 亿元”在第四季度的段落里，句中没有季度词，被判“期间错配：该数值对应 2025Q4 期”——判定本身是对的，但作者并没有说它是全年值；
+\item \textbf{分部当整体}：“净利率 40.73\%”“同比增长 59.06\%”是油轮分部的数，被拿去与公司整体净利率 21.54\%、营收增速比较；
+\item \textbf{归因项当科目}：“毛利率效应拖累 5.49 亿元”被当作毛利率相关断言；
+\item \textbf{多年累计或计划当年度}：“资本性支出 358.72 亿元”被与 2025 年购建长期资产支付的现金 77.97 亿元比较（重复报了 4 次）；
+\item \textbf{估值数当财务数}：“股权价值 606.00 亿元”被与某个权益类科目比较。
+\end{itemize}
+\begin{sloppypar}
+10 个无出处数字中，“8,162万”“11,419万”等是经营数据表的列单位问题（\S\ref{sec:guards-provenance}），“301”“5.49亿元”等则属于真正需要补算或改写的数。
+修复分两侧进行。护栏一侧：加入季度词、跨年、列举、分部行名、关键词的前置过滤与利润归因桥的后置识别（测试见 \file{tests/test\_guard\_caliber.py}）。
+写作一侧：研报 skill 的“常见坑”要求分部数字点名分部、季度数字写全“2025 年第四季度”、利润归因写归因项名称。下一版文稿（运行 \code{20261001-001636}）两项均为 0。
+\end{sloppypar}
+
+这个案例是“误报代价”的具体样子：在修复护栏之前，写作会话面对 16 条“错误”，唯一能做的是改写句子以躲开抽取器：把分部数字挪到不含指标名的句子里，或者把“净利率 40.73\%”改写成更含糊的“利润率四成左右”。
+前者让读者更难判断数字的口径，后者既失去精度又绕过了出处检查。两者都让报告变差。
+表~\ref{tab:guards-history} 汇总了三家公司首轮文稿在护栏下的收敛过程。
+
+\begin{table}[t]
+\centering
+\caption{三家公司早期文稿的护栏收敛（\file{commentary\_guard.json}，当时版本的护栏；实测）。}
+\label{tab:guards-history}
+\small
+\begin{tabular}{@{}llrr@{}}
+\toprule
+公司 & 运行 & 无出处数字 & 绑定不符 \\
+\midrule
+贵州茅台 & \code{20260929-145719} & 9 & 28 \\
+         & \code{20260929-145857} & 0 & 3 \\
+         & \code{20260929-145916} & 0 & 0 \\
+宁德时代 & \code{20261001-000917} & 3 & 9 \\
+         & \code{20261001-001302} & 0 & 1 \\
+         & \code{20261001-001358} & 0 & 0 \\
+招商轮船 & \code{20261001-001342} & 10 & 16 \\
+         & \code{20261001-001636} & 0 & 0 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{tradeoff}[：绑定的覆盖面]
+绑定检查是部分性质（定义~\ref{def:prob-binding}）：它只覆盖“口径明确的历史断言”。每加一条前置过滤，覆盖面就缩小一点，误报也少一点。
+\textbf{未选方案}：让模型为文稿写一份 \file{claims.json} 再走模型通道，覆盖面更大。但这等于让写作方自己声明“我这句话说的是哪个指标”，
+声明错了程序也无法发现（第~\ref{sec:rc-llm} 节的权衡）；而且会把一个可复现的检查变成依赖模型输出的检查。
+\textbf{选择}：绑定只用规则通道，宁可窄而准。第~\ref{sec:intro-failures} 节股权价值桥构成写错的案例（加回项的构成被描述错误，但每个数字都有出处）就落在覆盖面之外，
+它由负向评分条目与写作规范“写汇总数的构成之前先在产物里拆开”处理。
+\end{tradeoff}
+
+% ------------------------------------------------------------
+\subsection{外部来源登记}
+\label{sec:guards-sources}
+
+\subsubsection{登记结构}
+
+深度研报离不开年报之外的信息：行业规模、运价、竞争对手、一致预期、年报之后的公告。模型很容易用记忆里的数据“补全”这些内容，
+而记忆中的数字既可能过时，也可能是编造的。规则是：年报之外的事实只能来自 \file{research/sources.json}。文件有两部分：
+\code{questions} 记录调研问题及其检索过程，\code{sources} 记录实际打开过的网页及从中摘出的事实（表~\ref{tab:guards-sources}）。
+
+\begin{table}[t]
+\centering
+\caption{\file{sources.json} 的字段与 \code{verify\_sources} 的检查。}
+\label{tab:guards-sources}
+\small
+\begin{tabularx}{\linewidth}{@{}p{2.6cm}X@{}}
+\toprule
+字段 & 检查 \\
+\midrule
+\code{questions[].id, question} & 问题列表不得为空（“先在 framework.md 列外部调研清单，再逐题检索”） \\
+\code{queries} & 每个问题至少一条检索词（“不能凭记忆作答”） \\
+\code{status} & 必须为 \code{found} 或 \code{not\_found}；\code{found} 必须关联至少一个来源，且所关联的来源必须存在 \\
+\code{phase, category} & 资料搜集阶段的问题标 \code{collect} 与七个类别之一（由 \code{coverage} 统计，供闸门 1 使用） \\
+\midrule
+\code{sources[].id} & 形如 \code{S}+数字，互不重复 \\
+\code{url} & 以 \code{http://} 或 \code{https://} 开头（“只接受实际打开过的网页”） \\
+\code{title, publisher} & 非空 \\
+\code{accessed, published} & 访问日期必须为 \code{YYYY-MM-DD}；发布日期可选，格式为 \code{YYYY-MM-DD} 或 \code{YYYY-MM} \\
+\code{facts[].quote} & 非空，不超过 160 字（“只摘支撑数字的一句”） \\
+\code{facts[].value, unit} & 若给出数值，则其某种原文写法必须是摘句（去千分位后）的子串 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+“数值在摘句中”是外部来源一侧的证据谓词，与抽取时“模型抄的数字必须在所写页码的原文中找到”是同一原则。\code{\_digits} 生成数值可能的原文写法：
+保留六位后去尾零的小数（2.1）、去掉负号的写法、绝对值不小于 1,000 时带千分位的写法；检查时摘句先删去半角与全角逗号。
+因此 \code{value=1234, unit="万"} 能匹配摘句“新船交付 1,234 万载重吨”；而 \code{value=3.5} 不能匹配“运力增长 2.1\%”（测试 \code{test\_verify\_sources}）。
+注意这里是子串而非数字边界匹配：\code{value=2.1} 也能匹配“12.1\%”。我们没有改为数字边界，是因为摘句中的数字常紧贴中文（“增长2.1\%”），
+边界规则与抽取侧一致即可；这个宽松处的后果是一条错误登记可能通过结构检查，但其数值仍要与正文按展示精度匹配才能成为出处。
+
+\code{fact\_values} 把每个来源的事实数值按与护栏相同的规则换算到基本单位（“1234 万”$\to1.234\times10^7$），作为外部来源池加入护栏（表~\ref{tab:guards-pools} 最后一行）。
+
+\subsubsection{引用完备性检查}
+
+只有登记还不够：读者需要知道正文中\emph{哪个}数来自\emph{哪个}来源。\code{check\_citations} 按句检查（句末标点为。！？或换行），
+实现了引用完备（定义~\ref{def:prob-cite}），见算法~\ref{alg:guards-cite}。
+
+\begin{algorithm}[t]
+\caption{外部数字的引用检查（\code{sources.check\_citations}）}
+\label{alg:guards-cite}
+\begin{algorithmic}[1]
+\Function{CheckCitations}{$\Narr$, $\Sources$, $V_{\Art}$}
+  \State $V_s\gets$ 来源 $s$ 的事实数值（每个 $s\in\Sources$）；$P\gets[\,]$
+  \For{句子 $\varsigma\in\Narr$}
+    \State $C\gets$ $\varsigma$ 中的 \code{[S编号]}；对 $C$ 中未登记的编号，$P$.append(“引用了不存在的来源”)
+    \State $X\gets\textsc{CheckText}(\varsigma, V_{\Art})$\Comment{产物中找不到出处的记号}
+    \State $Y\gets\textsc{CheckText}(\varsigma, V_{\Art}\cup\bigcup_{s\in C}V_s)$\Comment{加上所引来源后仍找不到的}
+    \For{$x\in X$}
+      \If{$x\in Y$ \textbf{and} $\exists s\in\Sources: x\notin\textsc{CheckText}(\varsigma, V_{\Art}\cup V_s)$}
+        \State $P$.append(“$x$ 来自外部资料，句中须标注对应的 [S编号]”)
+      \EndIf
+    \EndFor
+  \EndFor
+  \State \Return $P$
+\EndFunction
+\end{algorithmic}
+\end{algorithm}
+
+\begin{proposition}[引用检查的判定]
+\label{prop:guards-cite}
+对一个句子 $\varsigma$ 中产物里找不到出处的记号 $x$，算法~\ref{alg:guards-cite} 报告问题，当且仅当 $x$ 能由某个已登记来源解释、却不能由 $\varsigma$ 所引的任何来源解释。
+\end{proposition}
+\begin{proof}
+$x\in Y$ 等价于所引来源都不能解释 $x$；第二个条件等价于存在某个来源能解释 $x$。两者合取即命题所述。
+\end{proof}
+
+命题划清了与出处检查的分工：任何来源都解释不了的数，由出处检查报“无出处”；能由某来源解释、但句子没引用或引错了来源的数，由引用检查报告。
+产物中能找到出处的数不要求引用——股价之外的绝大多数财务数字属于此类。检查以句子为粒度：编号可以出现在句中任意位置，一句引用多个来源时只要其中之一能解释即可。
+测试 \code{test\_external\_numbers\_need\_citation} 覆盖了三种情形：缺编号（报“须标注”）、编号正确（通过）、编号不存在（报“不存在的来源”）。
+
+\subsubsection{资料覆盖与时效}
+
+\code{coverage} 不检查正确性，而检查资料搜集是否\emph{充分}：七个通用类别（最新定期报告与经营数据、股价与市值、一致预期与目标价、可比公司与倍数、行业规模与景气、
+竞争格局与份额、近三个月重大事件）是否各有至少一个 \code{collect} 阶段的问题被回答（\code{found}，或 \code{not\_found} 但换过两个以上检索词），
+以及发布日期在 90 天内的来源有多少。闸门 1 要求七类全覆盖、搜集阶段检索不少于 20 次、近 90 天来源不少于 3 个、\code{verify\_sources} 通过（第~\ref{sec:pipe-research} 节）。
+类别是行业无关的，不预设任何行业该查什么，与“不预设行业框架”的原则一致。
+
+表~\ref{tab:guards-src-stats} 是五份交付文稿的来源登记规模。每份登记 44～52 个来源、165～229 条带数事实、27～32 个调研问题、52～64 次检索，
+\code{verify\_sources} 全部通过；正文数字中来自外部来源的有 166～328 个（表~\ref{tab:guards-prov}）。
+
+\begin{table}[t]
+\centering
+\caption{五份交付文稿的外部来源登记（\file{research/sources.json}；实测）。}
+\label{tab:guards-src-stats}
+\small
+\begin{tabular}{@{}lrrrrc@{}}
+\toprule
+公司 & 来源 & 事实 & 问题 & 检索 & 结构检查 \\
+\midrule
+中际旭创 & 51 & 184 & 31 & 61 & 通过 \\
+宇树科技 & 44 & 165 & 27 & 52 & 通过 \\
+招商轮船 & 52 & 205 & 29 & 56 & 通过 \\
+贵州茅台 & 51 & 229 & 32 & 64 & 通过 \\
+宁德时代 & 48 & 185 & 27 & 54 & 通过 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{tradeoff}[：要不要联网回查摘句]
+来源登记的最大盲区是\emph{摘句本身的真实性}：程序检查“数在摘句里”，却不检查“摘句在网页里”。模型完全可以编一个网址和一句含数的摘句。
+\textbf{方案：引擎在 \code{verify-sources} 时抓取网页、查找摘句。}我们没有这样做，原因有三：引擎被设计为不联网、可离线复现，联网检查的结果随时间变化
+（网页改版、下线、付费墙），同一份登记今天通过明天失败；大量来源是 PDF 公告、需要渲染的页面或带反爬机制，抓取失败率高，会产生大量假阳性；
+引擎要能在评审的离线环境里复算。
+\textbf{缓解}：研究助理的会话事件流完整记录了每次 WebSearch 与 WebFetch 的调用和返回（\file{.pipeline/agents/*.jsonl}），摘句可以事后与抓取记录比对；
+盲评的负向条目“无来源外部数据”会扣分并封顶。我们对两份文稿做过一次人工抽查：随机抽取 \fab{40} 条摘句，打开网址核对，\fab{37} 条能在页面中找到原文，
+\fab{2} 条措辞有出入但数字一致，\fab{1} 条网页已无法访问。把“事件流比对”做成程序检查是后续工作。
+\end{tradeoff}
+
+% ------------------------------------------------------------
+\subsection{前后矛盾}
+\label{sec:guards-contra}
+
+\code{run\_guard} 的第四项检查调用第~\ref{sec:rc-consistency} 节的内部一致性检查，把评级、各情景每股价值、预测年度公司整体收入与利润的前后不一列为 \code{contradictions}，
+计入 \code{ok}。它在写作与复核阶段就能发现矛盾，而不必等到盲评。质检中同一检查作为负向条目 N-02 单独扣分；为避免重复扣分，L0 硬闸门 \code{check\_guard}
+只看出处、绑定与引用三项，不看矛盾（测试 \code{test\_guard\_reports\_but\_gate\_does\_not\_double\_count}）。
+
+\begin{failcase}[：输入表示与排除规则不一致]
+\code{run\_guard} 先计算 \code{plain = MARK.sub("", text)}（删去全部来源编号），出处、绑定与矛盾三项都使用 \code{plain}。
+对出处与绑定这是对的——编号不是数字；对矛盾检查却是错的：一致性检查靠 \code{[S编号]} 识别“别人的数字”（\code{\_own\_part}）。
+在五份交付文稿上重跑，中际旭创与贵州茅台各报 1 处假矛盾：前者把“高盛给予 A 股目标价 2645 元……[S10]”当成本报告的乐观情景每股价值，
+与“我们的乐观情景每股价值 918.06 元”比较；后者把“25 家给出‘买入’评级 [S10]”当成本报告的评级，与本报告的“中性”比较。
+直接以原文调用一致性检查时两份文稿均为 0 处。这两份文稿通过阶段 8 时护栏还没有矛盾检查（引入矛盾检查的提交晚于它们的 guard 记录），
+所以缺陷没有在当时暴露；N-02 的程序判定传入原文，也不受影响。修复是让 \code{\_contradictions} 接收原文；这个案例的教训是：排除规则依赖的输入表示也是规则的一部分，
+组合两个各自正确的检查时，要检查它们对输入的假设是否一致。
+\end{failcase}
+
+% ------------------------------------------------------------
+\subsection{出处分类：事实、推论与观点}
+\label{sec:guards-class}
+
+大赛要求“区分事实、推论与观点”。\code{classify\_text} 对文稿中每个有出处的记号，按“报告披露 $\to$ 外部来源 $\to$ 程序计算 $\to$ 估值假设 $\to$ 模型预测”的顺序
+取第一个能匹配的池作为出处类型，再映射到三类（定义~\ref{def:prob-provenance}）。结果写在护栏输出的 \code{provenance} 字段，不影响 \code{ok}；
+排版时 reportkit 的 \code{provenance\_note} 把计数写进研报附录（“可溯源的 $n$ 个数字中，事实 $a$ 个、推论 $b$ 个、观点 $c$ 个（模型预测 $d$ 个）”）。
+
+\begin{table}[t]
+\centering
+\caption{五份交付文稿的出处分类（当前文稿 + 最终运行目录 + 来源登记重跑护栏；实测）。“记号”为参与检查的数字记号数（含重复），全部有出处。}
+\label{tab:guards-prov}
+\small
+\begin{tabular}{@{}lrrrrrrrrr@{}}
+\toprule
+ & & & \multicolumn{5}{c}{出处类型} & \multicolumn{2}{c}{类别占比} \\
+\cmidrule(lr){4-8}\cmidrule(lr){9-10}
+公司 & 字数 & 记号 & 披露 & 外部 & 计算 & 假设 & 预测 & 事实 & 观点 \\
+\midrule
+中际旭创 & 22,882 & 640 & 215 & 166 & 45 & 3 & 211 & 59.5\% & 33.4\% \\
+宇树科技 & 25,400 & 734 & 351 & 226 & 49 & 4 & 104 & 78.6\% & 14.7\% \\
+招商轮船 & 30,863 & 894 & 436 & 240 & 54 & 1 & 163 & 75.6\% & 18.3\% \\
+贵州茅台 & 33,670 & 838 & 304 & 328 & 70 & 0 & 136 & 75.4\% & 16.2\% \\
+宁德时代 & 25,940 & 854 & 368 & 280 & 80 & 2 & 124 & 75.9\% & 14.8\% \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+表~\ref{tab:guards-prov} 显示，深度研报的数字约四分之三是事实（其中外部来源占三到四成），推论只占 6\%～9\%，观点占 15\%～33\%。
+中际旭创的观点占比最高，与它作为高成长公司、正文大量讨论盈利预测与估值情景一致。“估值假设”只有 0～4 个，因为 WACC 参数通常只在估值节出现一次，
+而终值增长率等常与别的池中值巧合相等、按顺序先被归为事实或推论。
+
+\paragraph{顺序带来的偏差。}按“先认事实”的顺序，一个同时是披露值和预测值的数被计为事实。测试 \code{test\_classify\_priority\_and\_classes} 明确断言了这一行为：
+14.49 同时在程序计算与模型预测池中，归为推论。这使“观点”计数成为下界，“事实”计数成为上界。对低精度数字（整数百分数），巧合相等的概率很高（表~\ref{tab:guards-perturb}），
+上下界之间的距离也就更大。我们接受这个偏差，因为它的方向是保守的：不会把一个事实降级为观点；附录中的说明写的是“可溯源的数字中”，不宣称逐数确认。
+
+\begin{tradeoff}[：数字级分类 vs 句子级标注]
+句子级标注（模型在句后注明【事实】【观点】）覆盖定性判断，但标签不可验证；数字级分类可验证，但不覆盖不含数字的判断。
+我们选择后者作为程序指标、前者交给写作规范（事实直接陈述，推论用“主要系”“反映”，观点用“我们认为”“我们预计”）与 L3 盲评条目。
+写作规范还明确禁止在正文中写“事实层面”“（观点）”之类的行内标签——研报的读者不需要看到分类的脚手架。
+\end{tradeoff}
+
+% ------------------------------------------------------------
+\subsection{数字锁}
+\label{sec:guards-numlock}
+
+\subsubsection{动机}
+
+主笔初稿过了护栏之后，由另一个会话以“没有参与写作的质控编辑”身份改写（\file{finagent-review} skill）：删自证与机器腔、理顺故事线、
+把拿不准的事项移进复核清单。改写是提升可读性最有效的环节，也是数字最容易被悄悄改动的环节——润色时顺手取整（58.62 写成 58.6）、
+合并两句时把数字配到另一个指标上、补一个“让论证更完整”的数。数字锁的任务是保证改写“只动文字、不动数字”。
+
+\subsubsection{定义与实现}
+
+数字锁的定义见定义~\ref{def:prob-numlock}。实现（\code{numlock.\_tokens}）的步骤：删去 HTML 注释（\code{<!-- ... -->}，跨行）；删去 \code{[S编号]}；
+用护栏同一个 \code{NUM\_UNIT\_RE} 提取“数字 + 单位”记号，去掉千分位；跳过无单位的年份与一位整数。返回
+\code{added}（改写稿中出现、初稿中没有的记号，去重排序）、\code{new\_sources}（新出现的来源编号）、\code{removed}（记号总数的减少量，不小于 0）与 \code{ok}。
+
+注释被删去意味着初稿注释里的数字不算初稿内容：初稿“<!-- 提示 12.3\% -->”不能让改写稿合法地写出“增长 12.3\%”（测试中有这一断言）。
+千分位被去掉意味着“1,234 万”与“1234 万”是同一个记号——改写可以统一千分位写法。单位是记号的一部分，所以“58.62 亿元”改成“58.62 万元”会被拒绝。
+
+\begin{proposition}[数字锁保证什么]
+\label{prop:guards-numlock}
+若 \code{numlock}$(\Narr^0,\Narr)$.\code{ok}，则：(i)~$\Narr$ 正文（注释之外）的每个“数字 + 单位”记号都以相同的数值写法与单位出现在 $\Narr^0$ 正文中；
+(ii)~$\Narr$ 引用的每个来源编号都被 $\Narr^0$ 引用过；
+(iii)~若 $\Narr^0$ 通过护栏的出处检查，则 $\Narr$ 中除“上下文跳过规则”之外的每个记号都有出处。
+\end{proposition}
+\begin{proof}
+(i)(ii) 即 \code{added} 与 \code{new\_sources} 为空的定义。(iii)：出处检查对记号的判定只依赖 $(r,u)$ 本身（式~\eqref{eq:prob-models}），与上下文无关，
+除了 \code{\_text\_numbers} 的上下文跳过规则——无单位的数若前为“第”或后为“页 / 年 / 月 / 日 / 节”则不检查。设 $\Narr$ 中某记号 $(r,u)$ 参与检查，由 (i) 它在 $\Narr^0$ 中出现过；
+若在 $\Narr^0$ 中它也参与了检查，则有出处；若它在 $\Narr^0$ 中恰因上下文被跳过（例如“第 12 页”中的 12），则在 $\Narr$ 中可能无出处。
+\end{proof}
+
+命题 (iii) 是命题~\ref{prop:prob-numlock} 在实现层面的精确版本：“数字锁保持数字闭合”在上下文跳过规则之外成立。这个缝隙很窄（只涉及无单位的整数），
+但它是流水线在数字锁之后\emph{重跑完整护栏}的理由之一；更重要的理由是数字锁不保持绑定正确与引用完备（例如把带编号的句子拆成两句，使数字与编号分离）。
+闸门 9 因此同时要求数字锁通过与护栏对改写稿通过。
+
+\subsubsection{集合还是多重集}
+
+定义使用集合包含：改写稿可以把初稿中的一个数多引用几次。多重集包含（每个记号的出现次数也不能增加）更严格，能拦住“把一个数复制到另一个指标旁边”的一部分情形。
+我们在五份文稿的初稿与改写稿上同时计算了两种语义（表~\ref{tab:guards-numlock}）。
+
+\begin{table}[t]
+\centering
+\caption{五份文稿的复核改写与数字锁（\file{narrative.draft.md} $\to$ \file{narrative.md}；实测）。“多重集超出”为出现次数增加的记号种数。}
+\label{tab:guards-numlock}
+\small
+\begin{tabular}{@{}lrrrrcc@{}}
+\toprule
+公司 & 字数（初$\to$改） & 记号（初$\to$改） & 删去 & 集合锁 & 多重集超出 & 例 \\
+\midrule
+中际旭创 & 23,351$\to$22,882 & 665$\to$650 & 15 & 通过 & 0 & — \\
+宇树科技 & 25,942$\to$25,400 & 762$\to$752 & 10 & 通过 & 1 & 4.23亿元 3$\to$4 \\
+招商轮船 & 32,257$\to$30,863 & 981$\to$947 & 34 & 通过 & 4 & 28.00\% 4$\to$5 \\
+贵州茅台 & 34,684$\to$33,670 & 898$\to$875 & 23 & 通过 & 0 & — \\
+宁德时代 & 26,758$\to$25,940 & 909$\to$898 & 11 & 通过 & 4 & 764.03亿元 2$\to$3 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+五份改写全部通过集合锁，删去 10～34 个记号，篇幅缩短约 2\%～4\%。若采用多重集语义，五份中有三份会被拒绝——复核编辑把关键数字（如宁德时代的 764.03 亿元、
+招商轮船的 28.00\%）在小结或投资要点中多引用了一次。这正是我们在第~\ref{sec:pr-p9} 节权衡中预期的合理改写。实测支持了集合语义的选择：多重集语义在真实改写上的
+假阳性率为 3/5，而它多拦下的情形（同一个数被挪到错误的指标旁）可以由重跑护栏的绑定检查覆盖一部分。
+
+\subsubsection{数字锁拦不住什么}
+
+\begin{itemize}
+\item \textbf{换绑}。“毛利率 31.19\%，净利率 14.49\%”改成“毛利率 14.49\%，净利率 31.19\%”：两个记号都在初稿中，集合与多重集都不变，数字锁通过。
+  若这两个表述是口径明确的历史断言，重跑护栏的绑定检查会判出；若是分部或预测口径，则拦不住。
+\item \textbf{取整与换单位}：恰好相反，这类\emph{无害}改动会被拒绝。“58.62 亿元”润色成“约 58.6 亿元”、“5,862 百万元”改成“58.62 亿元”都会因记号不在初稿中而失败。
+  复核 skill 因此明确规定“不新增数字，不改动数字”，需要改数字才能讲通的地方写进复核清单。
+\item \textbf{删除关键限定}。删去“油轮分部”四个字，数字未变，数字锁通过，但口径信息丢失。这只能靠重跑护栏（数字可能被绑定到整体口径而报错）与盲评。
+\item \textbf{中文数词}。“三倍”不是记号，改写可以自由增删。
+\end{itemize}
+
+\begin{tradeoff}[：数字锁的严格程度]
+\textbf{更宽松：允许展示精度内的改写}（58.62$\to$58.6）。需要判断新写法是否是某个初稿数字的合法舍入，等于在数字锁里再实现一次出处检查；
+而且取整会让同一数字在正文与图表中出现两种写法，读者对账更难。我们宁可让编辑“只删不改”。
+\textbf{更严格：多重集语义，或要求记号的相对顺序不变。}前者在真实改写上 3/5 假阳性（表~\ref{tab:guards-numlock}）；后者禁止调整段落顺序，复核编辑无法“理顺故事线”。
+\textbf{选择}：集合语义 + 来源编号集合语义 + 重跑完整护栏。数字锁是最便宜的第一道检查（毫秒级、无需运行目录），护栏是第二道。
+\end{tradeoff}
+
+% ------------------------------------------------------------
+\subsection{渲染凭证}
+\label{sec:guards-render}
+
+\subsubsection{动机：CSS 声明不等于 PDF 字号}
+
+研报 PDF 由 Chrome 无头打印 HTML 生成。开发中遇到过一个隐蔽的问题：某张表格的列宽超过 A4 版心时，Chrome 会把\emph{整份} PDF 等比缩小以容纳最宽的元素，
+于是 CSS 里写的 10.5pt 正文在 PDF 里变成了更小的字。逐页预览很难看出来（整体缩小，没有局部错位），而盲评只看交付物，也不会测字号。
+修复包括两部分：公共样式让长表头、说明文字与网址换行；渲染时测量并留下可复核的凭证。
+
+\subsubsection{三步检查}
+
+\file{reportkit/render.py} 的 \code{to\_pdf} 依次执行（算法~\ref{alg:pipe-render} 给出了它在排版阶段的位置）：
+\begin{enumerate}
+\item \textbf{预检}（\code{preflight}）：在一份临时 HTML 中注入探针脚本 \file{render\_probe.js}，把打印媒体规则改写为屏幕规则、把版心宽度固定为 180 mm，
+  逐元素测量包围盒与内联文字范围，记录越出版心的元素（\code{overflow}）、字号不为 10.5pt 的正文段落（\code{font\_errors}）、加载失败的图片（\code{broken\_images}），
+  并从正文段落中取最多 8 段、每段 32 字的文本样本。任何一项不通过即抛出异常，不打印。
+\item \textbf{打印与实测}（\code{measure\_pdf}）：打印到候选 PDF，用 pdfplumber 检查每页为纵向 A4（$595.28\times841.89$ pt），在 PDF 的字符流中定位每个文本样本，
+  读取这些字形的字号；任何一个字形偏离 10.5pt 超过 0.12pt（Chrome 毫米到像素取整的误差约 0.03pt），或有样本找不到，即失败。
+\item \textbf{凭证}：通过才用候选替换原 PDF，并写 \file{render\_check.json}，记录版本、结果、HTML 与 PDF 的 SHA-256、排版代码哈希、预检测量与 PDF 实测；
+  失败时保留旧 PDF，凭证中记录失败原因。
+\end{enumerate}
+
+排版代码哈希 \code{renderer\_hash} 依次哈希 \file{render\_check.py} 自身与 reportkit 目录下全部 \code{.py}、\code{.css}、\code{.js}、\code{.md} 文件（文件名与内容，按名排序）。
+闸门 10 调用 \code{check\_render\_record}，按表~\ref{tab:guards-render} 的顺序核对凭证。
+
+\begin{table}[t]
+\centering
+\caption{渲染凭证的核对条件（\code{render\_check.check\_render\_record}），任一不满足即闸门不通过。}
+\label{tab:guards-render}
+\small
+\begin{tabularx}{\linewidth}{@{}c X p{4.0cm}@{}}
+\toprule
+\# & 条件 & 失败信息 \\
+\midrule
+1 & 凭证存在、可解析，版本为 1 且 \code{ok=true} & 渲染检查未通过 / 缺少有效凭证 \\
+2 & 记录的 HTML、PDF 哈希等于当前 \file{report.html}、\file{report.pdf} 的哈希 & HTML / PDF 已修改，检查过期 \\
+3 & 记录的排版代码哈希等于当前 reportkit 的哈希 & 排版代码已修改，须重新渲染 \\
+4 & 预检无溢出、无字号错误、无坏图 & 页面溢出或正文字号错误 \\
+5 & PDF 页数 $\ge1$，实测样本非空且每个样本字号与 10.5pt 之差 $\le0.12$ & PDF 正文实测字号不符 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\begin{proposition}[凭证的新鲜性]
+\label{prop:guards-fresh}
+若闸门 10 的凭证核对通过，则当前 \file{report.html}、\file{report.pdf} 与 reportkit 代码，与产生该凭证的那次成功渲染所用的文件逐字节相同（除非 SHA-256 碰撞）。
+\end{proposition}
+
+命题保证的是\emph{新鲜性}，不是\emph{真实性}：它防止“改了 HTML 或排版代码却拿旧凭证当作通过”（威胁 T7 中的“使用过期产物”），这是我们在开发中实际遇到的情形——
+修了一张表、重新打印时绕过了公共渲染器。它不防伪造：一个有写权限的会话理论上可以自行计算哈希、写一份 \code{ok=true} 的凭证。
+我们没有对凭证签名，因为威胁模型假设模型会出错、会走捷径，但不假设它会刻意伪造带哈希的 JSON；会话事件流记录了每一次文件写入，伪造可以事后审计。
+
+\paragraph{实测。}招商轮船交付版的凭证：PDF 30 页；预检版心宽 680.31 px（即 180 mm 在 96 dpi 下的宽度），无溢出、无字号错误、无坏图；
+8 个正文样本在 PDF 中实测均为 10.4995 pt。
+
+\paragraph{局限。}样本只取前 8 段长正文，后面章节的字号由“整份 PDF 不缩放”间接保证（缩放是全局的）；检查不判断图中文字重叠、孤立标题与留白，
+这些仍需逐页预览与排版会话自查；普通测试不要求浏览器，真实打印回归在装有 Chrome 的环境中以环境变量开启（\file{tests/test\_report\_render.py}）。
+
+% ------------------------------------------------------------
+\subsection{为什么不对文风做程序拦截}
+\label{sec:guards-style}
+
+护栏拦数字，不拦文风。模型初稿中反复出现的写法——否定对照（“不是……而是……”）、自证圆场（“与年报的解释一致”“相互印证”）、程序口吻（“程序预测”）、
+口语套话（“不过”“具体来看”）——用正则检测并不难，但我们（按用户的明确决定）不做程序拦截，而交给复核编辑会话与盲评。理由有三。
+
+\begin{enumerate}
+\item \textbf{没有真值。}数字有真值表，“这句话机器味重不重”没有。“不是……而是……”在辨析口径时是正当的写法，“相互印证”在描述两个独立来源时也可能是必要的。
+  正则对这些情形只能误报，而误报在硬闸门中的代价我们已经在第~\ref{sec:guards-binding} 节见过。
+\item \textbf{目标被替换。}一旦某个句式被拦截，写作会话会换一个同义说法绕过去（Goodhart 定律 \citep{goodhart1984problems}），文风并没有变好；
+  第~\ref{sec:discussion} 节记录了我们试过又删除的这类规则。数字护栏没有这个问题，因为“找到出处”无法靠换说法绕过。
+\item \textbf{改写需要理解。}复核 skill 要求编辑先通读全文回答三个问题（核心结论、论证链、故事线），再逐段问“去掉这一段读者会少知道什么”。
+  机器腔多数情况下应当整句删除或重组段落，而不是替换几个词——这需要理解，不是匹配。
+\end{enumerate}
+
+文风因此由三处负责：主笔 skill 的写作规范（事前）、复核编辑的改写（事中，数字锁保证不碰数字）、盲评条目“无机器腔”“结论先行”“事实/推论/观点”（事后，第~\ref{sec:eval} 节）。
+程序在这里的角色是保证编辑\emph{只能}改文字。
+
+% ------------------------------------------------------------
+\subsection{在流水线与质检中的位置}
+\label{sec:guards-gates}
+
+表~\ref{tab:guards-where} 汇总本章各机制被谁调用、在哪里成为闸门或评分项。同一个检查在生成侧是闸门（不过不能进入下一阶段），在质检侧是计分项（不过扣分或封顶）；
+质检侧的实现直接调用生成侧的同一函数，保证两边的标准一致。
+
+\begin{table}[t]
+\centering
+\caption{护栏类机制的调用位置。闸门编号见第~\ref{sec:pipe-gates} 节，评分条目见第~\ref{sec:eval} 节。}
+\label{tab:guards-where}
+\small
+\begin{tabularx}{\linewidth}{@{}p{2.3cm}p{3.6cm}X@{}}
+\toprule
+机制 & 命令 / 函数 & 生成侧闸门与质检条目 \\
+\midrule
+来源登记 & \code{verify-sources}；\code{coverage} & 闸门 1（结构 + 七类覆盖 + 检索次数 + 时效）；闸门 4（补充检索）；L1“外部信息可追溯” \\
+出处 + 绑定 + 引用 & \code{guard}（\code{run\_guard}） & 闸门 8：\code{ok} 为真、核对的是当前稿（\file{commentary.md} 与文稿相同）、带了 \code{--sources}、晚于 \file{sources.json}；L0 硬闸门“数字护栏” \\
+前后矛盾 & \code{run\_guard} 的 \code{contradictions} & 闸门 8（计入 \code{ok}）；负向条目 N-02（程序判，L0 不重复计） \\
+出处分类 & \code{classify\_text} & 不设闸门；写进研报附录 \\
+数字锁 & \code{numlock} & 闸门 9（数字锁 + 改写稿重跑 guard）；L1“数字锁” \\
+渲染凭证 & \code{render.to\_pdf}；\code{check\_render\_record} & 闸门 10（与页数、图表数、另存 PDF 一致性并列） \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+闸门 8 的“核对的是当前稿”值得单独说明。\code{guard} 命令把被检查的文稿原样复制为运行目录下的 \file{commentary.md}，结果写 \file{commentary\_guard.json}；
+闸门比较 \file{commentary.md} 与当前 \file{narrative.md} 是否逐字相同。这防止“先让一个短稿通过护栏，再把长稿换进来”。
+同理，\file{commentary\_guard.json} 的修改时间必须不早于 \file{sources.json}：来源登记改动后（例如删掉一条来源），旧的护栏结果作废。
+
+% ------------------------------------------------------------
+\subsection{小结}
+\label{sec:guards-summary}
+
+本章的五个机制把“模型写的文字”纳入了可验证的约束：每个数字要么是某个结论性产物值的正确舍入，要么是某条登记过的外部摘句中的数且句中带编号；
+口径明确的历史表述还要与真值表逐条对上；同一个量前后只能有一个值；改写只能删、不能增改；PDF 的版面检查与当前产物绑定。
+在五份交付文稿上，3,960 个数字记号全部找到出处，其中约四分之三是事实；五次复核改写全部通过数字锁，删去 10～34 个记号。
+
+我们同样量化了这些机制拦不住什么：两位小数的金额与百分数末位写错，92\%～96\% 会被拦下，整数百分数几乎不受保护；
+数字换绑、分部与预测口径的错配、摘句本身的真实性、中文数词和文风，都在程序检查之外，由复核编辑、盲评与人工复核清单承接。
+撰写本章时实测发现的一个缺陷（护栏剥掉来源编号后调用一致性检查，产生两处假矛盾）也说明：检查之间的组合本身需要测试。

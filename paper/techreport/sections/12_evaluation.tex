@@ -1,0 +1,1129 @@
+% ============================================================================
+% 第 12 章  评测体系与评审校准
+% 依据：finagent/evaluation/*.py、eval/rubrics/、eval/calibration/、eval/results/、
+%       docs/design/2026-10-03-multi-agent-eval.md、tests/test_{evaluation,calibrate,review_docs,workbook_audit}.py
+% ============================================================================
+% 宏 file 样式依赖未加载的 shapes.symbols（tape），本章用自定义的 evfile 样式
+\tikzset{evfile/.style={draw=midgray,fill=white,rounded corners=1pt,align=center,font=\scriptsize\ttfamily,inner sep=3pt}}
+\providecommand{\evqed}{\hfill$\square$}
+\newenvironment{evproof}{\par\noindent\textit{证明.}\ }{\evqed\par}
+\section{评测体系与评审校准}
+\label{sec:eval}
+
+前面几章讲的是怎样让系统写出“数字对得上”的研报：抽取逐字回查（第~\ref{sec:extract}~节）、真值表唯一（第~\ref{sec:analysis}~节）、
+文稿过数字护栏与数字锁（第~\ref{sec:guards}~节）、11 道闸门逐阶段把关（第~\ref{sec:pipeline}~节）。这些机制回答的是
+“有没有错”。一份深度研报还要回答“好不好”：核心结论是否清楚，驱动拆解是否有定量链条，估值有没有交叉验证，
+风险是否落到假设上，文字读起来是否像分析师写的。本章说明 \sysname{} 怎样把“好不好”变成可分解、可复算、可审计的分数，
+以及我们怎样检验给分的评审模型本身是否可信。
+
+本章内容对应仓库中的 \file{finagent/evaluation/} 包（共约 1{,}800 行，不调用任何模型 API，评审会话也是无头 Claude Code）、
+\file{eval/rubrics/} 下的三版评分标准、\file{eval/calibration/} 下的校准数据，以及 \file{eval/results/} 下的历次质检结果。
+
+% ----------------------------------------------------------------------------
+\subsection{问题与设计目标}
+\label{sec:eval-motivation}
+
+\paragraph{研报质量为什么难评。}
+研报质量没有唯一的参考答案。同一家公司、同一份年报，两位合格的分析师可以给出方向相反的评级，各自都言之成理；
+因此不能像数据提取的字段核对或纠错核查的断言比对那样，拿金标准逐项比对（那两项的评测见第~\ref{sec:exp}~节）。
+人工评审最可靠，但每份 25～32 页、60 个以上图表的研报，认真读一遍要一到两个小时，无法支撑多轮迭代。
+用大模型当评审（LLM-as-a-judge）可以降低成本，但已有研究反复报告其偏差：位置偏差与冗长偏好~\citep{zheng2023judging,wang2024fair}、
+对自身或同族模型输出的偏好~\citep{panickssery2024self}，以及打分随提示措辞漂移。
+对一个要靠评分驱动返工循环（refine loop）的系统而言，评审偏差会被放大：生成方会朝评审的偏好优化，
+而不是朝读者的需要优化（古德哈特效应，\citealp{manheim2018goodhart}）。
+
+\paragraph{我们在开发中遇到的具体问题。}
+2026-10-03 第一版质检之前，团队对研报质量的判断只有两种来源：人工翻阅 PDF 后的总体印象，以及 11 道闸门是否通过。
+前者无法比较“这一轮比上一轮好在哪里”，后者只保证下限（字数、图表数、来源数），不保证分析质量。
+三家公司（贵州茅台、宁德时代、招商轮船）的早期研报全部通过闸门，但首轮质检只得到 46～49 分（表~\ref{tab:eval-results}），
+低分集中在“预期差”“估值交叉验证”“风险落到假设”这类闸门管不到的地方。我们需要一套能指出“缺了什么”的评测，并且这套评测要能被校准。
+
+\paragraph{设计骨架的来源。}
+评测采用四段式骨架：\emph{评分标准逐条二元判定 $\to$ 评审给出证据与理由 $\to$ 程序计分 $\to$ 校准评审本身}。
+这一骨架借鉴了团队成员此前接触的 UniPat 式评测实践；该实践没有可引用的公开文献，下文按工程实践描述。
+按设计记录（\file{docs/design/2026-10-03-multi-agent-eval.md}），我们只沿用通用骨架，不使用其中任何参考研报材料与拆解结论。
+学术上最接近的是以细粒度评分标准驱动评审的工作：Prometheus~\citep{kim2024prometheus} 与 G-Eval~\citep{liu2023geval}
+让评审按标准逐项打分；HealthBench~\citep{arora2025healthbench} 用医生撰写的逐条标准，并含负分条目。
+我们的不同之处在于：（1）一半以上的分值由程序直接读运行产物判定，模型只判程序判不了的分析与表达；
+（2）评审在物理隔离的目录里工作，看不到写作过程与分值；（3）评审本身用程序制造的已知缺陷来测灵敏度，
+思路与软件工程中的变异测试（mutation testing，\citealp{demillo1978hints,jia2011mutation}）和 NLP 中的行为测试~\citep{ribeiro2020checklist}一致。
+
+\begin{designbox}{设计目标（评测体系要满足的五条性质）}
+\begin{enumerate}[leftmargin=1.4em]
+  \item \textbf{可分解}：总分由逐条二元判定加权得到，每条附证据与理由；任何一分都能追到具体条目和原文。
+  \item \textbf{可复算}：计分全在 Python 中完成；改权重、改门槛只需 \code{score} 重算，不必重跑评审。
+  \item \textbf{能程序判的不交给模型}：数据闭合、估值算术、评级规则、数字前后矛盾由程序读产物判定。
+  \item \textbf{信息隔离}：评分标准对生成方不可见；评审看不到写作过程、模型名与分值；回传的问题单只含理由与证据。
+  \item \textbf{评审可校准}：用重复评审测稳定性，用程序劣化测灵敏度，用人工复核测精确率。
+\end{enumerate}
+\end{designbox}
+
+\paragraph{定位。}
+这套评测对应主选题\textbf{研究报告质量评估}：它既是一套可独立使用的研报质量评估方法（评分标准、盲评、程序计分与评审校准），也是流水线多轮返工的驱动信号。它评的是流水线产出的
+\emph{完整交付物}：研报 PDF、文稿 \file{narrative.md}、估值运行产物、外部来源登记 \file{sources.json} 与人工复核清单 \file{review.md}。
+
+图~\ref{fig:eval-overview} 给出评测体系的整体结构。左侧是工作区里的交付物；程序检查与盲评会话并行读取它们；
+两路判定在计分器汇合；计分结果一路生成给人看的逐条表，一路转成问题单回传给 \code{refine} 循环（第~\ref{sec:pipeline}~节）；
+校准器在旁路上反复调用同一套评测，检验评审本身。
+
+\begin{figure}[t]
+\centering
+\begin{tikzpicture}[node distance=5mm and 6mm, font=\small]
+  \node[evfile] (ws) {工作区交付物\\narrative.md · PDF\\runs/ · sources.json\\review.md};
+  \node[prog, right=8mm of ws, yshift=11mm, text width=26mm] (chk) {程序检查\\\code{checks.run\_checks}\\L0 / L1 / N-02};
+  \node[prog, right=8mm of ws, yshift=-11mm, text width=26mm] (prep) {搭盲评目录\\\code{judge.prepare}};
+  \node[agent, below=5mm of prep, text width=26mm] (jud) {盲评会话（Sonnet）\\L2 / L3 / N};
+  \node[evfile, right=6mm of chk] (cj) {checks.json};
+  \node[evfile, right=6mm of jud] (jj) {judgments.json};
+  \node[prog, right=34mm of ws, xshift=34mm, text width=22mm] (sc) {计分\\\code{rubric.score}};
+  \node[evfile, right=5mm of sc, yshift=8mm] (sj) {score.json\\scorecard.md};
+  \node[evfile, right=5mm of sc, yshift=-8mm] (ij) {issues.json};
+  \node[agent, below=6mm of ij, text width=20mm] (ref) {refine 返工会话};
+  \node[prog, below=8mm of jud, xshift=14mm, text width=40mm] (cal) {校准 \code{calibrate}：重复评审 /\\劣化变体 / 人工复核};
+  \draw[arr] (ws) |- (chk);
+  \draw[arr] (ws) |- (prep);
+  \draw[arr] (prep) -- (jud);
+  \draw[arr] (chk) -- (cj);
+  \draw[arr] (jud) -- (jj);
+  \draw[arr] (cj) -| (sc);
+  \draw[arr] (jj) -| (sc);
+  \draw[arr] (sc) -- (sj.west);
+  \draw[arr] (sc) -- (ij.west);
+  \draw[arr] (ij) -- (ref);
+  \draw[darr] (ref.south) |- ++(0,-12mm) -| (ws.south);
+  \draw[darr] (cal.west) -| ([xshift=-3mm]ws.south east);
+\end{tikzpicture}
+\caption{评测体系总体结构。蓝框为确定性程序，橙框为模型会话。程序检查与盲评互不依赖，可以分别重跑；
+计分只读两路判定文件，因此改权重不需要重跑评审。虚线为返工与校准两条旁路。}
+\label{fig:eval-overview}
+\end{figure}
+
+% ----------------------------------------------------------------------------
+\subsection{评分标准的来源与四层结构}
+\label{sec:eval-rubric}
+
+\subsubsection{两条思路}
+
+评分标准（rubric）由两条互补的思路合成（\file{eval/rubrics/README.md}）。
+
+\paragraph{思路一：卖方深度报告在回答哪些问题。}
+按卖方深度报告的常规体例，逐部分问“读者要从这一部分得到什么答案”，得到一份行业无关的问题清单。
+设计记录原计划从 10～15 篇公开研报中按段落标注、聚类出题库；2026-10-03 拍板时改为先用模型知识拆解体例
+（样本研报的版权与采集成本是主要顾虑），等优秀研报样例到位后再用样本校正。问题清单与条目的对应关系见表~\ref{tab:eval-l2-origin}。
+权重按“对结论的影响”分三档：5 分是决定估值的环节（驱动拆解、预测假设），4 分是支撑判断的关键论证，2～3 分是完整性要求。
+
+\begin{table}[t]
+\centering
+\caption{思路一：卖方深度报告各部分要回答的问题与 L2 条目的对应（据 \file{eval/rubrics/README.md}）。}
+\label{tab:eval-l2-origin}
+\small
+\begin{tabularx}{\linewidth}{@{}l X l c@{}}
+\toprule
+报告部分 & 读者要的答案 & 条目 & 分值 \\
+\midrule
+首页 / 核心观点 & 评级、值多少、两三条理由；为什么值这个价 & L2-01 & 4 \\
+市场关注问题 & 我们和市场哪里不同；股价隐含了什么 & L2-02 & 4 \\
+公司概况 & 卖什么、卖给谁、靠什么赚钱、优势体现在哪个指标 & L2-03 & 3 \\
+核心驱动 & 外部驱动 $\to$ 量价结构 $\to$ 收入利润，每环有数字 & L2-04 & 5 \\
+业绩回顾 & 利润变动归因到科目并量化 & L2-05 & 4 \\
+行业 & 供需、周期、竞争格局的数据与出处 & L2-06 & 4 \\
+盈利预测 & 关键假设逐项有取值与依据 & L2-07 & 5 \\
+估值（方法） & 方法为何适用、参数从何而来 & L2-08 & 3 \\
+估值（交叉验证） & 至少一种独立方法验证并解释差异 & L2-09 & 4 \\
+估值（情景） & 情景假设差异、价值对什么最敏感 & L2-10 & 3 \\
+风险提示 & 风险落到具体假设，给出影响 & L2-11 & 4 \\
+跟踪 & 可验证的指标、催化剂、失效条件 & L2-12 & 2 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+L3 来自同一份拆解里“读者怎么读”的要求：主线连贯、事实 / 推论 / 观点可分（对应竞赛硬约束“区分事实、推论与观点”）、
+结论先行、没有机器腔、数字不过密、图表服务论点、假设与局限透明。
+
+\paragraph{思路二：工作流每次交接的闭合点。}
+把流水线
+\[
+\text{年报}\to\text{抽取}\to\Truth\to\text{经营数据}\to\text{预测}\to\text{三表}\to\text{DCF}\to\Narr\to\text{排版}
+\]
+的每一次交接都看成一个闭合点：上游的数在下游必须找得到、对得上、口径一致。这类条件几乎都能由程序判定，
+现有引擎的校验结果可以直接复用（表~\ref{tab:eval-handoff}）。
+
+\begin{table}[t]
+\centering
+\caption{思路二：工作流交接与 L0 / L1 条目的对应。}
+\label{tab:eval-handoff}
+\small
+\begin{tabularx}{\linewidth}{@{}l X@{}}
+\toprule
+交接 & 条目 \\
+\midrule
+年报 $\to$ 真值表 & L1-01 抽取校验 \\
+经营数据 $\to$ 预测 & L1-02 分部预测基期闭合；L1-08 预测与历史衔接 \\
+预测 $\to$ 三表 $\to$ DCF & L0-02 三表勾稽；L0-03 DCF 与三表同口径 \\
+DCF $\to$ 股权价值 $\to$ 每股价值 $\to$ 评级 & L1-03 股权价值桥；L1-04 每股价值；L1-05 情景排序；L1-06 敏感性方向；L1-07 终值占比；L0-05 评级 \\
+产物 $\to$ 正文 & L0-01 数字护栏；L1-09 正文估值与产物一致 \\
+外部信息 $\to$ 正文 & L1-10 外部信息可追溯；L1-11 股价日期与来源 \\
+初稿 $\to$ 复核稿 & L1-12 数字锁；L1-13 人工复核清单 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsubsection{形式化定义}
+
+\begin{definition}[评分标准]
+\label{def:eval-rubric}
+评分标准是一个五元组 $R=(\mathcal{I},\,c_{\mathrm{gate}},\,\underline{d},\,\Theta,\,\mathrm{ver})$，其中
+$\mathcal{I}$ 为条目集合；$c_{\mathrm{gate}}$ 为硬闸门失败时的总分上限（\code{gate\_cap}，取 40）；
+$\underline{d}$ 为负向扣分合计的下限（\code{negative\_floor}，取 $-20$）；
+$\Theta=(\tau,\{\rho_\ell\},\alpha)$ 为交付标准：总分门槛 $\tau=75$、各层得分率门槛 $\rho_{L1}=0.8$、$\rho_{L2}=\rho_{L3}=0.6$、
+是否允许命中负向条目 $\alpha=\text{false}$；$\mathrm{ver}$ 为版本号。每个条目
+\[
+i=(\mathrm{id}_i,\ \ell_i,\ \mathrm{title}_i,\ j_i,\ p_i,\ \kappa_i,\ \theta_i,\ \mathrm{crit}_i,\ \mathrm{fe}_i,\ c_i,\ \mathrm{route}_i,\ \mathrm{stage}_i),
+\]
+层级 $\ell_i\in\{L0,L1,L2,L3,N\}$，判定者 $j_i\in\{\text{program},\text{llm}\}$，分值 $p_i$（L0 为 0，N 为负），
+$\kappa_i$ 为程序检查名、$\theta_i$ 为其阈值参数，$\mathrm{crit}_i$ 为判定标准，$\mathrm{fe}_i$ 为反例，
+$c_i$ 为可选的命中封顶（目前只有 N-01 设为 70），$\mathrm{route}_i\in\{\text{generator},\text{reviewer}\}$ 与 $\mathrm{stage}_i$
+指明问题回传给哪个会话、哪个阶段。
+\end{definition}
+
+\code{rubric.load\_rubric} 在读入时检查四条结构不变量，违反即抛错，避免一份写错的标准悄悄改变分数：
+\begin{invariant}[评分标准的结构约束]
+\label{inv:eval-rubric}
+（1）条目 id 唯一；（2）$\ell_i\in\{L0,L1,L2,L3,N\}$；（3）$j_i=\text{program}\Rightarrow\kappa_i$ 非空；
+（4）$\ell_i=N\Rightarrow p_i\le 0$。此外 \file{tests/test\_evaluation.py} 断言当前默认版本各层合计
+$\sum_{L1}p_i=35$、$\sum_{L2}p_i=45$、$\sum_{L3}p_i=20$、$\sum_{L0}p_i=0$，且每个程序条目的检查名都在 \code{checks.CHECKS} 中注册。
+\end{invariant}
+
+\subsubsection{四层结构}
+
+表~\ref{tab:eval-layers} 汇总默认版本 \code{report\_v2} 的层级、条目数与分值。正向满分为 100：
+程序判定 35 分，模型判定 65 分。负向条目名义合计 $-30$，但扣分合计不低于 $-20$。全部 41 条的判定标准与反例见附录~\ref{app:rubric}。
+
+\begin{table}[t]
+\centering
+\caption{评分标准 \code{report\_v2} 的四层结构与负向条目。}
+\label{tab:eval-layers}
+\small
+\begin{tabular}{@{}l l c r l@{}}
+\toprule
+层 & 名称 & 条目数 & 分值 & 判定者与规则 \\
+\midrule
+L0 & 硬闸门 & 5 & 0 & 程序；任一失败，总分封顶 40 \\
+L1 & 数据闭合 & 13 & 35 & 程序 \\
+L2 & 分析质量 & 12 & 45 & 盲评模型 \\
+L3 & 表达与合规 & 7 & 20 & 盲评模型 \\
+N & 负向条目 & 4 & $-30$ & N-02 程序，其余盲评；命中扣分，合计下限 $-20$ \\
+\midrule
+\multicolumn{2}{@{}l}{合计} & 41 & 100 & 程序 35 分（+ L0 封顶 + N-02），模型 65 分 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+L0 不计分而封顶，是因为这五项（数字护栏、三表勾稽、DCF 与三表同口径、免责声明、评级与估值一致）任何一项失败，
+报告就不能交给读者，再好的分析也不应把它抬到及格线以上。负向条目（N）专管“最伤信誉”的四类错误：
+无来源的外部数据（N-01）、数字前后矛盾（N-02）、聚合数构成描述错误（N-03）、结论前后冲突（N-04）。
+N-01 命中时额外封顶 70，因为编造外部数据是比遗漏论证更严重的问题：一份带编造数字的报告即使其余全部满分，也不应高于 70。
+
+\begin{tradeoff}[：二元判定还是量表打分]
+\textbf{备选}：每条用 1～5 分的量表（Likert）打分，或让评审直接给一个 0～100 的总分。
+\textbf{为什么不选}：量表分数的中段（3 分）语义模糊，同一评审对同一份报告两次打分常在相邻档位间跳动；
+总分则完全无法追溯到原因，也无法转成问题单。二元判定配合“拿不准判不通过”的规则，把模糊性压到每条的判定标准里，
+措辞改动的效果可以直接在校准数据中观察（\S\ref{sec:eval-versions} 的 L3-04 即为一例）。
+\textbf{代价}：二元判定丢失程度信息（“勉强达标”与“写得很好”同分）；我们用分值档位（2～5 分）部分补偿条目间的重要性差异，
+用 \code{reason} 字段保留程度描述供人阅读。
+\end{tradeoff}
+
+% ----------------------------------------------------------------------------
+\subsection{程序检查：L0 硬闸门与 L1 数据闭合}
+\label{sec:eval-checks}
+
+\subsubsection{评测对象与检查接口}
+
+\code{rubric.Bundle} 把一份待评研报抽象为三元组 $(\text{company},\ \text{run},\ \text{work})$：\code{run} 是估值运行目录
+\file{runs/<id>/}，\code{work} 是抽取目录 \file{data/extractions/<公司>\_<年度>/}。文稿、初稿、复核清单、外部来源与交付 PDF
+都由属性派生（交付 PDF 优先取设了 \code{output\_name} 的命名版）。从流水线工作区构造 Bundle 时（\code{bundle\_from\_workspace}），
+运行目录取 \code{status()} 认定的最新成功运行，因此评测对象与闸门判定的是同一份产物。
+
+每个程序检查是一个函数 $\kappa:\ (\text{Bundle},\theta)\mapsto(\text{passed},\ \text{detail},\ \text{evidence})$，
+通过模块内的命名约定 \code{check\_<名>} 自动注册进 \code{CHECKS} 字典。\code{run\_checks} 只运行 $j_i=\text{program}$ 的条目，并遵守两条约定：
+\begin{enumerate}
+  \item \textbf{缺输入即未通过。} 输入文件缺失时返回 \code{passed=false}，\code{detail} 写明缺哪个文件，不抛错。
+  \item \textbf{异常即未通过。} 检查函数抛出任何异常（产物格式异常、字段缺失），都被捕获并记为未通过，\code{detail} 记异常类型与信息。
+        一条检查出错不拖垮整份评测；测试用一个空目录构造 Bundle，断言全部程序条目都返回结果且全部未通过。
+\end{enumerate}
+程序检查只读产物，不写任何文件，不调用模型；同一份产物重复运行结果逐字相同。
+
+\subsubsection{逐项判定规则}
+
+表~\ref{tab:eval-checks} 列出全部 19 项程序检查（L0 五项、L1 十三项、N-02 一项）的输入与判定规则。
+下面对其中需要说明口径的几项给出形式化表述。记 $\mathrm{EV}_s$、$\mathrm{Eq}_s$、$v_s$ 为情景 $s$ 的企业价值、股权价值（百万元）与每股价值（元），
+$A$、$B$ 为股权价值桥的加回项与扣减项合计，$Q$ 为总股本（股）。
+
+\begin{table}[p]
+\centering
+\caption{程序检查一览（\file{finagent/evaluation/checks.py}）。“产物”均在估值运行目录 \file{runs/<id>/} 下，除非另注。}
+\label{tab:eval-checks}
+\footnotesize
+\begin{tabularx}{\linewidth}{@{}l l X@{}}
+\toprule
+条目 & 检查函数 & 输入与判定规则 \\
+\midrule
+L0-01 & \code{guard} & 对当前文稿重跑数字护栏 \code{run\_guard}（带 \file{sources.json}）：无出处数字、指标期间不符、外部数字缺引用三类均为 0。前后矛盾不在此计（由 N-02 单独扣分） \\
+L0-02 & \code{ts\_integrity} & \file{valuation/three\_statement.json}：每项勾稽的最大绝对误差 $\le$ 引擎容差 \code{ts\_engine.TOLERANCE}（按误差值重判，不信产物记录的 status），且无硬性失败、勾稽列表非空 \\
+L0-03 & \code{dcf\_tie} & \file{valuation.json} 的 \code{three\_statement\_tie.status = pass}（收入、EBIT、折旧摊销、资本开支、营运资本逐期取自三表） \\
+L0-04 & \code{disclaimer} & \file{report.html} 或文稿中匹配正则“不构成.\{0,4\}投资建议” \\
+L0-05 & \code{rating} & 按 \code{forecast\_summary.rating.rule} 由上行空间复算评级，与产物评级相同，且正文出现该评级词 \\
+\midrule
+L1-01 & \code{extraction} & \file{facts.verified.json} 的 \code{check.ok} 为真，拒收、冲突、勾稽失败均为 0 \\
+L1-02 & \code{segment\_base} & \file{segment\_forecast.json} 基期：$|\sum_k \text{rev}_k+\text{other}-\text{rev}|\le\max(0.5,\,10^{-6}|\text{rev}|)$ 百万元，且 $\text{rev}>0$ \\
+L1-03 & \code{bridge} & 每个情景 $|\mathrm{EV}_s+(A-B)-\mathrm{Eq}_s|\le 0.5$ 百万元，且情景非空 \\
+L1-04 & \code{per\_share} & 每个情景 $|\mathrm{Eq}_s\cdot10^6/Q-v_s|\le\max(0.01,\,10^{-4}|\mathrm{Eq}_s\cdot10^6/Q|)$ 元 \\
+L1-05 & \code{scenario\_order} & $v_{\text{low}}\le v_{\text{base}}\le v_{\text{high}}$ \\
+L1-06 & \code{sensitivity} & \code{sensitivity\_directionality.passed}：WACC 上升价值下降、永续增长上升价值上升，逐项 \\
+L1-07 & \code{terminal\_share} & 基准情景终值占企业价值 $\le\theta_{\max}$（默认 0.8） \\
+L1-08 & \code{forecast\_continuity} & 最近实际年 $a$ 与首个预测年 $e$：$|\mathrm{GM}_e-\mathrm{GM}_a|\le 5$ 个百分点，且 $|g_e-g_a|\le 30$ 个百分点 \\
+L1-09 & \code{text\_valuation} & 基准每股价值按 2/1/0 位小数、带或不带千分位六种写法之一出现在正文（后接非数字），且正文出现评级词 \\
+L1-10 & \code{sources} & \code{verify\_sources} 结构校验通过；正文至少一处 \texttt{[S编号]}；\code{check\_citations} 无问题（引用编号都已登记、外部数字所在句带对应编号） \\
+L1-11 & \code{price} & \code{forecast\_summary.market} 中价格、日期、来源三项齐全 \\
+L1-12 & \code{numlock} & 初稿与复核稿都在，\code{numlock(draft, narrative).ok}：复核稿数字与来源编号是初稿的子集 \\
+L1-13 & \code{review\_list} & \file{review.md} 至少一条填写完整的事项（表格行非空格数 $\ge\min(4,\text{列数})$，或一条长度足够的列表项），或全文只写“无” \\
+\midrule
+N-02 & \code{consistency} & 对文稿运行 \code{report\_check.consistency.check}：同一比较键下两处数值超出展示精度，或评级前后不一，即命中（见算法~\ref{alg:eval-consistency}） \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\paragraph{股权价值桥与每股价值（L1-03、L1-04）。}
+股权价值桥由第~\ref{sec:valuation}~节的估值引擎逐项列示。检查不重算 DCF，只核对“列示的数能否加起来”：
+\begin{equation}
+\label{eq:eval-bridge}
+\begin{aligned}
+&\forall s\in\{\text{base},\text{downside},\text{upside}\}:\\
+&\quad\bigl|\mathrm{EV}_s + (A-B) - \mathrm{Eq}_s\bigr|\le 0.5,\qquad
+\bigl|\hat v_s-v_s\bigr|\le\max\!\bigl(0.01,\ 10^{-4}|\hat v_s|\bigr),\quad \hat v_s=\mathrm{Eq}_s\cdot 10^{6}/Q .
+\end{aligned}
+\end{equation}
+容差 0.5 百万元用于吸收产物中百万元金额的舍入；每股价值的容差取 1 分钱或万分之一相对误差中较大者。
+
+\paragraph{评级规则复算（L0-05）。}
+评级规则以文字形式写在产物里（例如“买入：$\ge$20\%；增持：$\ge$5\%；中性：$\ge$$-$5\%；减持：$\ge$$-$20\%；卖出：其余”）。
+检查用正则把规则解析成有序阈值表 $\{(r_k,\,t_k)\}$，按顺序取第一个满足 $u\ge t_k$ 的评级 $r_k$，都不满足时取“其余”对应的评级，
+其中 $u$ 为基准每股价值相对参考股价的上行空间。判定为
+\[
+\text{L0-05 通过}\iff r^\star(u)=r_{\text{产物}}\ \wedge\ r_{\text{产物}}\in\Narr .
+\]
+解析规则文本而不是硬编码阈值，是为了让评测与引擎共用同一份规则：引擎改阈值时评测自动跟随，不会出现两份规则不一致。
+
+\paragraph{正文估值与产物一致（L1-09）。}
+文稿中的基准每股价值必须与产物一致，但正文的写法可以是“1,531.40 元”“1531.4 元”或“1531 元”。
+检查构造六种展示形式 $\{\mathrm{fmt}(v_{\text{base}}, d, \text{sep}) : d\in\{2,1,0\},\ \text{sep}\in\{\text{千分位},\text{无}\}\}$，
+任一形式出现在正文且其后不紧跟数字，即视为写出。负向前瞻防止“1531”误匹配“15310”。
+
+\paragraph{外部信息可追溯（L1-10）。}
+v0 版只检查 \file{sources.json} 是否存在且结构合法。人工质检指出这会造成“空有其 JSON 而未落实”（\S\ref{sec:eval-versions}），
+v1 起改为四个条件同时成立：（a）\code{verify\_sources} 结构校验通过（每个来源有网址、标题、发布方、访问日期，摘句含所登记的数字）；
+（b）正文至少一处 \texttt{[S编号]}；（c）正文引用的编号都已登记；（d）只能在外部来源中找到出处的数字，其所在句子带对应编号
+（\code{check\_citations}，复用数字护栏的 \code{truth\_values} 区分“年报或产物里有”与“只有外部来源有”）。
+测试用三个反例逐一验证：外部数字没标编号、引用了未登记的 \texttt{[S9]}、正文没有任何引用，三者都判不通过。
+
+\paragraph{人工复核清单（L1-13）。}
+同样是 v1 的修订。复核清单的目的是把“拿不准但影响结论”的事项交给人，只有表头的清单没有信息量。
+检查解析 \file{review.md}：去掉标题行与表格分隔行，表头之后每一行至少有 $\min(4,\text{列数})$ 格非空且非“—”才算一条完整事项；
+或者是一条长度超过 8 个字符的列表项；或者全文只写了“无”。测试覆盖了只有表头、事项未填完、填写完整、写“无”四种情况。
+
+\paragraph{预测与历史衔接（L1-08）。}
+这是 L1 中唯一的“合理性”检查，阈值放在条目参数里（\code{gross\_margin\_pp=5}，\code{growth\_pp=30}）。
+首个预测年毛利率与最近实际年相差超过 5 个百分点，或收入增速变化超过 30 个百分点，通常意味着预测没有与年报之后的最新业绩衔接。
+它是启发式规则，会有合理的例外：中际旭创 2025A$\to$2026E 收入增速变化 71 个百分点（行业放量期），该条在全部校准运行中都未通过。
+我们保留这一失败而不放宽阈值，因为 2 分的扣减不影响交付判定，而“为什么增速跳变”恰好是读者会追问、报告应当解释的问题。
+
+\subsubsection{N-02：数字前后矛盾的程序判定}
+
+v2 把负向条目 N-02 从评审模型判定改为程序判定，复用研报纠错核查中的内部一致性检查
+\code{finagent/tasks/report\_check/consistency.py}（方法参照原插件的重复数字对账规则，见附录~\ref{app:thirdparty}）。
+该检查的设计原则是\emph{误报控制优先}：任何一项对不上号就不进入比较，所以一旦命中，就是已确认的内部矛盾。
+
+\begin{definition}[比较键与提及]
+\label{def:eval-key}
+文稿按句（以“。；”与换行断句，跳过表格、代码块、注释与图表指令行）切分。每个数值提及 $m$ 归入比较键
+$k(m)=(\text{指标},\ \text{期间},\ \text{类型},\ \text{情景})$，其中指标取自{营业收入、归母净利润、扣非归母净利润、净利润、每股收益、毛利率、每股价值}，
+期间为晚于报告期的预测年度（每股价值无期间），类型为水平值或同比，情景为悲观 / 基准 / 乐观之一。
+提及的数值按单位换算为基本单位 $x(m)$，并带舍入容差 $\epsilon(m)=\halfulp(m)$（按原文展示的小数位计算的半个末位）。
+\end{definition}
+
+\begin{algorithm}[t]
+\caption{内部一致性检查（N-02，\code{consistency.check}）}
+\label{alg:eval-consistency}
+\begin{algorithmic}[1]
+\Function{Check}{$\Narr$, 报告期 $y_0$}
+  \State $G\gets\emptyset$ \Comment{比较键 $\to$ 提及列表}
+  \For{每个句子 $s\in\Narr$}
+    \State $s\gets$ 去掉外部来源后本报告自己的部分；整句是外部数字（卖方、一致预期、\texttt{[S编号]} 且无“我们”）则跳过
+    \If{$s$ 含条件、敏感性、区间字样} \State \textbf{continue} \EndIf
+    \State 情景 $\gets$ 句中唯一出现的情景词；都没有取“基准”；多个同现 $\Rightarrow$ 不比
+    \State 抽取每股价值（须写明 DCF / 情景；排除区间端点）、“$y_a$—$y_b$ 年 X 分别为 A、B、C”列举与单年度提及
+    \State 仅当指标前无其他限定词（公司整体口径）且年度 $>y_0$ 时，加入 $G[k(m)]$
+  \EndFor
+  \For{每个键 $k$，$G[k]=(m_1,m_2,\dots)$}
+    \State $\mathrm{bad}\gets\{m_j: |x(m_j)-x(m_1)|>\epsilon(m_1)+\epsilon(m_j)\}$
+    \If{$\mathrm{bad}\neq\emptyset$} \State 记一组矛盾 $(m_1,\mathrm{bad})$ \EndIf
+  \EndFor
+  \State 抽取本报告评级（排除评级规则说明句与外部评级）；评级多于一种 $\Rightarrow$ 记一组矛盾
+  \State \Return 矛盾组、比较组数、提及数
+\EndFunction
+\end{algorithmic}
+\end{algorithm}
+
+\begin{proposition}[命中即矛盾]
+\label{prop:eval-nofp}
+若算法~\ref{alg:eval-consistency} 对键 $k$ 报告提及 $m_1,m_j$ 矛盾，则不存在一个真实数值 $x^\star$ 使得 $m_1$ 与 $m_j$
+都是 $x^\star$ 按各自展示精度舍入后的写法。
+\end{proposition}
+\begin{evproof}
+若 $m_1,m_j$ 都是 $x^\star$ 的舍入写法，则 $|x(m_1)-x^\star|\le\epsilon(m_1)$ 且 $|x(m_j)-x^\star|\le\epsilon(m_j)$，
+由三角不等式 $|x(m_1)-x(m_j)|\le\epsilon(m_1)+\epsilon(m_j)$，与报告条件矛盾。
+\end{evproof}
+
+命题~\ref{prop:eval-nofp} 只保证数值层面的“不是舍入差异”。语义层面的误报（两处其实在说不同口径）由前面的过滤条件控制：
+外部数字、条件句、多情景同句、带分部限定词的提及一律不比。代价是召回下降：被过滤掉的句子里真有矛盾也查不出来。
+按评分标准的变更记录，七份真实文稿上零误报，摘要评级反转全部命中。数字之外的结论冲突（“毛利率改善”对“毛利率承压”）
+程序无法可靠判定，拆为 N-04 留给评审。
+
+\begin{failcase}[：v0 / v1 中由评审判定的 N-02]
+评审模型判 N-02 时，会把“股价 808.44 元低于乐观情景 918.06 元，却说股价隐含的假设高于乐观情景”这类推理冲突、
+以及“封面总市值 8,983 亿元与第 15 节 9,522.69 亿元并存”这类口径差异都算作前后矛盾（中际旭创 clean1 的评审理由）。
+这些判断有一定道理，但同一份宇树科技原稿三次评审中 N-02 两次命中、一次未命中（\S\ref{sec:eval-calib-stability}），
+单这一条就造成 8 分的总分波动。数字是否对得上是确定性问题，v2 因此改由程序判定。
+\end{failcase}
+
+% ----------------------------------------------------------------------------
+\subsection{盲评会话}
+\label{sec:eval-judge}
+
+L2、L3 与除 N-02 外的负向条目共 22 条（v2 中为 L2 十二条、L3 七条、N-01 / N-03 / N-04 三条），由一个独立的无头 Claude Code 会话判定，
+默认模型为 \code{FINAGENT\_QC\_MODEL}（Claude Sonnet 5.5）。这个会话被称为“盲评”，因为它在一个只含交付物的目录里工作，
+看不到写作过程、生成模型名与分值。
+
+\subsubsection{盲评目录}
+
+\code{judge.prepare} 为每次评审搭一个新目录（默认 \file{\textasciitilde/finagent-evals/<公司>\_<时间>/}，可由 \code{FINAGENT\_EVAL\_DIR} 指定），
+结构如图~\ref{fig:eval-blind}。
+
+\begin{figure}[t]
+\centering
+\begin{minipage}{0.47\linewidth}
+\footnotesize
+\begin{verbatim}
+<blind>/
+  CLAUDE.md          # reviewer guide
+  rubric.json        # id/title/criterion/
+                     # fail_examples/negative
+  deliverable/
+    report.pdf
+    narrative.md
+    sources.json     # optional
+    review.md        # optional
+    model/
+      valuation.json
+      forecast_summary.json
+      segment_forecast.json
+      scenarios.json
+      non_operating_assets.json
+      comps.json
+  judgments.json     # written by judge
+  judge.jsonl        # event stream
+\end{verbatim}
+\end{minipage}\hfill
+\begin{minipage}{0.5\linewidth}
+\small
+\begin{tabular}{@{}p{0.28\linewidth}p{0.66\linewidth}@{}}
+\toprule
+看得到 & 研报 PDF、文稿、6 个估值产物、外部来源登记、复核清单；评审条目的 id、标题、判定标准、反例、是否负向 \\
+\midrule
+看不到 & 条目分值与层级权重、交付门槛、程序检查结果、写作与复核会话的事件流、初稿与改写日志、生成模型名、其他公司的研报 \\
+\midrule
+能做 & \code{Read(./**)}、\code{Glob}、\code{Grep}、\code{Write(./judgments.json)} \\
+\midrule
+不能做 & 联网、执行命令、读目录外文件、写其他文件 \\
+\bottomrule
+\end{tabular}
+\end{minipage}
+\caption{盲评目录（左）与评审会话的可见范围（右）。\code{model/} 只复制估值目录下存在的文件；
+\code{rubric.json} 由 \code{judge\_items} 生成，剥去了 \code{points} 与 \code{layer}。}
+\label{fig:eval-blind}
+\end{figure}
+
+目录位置有硬约束：Claude Code 会沿父目录加载 \file{CLAUDE.md}，若盲评目录建在仓库内，评审会读到仓库的开发指南、评分标准原文乃至其他公司的研报。
+\code{prepare} 因此复用编排器的 \code{\_check\_location}：目录不得位于仓库的上级目录之下，也不得有任何（家目录之外的）上级目录含 \file{CLAUDE.md}；
+测试断言在仓库 \file{eval/results/} 下建盲评目录会被拒绝。
+
+\subsubsection{评审指南与判定规则}
+
+盲评目录的 \file{CLAUDE.md}（\code{judge.GUIDE}）把评审设定为“研究所的质控评审，没有参与写作，也不知道是谁写的”，
+读者是买方基金经理。指南的要点如下（全文结构见附录~\ref{app:prompts}）：
+\begin{enumerate}
+  \item \textbf{不复算。} 数字与年报是否一致、三表是否勾稽、估值算术是否正确，已由程序核对；评审只判断分析是否成立、论证是否充分、表达是否合格。
+        这一句把评审的注意力从“找算术错误”移开，避免它在自己不擅长的事上花费回合、给出不可靠结论。
+  \item \textbf{逐条、二元。} \code{rubric.json} 的每一条都要判定；完全满足判定标准才算通过；\textbf{拿不准时判不通过}，并在理由里写明缺什么。
+  \item \textbf{负向语义。} \code{negative: true} 的条目，\code{passed: true} 表示命中（报告犯了这个错），没有发现判 \code{false}。
+  \item \textbf{证据可定位。} \code{evidence} 摘录原文不超过 80 字并标位置（章节名或 PDF 页码），没有可摘的写“无”；\code{reason} 一两句话，不通过时写出读者需要而报告没给的东西。
+  \item \textbf{分批读 PDF。} 每次不超过 20 页（与生成侧读年报的限制相同）。
+\end{enumerate}
+
+“拿不准判不通过”是有意的不对称：在返工循环里，误判“不通过”的代价是一轮多余的修改（复核编辑会在理由中看到具体缺口，可以判断是否需要改），
+误判“通过”的代价是问题被带进交付物。人工复核的结果（\S\ref{sec:eval-calib-human}）显示这一规则确实带来了一部分偏严的误报，主要集中在文风类条目。
+
+\subsubsection{会话命令与输出}
+
+评审命令为
+\begin{lstlisting}
+claude -p "<PROMPT>" --model <QC_MODEL> --permission-mode acceptEdits \
+  --allowedTools "Read(./**)" Glob Grep "Write(./judgments.json)" \
+  --output-format stream-json --verbose
+\end{lstlisting}
+其中 \code{PROMPT} 只有一句：按本目录 \file{CLAUDE.md} 评审研报，把结果写进 \file{judgments.json} 后停止。
+事件流逐行落盘为 \file{judge.jsonl}；结束后从 \code{result} 事件取回合数、费用与 token 用量，连同退出码与耗时写进 \file{judge\_run.json}。
+输出格式为：
+\begin{lstlisting}
+{"items": [{"id": "L2-01", "passed": true,
+            "evidence": "...(summary page)", "reason": "..."}],
+ "summary": "3-5 sentences: strongest and weakest points"}
+\end{lstlisting}
+
+\paragraph{输出校验。}
+\code{judge.read\_judgments} 不信任评审的输出格式，逐项检查：非评审条目（例如评审自作主张判了 L1-01）记为“多余条目”；
+同一 id 出现两次，只取第一次并记“重复条目”；\code{passed} 不是布尔值（例如字符串 \code{"yes"}）记为格式问题且不计入；
+缺判的条目记“缺条目”。这些问题写进 \code{score.json} 的 \code{judge\_problems}，不进计分。
+更严重的两种情况单独处理：评审会话跑了但没有写出 \file{judgments.json}（例如额度用尽、第一轮就退出），
+\code{rescore} 不会静默地把 22 条全部按未通过计分，而是标注“本次总分无效”；会话非零退出时标注“判定可能不完整”。
+校准运行据此把这类结果整目录删除以便重跑（\code{calibrate.run}）。
+
+\paragraph{成本。}
+\file{eval/results/} 下 7 次正式评审单次耗时 149～254 秒、11～17 个回合、用量折合 0.95～2.35 美元；
+校准中的 20 次评审平均 177 秒、17 个回合、1.75 美元，合计 35.02 美元（\file{judge\_run.json} 统计）。
+输入 token 每次约 65～165 万，主要是 PDF 与文稿的重复读取（多数命中缓存）。与生成一份研报的五个会话相比，评审成本小一个数量级，
+因此可以负担重复评审与劣化变体评审。
+
+\begin{tradeoff}[：评审读 PDF 还是只读文稿]
+\textbf{备选}：只给评审 \file{narrative.md}（纯文本，便宜且好检索）。
+\textbf{为什么不选}：L3-06“图表服务论点”、L3-07“假设与局限透明”依赖排版后的图表与附录；读者看到的是 PDF，
+例如两次劣化实验中评审都发现“跟踪指标与结论失效条件”一节在 PDF 第 26 页“只有标题没有内容”，这只有看 PDF 才能发现。
+\textbf{折中}：两者都给。文稿用于检索原文与摘证据，PDF 用于判断版面与图表；指南要求分批读 PDF 以控制上下文。
+\end{tradeoff}
+
+\begin{tradeoff}[：让评审看到程序检查结果吗]
+\textbf{备选}：把 \file{checks.json} 放进盲评目录，让评审知道哪些数据闭合已通过。
+\textbf{为什么不选}：程序结果会锚定评审的总体印象（看到 L1 大面积通过后对 L2 更宽容，反之亦然），两路判定就不再独立；
+而独立性正是我们把程序判与模型判分开的理由。评审只被告知“这些已由程序另行核对”，看不到结果。
+\end{tradeoff}
+
+% ----------------------------------------------------------------------------
+\subsection{计分、交付标准与问题单}
+\label{sec:eval-score}
+
+\subsubsection{计分公式}
+
+记条目 $i$ 的判定结果为 $y_i\in\{0,1\}$：正向条目 $y_i=1$ 表示通过，负向条目 $y_i=1$ 表示命中。
+程序检查结果与评审结果合并为一张判定表 $\{(\mathrm{id}_i, y_i, \text{evidence}_i, \text{reason}_i)\}$ 后，\code{rubric.score} 按下式计分：
+\begin{align}
+E_\ell &= \sum_{i\in\mathcal{I}_\ell} p_i\,y_i,\qquad P_\ell=\sum_{i\in\mathcal{I}_\ell}p_i,\qquad \ell\in\{L1,L2,L3\}, \label{eq:eval-layer}\\
+D &= \max\Bigl(\sum_{i\in\mathcal{I}_N} p_i\,y_i,\ \underline{d}\Bigr), \label{eq:eval-deduct}\\
+S_{\mathrm{raw}} &= \max\bigl(0,\ E_{L1}+E_{L2}+E_{L3}+D\bigr), \label{eq:eval-raw}\\
+\Gamma &= \bigl\{c_{\mathrm{gate}}\ :\ \exists i\in\mathcal{I}_{L0},\ y_i=0\bigr\}\ \cup\ \bigl\{c_i\ :\ i\in\mathcal{I}_N,\ y_i=1,\ c_i\ \text{有定义}\bigr\}, \label{eq:eval-caps}\\
+S &= \min\bigl(\{S_{\mathrm{raw}}\}\cup\Gamma\bigr). \label{eq:eval-total}
+\end{align}
+式中 $\mathcal{I}_\ell$ 为第 $\ell$ 层条目，$p_i$ 为分值（N 层为负），$\underline{d}=-20$ 为扣分下限，$\Gamma$ 为封顶集合，$c_{\mathrm{gate}}=40$。
+缺判定的条目按 $y_i=0$ 处理（正向条目不得分、负向条目不扣分），并列入 \code{missing}。
+
+\paragraph{交付标准。}
+\begin{equation}
+\label{eq:eval-deliver}
+\begin{aligned}
+\mathrm{Deliverable}\iff\ &\bigl(\forall i\in\mathcal{I}_{L0}: y_i=1\bigr)\ \wedge\ S\ge\tau\\
+\wedge\ &\bigl(\forall\ell: P_\ell>0\Rightarrow E_\ell/P_\ell\ge\rho_\ell\bigr)\ \wedge\ \bigl(\alpha\ \vee\ \forall i\in\mathcal{I}_N: y_i=0\bigr).
+\end{aligned}
+\end{equation}
+\code{score} 返回的 \code{not\_deliverable\_reasons} 逐条列出不满足的子条件，例如“L2 得分率 58\% < 60\%”“命中负向条目：N-02”。
+交付标准与总分是两件事：一份 85 分的报告只要命中任一负向条目就不可交付（中际旭创校准原稿即如此），
+而一份 76 分、各层达标、无负向命中的报告可以交付。
+
+\begin{proposition}[单调性]
+\label{prop:eval-monotone}
+固定其余条目的判定，$S$ 关于任一正向条目的 $y_i$ 单调不减，关于任一负向条目的 $y_i$ 单调不增；交付判定同理。
+\end{proposition}
+\begin{evproof}
+正向条目 $y_i$ 由 0 变 1：若 $i\in L1\cup L2\cup L3$，$S_{\mathrm{raw}}$ 不减，$\Gamma$ 不变；若 $i\in L0$，$S_{\mathrm{raw}}$ 不变，
+$\Gamma$ 可能失去 $c_{\mathrm{gate}}$，最小值不减。负向条目 $y_i$ 由 0 变 1：$D$ 不增（下限截断不改变方向），$S_{\mathrm{raw}}$ 不增，
+$\Gamma$ 可能增加 $c_i$，最小值不增。交付判定的四个合取项各自在相同方向上单调。
+\end{evproof}
+单调性保证返工循环中“修好一条问题”在其余判定不变时不会让分数下降；实际中分数仍可能下降，原因是评审对其他条目的判定发生了变化
+（\S\ref{sec:eval-calib-stability} 的重复评审噪声），而不是计分规则本身。
+
+\begin{example}[一份原稿与一份劣化稿的计分]
+\label{ex:eval-score}
+中际旭创校准原稿第一次评审（rubric v1）：L1 得 33/35（L1-08 预测衔接未过），L2 得 42/45（L2-08 估值参数依据未过），
+L3 得 18/20（L3-05 数字密度未过），N-02 命中扣 8 分。$S_{\mathrm{raw}}=33+42+18-8=85$，无封顶，$S=85$；
+因命中负向条目，判为不可交付。同一份稿件插入一段无来源的市场规模数字后（劣化 \code{unsourced\_number}），
+评审判 N-01 命中（$-8$，封顶 70），同时数字护栏 L0-01 因“外部数字缺引用”失败（封顶 40），
+$S_{\mathrm{raw}}=85$，$\Gamma=\{70,40\}$，$S=40$。这一例子同时说明了程序判与模型判的叠加：编造的外部数字被两条独立的检查各抓住一次。
+\end{example}
+
+\paragraph{重算不重评。}
+\code{python -m finagent.evaluation score --result <目录>} 读结果目录中已保存的 \file{checks.json} 与 \file{judgments.json}，
+按（可能修改过的）评分标准重新计分，生成新的 \file{score.json}、\file{scorecard.md} 与问题单，不重跑程序检查也不重跑评审。
+因此改权重、改封顶、改交付门槛的效果可以立即在全部历史结果上看到。只有改了判定标准文本（\code{criterion}、\code{fail\_examples}）
+或程序检查本身时，才需要重跑 \code{run}。旧版结果按新版重算时，新增条目（v2 的 N-02 程序判、N-04）没有判定，按缺判（未命中）计。
+
+\begin{tradeoff}[：加权求和加封顶，还是字典序或乘法]
+\textbf{备选 A}：字典序（先比 L0，再比 L1，……）。它能表达“闸门优先”，但无法比较“L2 多 5 分、L3 少 2 分”的两份报告，不利于返工循环判断进步。
+\textbf{备选 B}：乘法（如 $S=\prod_\ell (E_\ell/P_\ell)^{w_\ell}$）。任何一层为 0 时总分为 0，惩罚过重，且分数难以解释。
+\textbf{选择}：加权求和表达“分析质量可以互相补偿”，封顶表达“硬错误不可补偿”，交付标准的层得分率门槛表达“每层都要过得去”。
+三种机制各管一件事，读分数的人能直接看出总分低是因为封顶、扣分还是某层得分率不足。
+\end{tradeoff}
+
+\subsubsection{问题单}
+
+计分结果除了给人看的逐条表 \file{scorecard.md}，还转成给返工会话看的问题单 \file{issues.json}（\code{\_\_main\_\_.issues\_from}）。
+每条未通过的正向条目、每条命中的负向条目生成一个问题：
+\[
+\text{issue}=(\text{id}=\text{I}nn,\ \text{route}_i,\ \text{stage}_i,\ \text{severity},\ \text{description}=\text{reason}_i,\ \text{evidence}_i),
+\]
+严重度按层级与分值确定：
+\begin{equation}
+\label{eq:eval-severity}
+\text{severity}(i)=\begin{cases}
+\text{blocker}, & \ell_i\in\{L0,N\},\\
+\text{major}, & p_i\ge 4,\\
+\text{minor}, & \text{其余}.
+\end{cases}
+\end{equation}
+问题单\emph{只含理由与证据}，不含条目标题、判定标准与分值；问题编号 I01、I02…… 按出现顺序重编，与条目 id 无对应。
+测试 \code{test\_evaluate\_without\_judge\_and\_rescore} 断言问题单的字段集合恰为 $\{\text{id},\text{route},\text{stage},\text{severity},\text{description},\text{evidence}\}$，
+且没有任何一条 \code{description} 等于某个条目标题。
+
+\paragraph{路由。}
+\code{refine} 把问题单按 \code{route} 与 \code{stage} 分成三份（第~\ref{sec:pipeline}~节）：
+\code{generator} 路由的问题（数据、假设、分析内容，阶段 1～8）交给修订会话（Opus），修订后复核与排版从头再来；
+\code{reviewer} 路由且阶段为 10 的问题（图表、免责声明等版面问题）交给排版设计师；其余 \code{reviewer} 问题（措辞、结构）交给复核编辑（Sonnet），
+数字锁照常生效。路由信息来自评分标准条目本身的 \code{route}、\code{stage} 字段（附录~\ref{app:rubric}），评测代码不做语义判断。
+返工循环在“达到交付标准”“满 3 轮”“连续两轮提升不足 2 分”“没有可回传的问题”四种情况下停止，并回滚到得分最高的一轮；
+仍未达标的问题追加进 \file{review.md} 交给人工。
+
+\begin{failcase}[：问题单的理由里带着标准的影子]
+问题单不含判定标准原文，但评审的 \code{reason} 往往复述了标准的要点，例如“只有无风险利率和 0.5\% 公司特有风险溢价有依据……
+为什么选 FCFF-DCF 同样没讲”几乎就是 L2-08 判定标准的改写。多轮返工后，生成方确实可能从理由中拼出评分标准的轮廓。
+我们接受这一泄漏：理由必须具体到“缺什么”才能指导修改，而具体的缺口本身就是读者需要的东西。
+防止应试的更强手段（把标准分为反馈集与留出集、留出集只用于最终计分）写在设计记录里，尚未实现。
+\end{failcase}
+
+% ----------------------------------------------------------------------------
+\subsection{评分标准的版本演进}
+\label{sec:eval-versions}
+
+评分标准在三天内迭代了三版（图~\ref{fig:eval-timeline}）。每一版都保留在 \file{eval/rubrics/} 下，用于复现当时的结果；
+版本号写进每一份 \file{score.json}，人工质检页拒绝为版本不一致的结果生成页面。
+
+\begin{figure}[t]
+\centering
+\begin{tikzpicture}[font=\small]
+  \draw[thick,-{Stealth[length=2mm]}] (0,0) -- (12.6,0);
+  \foreach \x/\d/\v in {0.8/10-03/v0, 5.0/10-04/v1, 9.2/10-05/v2} {
+    \fill[nipsblue] (\x,0) circle (2pt);
+    \node[above] at (\x,0.05) {\textbf{\v}};
+    \node[below] at (\x,-0.05) {\footnotesize 2026-\d};
+  }
+  \node[prog, text width=34mm, anchor=north] at (0.8,-0.75) {\footnotesize 初版：两条思路合成四层；\\三家研报 46～49 分};
+  \node[agent, text width=30mm, anchor=north] at (2.9,-2.1) {\footnotesize 人工质检 v0 结果：\\33 条判出问题中 5 条误报};
+  \node[prog, text width=34mm, anchor=north] at (5.0,-0.75) {\footnotesize L1-10、L1-13 看落实；\\L3-04、L3-05 改措辞};
+  \node[agent, text width=30mm, anchor=north] at (7.1,-2.1) {\footnotesize 校准：N-02 三次评审\\判定不一，波动 8 分};
+  \node[prog, text width=34mm, anchor=north] at (9.2,-0.75) {\footnotesize N-02 改程序判；\\结论冲突拆为 N-04};
+  \draw[darr] (2.9,-2.1) -- (4.3,-1.05);
+  \draw[darr] (7.1,-2.1) -- (8.5,-1.05);
+\end{tikzpicture}
+\caption{评分标准的版本演进。蓝框为版本内容，橙框为触发修订的证据。}
+\label{fig:eval-timeline}
+\end{figure}
+
+\paragraph{v0（2026-10-03）：初版。}
+按 \S\ref{sec:eval-rubric} 的两条思路写成 40 条（L0 五条、L1 十三条、L2 十二条、L3 七条、N 三条），N-01 至 N-03 全部由评审判定。
+用它对三家公司的早期研报各评一遍（单次盲评），得到茅台 48、宁德 49、招商 46 分（表~\ref{tab:eval-results}）。
+
+\paragraph{人工质检。}
+三家结果交给两位团队成员复核（复核页的生成见 \S\ref{sec:eval-tools}）。复核只针对评审判“不通过”的条目，确认或否定问题是否成立，
+否定时必须写理由与可核对的证据。33 条中确认 26 条、误报 5 条、待查 2 条（详见 \S\ref{sec:eval-calib-human}）。
+误报集中在 L3-04（无机器腔，两家都认为过严）、L3-05（数字密度，茅台判为误报）；
+茅台复核人的总评还指出了一个评审之外的问题：L1 若干条只检查 JSON 文件在不在，没检查“是否真的落实了这件事”。
+
+\paragraph{v1（2026-10-04）：按人工质检收紧 L1、放宽 L3 的措辞。}
+改动见表~\ref{tab:eval-v1}。L1-10 与 L1-13 是程序条目，改的是检查函数（\S\ref{sec:eval-checks}）；L3-04 与 L3-05 是评审条目，
+改的是判定标准与反例，需要重跑评审才生效。
+
+\begin{table}[t]
+\centering
+\caption{v0 $\to$ v1 的四处修订。}
+\label{tab:eval-v1}
+\footnotesize
+\begin{tabularx}{\linewidth}{@{}l X X@{}}
+\toprule
+条目 & v0 判定标准 & v1 判定标准 \\
+\midrule
+L1-10 & 有 \file{sources.json} 且结构校验通过，正文外部信息带 \texttt{[S编号]} & 结构校验通过；正文至少一处引用，引用的编号都已登记；只能从外部资料找到出处的数字，所在句子带对应编号 \\
+L1-13 & 有 \file{review.md}，列出拿不准但重要的事项 & 至少一条填写完整的事项（事项、为什么重要、当前处理、请核对），或明确写“无”；只有表头不算 \\
+L3-04 & 无明显模型写作痕迹（自证圆场、程序口吻、否定对照堆砌、交代缺失），偶发一两处可通过；反例“同类句式反复出现三处以上” & 同上四类，但\textbf{只看正文段落}，图表来源、表注、免责声明、附录的方法说明不算；偶发可通过，\textbf{某一类成为习惯写法}才不通过 \\
+L3-05 & 正文不逐行念表，单句不堆砌五六个数字；关键数字突出 & 一个数字连同其同比、占比或上年值\textbf{算一个数据点}；单句串起四五个以上互不相关的数据点才算堆砌；重点看每段最重要的一两个数是否被点明 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\paragraph{v2（2026-10-05）：N-02 改为程序判定，新增 N-04。}
+校准实验（\S\ref{sec:eval-calib}，在 v1 上进行）显示 N-02 是唯一一个在原稿重复评审中判定翻转的负向条目，
+而它 8 分的权重使总分极差主要来自这一条。数字对不对得上是确定性问题，v2 把它交给 \S\ref{sec:eval-checks} 的一致性检查，
+判定范围限定为评级、各情景每股价值、预测年度公司整体收入 / 利润 / 每股收益 / 毛利率及其增速；数字以外的结论冲突拆为新条目 N-04，仍由评审判定。
+v2 共 41 条，是当前默认版本。
+
+\paragraph{仍未定的条目。}
+L2-08（估值方法与参数）要求“说明为什么用这种估值方法”，人工对是否必须写这一点意见不一（茅台复核中该条标为待查）。
+评分标准 README 记录了这一分歧，决定等优秀研报样例到位后再定。
+
+\begin{insight}[：评分标准改动的两类证据]
+v1 的依据是人工复核（评审“判错了”），v2 的依据是重复评审（评审“判不稳”）。前者说明判定标准的措辞与读者的预期不一致，修法是改措辞；
+后者说明条目本身不适合交给模型，修法是换判定者。两类证据对应两种不同的修订动作，校准数据应同时收集这两类信号。
+\end{insight}
+
+% ----------------------------------------------------------------------------
+\subsection{评审校准}
+\label{sec:eval-calib}
+
+评审模型的判定决定了 65 分的归属，也决定了返工循环往哪个方向改。在用它驱动返工之前，需要回答三个问题：
+它判得稳不稳？它能不能发现已知的缺陷？它判出的问题人是否认同？\code{finagent/evaluation/calibrate.py} 用三组证据分别回答。
+
+\begin{table}[t]
+\centering
+\caption{三组校准证据各自回答的问题与局限。}
+\label{tab:eval-calib-design}
+\small
+\begin{tabularx}{\linewidth}{@{}l X X X@{}}
+\toprule
+证据 & 做法 & 回答的问题 & 不能回答的 \\
+\midrule
+稳定性 & 同一份原稿重复盲评 $k=3$ 次 & 重复评审的逐条一致率、总分波动 & 判得对不对 \\
+劣化命中 & 程序在原稿中制造已知缺陷，重新排版、重新盲评 & 已知缺陷能否被判出（灵敏度）；其余条目是否被连带改判 & 原稿中未知缺陷的漏判 \\
+人工一致 & 人工复核评审判“不通过”的条目 & 判出问题的精确率 & 评审判“通过”的条目是否漏判 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+校准在两家研报上进行：中际旭创与宇树科技（招股说明书口径），均为质检合格的交付稿，评分标准为 v1。
+每家 3 次原稿评审加 7 个劣化变体，共 20 次盲评。变体工作区与盲评目录建在 \file{\textasciitilde/finagent-evals/calibration/}（仓库之外），
+判定结果存 \file{eval/calibration/<公司>/<变体>/}，汇总为 \file{summary.json} 与 \file{report.md}。
+
+\subsubsection{形式化}
+
+记评审条目集合为 $\mathcal{J}$（$|\mathcal{J}|=22$）。对一次评审 $r$，定义条目 $i$ 的“判出问题”指示
+\begin{equation}
+\label{eq:eval-flag}
+f_r(i)=\begin{cases}1-y_{r,i}, & \ell_i\in\{L2,L3\},\\ y_{r,i}, & \ell_i=N,\end{cases}
+\end{equation}
+即正向条目未通过与负向条目命中都算判出问题。设原稿评审为 $r=1,\dots,k$，总分为 $S_r$。
+
+\begin{definition}[稳定性指标]
+\label{def:eval-stability}
+\begin{align}
+\text{逐条全一致率}\quad A &= \frac{1}{|\mathcal{J}|}\bigl|\{i\in\mathcal{J}: f_1(i)=\cdots=f_k(i)\}\bigr|, \\
+\text{两两不一致率}\quad \bar\phi &= \binom{k}{2}^{-1}\sum_{r<s}\frac{1}{|\mathcal{J}|}\sum_{i\in\mathcal{J}}\mathbb{1}[f_r(i)\ne f_s(i)], \\
+\text{总分极差}\quad \Delta S &= \max_r S_r-\min_r S_r .
+\end{align}
+原稿多数判定 $\hat f(i)=\mathrm{maj}_r f_r(i)$。
+\end{definition}
+
+\begin{definition}[劣化变体的命中与连带改判]
+\label{def:eval-degrade}
+劣化变体 $v$ 有目标条目集 $T_v\subseteq\mathcal{J}$，其评审判定为 $f_v$。定义
+\begin{align}
+\mathrm{valid}_v &= \bigwedge_{t\in T_v}\bigl[\hat f(t)=0\bigr], &
+\mathrm{hit}_v &= \bigwedge_{t\in T_v}\bigl[f_v(t)=1\bigr],\\
+C_v &= \{i\in\mathcal{J}\setminus T_v:\ f_v(i)\neq\hat f(i)\}, &
+\mathrm{DR} &= \frac{\sum_{v}\mathrm{valid}_v\,\mathrm{hit}_v}{\sum_v\mathrm{valid}_v}.
+\end{align}
+原稿多数判定已判出目标问题的变体无效（命中不说明评审灵敏）。连带改判率 $|C_v|/|\mathcal{J}|$ 的参照是 $\bar\phi$：
+若劣化只影响目标条目，非目标条目的改判应只来自评审自身的噪声。
+\end{definition}
+
+\begin{definition}[人工精确率]
+\label{def:eval-precision}
+人工对评审判出问题的条目给出“确认”“误报”“待查”之一，精确率 $\pi=n_{\text{确认}}/(n_{\text{确认}}+n_{\text{误报}})$，待查不计。
+\end{definition}
+
+\subsubsection{稳定性}
+\label{sec:eval-calib-stability}
+
+表~\ref{tab:eval-stability} 给出两家原稿各三次评审的结果。我们另按 Fleiss $\kappa$~\citep{fleiss1971measuring}
+计算了扣除偶然一致后的一致性（由 \file{eval/calibration/} 中各次 \file{score.json} 复算，非仓库直接输出）。
+
+\begin{table}[t]
+\centering
+\caption{原稿重复盲评的稳定性（rubric v1，Sonnet，$k=3$）。“判出”列为三次评审逐条判出问题的情况（1 为判出）。}
+\label{tab:eval-stability}
+\small
+\begin{tabularx}{\linewidth}{@{}l c c c c l X@{}}
+\toprule
+公司 & 全一致 & $A$ & $\bar\phi$ & $\kappa$ & 总分 & 不稳定条目（三次判出） \\
+\midrule
+中际旭创 & 20/22 & 91\% & 0.061 & 0.80 & 85/80/78 & L2-07 (0,1,1)；L3-07 (0,0,1) \\
+宇树科技 & 19/22 & 86\% & 0.091 & 0.57 & 80/88/83 & L2-07 (1,1,0)；L3-07 (0,0,1)；N-02 (1,0,1) \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+两家稳定判出的问题相同：L3-05（数字密度）三次全判出；中际旭创的 L2-08（估值参数依据）与两家的 N-02（v1 中由评审判）多数判出。
+不稳定的条目也相同：L2-07（预测假设有依据）与 L3-07（假设与局限透明）。这两条的判定标准都含“关键”“最重要的几项”之类需要评审自行界定范围的词，
+同一份报告在“研发费用率假设缺依据算不算关键假设”上可以两样判。
+
+\paragraph{总分波动来自少数高权重条目。}
+忽略封顶与扣分下限，并假设条目判定相互独立，总分方差可近似分解为
+\begin{equation}
+\label{eq:eval-var}
+\mathrm{Var}(S)\approx\sum_{i\in\mathcal{J}}p_i^2\,q_i(1-q_i),
+\end{equation}
+$q_i$ 为条目 $i$ 被判出的概率。用三次评审的频率代入：宇树科技 N-02（$|p|=8$，$q=2/3$）贡献 $64\times 2/9\approx 14.2$，
+L2-07（$p=5$）贡献 5.6，L3-07（$p=2$）贡献 0.9，合计约 20.7，标准差约 4.5；观测到的三次总分样本标准差为 4.0。
+中际旭创只有 L2-07 与 L3-07 两项，近似标准差 2.5，观测为 3.6。两家的总分极差都可以逐分归到具体条目：
+中际旭创 $7=5$（L2-07）$+2$（L3-07），宇树科技 $8$ 即 N-02 的一次翻转。式~\eqref{eq:eval-var} 给出了降低波动的两个杠杆：
+把高权重且不稳定的条目交给程序（v2 对 N-02 所做的），或把判定标准写得更可判定以降低 $q_i(1-q_i)$。
+
+与设计记录中定下的目标（逐条一致率 $\ge 90\%$、总分极差 $\le 5$）相比，中际旭创达到一致率目标，宇树科技未达到；两家极差都超出目标。
+在 v2 下 N-02 改由程序判定，同一份稿件的 N-02 结果在三次评审中必然相同；若其余判定不变，宇树科技三次总分的极差将只剩 L2-07 与 L3-07 造成的 3 分。
+
+\subsubsection{劣化命中}
+\label{sec:eval-calib-degrade}
+
+\paragraph{劣化算子。}
+七个劣化算子都只改文稿 \file{narrative.md}，按 \code{<!-- section: 名称 -->} 分节标记与 \texttt{\#\#\#} 小标题定位，确定性地制造一种缺陷，
+然后复制整个工作区、用该公司自己的排版脚本重新渲染 PDF，再走一遍完整评测（表~\ref{tab:eval-ops}；精确定义见附录~\ref{app:degrade}）。
+算子设计遵守两条规则：（1）只改它声称要改的内容，测试 \code{test\_every\_degradation\_changes\_only\_what\_it\_claims} 对每个算子断言目标内容消失、其余内容保留；
+（2）找不到对应小节、文稿没有任何变化时抛错（\code{degrade} 的检查），避免把“没改”的变体当成“评审没判出”。
+
+\begin{table}[t]
+\centering
+\caption{七个劣化算子（\code{calibrate.DEGRADATIONS}）。}
+\label{tab:eval-ops}
+\small
+\begin{tabularx}{\linewidth}{@{}l l X@{}}
+\toprule
+算子 & 目标 & 制造的缺陷 \\
+\midrule
+\code{no\_cross\_check} & L2-09 & 删掉标题含“交叉验证”或“相对估值”的小节 \\
+\code{no\_expectation\_gap} & L2-02 & 删掉“市场关注”“预期差”小节，掏空“股价隐含”深度专题（保留段落数，正文换成“本段从略。”），清空预期差一节 \\
+\code{generic\_risks} & L2-11 & 风险提示一节与摘要的风险提示换成不对应任何假设的通用模板（宏观、竞争、政策、技术） \\
+\code{no\_tracking} & L2-12 & 清空跟踪指标与结论失效条件一节 \\
+\code{unsourced\_number} & N-01 & 在行业深度一节第一段后插入一段无来源的市场规模、增速与份额数字 \\
+\code{contradiction} & N-02 & 只把摘要中的评级词改成相反方向，正文不变 \\
+\code{machine\_tone} & L3-04 & 每隔一段正文，在句首加“根据程序计算结果，”，句尾加“（以上数据已通过数字护栏校验，由模型自动生成。）” \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+这一做法与变异测试同构：变异算子在被测程序中注入已知缺陷，以“杀死变异体”的比例衡量测试集的充分性~\citep{demillo1978hints,jia2011mutation}；
+这里被测的是评审，变异体是研报，“杀死”即判出目标条目。与变异测试不同，研报的“等价变异体”问题更严重：
+深度研报中同一论点会在核心观点、深度专题、图表中多次出现，删掉一节后内容在别处仍在，变异体在语义上与原稿等价或接近等价。
+
+\paragraph{结果。}
+表~\ref{tab:eval-degrade} 列出 14 个变体的结果。两家的 \code{contradiction} 变体都无效：原稿在 v1 下已被评审判出 N-02
+（评审把推理冲突与口径差异也算作矛盾），评级反转后评审照样判出，并在理由中准确指出“摘要买入、首页评级框与投资建议卖出”。
+其余 12 个有效变体中判出 5 个，$\mathrm{DR}=5/12\approx 42\%$（Wilson 95\% 区间 [19\%, 68\%]，\citealp{wilson1927probable}），低于设计目标 80\%。
+
+\begin{table}[t]
+\centering
+\caption{劣化命中（rubric v1）。“原稿”为原稿多数判定是否已判出目标；“判出”为劣化稿是否判出；$|C_v|$ 为连带改判条目数。}
+\label{tab:eval-degrade}
+\footnotesize
+\begin{tabular}{@{}l l l c c c l r@{}}
+\toprule
+公司 & 变体 & 目标 & 原稿 & 判出 & $|C_v|$ & 连带改判条目 & 总分 \\
+\midrule
+中际旭创 & contradiction & N-02 & 已判出 & \cmark & 2 & L2-01、L2-07 & 81 $\to$ 81 \\
+ & generic\_risks & L2-11 & 未 & \xmark & 1 & L2-07 & 81 $\to$ 85 \\
+ & machine\_tone & L3-04 & 未 & \cmark & 2 & L2-07、L3-03 & 81 $\to$ 79 \\
+ & no\_cross\_check & L2-09 & 未 & \xmark & 1 & L2-07 & 81 $\to$ 85 \\
+ & no\_expectation\_gap & L2-02 & 未 & \xmark & 2 & L2-08、N-02 & 81 $\to$ 91 \\
+ & no\_tracking & L2-12 & 未 & \xmark & 2 & L2-07、L2-09 & 81 $\to$ 81 \\
+ & unsourced\_number & N-01 & 未 & \cmark & 3 & L2-07、L2-08、N-02 & 81 $\to$ 40 \\
+\midrule
+宇树科技 & contradiction & N-02 & 已判出 & \cmark & 2 & L2-01、L2-08 & 83.7 $\to$ 73 \\
+ & generic\_risks & L2-11 & 未 & \cmark & 2 & L2-07、N-02 & 83.7 $\to$ 89 \\
+ & machine\_tone & L3-04 & 未 & \cmark & 3 & L2-07、L2-08、N-02 & 83.7 $\to$ 87 \\
+ & no\_cross\_check & L2-09 & 未 & \xmark & 2 & L2-07、L2-08 & 83.7 $\to$ 82 \\
+ & no\_expectation\_gap & L2-02 & 未 & \xmark & 4 & L2-08、L3-01、L3-04、N-02 & 83.7 $\to$ 78 \\
+ & no\_tracking & L2-12 & 未 & \xmark & 3 & L2-07、L2-08、N-02 & 83.7 $\to$ 90 \\
+ & unsourced\_number & N-01 & 未 & \cmark & 2 & L2-08、N-02 & 83.7 $\to$ 40 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{按算子类型看。}
+判出率在两类算子之间差别很大：
+\begin{itemize}
+  \item \textbf{局部注入类}（\code{machine\_tone}、\code{unsourced\_number}）：4/4 全部判出。注入的内容在文中可直接定位，
+        评审给出的证据就是注入的原句（如“根据程序计算结果，……（以上数据已通过数字护栏校验，由模型自动生成。）（P11）”）。
+  \item \textbf{整节删除类}（\code{no\_cross\_check}、\code{no\_expectation\_gap}、\code{no\_tracking}、\code{generic\_risks}）：1/8 判出（Wilson 区间 [2\%, 47\%]）。
+\end{itemize}
+整节删除类未判出的 7 个变体，评审都给出了具体理由，理由引用的内容在劣化稿中确实还在：
+中际旭创删掉交叉验证小节后，评审引用的是“预期差”一节中的退出倍数与隐含倍数对照；删掉预期差后，评审引用的是摘要页核心观点第四条中的“股价隐含的远期假设”；
+宇树科技删掉交叉验证后，评审引用的是深度专题四中的退出倍数法与市销率锚点。排版脚本生成的图表（如“图表 53 预期差一览”）不在文稿中，劣化也删不到。
+按 \file{report.md} 的判定规则，评审理由所引内容在劣化稿中仍在的，属于劣化不彻底，不算评审漏判。照此标准，7 个未判出变体中没有可以确认的评审漏判；
+但这同时意味着整节删除类算子在深度研报上\emph{测不出}评审的灵敏度，DR 只对局部注入类有意义。
+
+\begin{failcase}[：评审看见缺陷却判通过]
+\code{no\_tracking} 的两次评审都注意到“跟踪指标与结论失效条件”一节在 PDF 第 26 页只有标题、没有内容，并称之为“明显缺陷”，
+却仍判 L2-12 通过：判定标准是“给出跟踪指标或催化剂，\textbf{或}写明结论在什么条件下不成立”，而失效条件散见于其他章节。
+评审按字面执行了标准。这说明一个析取式的判定标准会把“集中呈现”与“散落提及”判为等价；若读者需要的是一节汇总，
+标准里就要写明。这一条留待下一版修订。
+\end{failcase}
+
+\paragraph{连带改判。}
+两家变体的平均连带改判率分别为 $13/154\approx 0.084$ 与 $18/154\approx 0.117$，略高于各自原稿的两两不一致率 0.061 与 0.091。
+连带改判的条目绝大多数是原稿中已经不稳定的 L2-07、L2-08 与 N-02（14 个变体中 L2-07 出现 10 次），说明改判主要来自评审噪声，而非劣化对非目标条目的实质影响。
+一个例外值得注意：宇树科技 \code{no\_expectation\_gap} 变体有 4 条连带改判，其中 L3-01（故事线连贯）被改判，
+理由是删除后的“本段从略”章节破坏了主线，这是劣化方式（掏空而不删除）带来的真实副作用。
+
+\paragraph{分数方向。}
+多个整节删除类变体的总分反而\emph{高于}原稿均值（中际旭创 \code{no\_expectation\_gap} 91 对 81）。原因是这些变体中 N-02 恰好未命中，
+少扣了 8 分；N-02 的不稳定再次主导了总分变化。只看总分会得出“删掉预期差让报告更好”的荒谬结论，校准应当逐条看目标条目，而不是看总分。
+
+\subsubsection{人工一致}
+\label{sec:eval-calib-human}
+
+\paragraph{复核协议。}
+\begin{sloppypar}
+人工复核使用 \code{review-docs} 生成的单文件质检页（\S\ref{sec:eval-tools}）。复核策略为 \code{model\_flagged\_only}：
+只有评审判出问题、且不属于纯机器核对项的条目进入人工队列；评审判通过的条目默认沿用、标“尚未经人工核验”。
+对每个队列条目，复核人在“问题成立”“模型误判”“待核查”三者中选一；选“模型误判”必须填写误判理由与可核对的页码或原文证据，选“待核查”必须写明还缺什么。
+导出的 JSON（schema 为
+\code{finagent.manual\_review.v2}）带有被评 PDF、评分标准、评分结果与配套工作簿的联合 SHA-256 指纹，
+\code{calibrate human} 把它们收进 \file{eval/calibration/human/}。
+\end{sloppypar}
+
+\paragraph{结果。}
+表~\ref{tab:eval-human} 汇总三家 v0 研报的复核（rubric v0，两位复核人）。只统计 L2、L3、N 层的评审条目：
+合计 33 条，确认 26、误报 5、待查 2，$\pi=26/31\approx 84\%$（Wilson 95\% 区间 [67\%, 93\%]）。
+
+\begin{table}[t]
+\centering
+\caption{人工复核评审判出的问题（rubric v0，策略 \code{model\_flagged\_only}）。}
+\label{tab:eval-human}
+\small
+\begin{tabular}{@{}l c c c c l@{}}
+\toprule
+公司 & 确认 & 误报 & 待查 & 精确率 & 误报条目 \\
+\midrule
+宁德时代 & 11 & 1 & 0 & 92\% & L3-04 \\
+招商轮船 & 9 & 1 & 0 & 90\% & L3-04 \\
+贵州茅台 & 6 & 3 & 2 & 67\% & L2-02、L2-07、L3-05 \\
+\midrule
+合计 & 26 & 5 & 2 & 84\% & \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+误报的处理各不相同：
+\begin{itemize}
+  \item \textbf{L3-04（两家）}：复核人认为“出现几次‘不是……而是……’和程序说明就算机器味太重，过于严格”，应只检查正文中重复、无意义的程序口吻。
+        $\Rightarrow$ v1 改措辞：只看正文段落，某类痕迹成为习惯写法才不通过。
+  \item \textbf{L3-05（茅台）}：复核人认为“数据加百分比不算数据堆砌”，报告的问题在于没有突出重点。$\Rightarrow$ v1 改为“一个数字连同其同比、占比算一个数据点”，并把重点放在“关键数字是否突出”。
+  \item \textbf{L2-02、L2-07（茅台）}：一条复核人“没看懂模型判断的那句话”，一条认为原文写得没有问题。这两条没有形成对判定标准的修改意见；前者更像评审理由表达不清，后者属于评审与人工的真实分歧。
+\end{itemize}
+另外，两家复核人在 L1 程序条目上也给出了修改建议（L1-10“再给数据标注来源”、L1-12“保存润色前后两个版本让程序比较”、L1-13“把不确定的重要问题列出来留给人”），
+这些不计入评审精确率，但推动了 v1 对 L1-10、L1-13 的改动。
+
+\paragraph{局限。}
+$n=31$ 的样本只能给出很宽的置信区间；复核只覆盖评审判“不通过”的条目，因此只有精确率，没有召回率，漏判只能由劣化命中补充估计，
+而劣化命中对整节删除类又测不出（上文）。两位复核人是团队成员，不是执业分析师。这些限制意味着当前的评审校准只能说明
+“评审判出的问题大多成立，文风类条目偏严”，不能说明“评审没判出的就没有问题”。
+
+% ----------------------------------------------------------------------------
+\subsection{信息隔离}
+\label{sec:eval-isolation}
+
+评测与生成之间的信息流是单向且受限的。表~\ref{tab:eval-visibility} 列出各方能看到的东西。
+
+\begin{table}[t]
+\centering
+\caption{各角色对评测相关信息的可见性（\cmark 可见，\xmark 不可见，$\triangle$ 部分可见）。}
+\label{tab:eval-visibility}
+\small
+\begin{tabular}{@{}l c c c c c@{}}
+\toprule
+信息 & 生成五角色 & 返工会话 & 盲评会话 & 人工复核 & 开发者 \\
+\midrule
+评分标准原文（含分值） & \xmark & \xmark & $\triangle$（无分值） & \cmark & \cmark \\
+程序检查结果 & \xmark & \xmark & \xmark & \cmark & \cmark \\
+评审判定与总分 & \xmark & \xmark & ——（自己写） & \cmark & \cmark \\
+问题单（理由 + 证据） & \xmark & \cmark & \xmark & \cmark & \cmark \\
+写作过程与事件流 & 各自 & 工作区内 & \xmark & \xmark & \cmark \\
+生成模型名 & —— & —— & \xmark & \cmark & \cmark \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{invariant}[评测信息隔离]
+\label{inv:eval-isolation}
+（I1）工作区不含 \file{finagent/evaluation/}（\code{ENGINE\_EXCLUDE}），也不含任何 \file{report\_v*.json}；
+（I2）盲评目录在仓库与工作区之外，且其上级目录无 \file{CLAUDE.md}；
+（I3）交给评审的条目只有 id、标题、判定标准、反例、是否负向（\code{judge\_items}）；
+（I4）问题单字段恰为 $\{\text{id},\text{route},\text{stage},\text{severity},\text{description},\text{evidence}\}$，不含条目标题；
+（I5）返工循环的评测结果与 \file{loop.json} 存在工作区之外（\code{judge.default\_root()/<工作区名>}），工作区里只有问题单。
+\end{invariant}
+\begin{sloppypar}
+（I1）（I3）（I4）（I5）各有对应测试，依次为
+\code{test\_workspace\_excludes\_evaluation}、
+\code{test\_rubric\_layers\_and\_weights}、
+\code{test\_evaluate\_without\_judge\_and\_rescore}、
+\code{test\_refine\_loop\_routes\_issues\_and\_restores\_best}（后者断言工作区里找不到任何 \file{score.json}）；
+（I2）由 \code{test\_prepare\_blind\_dir} 覆盖。
+\end{sloppypar}
+
+\paragraph{隔离的边界。}
+评分标准不可见，并不意味着生成方对质量要求一无所知。复核编辑的 skill 明确列出要删掉的机器腔写法，工作区 \file{CLAUDE.md} 要求“深度研究要做多环定量推导”，
+写作规范要求区分事实、推论与观点；这些与 L2-04、L3-02、L3-04 的判定标准指向同一目标。这是有意的：我们希望生成方朝读者需要的方向写，
+不希望它朝特定的判定措辞与分值写。隐藏的是可被针对性优化的细节（分值、反例、具体阈值），共享的是方法与质量目标。
+
+% ----------------------------------------------------------------------------
+\subsection{辅助工具：命令、查看包、人工质检页与工作簿审计}
+\label{sec:eval-tools}
+
+\paragraph{命令行。}
+表~\ref{tab:eval-cli} 列出评测包的全部命令。
+
+\begin{table}[t]
+\centering
+\caption{评测命令（\code{python -m finagent.evaluation} 与 \code{python -m finagent.evaluation.calibrate}）。}
+\label{tab:eval-cli}
+\footnotesize
+\begin{tabularx}{\linewidth}{@{}l X@{}}
+\toprule
+命令 & 作用与产物 \\
+\midrule
+\code{run --workspace W} & 程序检查 + 盲评 + 计分；结果目录含 \file{bundle.json}、\file{checks.json}、\file{judgments.json}、\file{judge\_run.json}、\file{judge.jsonl}、\file{score.json}、\file{scorecard.md}、\file{issues.json/.md}。可用 \code{--company --run-dir --work} 直接指定；\code{--no-judge} 只跑程序检查；\code{--rubric}、\code{--model} 可替换 \\
+\code{score --result D} & 不重跑评审，按（可能修改过的）评分标准重算 \\
+\code{compare --result A --result B} & 多份结果逐条对比的 Markdown 表 \\
+\code{pack --result ... --out P} & 质检查看包：\file{index.html}（单文件、离线）+ 研报 PDF + 评分标准 + 各家结果 \\
+\code{review-docs --pack P --out O} & 从已封存的查看包生成逐公司人工质检页，不重跑评审 \\
+\code{calibrate run --workspace W} & 原稿重复评审（\code{--repeats}，默认 3）与劣化变体评审，可并发（\code{--jobs}）；已有结果跳过，评审未完成的结果作废以便重跑 \\
+\code{calibrate human --qc F} & 收入人工质检导出 \\
+\code{calibrate report} & 汇总 \file{eval/calibration/} 为 \file{report.md} 与 \file{summary.json} \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\paragraph{质检查看包（\code{pack.py}）。}
+把若干份结果、评分标准和研报 PDF 打包成一个目录，入口 \file{index.html} 为单文件页面（内联样式，支持深浅色），包括：
+总览卡片（总分、交付判定、各层得分、扣分）、逐条对比矩阵（行为条目、列为公司）、每家逐层逐条的判定 / 理由 / 证据、带分值与阈值参数的评分标准全文，
+并可勾选“只看未过 / 命中”。它是给开发者与人工复核者看的，含分值，因此只存于仓库的 \file{eval/review\_pack/}，从不进入工作区。
+
+\paragraph{人工质检页（\code{review\_docs.py}）。}
+从封存的查看包为每家公司生成一个独立的 HTML 文件，PDF 以 base64 内嵌，可离线打开、批注、导出 JSON。条目分三种状态：
+（1）\emph{需人工判断}：评审或程序判出问题，且不属于机器专属项；（2）\emph{机器专属}：属于集合
+$\{$L0-02, L0-03, L1-02, L1-03, L1-04, L1-05, L1-06, L1-07, L1-08$\}$ 的估值算术类条目，页面注明“由机器核对，不要求人工解算”；
+（3）\emph{默认沿用}：判通过的条目，标明“尚未经人工核验”。生成前做两项一致性检查，任一不符即拒绝生成：
+评分结果的条目集合与层级必须与评分标准完全一致；评分结果的版本号必须与查看包中评分标准的版本号相同。
+页面数据的指纹为
+\[
+h=\mathrm{SHA256}\bigl(\text{rubric}\,\|\,\text{score}\,\|\,\text{pdf}\,\|\,\mathrm{sha256}(\text{workbook})\bigr),
+\]
+PDF 一变，指纹就变（\code{test\_source\_fingerprint\_changes\_when\_pdf\_changes}），导出的人工结论因此与被评的那一份 PDF 绑定。
+JSON 写入 \code{<script>} 节点前转义 \texttt{<}、\texttt{>}、\texttt{\&} 与 U+2028/2029，防止研报内容中的字符串打断页面脚本。
+
+\paragraph{工作簿审计（\code{workbook\_audit.py}）。}
+交付物里的估值 Excel 是公式联动的（第~\ref{sec:valuation}~节）。评审看不了公式，人工复核者也不该被要求去解公式，
+于是质检页附带一项只读的工作簿审计。它先按 SHA-256 匹配：只接受同目录 \file{report.pdf} 与被评 PDF 逐字节相同的 \file{sheet.xlsx}，
+多于一个或没有匹配都不审计（状态 \code{not\_run}），避免审了别的版本的模型。审计直接解析 xlsx 的 XML，不调用 Excel，包括：
+\begin{enumerate}
+  \item \textbf{结构计数}：公式数、缺计算缓存的公式数、错误单元格数、\texttt{\#REF!} 引用数。
+  \item \textbf{三表勾稽的公式与独立复算}：先核对资产负债表、现金流量表、利润表、假设表关键行的标签与预期一致（不一致即拒绝套用口径）；
+        然后对每个预测列，五组勾稽（资产负债平衡、现金与现金流量表衔接、留存收益滚动、固定资产滚动、有息负债滚动）同时检查：
+        单元格公式与预期公式文本逐字相同（\code{formula\_link\_ok}）；用来源单元格的缓存值独立复算残差，并与该单元格缓存值相差 $\le 10^{-4}$ 百万元；残差本身 $\le 10^{-4}$。
+        测试构造了“公式引用错、但缓存恰好为 0”的工作簿，断言审计判失败。
+  \item \textbf{公式控制}（方法参照原插件的工作簿控制说明，代码自研）：跨期公式写法“孤岛”、公式内写死的数字、易变函数。
+\end{enumerate}
+
+跨期一致性只抓“孤岛”：把公式中的相对列引用换成相对偏移（类似 R1C1 记法），同一行第 $c$ 列的写法记为 $\pi_c$；
+\begin{equation}
+\label{eq:eval-island}
+\text{island}(c)\iff \pi_{c-1}=\pi_{c+1}\ \wedge\ \pi_c\neq\pi_{c-1}.
+\end{equation}
+历史期到预测期的切换、首个预测期衔接资产负债表、末列合计等“一次性切换”只有一侧邻居相同，不会被误判。
+写死数字的识别先去掉字符串与工作表名、单元格引用、\code{ROUND} 精度与 \code{INDEX}/\code{CHOOSE} 等函数的序号参数，
+再排除约定常数 $\{0,0.5,1,2,4,12,100,365\}$ 与比较运算后的小容差（$\le 0.01$）。审计判 \code{pass} 的条件是：有公式、无缺缓存 / 错误 / 断引用、无孤岛、
+五组勾稽全部通过；写死数字与易变函数只列为警告，因为约定常数靠白名单识别，一票否决会误伤。页面始终注明审计的局限：未在 Excel 中重算全部公式。
+
+% ----------------------------------------------------------------------------
+\subsection{使用结果与讨论}
+\label{sec:eval-tradeoffs}
+
+\subsubsection{评测在开发中的使用}
+
+表~\ref{tab:eval-results} 汇总 \file{eval/results/} 中保存的正式评测。需要注意两个版本号的区别：结果目录名中的 v0 / v1 / v2 指\emph{研报流水线}在不同时期的版本，
+这 7 份结果都用\emph{评分标准} v0、单次盲评计分。
+
+\begin{table}[t]
+\centering
+\caption{正式评测结果（评分标准 v0，Sonnet 单次盲评；\file{eval/results/}）。}
+\label{tab:eval-results}
+\small
+\begin{tabular}{@{}l l r r r r c@{}}
+\toprule
+流程版本 & 公司 & L1 /35 & L2 /45 & L3 /20 & 扣分 & 总分（交付） \\
+\midrule
+v0 & 贵州茅台 & 26 & 19 & 11 & $-8$ & 48（\xmark） \\
+v0 & 宁德时代 & 26 & 15 & 8 & 0 & 49（\xmark） \\
+v0 & 招商轮船 & 21 & 21 & 12 & $-8$ & 46（\xmark） \\
+v1 & 中际旭创 & 33 & 26 & 15 & 0 & 74（\xmark） \\
+v1 & 宇树科技 & 30 & 19 & 18 & 0 & 67（\xmark） \\
+v2 & 中际旭创 & 33 & 42 & 15 & 0 & 90（\cmark） \\
+v2 & 宇树科技 & 30 & 40 & 18 & 0 & 88（\cmark） \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+分数变化主要来自 L2：从 v0 流程的 15～21 分到 v2 流程的 40～42 分。逐条看，v0 流程普遍失分的是预期差、驱动拆解、预测假设依据、估值交叉验证、风险落到假设，
+正是闸门管不到的分析内容，也是此后流水线改进针对的方向（第~\ref{sec:pipeline}~节）。
+由于是单次盲评，按 \S\ref{sec:eval-calib-stability} 的稳定性数据，单家公司 $\pm 4$ 分以内的差异不应解读为改进；
+跨流程版本的 20 分以上差距则远超评审噪声。各流程版本之间的对照实验与消融见第~\ref{sec:exp}~节。
+
+\subsubsection{权衡}
+
+\begin{tradeoff}[：同族模型评审（Sonnet 评 Opus）]
+\textbf{风险}：生成与评审同属 Claude 家族，已有工作表明评审会偏好与自己风格相近的文本~\citep{panickssery2024self}。
+\textbf{缓解}：评审看不到模型名与写作过程；数字与估值算术由程序判，评审只判分析与表达；生成与评审用不同规模的模型。
+\textbf{未解决}：同族偏好可能使 L3（表达）偏宽。人工复核中 L3-04 的误报方向恰好相反（偏严），说明至少在机器腔这一条上，同族评审没有放过同族的写作痕迹；
+但我们没有跨家族评审的对照数据。\code{--model} 参数允许替换评审模型，跨家族对照是后续工作。
+\end{tradeoff}
+
+\begin{tradeoff}[：评分标准的粒度]
+\textbf{更粗}（如五个维度各打一个分）：评审省力，但问题单无法指出具体缺口，返工会话不知道改什么。
+\textbf{更细}（如每节一组条目）：判定更可判定、稳定性更好，但条目会绑定章节结构，变成格式检查，并鼓励生成方按条目凑内容。
+\textbf{选择}：22 条评审条目，每条对应一个读者问题而非一个章节，内容可以出现在任何位置。代价见上文：析取式或含“关键”字样的标准会让评审自行界定范围，造成 L2-07 的不稳定与 L2-12 的过宽。
+\end{tradeoff}
+
+\begin{tradeoff}[：程序判与模型判的边界]
+\textbf{原则}：一个条件若能由运行产物与文稿文本确定地判定，并且误报可控，就交给程序；否则交给评审。
+\textbf{边界上的条目}：N-02 在 v2 跨过了边界，代价是召回只覆盖评级、每股价值与公司整体预测几类数字。
+N-03（聚合数构成描述错误）原则上也可程序化：股权价值桥的加回项拆分在产物里，正文对拆分的描述可以抽取比对；但描述多为定性（“主要是现金与金融资产”），
+抽取规则难以做到误报可控，暂留给评审。L1-08（预测与历史衔接）则相反，它是程序判定的启发式，会对合理的增速跳变给出失败，我们接受这一点，因为它在交付判定中的权重很小。
+\textbf{不选}的方案：让评审也复核数字。评审会在算术上花费回合，且给出的算术结论比程序更不可靠。
+\end{tradeoff}
+
+\begin{tradeoff}[：返工循环与古德哈特效应]
+返工循环以评测分数为停止条件，天然存在朝评审优化的压力~\citep{manheim2018goodhart}。我们采取的措施是：评分标准与分值不可见；问题单只有理由与证据；
+闸门与程序检查独立于评审；最多 3 轮。没有采取的措施是留出集（设计记录中的“反馈集 / 留出集”拆分）与跨家族评审。
+分数应被理解为内部质检口径，最终质量仍需人工复核兜底，返工结束后未解决的问题全部写进 \file{review.md} 交给人。
+\end{tradeoff}
+
+\subsubsection{小结}
+
+本章的评测体系把研报质量拆成 41 条可审计的判定：19 条由程序读运行产物判定（含 L0 封顶与 N-02 的数字矛盾），22 条由在隔离目录中工作的 Sonnet 评审判定，
+计分、封顶与交付判定全在 Python 中完成，改权重无需重评。问题单把未通过的条目按路由送回生成、复核或排版会话，只携带理由与证据。
+校准显示：评审在原稿重复评审中逐条一致 86\%～91\%（Fleiss $\kappa$ 0.57～0.80），总分极差 7～8 分且可逐分归到少数高权重条目；
+对局部注入的缺陷 4/4 判出，对整节删除的缺陷因深度研报内容冗余而测不出灵敏度；评审判出的问题人工确认精确率 84\%，误报集中在文风条目。
+这些证据推动了评分标准从 v0 到 v2 的两次修订：按人工意见改措辞，按稳定性数据把高权重的不稳定条目交给程序。
+尚待完成的工作有：改进劣化算子（跨全文删除并同步删去图表）、扩充人工复核以估计召回、跨家族评审对照，以及留出集防应试。

@@ -1,0 +1,724 @@
+% 第 7 章：财报分析
+\section{财报分析}
+\label{sec:analysis}
+
+第~\ref{sec:extract} 节得到的是一组带来源的事实。本章讲\sysname{}怎样把它们变成财报分析选题要求的分析：
+真值表的构造与派生（\S\ref{sec:an-truth}），同比与环比（\S\ref{sec:an-change}），单季拆分与分季度勾稽（\S\ref{sec:an-quarter}），
+勾稽校验（\S\ref{sec:an-tieout}），异常信号（\S\ref{sec:an-signals}），利润变动归因桥（\S\ref{sec:an-bridge}），
+实际值与一致预期、业绩预告的比较以及 EPS 质量筛查（\S\ref{sec:an-earnings}），经营数据（\S\ref{sec:an-extras}），
+最后是报告输出（\S\ref{sec:an-report}）与样例、真实公司上的结果（\S\ref{sec:an-results}）。
+
+本章的全部计算在 \file{finagent/\allowbreak{}tasks/\allowbreak{}financials/\allowbreak{}analyze.py} 与 \file{earnings.py} 中完成，不调用模型。模型在财报分析中的角色只有两处：
+在抽取阶段读和抄（第~\ref{sec:extract} 节），在写作阶段解读程序给出的数字（第~\ref{sec:pipeline} 节），后者的每个数字都要经过 guard 回到本章的产物中核对（第~\ref{sec:guards} 节）。
+问题的形式化定义（产物 $A_2$ 的各组成、归因桥的闭合约束式~\ref{eq:prob-bridge}、勾稽定义~\ref{def:prob-tieout}）见第~\ref{sec:prob-task2} 节，本章侧重算法、阈值的金融含义与实现细节。
+
+% ============================================================
+\subsection{流水线与产物}
+\label{sec:an-pipeline}
+
+财报分析流水线（\file{finagent/\allowbreak{}pipelines.py}）由六个按顺序注册的步骤组成（图~\ref{fig:an-pipeline}）：
+\code{parse}（解析）$\to$ \code{extract}（抽取与合并）$\to$ \code{analyze}（真值表、变动、勾稽、信号、单季）$\to$ \code{extras}（经营数据）
+$\to$ \code{earnings}（归因桥、预期对比、EPS 质量）$\to$ \code{report}（Markdown 报告）。每一步的输出写入运行目录 \file{runs/<run\_id>/financials/}，
+并由 \code{tracing} 记录哈希。
+
+\begin{figure}[t]
+\centering
+\begin{tikzpicture}[font=\small]
+\tikzset{every node/.append style={text width=19mm}}
+\node[prog] (p) at (0,0) {\code{parse}};
+\node[prog] (e) at (2.6,0) {\code{extract}};
+\node[prog] (a) at (5.2,0) {\code{analyze}};
+\node[prog] (x) at (7.8,0) {\code{extras}};
+\node[prog] (r) at (10.4,0) {\code{earnings}};
+\node[prog] (o) at (10.4,-1.7) {\code{report}};
+\node[file,text width=22mm] (t) at (5.2,-1.7) {analysis.json\\（含 truth\_table）};
+\node[gate,text width=9mm] (g) at (2.6,-1.7) {阻断?};
+\node[file,text width=16mm] (v) at (0,-3.2) {估值 · 纠错 · guard};
+\node[file,text width=18mm] (rep) at (10.4,-3.2) {report.md\\earnings.json};
+\draw[arr] (p)--(e); \draw[arr] (e)--(a); \draw[arr] (a)--(x); \draw[arr] (x)--(r); \draw[arr] (r)--(o); \draw[arr] (o)--(rep);
+\draw[arr] (a)--(t); \draw[arr] (t)--(g);
+\draw[arr] (g.south) |- node[pos=0.7,above,font=\scriptsize,text width=]{通过} (v.east);
+\draw[darr] (t.east) -- (o.west);
+\end{tikzpicture}
+\caption{财报分析流水线。\code{analyze} 产出的真值表是估值、研报纠错与 guard 的唯一数据来源；带 \code{--facts} 运行时，
+抽取未通过（拒收、冲突、勾稽失败、本期核心缺失）在 \code{analyze} 步骤即抛出异常，下游不会运行。}
+\label{fig:an-pipeline}
+\end{figure}
+
+\code{analyze()} 的返回值是一个字典，字段与第~\ref{sec:prob-task2} 节产物 $A_2$ 的对应关系如表~\ref{tab:an-outputs}。
+
+\begin{table}[t]
+\centering
+\caption{\code{analyze()} 与 \code{earnings.run()} 的输出字段。}
+\label{tab:an-outputs}
+\small
+\begin{tabularx}{\linewidth}{l l X}
+\toprule
+字段 & 对应 & 内容 \\
+\midrule
+\code{period} & — & 分析期间；未指定时取有营业收入的最新年度 \\
+\code{truth\_table} & $\Truth$ & 全部单元格（列示与派生），每格带来源或公式与输入来源 \\
+\code{changes} & $\mathrm{Chg}$ & 19 个关键指标与 6 个比率的本期值、同比基期与变动、环比基期与变动 \\
+\code{tieouts} & $\mathrm{Tie}$ & 勾稽结果：检查名、状态、左右两侧、差额、证据 \\
+\code{signals} & $\mathrm{Sig}$ & 异常信号 S1--S8：类型、严重度、标题、事实、推论、证据 \\
+\code{quarterly} & $\mathrm{Qtr}$ & 单季表：逐季数值、“列示 / 推算”标记与公式 \\
+\code{summary} & — & 勾稽失败数、高严重度信号数、信号总数 \\
+\midrule
+\code{profit\_bridge} & $\mathrm{Earn}$ & 利润变动归因桥：十个驱动项、闭合误差、非经常性损益贡献、前三大驱动 \\
+\code{beat\_miss} & $\mathrm{Earn}$ & 实际 vs 一致预期 / 内部预期 \\
+\code{guidance} & $\mathrm{Earn}$ & 实际 vs 业绩预告区间 \\
+\code{eps\_quality} & $\mathrm{Earn}$ & EPS 质量筛查结论与触发项 \\
+\code{limitations} & — & 缺少输入时跳过的分析 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+% ============================================================
+\subsection{真值表的构造}
+\label{sec:an-truth}
+
+\paragraph{\code{FactTable}。}
+真值表实现为 \code{FactTable}：以 $(m,k)$ 为键的单元格字典，外加每个单元格的“列示依赖集”\code{quarter\_basis}。它提供三个操作：
+\code{v(m,k)} 取值；\code{src(m,k)} 取来源（指标、期间、原文写法与来源定位）；\code{add\_derived(m,k,value,formula,inputs)} 登记派生值。
+派生单元格的 \code{method} 为 \code{derived}，\code{formula} 是中文公式（如“(营业收入-营业成本)/营业收入”“全年 − 前三季度累计”），
+\code{source} 是 \code{\{"derived\_from": [各输入的 src]\}}，即派生值的来源是它的输入的来源列表，可以递归展开回原文。
+
+\begin{invariant}[派生不覆盖列示]
+\label{inv:an-nooverwrite}
+\code{add\_derived} 在目标单元格已存在或值为空时直接返回。因此财报列示的数值永远不会被程序推算的数值替换；
+推算值只填补空缺，与列示值的差异只能通过勾稽暴露。
+\end{invariant}
+
+这条不变量是定义~\ref{def:prob-truth}“规则只在目标单元格不存在时触发”的实现。它的直接后果是 \code{\_derive} 可以安全地重复调用：
+\code{analyze()} 在确定分析期间后会再调一次 \code{\_derive}，第二次调用只会补上新出现的空缺，不会改变任何已有单元格。
+
+\paragraph{派生指标。}
+\code{\_derive} 先做单季拆分（\S\ref{sec:an-quarter}），再对每个期间计算表~\ref{tab:an-derived} 的派生指标。单季拆分在前，
+所以单季毛利率、单季净现比也能得到——只要单季的收入与成本都已列示或推出。
+
+\begin{table}[t]
+\centering
+\caption{派生指标（\code{analyze.\_derive}）。比率存为百分数值；净现比为倍数。}
+\label{tab:an-derived}
+\small
+\begin{tabularx}{\linewidth}{l l X}
+\toprule
+指标 & 公式 & 说明 \\
+\midrule
+毛利率 \code{gross\_margin} & $(\text{Rev}-\text{COGS})/\text{Rev}\times100$ & 营业收入非零且营业成本存在 \\
+净利率 \code{net\_margin} & $\text{NP}/\text{Rev}\times100$ & 净利润为合并口径（含少数股东） \\
+销售 / 管理 / 研发费用率 & $\text{Exp}_e/\text{Rev}\times100$ & 三个费用率 \\
+资产负债率 \code{debt\_ratio} & $\text{Liab}/\text{Assets}\times100$ & 时点数，每个期末 \\
+净现比 \code{ocf\_to\_np} & $\text{OCF}/\text{NP}_{\text{parent}}$ & 分母为归母净利润 \\
+非经常性损益 & $\text{NP}_{\text{parent}}-\text{NP}_{\text{ded}}$ & 只在未列示时派生 \\
+折旧摊销 \code{da} & 固定资产折旧 $+$ 无形资产摊销 & 摊销缺失按 0 计；供估值使用 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\paragraph{分析期间的选择。}
+未指定 \code{--period} 时，分析期间取“有营业收入的最新年度”。只有年报时就是报告年度；带了季报时，季报期间（如 \code{2025Q1-3}）不会抢占年度分析的位置。
+需要分析季度时显式传 \code{--period 2025Q3}，环比基期由 $\beta_{\qoq}$ 给出。
+
+\paragraph{唯一数据源。}
+\code{truth\_table} 被写入 \file{analysis.json} 后，下游一律从它取数：估值的历史基数（第~\ref{sec:valuation} 节）、研报纠错的真值（第~\ref{sec:reportcheck} 节）、
+guard 对文稿数字的出处核对（第~\ref{sec:guards} 节）、经营数据中引用真值表的比率（\S\ref{sec:an-extras}）、earnings 步骤的归因桥与预期对比。
+没有任何下游模块重新抽取或重新计算基础数字，这是第~\ref{sec:principles} 节“一张真值表”规范的落地（不变量~\ref{inv:single}）。
+
+% ============================================================
+\subsection{同比与环比}
+\label{sec:an-change}
+
+\paragraph{基期。}
+\code{prior\_periods(k)} 返回 $(\beta_{\yoy}(k),\beta_{\qoq}(k))$：同比基期为上一年的同一期间后缀（\code{2025} $\to$ \code{2024}，\code{2025H1} $\to$ \code{2024H1}，
+\code{2025Q1-3} $\to$ \code{2024Q1-3}）；环比基期只对单季定义，\code{Q1} 的环比基期是上一年的 \code{Q4}。
+
+\paragraph{变动。}
+\code{\_changes} 对 19 个关键指标（营业收入、营业成本、税金及附加、四项费用、营业利润、净利润、归母与扣非归母净利润、非经常性损益、经营现金流、货币资金、应收账款、存货、合同负债、
+资产总计、基本每股收益）与 6 个比率（毛利率、净利率、三项费用率、资产负债率）计算变动：
+\[
+\text{金额与每股类：}\ \yoy=\Delta\%(v_k,v_{\beta_{\yoy}(k)})=\frac{v_k-v_{\beta}}{|v_{\beta}|}\times100;\qquad
+\text{比率类：}\ \Delta_{\text{pp}}=v_k-v_{\beta}.
+\]
+$\qoq$ 同理。分母取绝对值（式~\ref{eq:prob-pct}）的含义值得说明：某公司上年归母净利润 $-100$、本年 $-50$，按 $(−50−(−100))/(−100)$ 计算得 $-50\%$，
+读者会以为利润“下降了一半”；用绝对值作分母得 $+50\%$，与“亏损收窄”的经济含义一致。这是 A 股定期报告的惯例，\code{pct\_change(50, -100)=150} 的测试固定了这一行为。
+比率类用百分点差而不是相对变动：毛利率从 31.22\% 到 31.19\% 是“下降 0.03 个百分点”，而不是“下降 0.10\%”。混用这两种口径是研报中最常见的数字错误之一，
+第~\ref{sec:reportcheck} 节的纠错把它单独列为错误类型。
+
+% ============================================================
+\subsection{单季拆分与分季度勾稽}
+\label{sec:an-quarter}
+
+\paragraph{动机。}
+A 股定期报告只披露累计数：一季报是单季，半年报是 1--6 月，三季报同时给出 7--9 月单季与 1--9 月累计，年报给出全年，另有“分季度主要财务指标”单季表（但只有四五个指标）。
+分析“第四季度发生了什么”需要第四季度的单季利润表，而它在任何一份报告里都不完整存在：只能从年报全年数减去三季报的前三季度累计数得到。
+这类相减在研报中常由分析师心算或在表格里手算，容易减错期间（例如用全年减去 7--9 月单季）。
+
+\paragraph{规则。}
+季度规则见定义~\ref{def:prob-truth}，实现为 \code{QUARTER\_RULES} 中的五元组（目标、左操作数、右操作数、符号）：
+\[
+\text{H1}=\text{Q1}+\text{Q2},\quad \text{Q1-3}=\text{H1}+\text{Q3},\quad \text{Q2}=\text{H1}-\text{Q1},\quad \text{Q3}=\text{Q1-3}-\text{H1},\quad \text{Q4}=\text{Y}-\text{Q1-3}.
+\]
+只作用于发生额指标（\code{is\_flow}，\S\ref{sec:ext-schema}）：资产负债表科目是时点数，相减没有意义；每股收益的分母（加权股数）各期不同，不能相减；比率不可加。
+\code{test\_\allowbreak{}stock\_\allowbreak{}items\_\allowbreak{}eps\_\allowbreak{}and\_\allowbreak{}ratios\_\allowbreak{}not\_\allowbreak{}split} 断言资产总计与每股收益不产生 \code{Q4}。
+
+\paragraph{不动点算法。}
+\code{\_split\_quarters}（算法~\ref{alg:an-split}）对每个发生额指标、每个年度反复扫描五条规则，直到一轮扫描没有新单元格。
+同时维护每个单元格的列示依赖集 $B(\kappa)$：列示单元格 $B(\kappa)=\{\kappa\}$；派生单元格是两个操作数依赖集的并。
+
+\begin{algorithm}[t]
+\caption{单季拆分 \code{\_split\_quarters}}
+\label{alg:an-split}
+\begin{algorithmic}[1]
+\Function{Split}{$T$}
+  \State $B\gets\{\kappa\mapsto\{\kappa\} : \kappa\in T \text{ 为列示单元格且为发生额指标}\}$
+  \For{每个指标 $m$，每个年度 $Y$}
+    \Repeat
+      \State changed $\gets$ \textsc{False}
+      \For{每条规则 $(t,a,b,s)$}
+        \State $\kappa\gets(m,Yt)$；$\kappa_a\gets(m,Ya)$；$\kappa_b\gets(m,Yb)$ \Comment{$a=\text{``''}$ 表示全年}
+        \If{$\kappa\notin T$ \textbf{and} $\kappa_a\in B$ \textbf{and} $\kappa_b\in B$}
+          \State $T[\kappa]\gets T[\kappa_a]+s\cdot T[\kappa_b]$，公式“$a$ $\pm$ $b$”，来源 $[\kappa_a,\kappa_b]$
+          \State $B[\kappa]\gets B[\kappa_a]\cup B[\kappa_b]$；changed $\gets$ \textsc{True}
+        \EndIf
+      \EndFor
+    \Until{\textbf{not} changed}
+  \EndFor
+  \State \Return $B$
+\EndFunction
+\end{algorithmic}
+\end{algorithm}
+
+每个指标每年至多七个期间，每条规则至多触发一次，循环至多 5 轮便停止（命题~\ref{prop:prob-closure}(a)）。
+注意规则只在两个操作数都在 $B$ 中（即都是发生额且已知）时触发，比率与时点数从不参与。
+
+\begin{example}[样例：年报 + 三季报]
+样例的三季报合并利润表只有 1--9 月累计（\file{data/\allowbreak{}samples/\allowbreak{}q3\_report\_2024.md}），年报只有全年。营业成本的单元格是 \code{2024} 与 \code{2024Q1-3}；
+规则 Q4 触发，得到\[\text{COGS}_{\text{Q4}}=4{,}034{,}118{,}660.40-2{,}815{,}640{,}000.00=1{,}218{,}478{,}660.40\ \text{元},\]公式记为“全年 − 前三季度累计”。
+营业收入另有 Q1 与 H1 时，Q2、Q3 依次被推出（\code{test\_\allowbreak{}single\_\allowbreak{}quarters\_\allowbreak{}derived\_\allowbreak{}from\_\allowbreak{}cumulative\_\allowbreak{}reports}：
+全年 1000、前三季度 700、上半年 450、一季度 200 推出 Q4=300、Q3=250、Q2=250）。第四季度营业收入与营业成本都已知后，\code{\_derive} 随即给出第四季度单季毛利率。
+\end{example}
+
+\paragraph{分季度勾稽。}
+当某个单季既有列示值，又能由累计数相减得到时，两者应当相等。\code{\_tieouts} 对加法以外的三条相减规则逐个检查（加法规则产生的是累计数，不用于核对单季）：
+\begin{quote}
+对规则 $t=a-b$：若 $B(\kappa_t)=\{\kappa_t\}$（目标是列示值），$\kappa_a,\kappa_b\in B$，且 $\kappa_t\notin B(\kappa_a)\cup B(\kappa_b)$，
+则检查 $T[\kappa_t]=T[\kappa_a]-T[\kappa_b]$，相对容差 $10^{-4}$。
+\end{quote}
+第三个条件排除“自己和自己比”：若年报分季度表给出了全部四个单季，程序会由 Q1、Q2 加出 H1，再加 Q3 得到 Q1-3；
+此时 Q2 $=$ H1 $-$ Q1 的核对两边都来自同一张分季度表，恒成立，没有信息量，必须跳过；而 Q4 $=$ 全年 $-$ Q1-3 的核对用到了独立来源的全年数，有信息量，保留。
+\code{test\_\allowbreak{}reported\_\allowbreak{}quarter\_\allowbreak{}checked\_\allowbreak{}against\_\allowbreak{}cumulative\_\allowbreak{}difference} 断言只有分季度表时恰好产生一项第四季度核对，不产生第二、三季度核对。
+
+\begin{proposition}[分季度核对的非平凡性]
+\label{prop:an-nontrivial}
+若执行了一项分季度核对 $\kappa_t=\kappa_a-\kappa_b$，则等式两侧依赖的列示单元格集合不相交：$\{\kappa_t\}\cap(B(\kappa_a)\cup B(\kappa_b))=\emptyset$。
+因此该核对不会因为构造方式而恒成立；它成立当且仅当列示数据满足相应的会计关系。
+\end{proposition}
+\begin{proof}
+由执行条件 $\kappa_t\notin B(\kappa_a)\cup B(\kappa_b)$ 与 $B(\kappa_t)=\{\kappa_t\}$ 直接得出。右侧是若干列示单元格的有符号和，左侧是另一个列示单元格；
+二者没有公共变量，等式是对列示数据的一项真实约束。
+\end{proof}
+
+\paragraph{真实年报上的分季度核对。}
+三家真实年报的分季度表都列示了营业收入、归母净利润、扣非归母净利润、经营现金流四个指标的四个单季，每家因此有 4 项“第四季度 = 全年 − 前三季度累计”核对，
+等价于“四个单季之和 = 全年”，全部通过。宁德时代年报以千元列示，扣非归母净利润的核对差额为 1,000 元（即末位 1 千元的舍入），
+在相对容差 $10^{-4}$ 下通过；这说明相对容差的设置是必要的——单季数与全年数各自四舍五入到千元后，加总差一个末位是正常的。
+
+\paragraph{单季表。}
+\code{\_quarterly} 为分析年度输出单季表：发生额类关键指标加单季毛利率，逐季给出数值、来源方式（\code{reported} / \code{derived}）与派生公式。
+报告中派生值标“*”，以便读者区分“财报写的”和“程序算的”。样例年报中非经常性损益的四个单季全部标“*”：它们不是来自季度表，
+而是由单季归母净利润减单季扣非归母净利润得到——恒等规则作用在季度规则的输出上，两类规则的组合由同一个闭包自然完成。
+
+% ============================================================
+\subsection{勾稽校验}
+\label{sec:an-tieout}
+
+勾稽的定义与容差见定义~\ref{def:prob-tieout}。\code{\_tieouts} 对分析期间执行四组检查（表~\ref{tab:an-tieouts}），状态为通过、失败或无法评估（输入缺失）。
+每项检查都附证据：参与比较的各单元格的来源。
+
+\begin{table}[t]
+\centering
+\caption{勾稽检查（\code{analyze.\_tieouts}）。容差 $\max(\epsilon|r|,1\text{ 元})$；列示同比的容差单位是百分点。}
+\label{tab:an-tieouts}
+\small
+\begin{tabularx}{\linewidth}{l X l X}
+\toprule
+组 & 等式 & 容差 $\epsilon$ & 能发现的抽取错误 \\
+\midrule
+资产负债表 & 资产总计 $=$ 负债和所有者权益总计 & $10^{-6}$ & 母公司与合并混取、续表错列 \\
+ & 负债和所有者权益总计 $=$ 负债合计 $+$ 所有者权益合计 & $10^{-6}$ & 同上；单位错一个量级 \\
+ & 所有者权益合计 $=$ 归母权益 $+$ 少数股东权益 & $10^{-6}$ & 误取母公司报表（无少数股东权益） \\
+非经常性损益 & 列示合计 $=$ 归母净利润 $-$ 扣非归母净利润 & $10^{-4}$ & “合计”取错表；扣非取错口径 \\
+列示同比 & 财报“本年比上年增减” vs.\ 程序计算 & $\halfulp(r)+0.01$ & 本期 / 上期列看反；单位错 \\
+分季度 & 列示单季 $=$ 累计相减 & $10^{-4}$ & 季度与累计期间混淆；追溯调整 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\paragraph{为什么核对财报列示的同比。}
+年报“主要会计数据和财务指标”表每个指标都有一列“本年比上年增减”。抽取阶段把它保存为 \code{<指标>.reported\_yoy}（\S\ref{sec:ext-period}），
+这里与程序用两期数值计算的同比比较。这项检查几乎免费，却对两类最难发现的抽取错误极其敏感：本期列与上期列看反时，同比的符号相反；
+两期中只有一期单位抄错时，同比偏离几个数量级。容差取列示值的半个末位单位加 0.01 个百分点：列示值“14.49\%”的展示精度是 0.01，
+任何与之四舍五入一致的计算值都应在 $0.005+0.01$ 以内。
+
+\paragraph{比率的列示变动是百分点差。}
+ROE 一类比率，年报的“本年比上年增减”列示的是百分点差（宁德时代 2025 年加权平均 ROE 24.91\% 对 24.13\%，列示“0.78\%”），而不是相对增速。
+早期实现按相对增速 $(24.91-24.13)/24.13=3.23\%$ 核对，把正确抽取判为勾稽失败、阻断了估值。修复后对 \code{kind=pct} 的指标用百分点差核对
+（\code{test\_\allowbreak{}ratio\_\allowbreak{}reported\_\allowbreak{}change\_\allowbreak{}is\_\allowbreak{}percentage\_\allowbreak{}points}）。这是一个“程序比数据更容易错”的例子：勾稽本身也需要按财报惯例写对。
+
+\paragraph{“1 元”下限。}
+容差下限 1 元用于吸收以元为单位、两位小数的报表在加总时的分位舍入；对于以千元列示的报表，相对容差项 $\epsilon|r|$ 远大于 1 元，下限不起作用。
+
+\paragraph{无法评估。}
+输入缺失时检查记为 \code{not\_assessable} 而不是通过。\code{verify-facts} 只把“失败”作为阻断条件；“无法评估”说明某个科目没被抽取，
+若该科目是核心指标，会在核心缺失检查中单独阻断。
+
+% ============================================================
+\subsection{异常信号}
+\label{sec:an-signals}
+
+\paragraph{设计。}
+异常信号是一组确定性的阈值规则，每条规则对应一个财务分析中公认的“需要解释”的现象。信号不是结论，而是待验证事项：
+它的 \code{fact} 字段只陈述数字，\code{inference} 字段给出常见解释方向，\code{evidence} 字段列出参与判断的单元格来源。
+事实与推论分两个字段存放，报告中分两行展示，对应比赛“区分事实、推论与观点”的要求。阈值写在代码里，不由模型判断，因此同样的数据永远触发同样的信号。
+
+表~\ref{tab:an-signals} 列出全部规则。记 $g(m)$ 为指标 $m$ 的同比（\%），$\text{NR}$ 为非经常性损益，$\text{NP}_p$ 为归母净利润，$\text{NP}_d$ 为扣非归母净利润。
+
+\begin{table}[p]
+\centering
+\caption{异常信号规则（\code{analyze.\_signals}）。}
+\label{tab:an-signals}
+\small
+\begin{tabularx}{\linewidth}{l l >{\raggedright\arraybackslash}p{30mm} l X}
+\toprule
+ID & 类型 & 触发条件 & 严重度 & 金融含义与推论 \\
+\midrule
+S1 & 非经常性损益 & $\text{NP}_p>0$ 且 $|\text{NR}/\text{NP}_p|\ge15\%$ & $\ge30\%$ 高，否则中 &
+利润中相当部分来自政府补助、资产处置、公允价值变动等不可持续项目；估值应以扣非口径为主 \\
+S2 & 利润质量 & $g(\text{NP}_p)-g(\text{NP}_d)\ge10$ 个百分点 & 中 &
+表观增速高于经常性利润增速，增长部分由一次性收益驱动 \\
+S3 & 利润与现金流背离 & $\text{NP}_p>0$ 且 $\text{OCF}/\text{NP}_p<0.8$ & $<0.5$ 高，否则中 &
+利润的现金含量偏低：应收账款、存货占款或收入确认节奏需要排查。应计利润占比高的公司未来盈利持续性较差~\citep{sloan1996accruals} \\
+S4 & 利润与现金流背离 & $\text{NP}_p>0$，$g(\text{NP}_p)>0$ 且 $g(\text{OCF})<0$ & 高 &
+盈利增长没有转化为现金，方向背离比水平偏低更值得警惕 \\
+S5 & 营运资本 & $g(\text{AR})-g(\text{Rev})\ge15$ 个百分点 & $\ge30$ 高，否则中 &
+应收扩张快于收入：放宽信用政策、渠道压货或减值风险；应收周转恶化是盈余操纵识别模型的典型变量~\citep{beneish1999detection} \\
+S6 & 营运资本 & $g(\text{Inv})-g(\text{Rev})\ge15$ 个百分点 & $\ge30$ 高，否则中 &
+存货扩张快于收入：备货、滞销或跌价风险 \\
+S7 & 盈利能力 & $|\Delta\text{GM}|\ge3$ 个百分点 & 中 &
+毛利率大幅变动，需拆分产品结构、价格与成本因素 \\
+S8 & 会计口径 & 文本含会计口径关键词，或表格有“调整前 / 调整后” & 中 &
+存在会计政策 / 估计变更、追溯调整、同一控制下合并等，同比需确认可比口径 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\paragraph{阈值的选择。}
+阈值是经验值，不是从数据中拟合的。我们的取舍原则是：中等严重度的阈值应当在多数公司上\emph{不}触发，从而让触发本身有信息量；高严重度留给“几乎一定要在研报中解释”的情形。
+\begin{itemize}
+\item \textbf{S1 的 15\% / 30\%。}非经常性损益占归母净利润 15\% 以上时，扣非与归母的增速通常会明显分化；30\% 以上则意味着近三分之一利润不可持续。
+      条件 $\text{NP}_p>0$ 排除亏损公司（占比的符号失去意义）。
+\item \textbf{S2 的 10 个百分点。}与 S1 互补：S1 看水平，S2 看变化。一家公司非经常性损益占比不高，但当年突然增加，S1 不触发而 S2 触发。
+\item \textbf{S3 的 0.8 / 0.5。}净现比长期低于 1 本身不罕见（重资产扩张期、季节性回款），0.8 是“明显偏低”，0.5 是“利润一半以上没有现金”。
+\item \textbf{S5、S6 的 15 / 30 个百分点。}营运资本科目的同比与收入同比之差。用差值而不是比值，避免收入增速接近 0 时比值发散。
+\item \textbf{S7 的 3 个百分点。}多数制造业公司年度毛利率波动在 1--2 个百分点以内，3 个百分点意味着产品结构或价格成本关系发生了实质变化。
+\end{itemize}
+
+\paragraph{S8 的实现。}
+S8 是唯一读原文文本的信号：在全部文本 chunk 中检索九个关键词（会计政策变更、会计估计变更、追溯调整、重述、前期差错更正、同一控制下企业合并、合并范围变更、调整前、调整后），
+并合并抽取阶段因“调整前”列产生的“追溯调整”issue 的证据。每处命中记录页码、关键词与前 160 字摘句；信号最多附 5 条证据。
+
+\begin{failcase}[：关键词检索不识别否定]
+样例年报第 95 页写道“该项会计政策变更对公司财务报表无重大影响，未对比较期间数据进行追溯调整”。S8 命中了“会计政策变更”与“追溯调整”，
+但后者在原文中是被否定的。三家真实年报上 S8 分别在 10、12、18 处命中，覆盖了“会计政策变更”“同一控制下企业合并”“调整前 / 调整后”等多种情形，
+其中相当一部分是例行的准则执行说明。S8 因此只给“中”严重度，推论写成“同比比较需确认是否使用追溯调整后的可比数据”，把判断交给阅读证据的人或写作会话。
+用模型判断否定语义可以提高精确率，但会把模型判断引入一个本应确定的环节；我们保留关键词规则，接受较低的精确率。
+\end{failcase}
+
+\paragraph{信号与研报写作。}
+信号进入 \file{analysis.json} 后，写作会话被要求对每条高严重度信号给出解释或列入待验证清单（第~\ref{sec:pipeline} 节）。
+信号的 \code{fact} 字段中的数字全部来自真值表，写作会话引用它们时由 guard 按展示精度核对。
+
+% ============================================================
+\subsection{利润变动归因桥}
+\label{sec:an-bridge}
+
+\paragraph{动机。}
+“归母净利润增长 18\%，主要受益于收入增长”是研报中最常见的句式，但“主要”往往没有依据：收入增长带来的毛利增量可能被费用增长和所得税抵消大半，
+真正的增量来自投资收益。财报分析选题要求解释“业绩变化原因”。我们需要一个把利润变化\emph{逐项}分解、各项加总\emph{严格}等于总变化的工具，
+让正文中任何“某因素贡献了多少”的说法都能与之对账。
+
+\paragraph{分解。}
+\code{earnings.profit\_bridge(T, k)} 以 $k_0=\beta_{\yoy}(k)$ 为基期，需要两期的营业收入、营业成本、四项费用、营业利润、利润总额、所得税、净利润、归母净利润共 11 个科目，任一缺失返回空。
+记 $\text{GP}=\text{Rev}-\text{COGS}$，$\text{GM}=\text{GP}/\text{Rev}$，$E=\text{S}+\text{A}+\text{D}+\text{F}$（销售、管理、研发、财务费用），并定义三个轧差量：
+\begin{align*}
+\text{OO} &= \text{OP}-(\text{GP}-E) && \text{其他经营损益}\\
+\text{NO} &= \text{TP}-\text{OP} && \text{营业外收支}\\
+\text{MI} &= \text{NP}-\text{NP}_p && \text{少数股东损益}
+\end{align*}
+其中“其他经营损益”吸收税金及附加、投资收益、公允价值变动、信用与资产减值、其他收益、资产处置收益等未单列项目。
+十个驱动项（下标 0、1 分别为基期与本期）：
+\begin{equation}
+\begin{aligned}
+&\text{收入规模效应}=(\text{Rev}_1-\text{Rev}_0)\cdot\text{GM}_0, &&\text{毛利率效应}=\text{Rev}_1\cdot(\text{GM}_1-\text{GM}_0),\\
+&\text{四项费用}=-\Delta\text{S},\ -\Delta\text{A},\ -\Delta\text{D},\ -\Delta\text{F}, &&\text{其他经营损益}=\Delta\text{OO},\\
+&\text{营业外收支}=\Delta\text{NO},\quad \text{所得税}=-\Delta\text{Tax}, &&\text{少数股东损益}=-\Delta\text{MI}.
+\end{aligned}
+\label{eq:an-bridge-items}
+\end{equation}
+
+\begin{proposition}[闭合误差即利润表恒等式的残差]
+\label{prop:an-closure}
+记十项之和为 $\Sigma$，$\Delta\text{NP}_p=\text{NP}_{p,1}-\text{NP}_{p,0}$。则
+\[
+\Sigma-\Delta\text{NP}_p = \Delta\big(\text{TP}-\text{Tax}-\text{NP}\big).
+\]
+特别地，若两期都满足利润表恒等式“净利润 $=$ 利润总额 $-$ 所得税费用”，则归因桥严格闭合：$\Sigma=\Delta\text{NP}_p$。
+\end{proposition}
+\begin{proof}
+收入规模效应与毛利率效应之和为 $(\text{Rev}_1-\text{Rev}_0)\text{GM}_0+\text{Rev}_1(\text{GM}_1-\text{GM}_0)=\text{Rev}_1\text{GM}_1-\text{Rev}_0\text{GM}_0=\Delta\text{GP}$。于是
+\[
+\Sigma=\Delta\text{GP}-\Delta E+\Delta(\text{OP}-\text{GP}+E)+\Delta(\text{TP}-\text{OP})-\Delta\text{Tax}-\Delta(\text{NP}-\text{NP}_p)
+=\Delta\text{TP}-\Delta\text{Tax}-\Delta\text{NP}+\Delta\text{NP}_p .
+\]
+移项即得。
+\end{proof}
+
+命题~\ref{prop:an-closure} 说明，“其他经营损益”这一轧差项的设计让分解在代数上恒等闭合，剩下的闭合误差 \code{closure\_error} 恰好度量了抽取到的利润表是否满足
+“净利润 $=$ 利润总额 $-$ 所得税费用”。这相当于一项免费的额外勾稽：闭合误差显著不为零，说明利润总额、所得税或净利润中至少一个抽取有误。
+样例与三家真实年报上的闭合误差都在 $10^{-5}$ 元量级（浮点误差），见表~\ref{tab:an-bridge-real}。
+
+\paragraph{非经常性损益的贡献。}
+归因桥按利润表科目分解，而非经常性损益横跨多个科目（政府补助在其他收益，资产处置在资产处置收益，公允价值变动在公允价值变动收益）。
+\code{profit\_bridge} 另外给出非经常性损益的变动及其占归母净利润变动的比例；比例大于 1 时，报告写出“剔除后经营性利润实际下降”。
+\code{drivers\_ranked} 按绝对值给出前三大驱动项，供写作会话引用。
+
+\begin{tradeoff}[：顺序分解 vs.\ 对称分解]
+把 $\Delta\text{GP}=\Delta(\text{Rev}\cdot\text{GM})$ 拆成“规模”与“毛利率”两项，有多种合法做法。我们用的是“规模按基期毛利率、毛利率按本期收入”的顺序分解，
+交叉项 $\Delta\text{Rev}\cdot\Delta\text{GM}$ 全部计入毛利率效应。对称分解（各用两期平均，或 Shapley 分配）把交叉项平分，对两个因素更“公平”，
+但两种分解的数值差异恰好是交叉项的一半，在收入与毛利率同时大幅变化的年份可能不小。我们选择顺序分解有两个理由：
+(1)~它是卖方研报与教科书最常用的写法，读者可以用“上年毛利率 × 收入增量”的直觉验证；
+(2)~每一项都能用两个真值表单元格的简单算式复核，guard 在核对正文时不需要知道分解的内部约定。代价是归因结果依赖于所选顺序，报告中逐项写明公式（\code{formula} 字段）。
+\end{tradeoff}
+
+\begin{tradeoff}[：按科目分解 vs.\ 按业务分部分解]
+另一种归因是按产品或地区分部：某产品收入增加多少、毛利率变化多少。它对投资判断更有用，但分部数据不在真值表中（只在经营数据表里），
+且分部收入与营业收入之间常有内部抵销与“其他业务”，难以严格闭合。我们把按科目的归因桥作为程序产物，按分部的分析交给写作会话利用经营数据表与其中的程序计算比率完成
+（\S\ref{sec:an-extras}），两者在研报中互相印证。
+\end{tradeoff}
+
+% ============================================================
+\subsection{实际 vs 预期、业绩预告与 EPS 质量}
+\label{sec:an-earnings}
+
+\file{earnings.py} 的预期对比、预告对比与 EPS 质量筛查三部分沿用原 Public Equity Investing 插件 earnings-deep-dive 的判定规则，自研实现、只用标准库；
+与原实现的一致性由 \file{tests/\allowbreak{}test\_golden.py}（对比 \file{tests/\allowbreak{}golden/\allowbreak{}earnings.json} 快照）和本地有原插件时的逐项对照测试保证（附录~\ref{app:thirdparty}）。
+中文字段与 A 股指标的映射是我们加的。
+
+\paragraph{输入。}
+一致预期与内部预期来自 CSV（指标、期间、预期类型、数值、单位、截至日期、来源），业绩预告来自 CSV（指标、期间、下限、上限、单位、公告日期、来源）。
+实际值从真值表取，金额换算为百万元。可比较的指标有六个：营业收入、营业利润、归母净利润、扣非归母净利润、基本每股收益、扣非每股收益；
+后者由程序计算为扣非归母净利润 $/$ 总股本，来源标记为“计算：扣非归母净利润/总股本”。
+
+\paragraph{超预期幅度。}
+对每个指标，与一致预期 $c$ 和内部预期 $i$ 分别计算差额与幅度：
+\[
+\delta = a-c,\qquad s=\frac{a-c}{c}\ (c\neq0),
+\]
+$a$ 为实际值。预期缺失时差额与幅度为空；预期为 0 时幅度为空。没有提供预期文件时，\code{limitations} 记“未提供一致预期数据，跳过超预期/不及预期分析”。
+我们不在程序中给出“超预期 / 不及预期”的离散标签，只给幅度，标签由写作会话结合幅度与市场语境描述，并受 guard 的方向核对约束。
+
+\paragraph{业绩预告。}
+预告区间 $[L,H]$ 的中值 $\bar g=(L+H)/2$ 与一致预期比较；实际值相对区间的位置按
+\[
+\text{位置}(a)=\begin{cases}
+\text{高于预告上限} & a>H\\ \text{低于预告下限} & a<L\\ \text{预告区间上半部} & \bar g\le a\le H\\ \text{预告区间下半部} & L\le a<\bar g
+\end{cases}
+\]
+并给出 $a/\bar g-1$。A 股的业绩预告是强制披露（达到一定变动幅度时），实际值落在区间哪一端是市场关注的信号；
+相对于预告中值的意外比相对于一致预期的意外更“新”，因为预告公告后一致预期通常已向预告靠拢。
+
+\paragraph{EPS 质量筛查。}
+对每个 GAAP 口径的 EPS 行，检查两类触发项：
+\begin{enumerate}
+\item \textbf{失真项。}指标名、GAAP 标记、可比 GAAP 指标名、调节来源、备注中出现失真关键词（资产处置、营业外、权益投资、公允价值、汇兑、一次性收益、减值、诉讼、损失、
+      盯市、非经营、非经常性、一次性、养老金、重组、股本变动、税率共 17 个）之一。A 股适配：当非经常性损益占归母净利润 $\ge15\%$（与信号 S1 同阈值）时，
+      程序在基本每股收益的备注中写入“non-recurring gain: 非经常性损益占归母净利润 X\%”，从而触发失真项；
+\item \textbf{幅度背离。}EPS 超预期幅度 $|s_{\text{EPS}}|\ge15\%$，且 $|s_{\text{EPS}}|>\max(2|s_{\text{peer}}|,\ |s_{\text{peer}}|+10\%)$，其中 peer 分别取营业收入与营业利润。
+      含义是：EPS 的意外远大于收入和经营利润的意外时，差额多半来自经营以下的项目（税率、投资收益、股本），不能外推。
+\end{enumerate}
+有任一触发时结论为“需展开 EPS 质量拆解”，并列出触发项；否则为“未触发 EPS 质量预警”，附“仍需与财报附注核对”。
+盈利公告后的价格漂移研究~\citep{bernard1989pead}表明市场对盈利意外的反应并不充分，而意外的“质量”（是否可持续）决定了它能否外推，这是 EPS 质量筛查的出发点；
+应计质量的研究~\citep{dechow2002quality}给出了类似的结论。
+
+\paragraph{样例结果。}
+样例公司的结果见表~\ref{tab:an-sample-earnings}。归母净利润高于一致预期 3.8\%，但扣非归母净利润低于一致预期 14.6\%；
+归母净利润落在预告区间上半部，扣非落在下半部。EPS 幅度 4.1\% 不触发幅度背离，但非经常性损益占比 27.5\% 写入了备注，触发失真项“一次性收益、非经常性损益”，
+结论为“需展开 EPS 质量拆解”。三个模块从不同角度给出同一个判断：表观超预期来自非经常性项目。
+
+\begin{table}[t]
+\centering
+\caption{样例公司“星河智造”（虚构）2024 年实际 vs 预期与预告（百万元；每股为元；预期与预告均为虚构样例数据）。}
+\label{tab:an-sample-earnings}
+\small
+\begin{tabular}{lrrrrrl}
+\toprule
+指标 & 实际 & 一致预期 & 幅度 & 内部预期 & 幅度 & 预告区间位置 \\
+\midrule
+营业收入 & 5,862.3 & 5,750.0 & $+2.0\%$ & 5,900.0 & $-0.6\%$ & — \\
+营业利润 & 742.6 & 715.0 & $+3.9\%$ & — & — & — \\
+归母净利润 & 612.4 & 590.0 & $+3.8\%$ & 560.0 & $+9.4\%$ & 580--640，上半部 \\
+扣非归母净利润 & 443.9 & 520.0 & $-14.6\%$ & — & — & 420--480，下半部 \\
+基本每股收益 & 0.77 & 0.74 & $+4.1\%$ & — & — & — \\
+扣非每股收益 & 0.55 & — & — & — & — & — \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% ============================================================
+\subsection{经营数据在分析中的作用}
+\label{sec:an-extras}
+
+经营数据表（\S\ref{sec:ext-extras}）在真值表就绪后运行完整版本，引用真值表的比率此时才计算，例如：
+现金分红率 $=$ 年度累计现金分红 $/$ 归母净利润（茅台 \code{payout}，分母引用真值表中 \code{np\_parent} 的 2025 年值）；
+分产品收入占比 $=$ 分产品收入 $/$ 营业收入；分渠道收入占比的同比变动（\code{diff}，单位 pp）。这些比率与真值表中的派生指标一样，由程序计算、带公式与引用，
+供研报引用；正文中出现的“茅台酒毛利率 93.53\%，同比下降 0.53 个百分点”“i茅台平台收入 130.31 亿元，同比下降 34.92\%”这类分部表述，
+由 guard 按行名或别名识别并在经营数据表上核对（\code{test\_\allowbreak{}guard\_\allowbreak{}accepts\_\allowbreak{}segment\_\allowbreak{}figures\_\allowbreak{}and\_\allowbreak{}flags\_\allowbreak{}wrong\_\allowbreak{}ones}、\code{test\_\allowbreak{}guard\_\allowbreak{}valuation\_\allowbreak{}mm\_\allowbreak{}aliases\_\allowbreak{}and\_\allowbreak{}bridge}）。
+guard 同时拦截“把分部数据冒充公司整体数据”的写法：“2025 年公司营业收入 130.31 亿元”会因指标绑定不符被拦下（130.31 亿元是 i茅台的收入）。
+
+经营数据是分部分析的基础：它解释归因桥中“收入规模效应”和“毛利率效应”来自哪个产品、哪个渠道，也为估值中的分部量价预测提供基期（第~\ref{sec:valuation} 节）。
+三家真实年报共核对了 1,076 个经营数据格子、声明了 239 个比率（表~\ref{tab:ext-extras}）。
+
+% ============================================================
+\subsection{报告输出}
+\label{sec:an-report}
+
+\file{finagent/\allowbreak{}output/\allowbreak{}report.py} 把分析产物渲染为 Markdown 报告 \file{financials/report.md}，结构按“事实 $\to$ 推论 $\to$ 观点”组织：
+
+\begin{enumerate}
+\item \textbf{摘要行}：抽取指标数（及规则 / 模型通道各自的数量）、勾稽通过 / 失败 / 无法评估数、异常信号数与高严重度数；
+\item \textbf{一、事实：关键财务指标}：本期、上年同期、同比（比率为 pp）、环比、来源；来源由 \code{loc()} 渲染为“文件名 p.页码 chunk\_id 行r列c”，
+      派生值渲染为“派生自 …”并递归列出输入的来源；随后是单季表，推算值标“*”；
+\item \textbf{二、事实：勾稽与一致性校验}：每项检查的状态与差额，以及抽取过程的 issue；
+\item \textbf{三、推论：异常信号}：每条信号分“事实 / 推论 / 证据”三行，文本类证据（S8）给出页码与摘句；
+\item \textbf{四、观点与待验证事项}：每条信号一项待验证事项。这里刻意只给“建议查阅附注 / 问询函核实原因”，不给观点——观点由写作会话撰写并过 guard；
+\item \textbf{五、业绩变化归因}：归因桥表（含闭合误差）、前三大驱动、非经常性损益贡献，实际 vs 预期表、实际 vs 预告表、EPS 质量结论与限制说明。
+\end{enumerate}
+
+事实表另存为 \file{facts.csv}（带 BOM，Excel 直接打开不乱码），来源列同样渲染为可读定位。金额统一以亿元两位小数展示，每股两位小数，比率两位小数加“\%”，
+展示精度与 guard 的核对精度一致，写作会话照抄报告中的数字时不会因为舍入差异被拦下。
+
+\paragraph{为什么程序不写解读。}
+报告中“推论”字段是规则模板的固定句子，“观点”部分只有待验证清单。我们没有让程序（或程序内调用的模型）生成解读段落：
+解读需要结合行业与公司背景，而后者来自研究助理与分析师会话的资料搜集（第~\ref{sec:pipeline} 节）；把解读放在写作会话里，
+它就自然受 guard 与数字锁约束，不会出现“程序报告里有一套说法、研报里另一套说法”的情况。
+
+% ============================================================
+\subsection{样例与真实公司上的结果}
+\label{sec:an-results}
+
+\paragraph{样例。}
+虚构样例“星河智造”的财报分析（命令 \code{finagent financials}，输入 \file{data/\allowbreak{}samples/\allowbreak{}annual\_report\_2024.md}）抽取 107 个事实（规则通道 113 条，含重复与佐证），
+14 项勾稽全部通过，触发 6 条信号（高 2 条）。样例在设计上埋了一个“利润增长、现金流恶化、应收激增、非经常性损益撑起表观增速”的故事，
+表~\ref{tab:an-sample} 显示程序从数字中完整还原了这个故事。
+
+\begin{table}[t]
+\centering
+\caption{样例公司 2024 年关键指标与触发的信号（金额为亿元）。}
+\label{tab:an-sample}
+\small
+\begin{tabular}{lrrr}
+\toprule
+指标 & 2024 & 2023 & 同比 \\
+\midrule
+营业收入 & 58.62 & 51.20 & 14.49\% \\
+归母净利润 & 6.12 & 5.18 & 18.17\% \\
+扣非归母净利润 & 4.44 & 4.71 & $-5.67\%$ \\
+非经常性损益 & 1.68 & 0.48 & 254.14\% \\
+经营活动现金流量净额 & 2.38 & 5.81 & $-58.98\%$ \\
+应收账款 & 19.86 & 14.02 & 41.60\% \\
+毛利率 & 31.19\% & 31.22\% & $-0.03$pp \\
+\bottomrule
+\end{tabular}
+\\[6pt]
+\begin{tabularx}{\linewidth}{l l X}
+\toprule
+信号 & 严重度 & 事实 \\
+\midrule
+S1 & 中 & 非经常性损益占归母净利润 27.50\% \\
+S2 & 中 & 归母与扣非增速差 23.85 个百分点 \\
+S3 & 高 & 净现比 0.39 \\
+S4 & 高 & 归母净利润 $+18.17\%$，经营现金流 $-58.98\%$ \\
+S5 & 中 & 应收账款同比 41.60\%，比收入快 27.11 个百分点 \\
+S8 & 中 & 2 处口径披露（含一处否定语境，见失败案例） \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+样例的归因桥：归母净利润从 518.2 百万元增至 612.4 百万元，变动 $+94.2$ 百万元；收入规模效应 $+231.6$，毛利率效应 $-2.0$，研发费用 $-44.2$，
+其他经营损益 $-32.0$，销售费用 $-28.1$，所得税 $-18.2$，管理费用 $-16.2$，少数股东损益 $-8.9$，财务费用 $+6.8$，营业外收支 $+5.4$；
+闭合误差 $1.3\times10^{-7}$ 元。非经常性损益变动 $+120.9$ 百万元，相当于归母净利润变动的 128\%，报告据此写出“剔除后经营性利润实际下降”。
+这与 S1、S2、EPS 质量筛查的结论一致。
+
+\paragraph{三家真实年报。}
+在三家真实年报的模型抽取上运行 \code{analyze} 与 \code{profit\_bridge}（本文重跑），结果见表~\ref{tab:an-real} 与表~\ref{tab:an-bridge-real}。
+
+\begin{table}[t]
+\centering
+\caption{三家真实年报 2025 年的关键变动、勾稽与信号（金额为亿元；同比为 \%，比率变动为 pp）。}
+\label{tab:an-real}
+\small
+\begin{tabular}{lrrr}
+\toprule
+ & 贵州茅台 & 宁德时代 & 招商轮船 \\
+\midrule
+营业收入 & 1,688.38 & 4,237.02 & 281.77 \\
+\quad 同比 & $-1.21$ & $17.04$ & $9.22$ \\
+归母净利润 & 823.20 & 722.01 & 60.12 \\
+\quad 同比 & $-4.53$ & $42.28$ & $17.71$ \\
+扣非归母净利润同比 & $-4.58$ & $43.37$ & $0.18$ \\
+经营现金流同比 & $-33.46$ & $37.35$ & $6.83$ \\
+存货同比 & $13.04$ & $57.98$ & $-7.54$ \\
+毛利率（变动） & 91.18（$-0.75$） & 26.27（$+1.83$） & 26.47（$-1.95$） \\
+资产负债率（变动） & 16.42（$-2.63$） & 61.94（$-3.30$） & 46.68（$+4.52$） \\
+\midrule
+勾稽（通过 / 总） & 20 / 20 & 15 / 15 & 21 / 21 \\
+信号 & S3 中，S8 & S6 高，S8 & S1 中，S2 中，S8 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+三家的信号各自对应一个值得在研报中解释的现象：
+\begin{itemize}
+\item \textbf{贵州茅台 S3}：经营现金流 615.22 亿元，归母净利润 823.20 亿元，净现比 0.75，经营现金流同比下降 33.46\%，远大于利润降幅；
+      S4 未触发，因为利润本身也在下降（S4 要求利润增长而现金流下降）。
+\item \textbf{宁德时代 S6（高）}：存货同比 57.98\%，营业收入同比 17.04\%，差 40.94 个百分点，超过高严重度阈值 30。
+\item \textbf{招商轮船 S1、S2}：非经常性损益 9.88 亿元，占归母净利润 16.43\%；归母净利润同比 17.71\%，扣非同比仅 0.18\%，差 17.53 个百分点。
+      归因桥中“其他经营损益”是第一大正向驱动（$+10.02$ 亿元），与之印证。
+\end{itemize}
+信号只陈述数字，原因需要回到年报附注和外部资料，这是写作会话与研究助理的工作。
+
+\begin{table}[t]
+\centering
+\caption{三家真实年报 2025 年归母净利润归因桥（亿元；本文重跑）。闭合误差单位为元。}
+\label{tab:an-bridge-real}
+\small
+\begin{tabular}{lrrr}
+\toprule
+驱动项 & 贵州茅台 & 宁德时代 & 招商轮船 \\
+\midrule
+收入规模效应 & $-18.95$ & $+150.80$ & $+6.76$ \\
+毛利率效应 & $-12.69$ & $+77.45$ & $-5.48$ \\
+销售费用 & $-16.14$ & $-1.72$ & $-0.06$ \\
+管理费用 & $+9.96$ & $-19.77$ & $-1.57$ \\
+研发费用 & $+0.28$ & $-35.40$ & $-0.09$ \\
+财务费用 & $-6.55$ & $+38.08$ & $-1.03$ \\
+其他经营损益 & $-4.70$ & $+45.23$ & $+10.02$ \\
+营业外收支 & $-0.04$ & $+8.78$ & $+0.69$ \\
+所得税 & $+8.59$ & $-35.65$ & $-0.61$ \\
+少数股东损益 & $+1.16$ & $-13.23$ & $+0.43$ \\
+\midrule
+归母净利润变动 & $-39.08$ & $+214.57$ & $+9.05$ \\
+闭合误差（元） & $1.9\times10^{-5}$ & $3.8\times10^{-6}$ & $-3.6\times10^{-7}$ \\
+前三大驱动 & 规模、销售费用、毛利率 & 规模、毛利率、其他经营 & 其他经营、规模、毛利率 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[t]
+\centering
+\begin{tikzpicture}[font=\scriptsize]
+\fill[nipsblue!60] (0,0) rectangle (0.7,5.294); \node[above] at (0.35,5.294) {862.28}; \node[below,text width=10mm,align=center] at (0.35,0) {2024 归母};
+\fill[gatered!60] (1.1,3.683) rectangle (1.8,5.294);
+\draw[densely dotted,midgray] (0.7000000000000001,5.294) -- (1.1,5.294);
+\node[above] at (1.4500000000000002,5.294) {-18.95};
+\node[below,text width=10mm,align=center] at (1.4500000000000002,0) {规模};
+\fill[gatered!60] (2.2,2.604) rectangle (2.9000000000000004,3.683);
+\draw[densely dotted,midgray] (1.8000000000000003,3.683) -- (2.2,3.683);
+\node[above] at (2.5500000000000003,3.683) {-12.69};
+\node[below,text width=10mm,align=center] at (2.5500000000000003,0) {毛利率};
+\fill[gatered!60] (3.3000000000000003,1.232) rectangle (4.0,2.604);
+\draw[densely dotted,midgray] (2.9000000000000004,2.604) -- (3.3000000000000003,2.604);
+\node[above] at (3.6500000000000004,2.604) {-16.14};
+\node[below,text width=10mm,align=center] at (3.6500000000000004,0) {销售};
+\fill[green!50!black!50] (4.4,1.232) rectangle (5.1000000000000005,2.079);
+\draw[densely dotted,midgray] (4.0,1.232) -- (4.4,1.232);
+\node[above] at (4.75,2.079) {+9.96};
+\node[below,text width=10mm,align=center] at (4.75,0) {管理};
+\fill[green!50!black!50] (5.5,2.079) rectangle (6.2,2.103);
+\draw[densely dotted,midgray] (5.1,2.079) -- (5.5,2.079);
+\node[above] at (5.85,2.103) {+0.28};
+\node[below,text width=10mm,align=center] at (5.85,0) {研发};
+\fill[gatered!60] (6.6000000000000005,1.546) rectangle (7.300000000000001,2.103);
+\draw[densely dotted,midgray] (6.2,2.103) -- (6.6000000000000005,2.103);
+\node[above] at (6.95,2.103) {-6.55};
+\node[below,text width=10mm,align=center] at (6.95,0) {财务};
+\fill[gatered!60] (7.700000000000001,1.147) rectangle (8.4,1.546);
+\draw[densely dotted,midgray] (7.300000000000001,1.546) -- (7.700000000000001,1.546);
+\node[above] at (8.05,1.546) {-4.70};
+\node[below,text width=10mm,align=center] at (8.05,0) {其他经营};
+\fill[gatered!60] (8.8,1.143) rectangle (9.5,1.147);
+\draw[densely dotted,midgray] (8.4,1.147) -- (8.8,1.147);
+\node[above] at (9.15,1.147) {-0.04};
+\node[below,text width=10mm,align=center] at (9.15,0) {营业外};
+\fill[green!50!black!50] (9.9,1.143) rectangle (10.6,1.873);
+\draw[densely dotted,midgray] (9.5,1.143) -- (9.9,1.143);
+\node[above] at (10.25,1.873) {+8.59};
+\node[below,text width=10mm,align=center] at (10.25,0) {所得税};
+\fill[green!50!black!50] (11.0,1.873) rectangle (11.7,1.972);
+\draw[densely dotted,midgray] (10.6,1.873) -- (11.0,1.873);
+\node[above] at (11.35,1.972) {+1.16};
+\node[below,text width=10mm,align=center] at (11.35,0) {少数股东};
+\draw[densely dotted,midgray] (11.700000000000001,1.972) -- (12.100000000000001,1.972);
+\fill[nipsblue!60] (12.100000000000001,0) rectangle (12.8,1.972); \node[above] at (12.450000000000001,1.972) {823.20}; \node[below,text width=10mm,align=center] at (12.450000000000001,0) {2025 归母};
+\draw[->] (-0.2,0) -- (-0.2,5.950) node[left] {亿元};
+\draw (-0.25,0.000) -- (-0.15,0.000) node[left=2pt] {800};
+\draw (-0.25,1.700) -- (-0.15,1.700) node[left=2pt] {820};
+\draw (-0.25,3.400) -- (-0.15,3.400) node[left=2pt] {840};
+\draw (-0.25,5.100) -- (-0.15,5.100) node[left=2pt] {860};
+\end{tikzpicture}
+\caption{贵州茅台 2025 年归母净利润归因桥瀑布图（亿元；纵轴从 800 起，截断）。红色为拖累项，绿色为贡献项；数值即表~\ref{tab:an-bridge-real} 第一列，各项之和与总变动 $-39.08$ 亿元的差在 $10^{-5}$ 元量级。}
+\label{fig:an-waterfall}
+\end{figure}
+
+茅台的归因桥是一个“收入微降但利润降得更多”的典型（图~\ref{fig:an-waterfall}）：收入规模效应 $-18.95$ 亿元、毛利率效应 $-12.69$ 亿元、销售费用增加 $-16.14$ 亿元，
+被管理费用下降与所得税减少部分抵消。正文写“销售费用增加拖累 16.14 亿元，毛利率效应拖累 12.69 亿元”这类句子时，
+guard 在归因桥产物上逐项核对通过（\code{test\_\allowbreak{}guard\_\allowbreak{}valuation\_\allowbreak{}mm\_\allowbreak{}aliases\_\allowbreak{}and\_\allowbreak{}bridge}）。
+宁德时代的利润增长主要来自规模（$+150.80$ 亿元）与毛利率提升（$+77.45$ 亿元），研发费用与所得税是主要的拖累项。
+
+% ============================================================
+\subsection{失败案例与边界情况}
+\label{sec:an-fail}
+
+\begin{failcase}[：追溯调整后的季度不闭合]
+命题~\ref{prop:prob-closure}(b) 的前提是列示数据满足全部季度等式。若公司在年内发生同一控制下企业合并，年报分季度表通常按重述后的口径列示，
+而当年三季报是重述前口径，“第四季度 = 全年 − 前三季度累计”的核对会失败并阻断。此时失败是“正确的失败”：两份报告的口径确实不同。
+处理方式是由分析师会话在 \file{facts.json} 中只采用同一口径的数据（例如不传三季报，只用年报分季度表），并在研报中说明。
+程序不会自动判断应当采用哪个口径，这需要阅读附注。在三家真实年报上未出现此情况；样例中\fab{我们人为构造过一次重述场景，核对如期失败}。
+\end{failcase}
+
+\begin{failcase}[：亏损公司的信号与归因]
+S1、S3、S4 都要求 $\text{NP}_p>0$，亏损公司上这些信号不会触发——不是因为没有问题，而是比率失去意义。归因桥对亏损公司照常计算（各项是差额，不受符号影响），
+但“占变动比例”在归母净利润变动接近 0 或跨越盈亏时会发散，报告中显示为很大的百分比，
+写作会话需要用绝对额而不是占比描述驱动项。
+\end{failcase}
+
+\begin{failcase}[：信号阈值的边界效应]
+阈值是硬切分：应收增速比收入快 14.9 个百分点不触发 S5，15.0 个百分点触发中等严重度。这会让两家情况几乎相同的公司得到不同的信号列表。
+我们接受这一点，因为信号是“待验证事项”的筛选器而不是评分；写作会话被要求阅读完整的变动表，而不只是信号列表。
+\end{failcase}
+
+\paragraph{金融行业。}
+指标字典与信号针对一般工商企业设计。银行、保险、证券的报表结构不同（没有营业成本与毛利率，营业收入的构成也不同），
+归因桥需要的 11 个科目中有若干不存在，\code{profit\_bridge} 返回空；勾稽中的资产负债表恒等式仍然适用。招商轮船的“营业总收入 / 营业收入”与茅台集团财务公司的利息收入
+说明工商企业年报中也会混入金融业务科目，抽取规则对此有专门处理（\S\ref{sec:ext-whitelist}）。
+
+% ============================================================
+\subsection{小结}
+\label{sec:an-summary}
+
+财报分析的全部数字由确定性程序从真值表计算：派生指标、同比环比、单季拆分、四组勾稽、八条异常信号、十项归因桥、预期与预告对比、EPS 质量筛查。
+几个设计值得强调：派生值永不覆盖列示值，二者的差异只通过勾稽暴露；单季拆分用不动点闭包实现，并用列示依赖集避免“自己和自己比”的伪核对；
+勾稽之外，财报自带的同比列与归因桥的闭合误差提供了两项额外的、几乎免费的抽取自检；信号把事实与推论分字段存放，观点留给受 guard 约束的写作会话。
+在样例上，程序从数字中还原了“表观增长由非经常性损益撑起、现金流与应收恶化”的完整故事；在三家真实年报上，56 项勾稽全部通过，
+归因桥闭合误差在浮点精度以内，触发的信号都对应研报中需要解释的现象。这些产物经由真值表进入估值（第~\ref{sec:valuation} 节）与研报纠错（第~\ref{sec:reportcheck} 节）。

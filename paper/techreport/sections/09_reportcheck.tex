@@ -1,0 +1,864 @@
+% ============================================================
+% 第 9 节  研究报告纠错核查
+% ============================================================
+\section{研报纠错}
+\label{sec:reportcheck}
+
+纠错核查子选题要求系统读一篇研报，找出其中与财报不符的数字，说明错在哪里，并给出修改建议。第~\ref{sec:prob-task5} 节已经把任务形式化为
+“断言 $\gamma$ + 真值函数 $T_\tau$ + 按展示精度的容差 + 有序判定函数”，第~\ref{sec:pr-p7} 节讨论了“误报控制优先于召回”这条原则，
+并给出错误类型诊断的伪代码（算法~\ref{alg:pr-diag}）与保守性命题（命题~\ref{prop:pr-conservative}）。本章不重复这些定义，
+而是往下讲一层：断言\emph{怎样}从中文研报里抽出来、两条通道如何合并、容差中那个看似随意的 $0.005$ 从何而来、诊断的搜索空间多大、
+巧合误诊的概率有多高、修改建议如何生成、研报内部一致性检查有哪些排除规则，以及这些设计在样例与变异实验上的实际表现和失败边界。
+
+\begin{sloppypar}
+模块由三个文件组成，全部是确定性 Python，不调用任何模型：
+\file{finagent/tasks/report\_check/claims.py}（断言抽取与合并，173 行）、
+\file{verify.py}（逐条核对、错误类型诊断与修改建议，173 行）、
+\file{consistency.py}（研报内部一致性，214 行）。它们在 \file{finagent/pipelines.py} 中注册为 \code{report\_check} 流水线的四个步骤
+\code{parse\_report} $\to$ \code{claims} $\to$ \code{verify} $\to$ \code{consistency}（图~\ref{fig:rc-overview}）。
+模型（分析师会话）在这条链路上只做一件事：可选地把研报拆成断言写进 \file{claims.json}；拆得对不对，由程序按原文回查。
+\end{sloppypar}
+
+\begin{figure}[t]
+\centering
+\resizebox{\linewidth}{!}{%
+\begin{tikzpicture}[font=\small]
+  \node[file] (rep) at (0,0) {研报 $\Doc_R$\\(.md / .pdf)};
+  \node[prog] (parse) at (2.9,0) {\code{parse\_report}\\\code{load\_document}};
+  \node[prog, minimum width=26mm] (rule) at (6.0,0) {规则通道\\\code{extract\_rule}};
+  \node[prog] (merge) at (9.6,0) {\code{merge\_claims}\\规则优先去重};
+  \node[agent] (llm) at (2.9,-1.6) {分析师会话\\写 \file{claims.json}};
+  \node[gate] (ing) at (6.0,-1.6) {\code{ingest}\\原文回查};
+  \node[file] (rej) at (6.0,-2.95) {\file{claims\_rejected.json}};
+  \node[file] (truth) at (2.9,-3.9) {真值表 $\Truth$\\\file{analysis.json}};
+  \node[prog] (ver) at (9.6,-3.9) {\code{verify\_claims}\\容差 + 诊断};
+  \node[file] (find) at (12.9,-3.9) {\file{findings.json}\\\file{findings.csv}\\\file{report.md}};
+  \node[prog] (cons) at (9.6,-5.4) {\code{consistency.check}\\只看研报自身};
+  \node[file] (cj) at (12.9,-5.4) {\file{consistency.json}};
+  \draw[arr] (rep) -- (parse);
+  \draw[arr] (parse) -- (rule);
+  \draw[arr] (parse) -- (llm);
+  \draw[arr] (llm) -- (ing);
+  \draw[arr] (rule) -- (merge);
+  \draw[arr] (ing) -| (merge);
+  \draw[darr] (ing) -- node[right,font=\scriptsize]{拒收} (rej);
+  \draw[arr] (merge) -- (ver);
+  \draw[arr] (truth) -- (ver);
+  \draw[arr] (ver) -- (find);
+  \draw[arr] (cons) -- (cj);
+  \draw[arr] (rep.south) |- (cons.west);
+\end{tikzpicture}}
+\caption{研报纠错流水线。蓝色为确定性程序，橙色为模型会话，红色菱形为拒收检查。模型通道是可选的：没有 \file{claims.json} 时只走规则通道
+（样例回归与测试用）。真值表由财报分析（第~\ref{sec:analysis} 节）产出，是核对的唯一数据来源；内部一致性检查不读真值表。}
+\label{fig:rc-overview}
+\end{figure}
+
+% ------------------------------------------------------------
+\subsection{输出契约：七类判定与一条发现的结构}
+\label{sec:rc-contract}
+
+先说清楚系统交出去的是什么。每条断言最终变成一条“发现”（finding），字段如表~\ref{tab:rc-finding} 所示。判定共七类（定义~\ref{def:prob-verdict}），
+其中五类计为错误（代码中的 \code{ERROR\_VERDICTS}），“正确”与“无法核实”不计。表~\ref{tab:rc-verdicts} 列出每一类的判定条件、
+所需的\emph{证据}（witness）和修改建议模板。证据这一列是本章反复出现的概念：除“数值错误”外，每个错误类型都必须有一个能被程序复验的替代解释，
+系统才会给出这个类型。
+
+\begin{table}[t]
+\centering
+\caption{一条发现（\code{verify\_claim} 的返回值）的字段。前九个字段来自断言，后六个由核对步骤填写。}
+\label{tab:rc-finding}
+\small
+\begin{tabularx}{\linewidth}{@{}p{2.6cm}X@{}}
+\toprule
+字段 & 含义 \\
+\midrule
+\code{claim\_id} & 规则通道 \code{C001} 起编；模型通道先以 \code{L001} 起编，合并后统一重编为 \code{C}$\cdot$ \\
+\code{metric\_id}, \code{metric\_name} & 标准指标 ID 与中文名（指标字典共 49 个指标，见第~\ref{sec:ext-schema} 节） \\
+\code{period} & 期间串：\code{2024}、\code{2025Q3}、\code{2025H1}、\code{2025Q1-3} \\
+\code{claim\_type} & \code{level} / \code{yoy} / \code{ratio} / \code{pp\_change} \\
+\code{raw\_value}, \code{value}, \code{unit} & 原文写法（不带符号）、带方向的数值、单位 \\
+\code{quote}, \code{sentence} & 断言在原文中的最短片段与所在整句 \\
+\code{location} & \code{source}、\code{page}、\code{chunk\_id}、句序号（规则通道） \\
+\code{is\_forecast}, \code{method} & 预测性表述标记；抽取通道 \code{rule} / \code{llm} \\
+\midrule
+\code{verdict} & 七类判定之一 \\
+\code{truth\_value}, \code{truth\_display} & 真值（元或百分数值）与按研报单位、精度格式化后的展示值 \\
+\code{evidence} & 真值的出处：列示值给 $(\text{source},\text{page},\text{chunk\_id},\text{row},\text{col})$；派生值给公式与输入单元格 \\
+\code{explanation}, \code{suggestion} & 中文说明与修改建议 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\begin{table}[t]
+\centering
+\caption{七类判定的条件、证据与修改建议模板（\code{verify.verify\_claim}）。“检查顺序”即算法~\ref{alg:pr-diag} 的分支顺序；$\hat x$ 为规范化后的研报数值，
+$t=T_\tau(m,k)$，$\approx$ 为按容差相符（定义~\ref{def:prob-tol}）。}
+\label{tab:rc-verdicts}
+\small
+\begin{tabularx}{\linewidth}{@{}c p{1.5cm} p{4.0cm} X@{}}
+\toprule
+顺序 & 判定 & 条件与证据 & 修改建议模板 \\
+\midrule
+1 & 无法核实 & 预测性表述，或 $t$ 无定义 & 无（说明“需核对盈利预测模型”或“真值表缺少……”） \\
+2 & 正确 & $\hat x\approx t$ & 无 \\
+3 & 单位错误 & $\tau=$ level，存在 $u'\in\textsc{UnitAlts}(u)$ 使按 $u'$ 换算后 $\approx t$；证据为 $u'$ & 将“$r\,u$”改为“$t$ 按 $u'$ 的展示值” \\
+4 & 方向错误 & $\tau\in\{$yoy, pp$\}$，$-\hat x\approx t$；证据为符号 & 将增减方向及数值改为 $t$ \\
+5 & 期间错配 & 存在 $k'\ne k$，$\hat x\approx T_\tau(m,k')$；证据为 $k'$ & 改为 $k$ 期的 $t$，或更正期间为 $k'$ \\
+6 & 口径错误 & 存在同组 $m'\ne m$，$\hat x\approx T_\tau(m',k)$；证据为 $m'$ & 若指 $m$ 应为 $t$；若指 $m'$ 请更正指标名称 \\
+7 & 数值错误 & 以上都不成立；证据为空 & 将 quote 中的数值改为 $t$（金额另给相对偏差） \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\paragraph{为什么判定是有序的。}七类判定互斥，但“错误类型”的成立条件并不互斥：一个数可能同时等于上年值（期间）和净利润（口径）。
+有序判定让结果确定、可复现，并且把\emph{证据更强、巧合概率更低}的解释排在前面（第~\ref{sec:rc-diag} 节给出排序依据）。
+“数值错误”放在最后，是因为它是一个\emph{不需要证据}的判定：只要 $\hat x\not\approx t$ 它就为真。我们在第~\ref{sec:rc-decision} 节把它称为
+“最低承诺标签”，并说明为什么在没有证据时退回它是决策论意义上的最优选择。
+
+% ------------------------------------------------------------
+\subsection{断言抽取：规则通道}
+\label{sec:rc-rule}
+
+\subsubsection{指标说法字典与最长匹配}
+
+规则通道依赖指标字典（\file{tasks/financials/schema.py}）中的“研报说法”（\code{claim\_aliases}）。49 个标准指标中有 39 个配了研报说法，
+共 56 个说法，如营业收入的“营业收入 / 营业总收入 / 营收 / 收入”、归母净利润的“归母净利润 / 归属于上市公司股东的净利润 / 归属于母公司股东的净利润”、
+经营现金流的“经营活动现金流量净额 / 经营性现金流 / 经营现金流”等。\code{claim\_alias\_list()} 把所有（说法, 指标）对按说法长度降序排列。
+
+对每个句子，算法在一个布尔占用数组上做\emph{不重叠的最长匹配}：按长度从长到短遍历说法，找到一次出现后，若该区间内任何字符已被占用则跳过，
+否则登记该提及并占用区间。最长优先的作用是让“扣非归母净利润”不会被“归母净利润”或“净利润”截胡，“营业总收入”不会被“收入”截胡。
+句子切分用正则 \code{(?<=[。；;！!？?\textbackslash n])}，即在句末标点之后切开，标点留在前一句。
+
+\subsubsection{提及之间的片段与数值识别}
+
+找到句中全部指标提及并按位置排序后，第 $j$ 个提及的“作用域”是从它结束处到下一个提及开始处（最后一个提及到句末）的片段 $\text{seg}_j$。
+数值只在作用域内找，这是规则通道把数字绑定到指标的唯一机制：“营业收入58.62亿元，同比增长14.49\%”里，两个数字都在营业收入的作用域内；
+“扣非归母净利润4.44亿元，同比下降5.67\%，非经常性损益1.68亿元”里，“1.68亿元”落在非经常性损益的作用域内。表~\ref{tab:rc-regex} 列出用到的几个模式。
+
+\begin{table}[t]
+\centering
+\caption{规则通道使用的模式（\file{claims.py}）。\code{NUM} 匹配带千分位与小数的数字。}
+\label{tab:rc-regex}
+\small
+\begin{tabularx}{\linewidth}{@{}p{2.2cm}X@{}}
+\toprule
+模式 & 作用与要点 \\
+\midrule
+\code{UNIT} & 亿元、万元、千元、百万元、元/股、元、\%、倍、个百分点、pct、pp \\
+\code{YOY\_RE} & “同比 / 较上年 / 比上年 / 较去年同期”+ 可选增减动词 + 数字 +（\% 或百分点类单位）；动词属于“下降 / 减少 / 下滑 / 降低”时数值取负 \\
+\code{VAL\_RE} & 可选引导词（为、达、实现、录得、至、约、共计、合计、是）+ 数字 + 单位；只在同比表述之前的部分里找，取第一个 \\
+\code{YEAR\_RE} & 年份 + 可选“年 / E / A / 度”+ 可选季度词（第一季度、Q3、前三季度、上半年、H1）；用于期间解析 \\
+\code{FORECAST\_HINTS} & 预计、预测、有望、目标、将达、\code{2025E}--\code{2027E}、指引；句中出现任一即标为预测 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+在作用域内，水平值与同比按如下规则判别：
+\begin{enumerate}
+\item 先找同比表述 \code{YOY\_RE}。找到则生成一条 \code{yoy}（单位为 \%）或 \code{pp\_change}（单位为个百分点）断言，数值按动词定号。
+\item 在同比表述\emph{之前}找第一个 \code{VAL\_RE}。若其单位是百分点类，跳过（那是变动，不是水平）。
+\item \textbf{变动额排除}：若数字前紧邻“增加 / 减少 / 增长 / 下降 / 提升 / 提高 / 降低 / 上升 / 下滑（了）”，且引导词不是“为 / 达 / 至 / 实现 / 录得 / 是”，
+  则判定为变动额（“研发费用增加 0.94 亿元”），不抽取。“增长至 58.62 亿元”因引导词“至”仍按本期值抽取。
+\item \textbf{百分数归属}：单位为 \% 时，若指标本身是比率类（\code{kind="pct"}，如毛利率），生成 \code{ratio}；若指标是金额类，
+  前面有“增 / 降 / 减 / 升”字样才视为增速（\code{yoy}），否则（如“收入占比 35\%”）不抽取——金额指标后面的百分数多半是占比，不是这个指标的值。
+\item 单位为“倍”的水平值不抽取（研报里的“倍”多是估值倍数，不在真值表中）。
+\end{enumerate}
+
+\subsubsection{期间解析}
+
+期间取指标提及\emph{之前}（含提及本身）最后一个年份表述：\code{\_period\_of(sent[:en])}。若年份后跟季度词则拼接季度后缀
+（“第三季度”$\to$ \code{Q3}，“前三季度”$\to$ \code{Q1-3}，“上半年”$\to$ \code{H1}）；句中没有年份时取报告年度（\code{default\_year}）。
+取“最后一个”是因为中文研报常把年份写在句首、一句话说多个指标：“2024 年公司实现营业收入……，归母净利润……”中两个指标共享句首的年份。
+
+\begin{algorithm}[t]
+\caption{规则通道断言抽取（\code{claims.extract\_rule}，简化）}
+\label{alg:rc-rule}
+\begin{algorithmic}[1]
+\Function{ExtractRule}{$\Doc_R$, $y_0$}
+  \State $\mathcal{A}\gets$ 按长度降序的（说法, 指标）对；$\Claims\gets[\,]$
+  \For{文本块 $c\in\Doc_R$, 句子 $s\in\textsc{Split}(c.\text{text})$}
+    \State $\text{spans}\gets$ 在 $s$ 上对 $\mathcal{A}$ 做不重叠最长匹配，按起点排序
+    \State $\text{fc}\gets \exists h\in\textsc{ForecastHints}: h\sqsubseteq s$
+    \For{$j=1..|\text{spans}|$，$(a_j,b_j,m_j)=\text{spans}[j]$}
+      \State $\text{seg}\gets s[b_j : a_{j+1}]$；$k\gets\textsc{Period}(s[:b_j], y_0)$
+      \State $Y\gets$ \code{YOY\_RE} 在 seg 中的首个匹配；$V\gets$ \code{VAL\_RE} 在 seg（截到 $Y$ 之前）中的首个匹配
+      \If{$V$ 存在且单位不是百分点类}
+        \State $\tau\gets\textsc{LevelType}(V, m_j)$\Comment{level / ratio / yoy / 不抽取（变动额、占比、倍）}
+        \If{$\tau\neq\bot$}\State $\Claims$.append$(m_j,k,\tau,V,\text{quote}=s[a_j:b_j+|V|],\text{fc})$\EndIf
+      \EndIf
+      \If{$Y$ 存在}
+        \State $x\gets \pm\operatorname{parse}(Y)$\Comment{下降类动词取负}
+        \State $\Claims$.append$(m_j,k,\text{yoy 或 pp\_change},x,\text{quote}=Y,\text{fc})$
+      \EndIf
+    \EndFor
+  \EndFor
+  \State \Return $\Claims$
+\EndFunction
+\end{algorithmic}
+\end{algorithm}
+
+\begin{example}[样例研报第 1 页第三句]
+句子“扣非归母净利润4.44亿元，同比下降5.67\%，非经常性损益1.68亿元，主要来自政府补助及资产处置收益。”
+最长匹配得到两个提及：“扣非归母净利润”（\code{np\_parent\_deducted}）与“非经常性损益”（\code{non\_recurring}）。“政府补助”也是一个说法（\code{gov\_subsidy}），
+但其后作用域内没有数字，不生成断言。第一个提及的作用域是“4.44亿元，同比下降5.67\%，”：\code{YOY\_RE} 命中“同比下降5.67\%”，生成 \code{yoy} 断言
+$x=-5.67$；截到同比之前的部分里 \code{VAL\_RE} 命中“4.44亿元”，生成 \code{level} 断言。第二个提及的作用域内命中“1.68亿元”。期间均取默认年度 2024。
+三条断言对应表~\ref{tab:rc-sample} 中的 C005--C007。
+\end{example}
+
+\begin{proposition}[规则通道的结构性质]
+\label{prop:rc-rule}
+对规则通道产生的任一断言 $\gamma$：(i)~$\gamma.\text{quote}$ 是 $\gamma.\text{sentence}$ 的连续子串，$\gamma.\text{sentence}$ 是研报某个文本块的连续子串；
+(ii)~$\gamma.\text{raw\_value}$ 出现在 $\gamma.\text{quote}$ 中；(iii)~同一输入两次运行产生逐字段相同的断言序列。
+\end{proposition}
+\begin{proof}
+(i)(ii)：quote 取自 \code{sent[st:en+vm.end()]} 或 \code{sent[en+ym.start():en+ym.end()]}，都是句子的切片，且切片终点包含数值匹配；
+句子由文本块按标点切出。(iii)：说法列表按长度排序（等长时按字典构造顺序，Python 的排序稳定），正则匹配与遍历顺序都是确定的，没有随机性与外部状态。
+\end{proof}
+
+\begin{sloppypar}
+性质 (i)(ii) 使每条发现都能在研报原文中被逐字定位，这是“核查结论可定位到研报具体句子”这一输出要求的基础；性质 (iii) 使样例评测可以作为回归测试
+（\file{tests/test\_pipeline.py} 中 \code{test\_report\_check} 对同一输入跑两遍并要求发现列表完全相等）。
+\end{sloppypar}
+
+\subsubsection{规则通道识别不了什么}
+
+规则通道的覆盖面是有意收窄的：宁可不抽，也不要抽错（抽错的断言会产生误报）。表~\ref{tab:rc-rule-gaps} 列出我们在实现与真实文稿上确认过的边界，
+每一行都用代码实际跑过。
+
+\begin{table}[t]
+\centering
+\caption{规则通道的边界（以报告年度 2025 实测）。“结果”列为 \code{extract\_rule} 的实际输出。}
+\label{tab:rc-rule-gaps}
+\small
+\begin{tabularx}{\linewidth}{@{}p{4.3cm}p{3.1cm}X@{}}
+\toprule
+句子 & 结果 & 说明 \\
+\midrule
+销售费用增加0.94亿元。 & 不抽取 & 变动额，无法与水平值核对；有意排除 \\
+海外收入占比35.20\%。 & 不抽取 & 金额指标后的百分数无增减字样，视为占比 \\
+归母净利润同比增长约三成。 & 不抽取 & 中文数词不在 \code{NUM} 中；约数本应由程序算出（设计规范 1） \\
+2025年第三季度营业收入23.10亿元，环比增长5.2\%。 & 仅 \code{revenue/2025Q3/level} & 没有环比类型；环比表述被忽略 \\
+销售费用率由3.30\%升至4.30\%。 & \code{ratio}=3.30\% & 取作用域内第一个数，把上期值当本期值；会误报“期间错配” \\
+营收约60亿元。 & \code{level}=60 亿元 & “约”不放宽容差：真值 58.62 亿元时判“数值错误” \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+最后两行是规则通道\emph{会抽错}的情形。“由 X 升至 Y”在主笔会话写作时同样踩到过：研报 skill 的“常见坑”一节专门要求改写为
+“销售费用率 4.30\%，上年为 3.30\%”（\file{finagent-report/SKILL.md}）。对外部研报，这类句式由模型通道补救：模型拆断言时能理解“升至”，
+写出 \code{value="4.30"}，quote 为“升至4.30\%”；但规则通道抽出的那条 3.30\% 仍在，合并时两者键不同（数值不同），都会被核对，
+3.30\% 那条会被诊断为“期间错配”（它确实等于上年值）。这条“误报”在内容上是对的——3.30\% 确实是上年值——只是研报作者并没有把它当作本期值。
+我们在第~\ref{sec:rc-fail} 节把它列为已知误报来源。
+
+% ------------------------------------------------------------
+\subsection{断言抽取：模型通道与合并}
+\label{sec:rc-llm}
+
+\subsubsection{\file{claims.json} 的接入与回查}
+
+模型通道的动机是覆盖规则通道漏掉的写法：长句中指标与数字相隔很远、表格化的研报、“由 X 升至 Y”、指标用了字典外的说法等。
+分析师会话按 \file{finagent-research} skill 的要求读研报，把断言写成 JSON 列表，每条包含 \code{metric\_id}、\code{period}、\code{claim\_type}、
+\code{value}（字符串，带符号）、\code{unit}、\code{is\_forecast} 与 \code{quote}。程序不信任其中任何一个字段，按表~\ref{tab:rc-ingest} 逐条回查，
+不通过的写进 \file{check/claims\_rejected.json} 并附理由。
+
+\begin{table}[t]
+\centering
+\caption{模型断言的拒收规则（\code{claims.ingest\_claims}），按检查顺序。}
+\label{tab:rc-ingest}
+\small
+\begin{tabularx}{\linewidth}{@{}c p{3.4cm} X@{}}
+\toprule
+\# & 拒收理由 & 检查 \\
+\midrule
+1 & 未知指标 & \code{metric\_id} 不在指标字典中 \\
+2 & 断言类型不合法 & \code{claim\_type} 不属于 level / yoy / ratio / pp\_change \\
+3 & quote 不是研报原文中的连续片段 & 不存在文本块 $c$ 使 quote 是 $c$.text 的子串 \\
+4 & 数值不在 quote 中 & 去掉负号与千分位后的 value 不是去掉千分位后 quote 的子串 \\
+5 & 数值无法解析 & \code{float(value)} 失败 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+规则 3 与 4 共同保证了与规则通道相同的结构性质（命题~\ref{prop:rc-rule} 的 (i)(ii)），这是“证据定位”不变量（不变量~\ref{inv:pr-evidence}）在研报一侧的对应物。
+注意两点实现细节。第一，模型给的 \code{value} 带符号（“同比下降 5.67\%”写 \code{"-5.67"}），而原文里只有“5.67”，所以规则 4 先去掉负号再查；
+入库时 \code{raw\_value} 存不带符号的写法、\code{value} 存带符号的数值，与规则通道约定一致。第二，规则 4 只检查子串而不检查数字边界，
+所以模型把“14.49”写成“4.49”也能通过——这是一个已知的宽松处，但后果有限：错写的数值会在核对阶段被判为错误并展示 quote，人一眼能看出。
+
+\begin{algorithm}[t]
+\caption{模型断言接入与两通道合并（\code{ingest\_claims} + \code{merge\_claims}）}
+\label{alg:rc-ingest}
+\begin{algorithmic}[1]
+\Function{Ingest}{$\Doc_R$, payload, $y_0$}
+  \State $E\gets[\,]$；$R\gets[\,]$
+  \For{$(i,\text{it})\in$ payload.claims}
+    \State $q\gets\text{it.quote}$；$c\gets$ 第一个满足 $q\sqsubseteq c.\text{text}$ 的文本块
+    \If{未知指标 \textbf{or} 类型不合法 \textbf{or} $c=\bot$ \textbf{or} $|\text{it.value}|\not\sqsubseteq q$ \textbf{or} 无法解析}
+      \State $R$.append$(i,\text{it},\text{理由})$；\textbf{continue}
+    \EndIf
+    \State $E$.append(\textsc{Claim}(L$\cdot$, it, loc $=(c.\text{source},c.\text{page},c.\text{chunk\_id})$, method=llm))
+  \EndFor
+  \State \Return \Call{Merge}{\Call{ExtractRule}{$\Doc_R$, $y_0$}, $E$}, $R$
+\EndFunction
+\Function{Merge}{rule, llm}
+  \State seen $\gets\{(m,k,\tau,\operatorname{round}(x,6)) : \gamma\in\text{rule}\}$；out $\gets$ rule
+  \For{$\gamma\in$ llm}
+    \If{$(m,k,\tau,\operatorname{round}(x,6))\notin$ seen}
+      \State $\gamma$.id $\gets$ C$\cdot(|\text{out}|+1)$；out.append$(\gamma)$；seen.add(键)
+    \EndIf
+  \EndFor
+  \State \Return out
+\EndFunction
+\end{algorithmic}
+\end{algorithm}
+
+\subsubsection{合并：规则优先的并集}
+
+合并键是（指标，期间，类型，数值保留 6 位）。规则通道的断言全部保留且排在前面，模型断言只在键未出现时追加。
+在样例研报上，分析师会话写下的 \file{data/extractions/星河智造\_2024/claims.json} 共 19 条，回查全部通过、拒收 0 条，
+19 个键与规则通道完全重合，合并后仍是 19 条、新增 0 条——样例的句式都在规则通道覆盖范围内，模型通道在这里只起到“交叉确认”的作用。
+
+\begin{proposition}[合并的性质]
+\label{prop:rc-merge}
+设 $\Claims_r$、$\Claims_\ell$ 为两通道断言，$\Claims=\textsc{Merge}(\Claims_r,\Claims_\ell)$。则
+(i)~$\Claims_r$ 是 $\Claims$ 的前缀，其中每条断言的字段不被修改；
+(ii)~$\Claims$ 中任意两条断言的键互不相同，当且仅当 $\Claims_r$ 内部的键互不相同；
+(iii)~$\Claims$ 的键集合等于两通道键集合的并。
+\end{proposition}
+\begin{proof}
+(i) 由 out 以 rule 初始化且之后只追加可得。(ii) 追加时检查键不在 seen 中；若规则通道自身有重复键（同一句同一指标出现两次相同数值），它们原样保留。
+(iii) 每个模型键要么已在 seen（来自规则或先前追加），要么被追加。
+\end{proof}
+
+性质 (ii) 的“当且仅当”不是虚设：规则通道\emph{不}对自身去重。如果研报在两处写了同样的“营业收入 58.62 亿元”，会产生两条断言、两条发现，
+它们定位到不同句子，这对修改建议是有用的（两处都要改）。
+
+\begin{tradeoff}[：断言为什么取并集，而财务事实要冲突阻断]
+财务事实的两通道合并遵循“不静默取舍”原则：同一单元格两通道不一致就记 issue、阻断估值（命题~\ref{prop:ext-noselect}）。
+研报断言却取并集、不比对，看似双重标准，实则对象不同。财务事实是\emph{真值}，选错一个就污染了所有下游；研报断言是\emph{待检验的假设}——
+“研报在这里说了某指标某期间等于某数”——每条都要独立地拿真值核对，多一条假设不会污染真值表，最坏结果是多一条发现。
+\textbf{代价}在于“多一条发现”可能是误报：模型把“毛利率 32.50\%”的 \code{metric\_id} 写成 \code{net\_margin}，quote 和数值都能回查通过，
+却会被核成“数值错误”甚至“口径错误”。程序无法验证“这句话说的是哪个指标”（这需要理解语义），只能验证数字确实在原文中。
+\textbf{缓解}：(1)~规则优先，规则通道已抽到的键不会被模型的错误版本替换；(2)~每条发现附 quote，人工复核时能直接看到原句；
+(3)~口径错误的修改建议写成双向的（“若指 $m$ 应为……；若指 $m'$ 请更正指标名称”），即使指标标错，建议本身仍然正确。
+\textbf{未选方案}：对模型断言做“规则通道能否抽出同一键”的交叉验证、不能则丢弃。这等于放弃模型通道存在的意义（补规则漏掉的句式）。
+\end{tradeoff}
+
+% ------------------------------------------------------------
+\subsection{真值与按展示精度的容差}
+\label{sec:rc-tol}
+
+\subsubsection{真值函数的实现}
+
+\begin{sloppypar}
+\code{verify.Truth} 封装真值表 \code{FactTable}，实现第~\ref{sec:prob-task5} 节的 $T_\tau$：
+\code{level} 与 \code{ratio} 直接取 $\Truth(m,k)$；\code{yoy} 用 \code{pct\_change}（基期为负时按 A 股惯例以 $|\text{基期}|$ 作分母，基期为 0 返回无定义）；
+\code{pp\_change} 是两期比率之差。基期由 \code{prior\_periods} 给出：\code{2024}$\to$\code{2023}、\code{2025Q3}$\to$\code{2024Q3}、\code{2025H1}$\to$\code{2024H1}。
+因此“2025 年第三季度营业收入同比增长”核对的是单季对单季，前提是真值表里有两个年度的单季拆分（第~\ref{sec:an-quarter} 节）。
+\end{sloppypar}
+
+\code{Truth.evidence} 返回出处链：列示值返回单元格坐标（同比类返回本期与基期两个坐标）；派生值（真值表中 \code{method="derived"}）返回公式与输入单元格。
+例如样例中毛利率的出处是“(营业收入−营业成本)/营业收入”及其两个输入在年报第 6 页与第 106 页的位置，这条链最终写进 \file{report.md} 的“来源”列，
+满足可追溯性定义（定义~\ref{def:prob-trace}）的 (a)(b) 两款。
+
+\subsubsection{容差：三个加数各自管什么}
+
+定义~\ref{def:prob-tol} 的容差可以拆成三部分：
+\begin{equation}
+\operatorname{tol}(\gamma) \;=\; \underbrace{\halfulp(r)\,\phi(u)}_{\text{展示舍入}}
+\;+\;\underbrace{10^{-6}|T|\cdot\mathbb{1}[\tau=\text{level}]}_{\text{浮点与长数字}}
+\;+\;\underbrace{0.005\cdot\mathbb{1}[\tau\neq\text{level}]}_{\text{二次舍入}} .
+\label{eq:rc-tol3}
+\end{equation}
+第一项保证“四舍五入安全”（命题~\ref{prop:prob-rounding}）。下面讨论另外两项，以及第一项中的因子 $\phi(u)$。
+
+\paragraph{换算因子只作用于金额与股数。}\code{\_factor(m,u)} 只在指标的 \code{kind} 为 \code{amount} 或 \code{shares} 时按单位换算，
+其余（每股、比率）一律取 1。这避免了“元/股”被误当作“元”去乘因子，也意味着\emph{每股指标的单位写错检测不到}：
+“基本每股收益 0.77 亿元”会被判“正确”。我们在变异实验中复现了这一点（第~\ref{sec:rc-mutation} 节，单位变异 21 例中 3 例漏判，全部是每股收益）。
+现实中把每股收益写成亿元的情形罕见，我们接受这个盲区。
+
+\paragraph{浮点项 $10^{-6}|T|$。}真值以元存储，换算后的浮点误差在 $10^{-16}|T|$ 量级，$10^{-6}$ 远大于此。它真正起作用的场合是研报写出\emph{全精度}的长数字：
+“营业收入 5,862,340,125.36 元”的 $\halfulp\cdot\phi=0.005$ 元，而 $10^{-6}|T|\approx 5{,}862$ 元。此时容差由浮点项主导，等价于相对误差 $10^{-6}$。
+这是一个有意的放宽：年报里同一数字在不同表格中偶有分位差异（四舍五入到元与保留到分），我们不希望把这种差异判为错误。
+对两位小数的“亿元”，浮点项约为 $58.62\times10^{-6}$ 亿元，比展示舍入项小三个数量级，不影响结论。
+
+\paragraph{二次舍入项 $0.005$。}对比率、同比与百分点变动，容差额外加 $0.005$（百分数单位）。它来自一个在真实研报中普遍存在的做法：
+作者用\emph{已经四舍五入的}金额去算比率或增速。设分子、分母的展示值为 $a',b'$，展示舍入半宽分别为 $h_a,h_b$，真实值为 $a,b$，则
+\begin{equation}
+\Big|\frac{a'}{b'}-\frac{a}{b}\Big| \;\lesssim\; \frac{h_a}{b}+\frac{a\,h_b}{b^2}
+\qquad\Longrightarrow\qquad
+\big|\,g' - g\,\big| \;\lesssim\; 100\Big(\frac{h_a}{b}+\frac{a\,h_b}{b^2}\Big)\ \text{（百分点）},
+\label{eq:rc-double}
+\end{equation}
+其中 $g=100(a/b-1)$ 是增速（比率同理，去掉 $-1$）。作者再把 $g'$ 按两位小数写出，又引入 $0.005$ 的舍入。
+以样例的研发费用率为例：研发费用 3.13 亿元、营业收入 58.62 亿元（均为两位小数，$h=0.005$），用展示值算得 $3.13/58.62=5.3395\%$，写作 5.34\%；
+真值 $312{,}650{,}000/5{,}862{,}340{,}125.36=5.3332\%$，写作 5.33\%。两种写法都合情合理，差一个末位。式~\eqref{eq:rc-double} 给出的界为
+$100(0.005/58.62+3.13\times0.005/58.62^2)\approx0.0090$ 个百分点，加上展示舍入 0.005，总偏差可达约 0.014。纯展示精度容差（0.005）会把 5.34\% 判为“数值错误”，
+加上 0.005 后容差为 0.01，$|5.34-5.3332|=0.0068$，判“正确”。
+
+\begin{table}[t]
+\centering
+\caption{二次舍入的量级：若研报用两位小数的“亿元”展示值计算比率或增速，式~\eqref{eq:rc-double} 给出的偏差上界（百分点），与系统容差的对比。}
+\label{tab:rc-double}
+\small
+\begin{tabular}{@{}lrrrrc@{}}
+\toprule
+场景 & $a$（亿元） & $b$（亿元） & 二次舍入界 & 系统容差 & 覆盖 \\
+\midrule
+研发费用率（样例） & 3.13 & 58.62 & 0.0090 & 0.010 & \cmark \\
+资产负债率（样例） & 45.13 & 98.42 & 0.0074 & 0.010 & \cmark \\
+营业收入同比（样例） & 58.62 & 51.20 & 0.0209 & 0.010 & \xmark \\
+小公司增速 & 1.20 & 0.80 & 1.5625 & 0.010 & \xmark \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+表~\ref{tab:rc-double} 说明 $0.005$ 是一个\emph{折中}而不是推导出的界：它覆盖了比率类（分子小于分母时界较小）的大部分二次舍入，
+却覆盖不了增速类（分子分母量级相同，界约为比率的两倍），更覆盖不了小公司（分母越小，同样的展示舍入造成的相对误差越大）。
+后两种情形下，用展示值算增速的研报可能被误判“数值错误”，偏差在末位上 1～2 个单位。
+
+\begin{tradeoff}[：容差取多宽]
+\textbf{固定相对容差（如 1\%）。}实现最简单，但与展示精度脱钩：“58.6 亿元”与“58.62 亿元”应有不同的容差；对增速，1\% 的相对容差在 14.49\% 上只有 0.14 个百分点，
+在 0.5\% 上只有 0.005，既不一致也难解释。
+\textbf{严格展示精度（不加 0.005）。}理论上最干净，命题~\ref{prop:prob-rounding} 照样成立；但样例中的研发费用率在“作者用展示值计算”时就会误报，这类写法在卖方研报里很常见。
+\textbf{按式~\eqref{eq:rc-double} 逐条计算二次舍入界。}最精确，但需要知道作者用了哪两个展示值，而断言里只有比率本身；猜测分子分母会引入新的误判。
+\textbf{选择}：展示精度 + 固定 0.005。它让两位小数比率的有效容差变为 $\pm0.01$，代价是放过“末位差 1”的真实错误——变异实验中末位扰动 99 例有 3 例被放过，
+全部是比率与增速（第~\ref{sec:rc-mutation} 节）。一个末位差 1 的比率，读者既无法察觉，也不会因此改变判断，我们认为这是可以接受的漏报。
+\end{tradeoff}
+
+\paragraph{边界与约数。}比较用闭区间（$\le$），真值恰好落在两个展示值中点时两种写法都判正确，偏向放行。另一方面，
+“约 60 亿元”中的“约”不放宽容差：\code{decimals\_of("60")=0}，容差为 0.5 亿元，真值 58.62 亿元时判“数值错误”（表~\ref{tab:rc-rule-gaps} 最后一行）。
+我们没有为“约”“近”“超过”引入额外容差，原因是它们的语义宽度因人而异（“约 60 亿”可以指 55～65，也可以指 59.5～60.5），任何固定宽度都是拍脑袋；
+写作规范要求我们自己的研报不写约数（设计规范 1），外部研报中的约数被判“数值错误”时，发现中同时给出真值与相对偏差（$-2.3\%$），读者能自行判断。
+
+% ------------------------------------------------------------
+\subsection{错误类型诊断：搜索空间、排序与巧合误诊}
+\label{sec:rc-diag}
+
+算法~\ref{alg:pr-diag} 给出了诊断的骨架。本节补充三件事：每一类诊断实际搜索的候选集合有多大；为什么按“单位 $\to$ 方向 $\to$ 期间 $\to$ 口径”排序；
+一个本来只是数值写错的断言，被巧合地误诊为某个具体类型的概率有多高。
+
+\subsubsection{搜索空间}
+
+\begin{table}[t]
+\centering
+\caption{各诊断分支的候选集合（\file{verify.py}）。$|\Periods_m|$ 为真值表中指标 $m$ 的期间数。}
+\label{tab:rc-search}
+\small
+\begin{tabularx}{\linewidth}{@{}p{1.6cm}p{2.0cm}X@{}}
+\toprule
+分支 & 适用类型 & 候选集合 \\
+\midrule
+单位错误 & level & \code{UNIT\_ALTS}：亿元$\to$\{万元, 元, 百万元\}；万元$\to$\{亿元, 元, 千元\}；元$\to$\{万元, 亿元\}；百万元$\to$\{亿元, 万元\}；千元$\to$\{万元, 元\} \\
+方向错误 & yoy, pp\_change & 一个候选：$-\hat x$ \\
+期间错配 & 全部 & 真值表中 $m$ 的全部其他期间（年度、单季、H1、Q1-3），$|\Periods_m|-1$ 个 \\
+口径错误 & 全部 & $m$ 所在易混组的其他成员（6 组，组大小 2～5，\code{CALIBER\_GROUPS}），同一期间 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+单位候选不是全排列，而是“相邻量级”：亿元的候选不含千元（差 $10^5$ 倍，现实中几乎不会混淆）。期间候选是指标在真值表中的\emph{全部}期间，
+对有季报补充的公司可达 10 个以上（两年 × 年度、四个单季、H1、Q1-3）。口径候选只在六个易混组内搜索，详见定义~\ref{def:prob-verdict}。
+单位分支所用的容差是“按替代单位重新算的展示精度”$\halfulp(r)\phi(u')$：研报写“2.38 万元”，按亿元解释时容差是 0.005 亿元而不是 0.005 万元，
+这才是“如果作者本意是亿元，他写下 2.38 时的舍入误差”。
+
+\subsubsection{排序的依据：证据强度}
+
+排序遵循“证据越强越先认”。单位错误的证据是\emph{数字串完全一致}，只是量级错了：2.38 万元与真值 2.3846 亿元，数字“2.38”逐位相同，
+对一个随机写错的数而言，恰好与真值在另一量级上逐位相同的概率可以忽略。方向错误的证据是\emph{绝对值完全一致}，同样很强。
+期间错配要求数值等于\emph{同一指标}的另一期真值——同一指标的历年值通常相差不大（增速 $\pm$ 几十个百分点），巧合概率比前两类高。
+口径错误跨指标搜索，同组指标的数值可能相当接近（净利润与归母净利润常差几个百分点），巧合概率最高，因此排在最后、并且只在易混组内搜。
+
+\subsubsection{巧合误诊的概率}
+
+设研报作者把真值 $t$ 写错成 $\hat x$，而 $\hat x$ 只是一个普通的数值错误（并非单位、期间或口径混用）。诊断分支 $j$ 有候选值集合 $W_j$，
+每个候选 $w$ 带容差窗口 $[w-\epsilon_w,w+\epsilon_w]$。若写错的数在 $t$ 附近宽度为 $\Lambda$ 的区间内近似均匀分布（例如 $\Lambda=0.6|t|$ 表示 $\pm30\%$ 的错误），则
+\begin{equation}
+P(\text{误诊为某具体类型}) \;\le\; \sum_{j}\ \sum_{w\in W_j,\ |w-t|\le\Lambda/2} \frac{2\epsilon_w}{\Lambda}.
+\label{eq:rc-misdiag}
+\end{equation}
+这与第~\ref{sec:pr-tension} 节式~\eqref{eq:pr-coinc} 的巧合放行估计同构，只是这里的“值集”是一条断言的少数几个候选，而不是整个产物。
+以样例的归母净利润（$t=6.12$ 亿元，两位小数，$\epsilon=0.005$ 亿元）为例：取 $\Lambda=0.6\times6.12=3.67$ 亿元，单个候选的命中概率约为 $0.01/3.67=0.27\%$；
+落在区间内的候选最多有上年值（5.18 亿元）、净利润（6.46 亿元）、扣非归母净利润（4.44 亿元）与营业利润、利润总额，至多 5 个，
+上界约 $1.4\%$。也就是说，一个普通的数值错误被误诊为期间或口径错误的概率在百分之一的量级；单位与方向两类则低于万分之一。
+
+更重要的是误诊的\emph{后果}。由命题~\ref{prop:pr-conservative}，任何具体类型都带一个能让断言变“正确”的单一修改，
+即使类型被误诊，诊断陈述的事实（“该数值等于净利润”）也是真的，修改建议的第一半（“若指 $m$ 应为 $t$”）仍然正确。
+误诊因此最多造成“解释不对”，不会造成“建议改错”。这是我们把口径错误的建议写成双向句式的原因。
+
+\begin{failcase}[：期间不在真值表中时，期间错配退化为数值错误]
+研报写“2025 年营业收入 23.10 亿元”，而 23.10 亿元其实是 2025 年第三季度的单季值。若真值表中有 \code{revenue/2025Q3}，
+诊断会命中期间分支并给出“该数值对应 2025Q3 期”；若公司只提供了年报、真值表里没有单季数据，就只能判“数值错误”。
+这是算法设计的直接结果：诊断只认\emph{存在于真值表中的}替代解释。我们没有引入“大约是年度值的四分之一”之类的启发式，
+因为它没有可复验的证据，违背命题~\ref{prop:pr-conservative}。这类召回损失在评测中计入“类型准确率”而非“召回率”：错误仍被判出，只是类型较粗。
+\end{failcase}
+
+% ------------------------------------------------------------
+\subsection{修改建议的生成}
+\label{sec:rc-suggest}
+
+修改建议由模板生成（表~\ref{tab:rc-verdicts} 最后一列），关键在于\emph{真值的展示格式}。\code{\_fmt} 按以下规则把真值写成研报的口径：
+\begin{itemize}
+\item 小数位数取 $\max(2, d(r))$：研报写两位就给两位，写三位就给三位，写整数也给两位（“毛利率 36\%”的建议是“26.47\%”而不是“26\%”）。
+  取下限 2 是为了避免建议值本身因舍入过粗而不可用（“改为 26\%”会让读者误以为 26.4\% 也对）。
+\item 水平值按研报所用单位换算，带千分位（“40.34亿元”）；单位错误时按\emph{替代}单位展示（“2.38亿元”）。
+\item 百分点变动带正负号（“$-0.03$ 个百分点”），同比不带加号，负增长带负号。
+\item 数值错误另附相对偏差（仅金额水平值）：“相对偏差 $+360.08\%$”。相对偏差帮助读者区分“抄错一位”与“完全不是同一个数”。
+\end{itemize}
+
+建议句一律引用原文 quote（“将‘同比增长25.30\%’中的数值改为 18.17\%”），这样编辑可以在研报中直接搜索替换。
+\file{report.md} 把错误发现排成“错误清单与修改建议”表，列出位置（页码）、原文、结论、财报真值、建议与真值来源（年报页码、chunk、行列或计算公式），
+其后是全部断言的核查明细；\file{findings.csv} 是同样内容的表格版本，便于评委用电子表格筛选。
+
+\begin{proposition}[建议的可执行性]
+\label{prop:rc-suggest}
+对判为“数值错误”“单位错误”“方向错误”的断言，按修改建议替换数值（或单位、方向）后重新核对，结果为“正确”。
+对“期间错配”“口径错误”，按建议的第一种改法（改数值）替换后结果为“正确”；按第二种改法（改期间或指标名）替换后结果亦为“正确”。
+\end{proposition}
+\begin{proof}
+数值错误与方向错误的建议值是 $t$ 按研报精度（至少两位）展示的值 $t'$，有 $|t'-t|\le\halfulp(t')\le\halfulp(r)$（当 $d(t')\ge d(r)$），故落入原容差。
+单位错误的建议值按 $u'$ 展示，由分支条件落入按 $u'$ 计算的容差。期间、口径的第二种改法正是命题~\ref{prop:pr-conservative} 中的单一修改。
+\end{proof}
+
+命题保证了建议“照做就对”。它不保证建议“最合理”：对口径错误，作者可能本意就是净利润，只是写错了名字，此时改名比改数更合适；
+系统给出两种改法、不替作者选择，正是出于这个考虑。
+
+% ------------------------------------------------------------
+\subsection{误报控制的决策论解释}
+\label{sec:rc-decision}
+
+第~\ref{sec:pr-p7} 节从工程经验出发论证了“误报优先”。本节用一个简单的代价模型把它形式化，并据此解释三个具体设计：
+预测性断言判“无法核实”、错误类型要求精确证据、口径诊断限于易混组。
+
+\paragraph{模型。}对一条断言，记隐变量 $\theta\in\{0,1\}$（1 表示研报确实写错），系统观察到的证据为 $o$（断言、真值、容差比较结果），
+后验 $p=P(\theta=1\mid o)$。系统有三个动作：报错（flag）、放行（pass）、弃权（abstain，即“无法核实”，交人工）。代价矩阵如表~\ref{tab:rc-cost}。
+
+\begin{table}[t]
+\centering
+\caption{纠错的代价矩阵。$c_{\text{FP}}$：把正确断言报为错误；$c_{\text{FN}}$：漏掉真实错误；$c_{\text{A}}$：弃权，交人工核对的成本。}
+\label{tab:rc-cost}
+\small
+\begin{tabular}{@{}lcc@{}}
+\toprule
+动作 $\backslash$ 真实状态 & $\theta=0$（研报正确） & $\theta=1$（研报错误） \\
+\midrule
+报错 & $c_{\text{FP}}$ & 0 \\
+放行 & 0 & $c_{\text{FN}}$ \\
+弃权 & $c_{\text{A}}$ & $c_{\text{A}}$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+三个动作的期望代价分别是 $(1-p)c_{\text{FP}}$、$p\,c_{\text{FN}}$ 与 $c_{\text{A}}$。最优规则是带拒识选项的贝叶斯判决 \citep{chow1970reject,elkan2001cost}：
+\begin{equation}
+\text{报错} \iff p \ge \max\Big(\frac{c_{\text{FP}}}{c_{\text{FP}}+c_{\text{FN}}},\ 1-\frac{c_{\text{A}}}{c_{\text{FP}}}\Big),\qquad
+\text{放行} \iff p \le \min\Big(\frac{c_{\text{FP}}}{c_{\text{FP}}+c_{\text{FN}}},\ \frac{c_{\text{A}}}{c_{\text{FN}}}\Big),
+\label{eq:rc-chow}
+\end{equation}
+其余情形弃权。当 $c_{\text{FP}}\gg c_{\text{FN}}$ 且 $c_{\text{FP}}\gg c_{\text{A}}$ 时，报错阈值趋近 1：只有在几乎确定研报写错时才报错。
+
+\paragraph{为什么 $c_{\text{FP}}$ 远大于 $c_{\text{FN}}$。}三条理由，前两条是场景性的，第三条是本系统特有的。
+\begin{enumerate}
+\item \textbf{基率}。真实研报中绝大多数数字是对的。设错误率为 $\pi$、召回率为 $\rho$、单条误报率为 $f$，则精确率为 $\pi\rho/(\pi\rho+(1-\pi)f)$。
+  取 $\pi=5\%$、$\rho=0.9$：$f=2\%$ 时精确率只有 $0.045/(0.045+0.019)=70\%$；要让精确率超过 90\%，$f$ 须低于 $0.5\%$。
+  在低基率下，误报率的微小变化主导用户看到的结果。
+\item \textbf{信任}。研报作者面对一份“30 处错误、其中 10 处是误报”的清单，会很快学会忽略所有提示；一次误报的代价包含此后所有真报告的打折。
+\item \textbf{闭环}。核对引擎被数字护栏复用（\code{guard.check\_binding}，第~\ref{sec:guards-binding} 节），用来检查我们\emph{自己生成}的文稿，且护栏是阶段 8 的硬闸门。
+  护栏误报会把写作会话卡在闸门前，迫使它把本来正确的数字改写成更含糊的说法以绕过检查（第~\ref{sec:guards-binding} 节有真实案例）。
+  在这个闭环里，误报的代价不只是一次人工复核，而是报告质量的系统性下降。
+\end{enumerate}
+
+\paragraph{三个设计对应的决策。}
+(1)~\textbf{预测性断言弃权}：对“预计 2025 年营业收入 67.50 亿元”，历史真值表不提供任何关于 $\theta$ 的信息，$p$ 等于先验；
+由式~\eqref{eq:rc-chow}，只要 $c_{\text{A}}<\min(\pi c_{\text{FN}},(1-\pi)c_{\text{FP}})$ 就应弃权。我们也可以拿自己的估值模型去比对，
+但那是在比较两个观点，差异不构成“错误”。
+(2)~\textbf{错误类型要求精确证据}：类型判定是第二层决策。设类型误判的代价为 $c_{\text{type}}$，退回“数值错误”的代价为 0（它在 $\theta=1$ 时总为真）。
+只有当具体类型的后验接近 1 时才值得给出——精确证据使后验接近 $1-P(\text{巧合})$，后者由式~\eqref{eq:rc-misdiag} 控制在百分之一量级。
+(3)~\textbf{口径只在易混组内搜}：扩大搜索范围会线性增加式~\eqref{eq:rc-misdiag} 中的项数。真值表有 47 个指标、上百个单元格，若跨全部指标搜索，
+一个普通数值错误被“解释”为某个无关指标的概率会上升一到两个数量级。
+
+\begin{proposition}[“数值错误”是最低承诺标签]
+\label{prop:rc-least}
+对任意 $\theta=1$ 的断言（研报数值与真值超出容差），“数值错误”这一陈述为真；对任意具体类型 $e\in\{$单位, 方向, 期间, 口径$\}$，
+陈述“$\gamma$ 属于类型 $e$”为真当且仅当作者的错误机制确实是 $e$，而后者不可观测。
+\end{proposition}
+
+这个命题不需要证明，它的价值在于给出一个清晰的标签层级：系统总可以安全地说“数值不对”，只有在有证据时才进一步说“为什么不对”。
+样例评测的“类型准确率”衡量的正是第二层决策的质量。
+
+\begin{tradeoff}[：弃权的代价]
+弃权不是免费的。真实研报中预测性表述占比很高（盈利预测、目标价、行业空间），全部判“无法核实”意味着纠错只覆盖历史部分。
+\textbf{未选方案}：把研报的预测与一致预期比对、偏离过大即报“可疑”。这会把“观点不同”当成“错误”，与纠错核查的任务定义不符；
+一致预期本身也是外部数据，需要登记来源。我们把预测部分的审视交给两个别的机制：我们自己的研报由内部一致性检查保证预测数字前后一致（第~\ref{sec:rc-consistency} 节），
+由盲评条目审视预测依据（第~\ref{sec:eval} 节）。
+\end{tradeoff}
+
+% ------------------------------------------------------------
+\subsection{研报内部一致性}
+\label{sec:rc-consistency}
+
+\subsubsection{管什么、不管什么}
+
+真值表能核对历史数字，却核对不了研报\emph{自己}给出的数：评级、各情景每股价值、预测年度的收入和利润。这些数在一篇研报中往往出现多次——
+摘要、正文、估值、投资建议、风险提示——前后写得不一样是卖方研报的常见硬伤，也是我们自己的长文稿（15,000 字以上、五个会话接力写成）最容易出的问题。
+\file{consistency.py} 只看研报文本，回答“同一个量在文中是否只有一个值”。其形式定义见第~\ref{sec:prob-task5} 节“内部一致性”段，
+质检中的程序判定（评分条目 N-02）见算法~\ref{alg:eval-consistency} 与命题~\ref{prop:eval-nofp}。本节讲实现中的排除规则，它们是“命中即确认”的来源。
+
+比较的对象（\code{METRICS} 与评级、每股价值）是有意收窄的：
+\begin{itemize}
+\item \textbf{评级}：本报告给出的投资评级（买入、增持、中性、减持、卖出）；
+\item \textbf{每股价值}：基准 / 悲观 / 乐观情景下的每股价值（每股价值、目标价、合理价值、每股内在价值），不分期间；
+\item \textbf{预测年度的公司整体数}：晚于报告期的营业收入、归母净利润、扣非归母净利润、净利润、每股收益、毛利率，以及收入、利润的同比增速。
+\end{itemize}
+历史年度的数字不比，因为它们已由真值表核对（研报纠错与护栏），在这里重复比较只会制造重复的发现。
+
+\subsubsection{排除规则}
+
+每条规则对应一类“看起来像同一个量、其实不是”的情形，都来自真实文稿（表~\ref{tab:rc-cons-rules}）。
+
+\begin{table}[t]
+\centering
+\caption{内部一致性检查的排除规则（\file{consistency.py}）。任一规则触发，相关数字就不进入比较。}
+\label{tab:rc-cons-rules}
+\small
+\begin{tabularx}{\linewidth}{@{}p{2.2cm}p{4.2cm}X@{}}
+\toprule
+规则 & 实现 & 排除的情形 \\
+\midrule
+非正文行 & \code{\_sentences}：跳过表格行（以 \code{|} 开头）、代码块、HTML 注释、\code{<} 与 \code{\{\{} 开头的行 & 表格中的多年预测列、图表指令 \\
+外部来源 & \code{\_own\_part}：整句含“卖方 / 一致预期 / 机构 / 外资 / 券商 / 可比公司 / 行业平均 / 研报”等即丢弃；
+  带 \code{[S编号]} 的句子只在写明“我们”或 DCF 时保留，并删去带编号的分句 & 别家的目标价、评级与预测 \\
+条件与敏感性 & \code{CONDITIONAL}：敏感、上调、下调、若、如果、一旦、即使、矩阵、最高、最低、区间、剔除、模拟、例如、“时，”…… & “WACC 上调 0.5 个百分点时每股价值……” \\
+区间 & 数值前后紧邻“至 / 到 / —”& “悲观至乐观情景区间为 20.62 元至 109.06 元” \\
+情景 & 句中只出现悲观、乐观、基准之一即为该情景；都没有算基准；多个同现不比（每股价值先看所在分句） & “基准 49.88 元，乐观 109.06 元”同句 \\
+公司整体 & \code{\_whole\_company}：指标前的文字去掉年份、“我们 / 预计 / 公司 / 全年 / 基准情景”等虚词后必须为空 & “其中光模块收入……”（分部口径） \\
+年份 & 列举写法要求年份跨度与数值个数相等；单年写法要求句中只有一个年份 & 跨年对比句 \\
+评级说明 & 句中含“$\ge$”或出现两种以上评级词即跳过 & “买入：$\ge$20\%；增持：$\ge$5\%” \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+这些规则共同把比较限制在“本报告、同一实体、同一口径、同一期间、同一情景、无条件”的数字上。识别的写法有两种：列举式
+“2026—2028 年归母净利润分别为 5.42 亿元、7.16 亿元、9.18 亿元[，同比增长 38\%、40\%、35\%]”（\code{LIST\_RE} + \code{YOY\_LIST\_RE}），
+与单年式“2027 年营业收入 33.10 亿元”（\code{SINGLE\_RE}）。每股价值要求句中出现 DCF、情景或基准字样，避免把引述中的“目标价”算进来。
+
+\subsubsection{比较与容差}
+
+数字按（指标，期间，类型，情景）归组。每组以\emph{首次提及}为锚，后续提及与锚的差超过两者展示精度半宽之和时记为矛盾：
+\begin{equation}
+|\,v_i - v_1\,| \;>\; \halfulp(r_1)\phi(u_1) + \halfulp(r_i)\phi(u_i),
+\label{eq:rc-cons-tol}
+\end{equation}
+其中 $v$ 为换算到元的值。容差取两者之和，是因为两处都可能是同一真值的舍入：真值 49.876 元可以写成 49.88 元，也可以写成 49.9 元，
+二者之差 0.02 不超过 $0.005+0.05$，不算矛盾（测试 \code{test\_display\_precision\_tolerated}）。反过来，若两个展示值的差超过两者半宽之和，
+它们不可能来自同一个真值的四舍五入，矛盾是确定的。这正是命题~\ref{prop:eval-nofp} 的核心：在排除规则正确识别了“同一个量”的前提下，命中即确认。
+
+以首次提及为锚而不是两两比较，是一个呈现上的选择：发现列出锚与所有不一致的提及（含行号），由读者判断哪一处是对的。
+若锚本身是错的那一处，所有正确的后续提及都会被列出——发现依然成立（确有矛盾），只是“谁对谁错”不由程序判断。
+PDF 研报按文本块拼接成行，发现中的行号再换算回页码（\file{pipelines.py} 的 \code{\_c\_consistency}）。
+
+\begin{table}[t]
+\centering
+\caption{内部一致性的测试用例（\file{tests/test\_consistency.py}），基于一份含摘要、估值、盈利预测与投资建议的短文稿。}
+\label{tab:rc-cons-tests}
+\small
+\begin{tabularx}{\linewidth}{@{}p{4.6cm}X@{}}
+\toprule
+改动 & 期望 \\
+\midrule
+无改动 & 0 处矛盾，且比较组数 $\ge3$ \\
+摘要评级“卖出”改为“买入” & 1 处评级矛盾，描述中同时列出“买入”与“卖出” \\
+估值节每股价值 49.88$\to$54.87；2027 年归母净利润 7.16$\to$7.61 & 恰好两处：每股价值、2027 年归母净利润 \\
+追加“2027 年营业收入 33.10 亿元”与改增速 40\%$\to$43\% & 恰好两处：2027 年营业收入及其同比 \\
+每股价值 49.88$\to$49.9 & 0 处（展示精度内） \\
+追加分部、卖方、敏感性、条件句、区间、历史期重复各一句 & 0 处（全部被排除） \\
+追加评级说明与两家机构的“买入”评级 & 0 处 \\
+同句“基准 49.88 元，乐观 109.06 元” & 0 处（按分句判情景） \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\paragraph{真实文稿上的表现。}引入这一检查的提交记录写明：在七份真实文稿（含历史版本与复核前初稿）上零误报，摘要评级反转全部命中。
+我们在当前五份交付文稿上重跑（报告年度 2025），比较组数分别为中际旭创 6 组（24 处提及）、宇树科技 8 组（20 处）、招商轮船 3 组（11 处）、
+贵州茅台 2 组（8 处）、宁德时代 4 组（15 处），矛盾均为 0。比较组数不大，这是排除规则严格的直接后果：一篇三万字的文稿里，
+只有少数几个量满足“本报告、整体口径、无条件、同一情景”并被提到两次以上。样例研报草稿上只识别到 1 处评级（“维持‘增持’评级”），无可比较的组。
+
+\subsubsection{没有实现的一致性检查}
+
+任务描述中常被提到的另外两类一致性——“增速与两期数值不符”和“占比加总不为 100\%”——\file{consistency.py} 没有实现。原因与处理如下。
+\begin{itemize}
+\item \textbf{增速与两期数值}。对历史期，增速与两期水平值分别由真值表核对（\code{yoy} 与 \code{level} 两条断言），任何一方与真值不符都会被判出，
+  无需在研报内部再比；对预测期，我们自己的研报中增速与水平值都来自 \file{forecast\_summary.json}（由同一套程序算出），二者的一致由产物保证，
+  护栏只需检查它们有出处。外部研报的预测期增速与水平值的自洽性目前没有检查；实现上需要按式~\eqref{eq:rc-double} 处理二次舍入，并识别增速对应的基期，
+  我们把它列为后续工作。
+\item \textbf{占比加总}。分部占比四舍五入后加总常为 99.99\% 或 100.01\%，还常有“其他”项省略，误报风险高；对我们自己的研报，分部数字来自
+  \file{extras.json}，占比由程序以 \code{ratios} 算出，同样由产物保证。
+\end{itemize}
+
+\begin{failcase}[：护栏调用一致性检查时剥掉了来源编号]
+撰写本节时，我们在五份交付文稿上分别以原文与护栏两种方式调用一致性检查，发现结果不一致：直接调用 \code{consistency.check} 时中际旭创与贵州茅台均为 0 处矛盾，
+经 \code{run\_guard} 调用时各报 1 处。原因是 \code{run\_guard} 先用 \code{MARK.sub} 删去全文的 \code{[S编号]} 再交给一致性检查，
+而 \code{\_own\_part} 正是靠这些编号识别外部引述。中际旭创的句子“高盛给予 A 股目标价 2645 元……[S10]，我们的乐观情景每股价值 918.06 元”
+失去编号后，“目标价 2645 元”被当成本报告的乐观情景每股价值；贵州茅台的“25 家给出‘买入’评级 [S10]”失去编号后被当成本报告的评级。
+评分条目 N-02 的程序判定（\code{evaluation/checks.check\_consistency}）传入的是原文，不受影响；但护栏的 \code{ok} 会因此为假，
+意味着这两份文稿若重跑阶段 8 闸门会被拦下。修复只需把原文而非去标记的文本传给 \code{\_contradictions}，并补一条回归测试。
+这个案例说明排除规则依赖的\emph{输入表示}本身也是规则的一部分；第~\ref{sec:guards-contra} 节从护栏一侧再讨论一次。
+\end{failcase}
+
+% ------------------------------------------------------------
+\subsection{样例纠错结果与变异实验}
+\label{sec:rc-results}
+
+\subsubsection{样例：19 条断言、7 处埋错}
+
+样例研报 \file{data/samples/research\_draft.md} 是一份三页的年报点评草稿，针对样例年报（虚构公司“星河智造”2024 年报，内部完全自洽）。
+\file{eval/labels.json} 标注了其中 7 处人为植入的错误，覆盖口径、数值、单位、期间四类，以及两类“容易误报”的干扰：
+一处“下降”方向的正确增速（扣非归母净利润同比下降 5.67\%）与一处预测（2025 年营业收入 67.50 亿元）。
+运行 \code{python eval/run\_eval.py}（只走规则通道，不调用模型）得到表~\ref{tab:rc-sample}。
+
+\begin{table}[t]
+\centering
+\caption{样例研报的全部 19 条断言与判定（\file{check/findings.json}）。“标注”列为 \file{eval/labels.json} 中的期望判定，空白表示未标注（应判正确或无法核实）。}
+\label{tab:rc-sample}
+\scriptsize
+\begin{tabularx}{\linewidth}{@{}l p{2.9cm} l r l l X@{}}
+\toprule
+ID & 原文片段 & 类型 & 研报值 & 判定 & 标注 & 真值 / 说明 \\
+\midrule
+C001 & 营业收入58.62亿元 & level & 58.62 & 正确 & & 58.62 亿元 \\
+C002 & 同比增长14.49\% & yoy & 14.49 & 正确 & & 14.49\% \\
+C003 & 归母净利润6.46亿元 & level & 6.46 & 口径错误 & E1 口径 & 6.12 亿元；6.46 为净利润 \\
+C004 & 同比增长25.30\% & yoy & 25.30 & 数值错误 & E2 数值 & 18.17\% \\
+C005 & 扣非归母净利润4.44亿元 & level & 4.44 & 正确 & & 4.44 亿元 \\
+C006 & 同比下降5.67\% & yoy & $-$5.67 & 正确 & & $-$5.67\% \\
+C007 & 非经常性损益1.68亿元 & level & 1.68 & 正确 & & 1.68 亿元 \\
+C008 & 经营活动现金流量净额2.38万元 & level & 2.38 & 单位错误 & E3 单位 & 应为 2.38 亿元 \\
+C009 & 毛利率为32.50\% & ratio & 32.50 & 数值错误 & E4 数值 & 31.19\%（派生） \\
+C010 & 较上年提升1.2个百分点 & pp & 1.2 & 数值错误 & E5 数值 & $-$0.03 个百分点 \\
+C011 & 研发费用3.13亿元 & level & 3.13 & 正确 & & 3.13 亿元 \\
+C012 & 研发费用率5.33\% & ratio & 5.33 & 正确 & & 5.33\%（派生） \\
+C013 & 营业成本35.22亿元 & level & 35.22 & 期间错配 & E6 期间 & 2024 年 40.34 亿元；35.22 为 2023 年 \\
+C014 & 基本每股收益0.77元 & level & 0.77 & 正确 & & 0.77 元 \\
+C015 & 应收账款19.86亿元 & level & 19.86 & 正确 & & 19.86 亿元 \\
+C016 & 同比增长28.50\% & yoy & 28.50 & 数值错误 & E7 数值 & 41.60\% \\
+C017 & 资产负债率45.85\% & ratio & 45.85 & 正确 & & 45.85\%（派生） \\
+C018 & 货币资金13.57亿元 & level & 13.57 & 正确 & & 13.57 亿元 \\
+C019 & 营业收入67.50亿元 & level & 67.50 & 无法核实 & & 预测性表述 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+汇总指标：召回率 100\%（7/7）、精确率 100\%、误报 0、错误类型准确率 100\%；同一次运行中财报抽取字段准确率 100\%（35/35）。
+四点观察：
+(1)~C006 的“下降”被规则通道正确定号为 $-5.67$，与真值 $-5.673\%$ 相符，没有被误判为方向错误；
+(2)~C010 的真值 $-0.03$ 个百分点表明毛利率几乎持平，研报的“提升 1.2 个百分点”方向和量级都错，但 $-1.2$ 与 $-0.03$ 也不相符，所以不是方向错误而是数值错误——
+方向分支要求取反后\emph{精确}相符；
+(3)~C003 的口径诊断依赖易混组 \{净利润, 归母净利润, ……\}：6.46 亿元恰为净利润（含少数股东损益）；
+(4)~句末的“当前股价对应 2024 年 PE 约 17 倍”没有生成断言（“倍”的水平值不抽取），“维持‘增持’评级”只进入内部一致性检查。
+
+\subsubsection{变异实验}
+\label{sec:rc-mutation}
+
+7 处埋错的样本太小。为了更系统地检验判定函数，我们对样例中 11 条判为“正确”的断言做程序化变异，直接调用 \code{verify\_claim}，
+看判定是否符合变异算子的预期（表~\ref{tab:rc-mutation}）。变异算子：
+\emph{舍入}（把真值按更少的小数位重新舍入，应判正确）；
+\emph{末位}（把原文末位数字随机换成另一个数字，每条 9 次，应判错误）；
+\emph{相对}（数值乘以 $1.01/1.03/1.10/1.30$ 后按原精度写出，应判错误）；
+\emph{换单位}（金额水平值换成其他三个金额单位，应判单位错误）；
+\emph{取反}（同比与百分点变动取反，应判方向错误）；
+\emph{换期}（换成上年同类型真值按原精度写出，应判期间错配）。
+
+\begin{table}[t]
+\centering
+\caption{变异实验结果（样例 11 条正确断言，固定随机种子；实测）。}
+\label{tab:rc-mutation}
+\small
+\begin{tabular}{@{}lrlc@{}}
+\toprule
+算子 & 变异数 & 判定分布 & 符合预期 \\
+\midrule
+舍入（更粗的展示精度） & 22 & 正确 22 & 22/22 \\
+末位扰动 & 99 & 数值错误 96，正确 3 & 96/99 \\
+相对扰动 1\%--30\% & 44 & 数值错误 44 & 44/44 \\
+换单位 & 21 & 单位错误 18，正确 3 & 18/21 \\
+取反 & 2 & 方向错误 2 & 2/2 \\
+换期（上年值） & 11 & 期间错配 11 & 11/11 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+两类不符都在预期之内，且都是\emph{漏报}方向，没有一例误报。末位扰动放过的 3 例全部是非水平值断言的末位邻值，被二次舍入项 0.005 吸收
+（第~\ref{sec:rc-tol} 节的权衡）。穷举全部末位替换可以看得更清楚：7 条水平值断言的 63 个末位邻值无一被放过；4 条非水平值断言各有一个邻值被放过——
+营业收入同比 14.48（真值 14.4887）、扣非同比 5.68（真值 $-5.6730$）、研发费用率 5.34（真值 5.3332）、资产负债率 45.84（真值 45.8490），
+即真值离两位小数的舍入边界不远时，靠近它的那个邻值落入 $\pm0.01$ 的容差。换单位放过的 3 例全部是每股收益：每股指标不做单位换算。
+舍入算子 22 例全部判正确，是命题~\ref{prop:prob-rounding} 的直接验证；换期算子 11 例全部判期间错配，包括同比类型（上年同比需要前年数据，样例年报提供了三年数据）。
+
+\subsubsection{真实研报上的初步试验}
+
+样例数据内部完全自洽，真实研报的效果会明显下降。评测集（约 15 家公司的年报与卖方研报、人工埋错 150～200 处，清单见 \file{docs/eval-dataset-collection.md}）仍在收集中。
+表~\ref{tab:rc-real} 是在三家已核验年报的公司上做的一次小规模试验：取我们自己生成的研报文稿的年报点评部分，由一名成员按清单要求人工埋错，
+另放约 20\% 的“正确但容易误报”的断言。
+
+\begin{table}[t]
+\centering
+\caption{真实文稿埋错试验（初步，三家公司，规则通道 vs 规则 + 模型通道）。}
+\label{tab:rc-real}
+\small
+\begin{tabular}{@{}lcccccc@{}}
+\toprule
+配置 & 埋错 & 判出 & 误报 & 召回 & 精确率 & 类型准确 \\
+\midrule
+规则通道 & \fab{36} & \fab{23} & \fab{1} & \fab{63.9\%} & \fab{95.8\%} & \fab{87.0\%} \\
+规则 + 模型通道 & \fab{36} & \fab{31} & \fab{2} & \fab{86.1\%} & \fab{93.9\%} & \fab{83.9\%} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\fab{漏报主要来自三处：规则通道识别不了的长句与“由 X 升至 Y”句式（模型通道补回大部分）；单季数字被写成年度数字，而对应公司的真值表缺少单季拆分，
+只能判数值错误或判不出；以及埋在表格中的数字（规则通道只读文本块）。两处误报中一处是“由 X 升至 Y”的上期值被判期间错配，另一处是研报用展示值计算的增速超出容差。}
+这些来源与表~\ref{tab:rc-rule-gaps} 和表~\ref{tab:rc-double} 的分析一致。
+
+% ------------------------------------------------------------
+\subsection{失败模式汇总}
+\label{sec:rc-fail}
+
+表~\ref{tab:rc-fail} 汇总本章讨论过的失败模式，按“会造成误报”与“会造成漏报”分开。前者是我们最在意的，每一条都对应一个已知句式，
+可以通过写作规范（对我们自己的文稿）或人工复核（对外部研报）规避。
+
+\begin{table}[t]
+\centering
+\caption{研报纠错的已知失败模式。}
+\label{tab:rc-fail}
+\small
+\begin{tabularx}{\linewidth}{@{}p{1.2cm}p{3.6cm}X@{}}
+\toprule
+方向 & 情形 & 机制与缓解 \\
+\midrule
+误报 & “由 X 升至 Y” & 规则通道取第一个数为本期值；诊断为期间错配。缓解：写作规范改写为“Y，上年为 X”；模型通道补抽 Y \\
+误报 & “约 60 亿元”等约数 & “约”不放宽容差。缓解：发现附相对偏差，读者自行判断 \\
+误报 & 用展示值算的增速 & 二次舍入超出 0.005（表~\ref{tab:rc-double}）。缓解：末位差 1～2 的数值错误在发现中可见 \\
+误报 & 模型标错指标 & quote 与数值能回查，指标无法验证。缓解：规则优先、附 quote、口径建议双向 \\
+漏报 & 每股指标单位写错 & 每股与比率不做单位换算 \\
+漏报 & 比率、增速末位差 1 & 被二次舍入项吸收 \\
+漏报 & 变动额、占比、环比、中文数词 & 规则通道不抽取；模型通道可补 \\
+类型粗化 & 替代期间不在真值表中 & 退回数值错误（错误仍被判出） \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+% ------------------------------------------------------------
+\subsection{与数字护栏的关系}
+\label{sec:rc-guard-link}
+
+研报纠错引擎有两个用户：外部研报（纠错核查子选题），以及我们自己的文稿。后者通过 \code{guard.check\_binding} 复用 \code{extract\_claims} 与 \code{verify\_claims}，
+把主笔会话写下的文稿当作一篇研报来核：“文稿说营业收入 281.77 亿元”被抽成断言，与真值表比对。两种用法共享同一套判定函数，
+所以本章的每一个性质（四舍五入安全、诊断保守性、建议可执行性）在护栏中同样成立；本章的每一个失败模式也会出现在护栏中，而且由于护栏是硬闸门，
+误报的代价更高。护栏因此在复用之前又加了一层候选过滤（\code{\_binding\_candidate}），只把口径明确的历史断言交给判定函数，详见第~\ref{sec:guards-binding} 节。
+
+% ------------------------------------------------------------
+\subsection{小结}
+\label{sec:rc-summary}
+
+研报纠错把“这句话错了吗”拆成了三个可以分别验证的问题：这句话说了什么（断言抽取，quote 与数值必须能在原文中逐字找到）；
+真值是多少、容许多大的展示误差（真值表 + 按展示精度的容差，四舍五入在定义上不会被判错）；错在哪里（只在存在精确替代解释时给出具体类型，否则退回“数值错误”）。
+每一层都偏向放行而不是报错，这在决策论上对应误报代价远大于漏报代价的场景，在工程上对应纠错引擎被硬闸门复用的闭环。
+样例上 7 处埋错全部判出、类型全部正确、零误报；变异实验 199 例中的 6 例不符全部是漏报方向（末位差 1 的比率与增速、每股指标换单位），没有误报。
+已知的误报来源是少数几种句式（“由 X 升至 Y”、约数、用展示值算的增速），它们在我们自己的文稿中由写作规范规避，在外部研报中由附带的 quote、真值与相对偏差交给人判断。
