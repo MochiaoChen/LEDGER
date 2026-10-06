@@ -15,15 +15,18 @@
 
 一句话：**模型读、抄、写、判断；程序校验、计算、拦截。**
 
-| 选题 | 模块 | 核心产出 |
-|---|---|---|
-| 2 上市公司财务报告分析 | `finagent/tasks/financials/` | 指标表（附页码）、同比 / 环比、单季拆分与分季度勾稽、勾稽校验、异常信号、利润变动归因、实际 vs 一致预期 / 业绩预告、EPS 质量 |
-| 4 自动化估值建模 | `finagent/tasks/valuation/` | 分部量价预测 → 三表联动 → 三情景 FCFF DCF + 敏感性、反向 DCF、可比公司估值、程序评级、`model.xlsx` |
-| 5 研究报告纠错核查 | `finagent/tasks/report_check/` | 逐条断言核查：正确 / 数值 / 单位 / 期间 / 口径 / 方向错误 / 无法核实，附来源与修改建议；研报内部一致性 |
+| 层级 | 选题 | 模块 | 核心产出 |
+|---|---|---|---|
+| 主选题 | 财报分析 | `finagent/tasks/financials/` | 指标表（附页码）、同比 / 环比、单季拆分与分季度勾稽、勾稽校验、异常信号、利润变动归因、实际 vs 一致预期 / 业绩预告、EPS 质量 |
+| 主选题 | 自动化估值建模 | `finagent/tasks/valuation/` | 分部量价预测 → 三表联动 → 三情景 FCFF DCF + 敏感性、反向 DCF、可比公司估值、程序评级、`model.xlsx` |
+| 主选题 | 研究报告质量评估 | `finagent/evaluation/`、`report_pipeline refine` | 四层评分标准、程序检查 + 盲评、程序计分、评审校准（稳定性 / 劣化命中 / 人工一致）、问题单回传返工 |
+| 子选题 | 数据提取 | `finagent/parsing/`、`finagent/tasks/financials/` | 模型读 PDF 抄数 + 逐字证据校验 + 规则通道交叉；跨页续表、稀疏网格、科目折行；经营数据表逐格回查 |
+| 子选题 | 产业链分析 | `.claude/skills/finagent-report/` | 资料搜集（行业、竞争、可比公司）→ 驱动链 → 深度专题与产业链图；外部数字带来源编号并过护栏 |
+| 子选题 | 研究报告纠错核查 | `finagent/tasks/report_check/` | 逐条断言核查：正确 / 数值 / 单位 / 期间 / 口径 / 方向错误 / 无法核实，附来源与修改建议；研报内部一致性 |
 
 ---
 
-**文档**：[架构说明](docs/architecture.md) · [技术报告（论文体例，`paper/`）](paper/main.pdf) ·
+**文档**：[架构说明](docs/architecture.md) · [计划书（论文体例，`paper/`）](paper/main.pdf) · [完整技术报告（`paper/techreport/`）](paper/techreport/main.pdf) ·
 [评分标准](eval/rubrics/README.md) · [评审校准报告](eval/calibration/report.md) · [第三方组件](THIRD_PARTY.md) ·
 [开发指南（给 Agent）](CLAUDE.md)
 
