@@ -60,7 +60,7 @@ def _test(argv: list[str]) -> int:
 
 def _tui(argv: list[str]) -> int:
     try:
-        from finagent_tui.app import main
+        from finagent_ui.terminal import main
     except ImportError as e:
         if "textual" not in str(e):
             raise
@@ -93,6 +93,11 @@ def _ls(argv: list[str]) -> int:
     return 0
 
 
+def _web(argv: list[str]) -> int:
+    from finagent_ui.server import main
+    return main(argv)
+
+
 GROUPS: dict[str, tuple[Callable[[list[str]], int], str]] = {
     "research": (_research, "财报分析 / 估值 / 研报纠错与 Skill 辅助命令（financials、all、verify-facts、guard…）"),
     "report": (_report, "研报流水线：build 工作区、run 无头执行、status 闸门、refine 多 Agent 循环、collect"),
@@ -102,6 +107,7 @@ GROUPS: dict[str, tuple[Callable[[list[str]], int], str]] = {
     "test": (_test, "运行全部测试"),
     "doctor": (_doctor, "运行环境自检"),
     "ls": (_ls, "列出研报工作区与运行目录"),
+    "web": (_web, "Web 与终端共用服务：上传、原流水线、状态与文件下载"),
     "tui": (_tui, "终端界面：闸门、真值表回溯、估值、质检、追溯回放、Agent 日志"),
 }
 

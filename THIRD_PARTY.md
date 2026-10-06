@@ -55,3 +55,9 @@
 `finagent/` 下全部代码均为自主开发：编排与追踪（core）、多 Agent 编排器（report_pipeline）、文档解析、A 股指标字典与抽取、财务分析与异常信号、
 利润变动归因桥、业绩预期对比、DCF 引擎、三表联动引擎、情景敏感性表格、相对估值与公式工作簿、研报核查、报告与 xlsx 输出、评测与测试。
 其中第 1 节所列模块的计算规则参照原插件，如实标注于此。
+
+## 本次界面新增依赖
+
+- Bootstrap Icons 1.11.3：图标字体，MIT 许可。来源 https://github.com/twbs/icons 。仅用于 Web / 浏览器 TUI 界面图标，文件随 `finagent_ui/static/icons/` 分发。
+- Textual：继续使用原项目的可选 TUI 依赖；新终端驾驶舱使用其布局、键盘事件与定时刷新。
+- 界面交付阶段用 ReportLab 制作说明 PDF，不是 FinAgent 运行时新增依赖。
