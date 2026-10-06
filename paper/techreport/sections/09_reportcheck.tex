@@ -693,13 +693,13 @@ PDF 研报按文本块拼接成行，发现中的行号再换算回页码（\fil
   \file{extras.json}，占比由程序以 \code{ratios} 算出，同样由产物保证。
 \end{itemize}
 
-\begin{failcase}[：护栏调用一致性检查时剥掉了来源编号]
+\begin{failcase}[：护栏调用一致性检查时剥掉了来源编号（已修复）]
 撰写本节时，我们在五份交付文稿上分别以原文与护栏两种方式调用一致性检查，发现结果不一致：直接调用 \code{consistency.check} 时中际旭创与贵州茅台均为 0 处矛盾，
 经 \code{run\_guard} 调用时各报 1 处。原因是 \code{run\_guard} 先用 \code{MARK.sub} 删去全文的 \code{[S编号]} 再交给一致性检查，
 而 \code{\_own\_part} 正是靠这些编号识别外部引述。中际旭创的句子“高盛给予 A 股目标价 2645 元……[S10]，我们的乐观情景每股价值 918.06 元”
 失去编号后，“目标价 2645 元”被当成本报告的乐观情景每股价值；贵州茅台的“25 家给出‘买入’评级 [S10]”失去编号后被当成本报告的评级。
 评分条目 N-02 的程序判定（\code{evaluation/checks.check\_consistency}）传入的是原文，不受影响；但护栏的 \code{ok} 会因此为假，
-意味着这两份文稿若重跑阶段 8 闸门会被拦下。修复只需把原文而非去标记的文本传给 \code{\_contradictions}，并补一条回归测试。
+意味着这两份文稿若重跑阶段 8 闸门会被拦下。修复把原文而非去标记的文本传给 \code{\_contradictions}；回归测试 \code{test\_guard\_keeps\_citations\_when\_checking\_contradictions} 直接取用中际旭创的原句，修复前失败、修复后通过。
 这个案例说明排除规则依赖的\emph{输入表示}本身也是规则的一部分；第~\ref{sec:guards-contra} 节从护栏一侧再讨论一次。
 \end{failcase}
 
