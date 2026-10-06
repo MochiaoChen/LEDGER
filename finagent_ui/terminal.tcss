@@ -1,0 +1,35 @@
+Screen { background: #00121f; color: #d0e6ff; }
+#top { height: 3; border-bottom: solid #00d6ff; }
+#brand { width: 20; color: #f0f6ff; text-style: bold; padding: 0 1; }
+#filename { width: 1fr; border: solid #007b9d; }
+#top Button { height: 3; min-width: 12; background: #002637; color: #00ddff; border: solid #007c9e; }
+#status { width: 24; color: #ffd02c; padding: 0 1; }
+#body { height: 1fr; padding: 0 1; }
+#sessions { width: 25; min-width: 23; border: round #00c7f4; padding: 0 1; }
+.caption { color: #95d7ff; height: 2; }
+.role { height: 4; border-bottom: solid #075372; padding: 1 0; }
+.role.active { height: 6; background: #034168; border: solid #00b9f6; }
+#blind { margin-top: 1; width: 100%; background: #003a4e; color: #a1e6ff; border: solid #00b2de; }
+#blind-info { height: 4; color: #8ecaf1; }
+#topology { height: 1fr; content-align: left bottom; color: #00d6ff; }
+#center { width: 1fr; margin: 0 1; }
+#flow { height: 9; min-height: 8; border: round #00ccf7; padding: 0 1; }
+#stream-title { height: 2; color: #ffd329; text-style: bold; }
+#evidence { height: 1fr; border: round #00c8f2; background: #001b2b; }
+DataTable > .datatable--header { background: #043449; color: #9fd9ff; }
+DataTable > .datatable--cursor { background: #005d94; color: #ffda40; }
+#detail { height: 13; border: round #00d0f9; margin-top: 1; }
+#fact-detail, #source-detail { width: 1fr; padding: 0 1; }
+#source-detail { border-left: solid #006789; }
+#right { width: 36; min-width: 30; }
+#gate { height: 1fr; border: round #00d0fa; padding: 1; }
+#deliverables { height: 12; border: round #9577ff; color: #b8e0ff; padding: 1; margin-top: 1; }
+Footer { background: #001c2c; color: #94d4fc; }
+Upload { align: center middle; background: #000c16cc; }
+#upload-box { width: 78; height: auto; border: round #00d4ff; background: #002437; padding: 1 2; }
+#upload-box Input { margin: 1 0; }
+#upload-box Horizontal { height: 3; }
+#upload-error { color: #ff6b69; height: auto; }
+.role { height: 5; }
+.role.active { height: 7; }
+#flow { height: 10; }
