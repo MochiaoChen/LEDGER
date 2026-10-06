@@ -1,10 +1,10 @@
-"""计算引擎的三条任务流水线（赛题 2 / 4 / 5）。不调用模型：模型会话写下的抽取、经营数据、断言文件由这里校验后接入。
+"""计算引擎的三条任务流水线（财报分析 / 估值建模 / 纠错核查）。不调用模型：模型会话写下的抽取、经营数据、断言文件由这里校验后接入。
 
-    财报 ──parse──▶ extract ──▶ analyze ──▶ 财报分析报告           （赛题2）
+    财报 ──parse──▶ extract ──▶ analyze ──▶ 财报分析报告           （财报分析）
                                   │
-                                  ├──▶ 三表模型 ──▶ build_plan ──▶ DCF ──▶ 估值报告  （赛题4）
+                                  ├──▶ 三表模型 ──▶ build_plan ──▶ DCF ──▶ 估值报告  （估值建模）
                                   │
-    研报 ──parse──▶ claims ──────┴──▶ verify ──▶ 核查报告          （赛题5）
+    研报 ──parse──▶ claims ──────┴──▶ verify ──▶ 核查报告          （纠错核查）
 
 分析结果（含派生指标）形成“真值表”，同时服务估值与核查，保证三个任务口径一致。
 """
@@ -50,7 +50,7 @@ def _write(ctx: dict[str, Any], name: str, content: str | dict | list) -> None:
         tr.write_json(name, content)
 
 
-# ------------------------------------------------------------------ 赛题2
+# ------------------------------------------------------------------ 财报分析
 financials_pipeline = Pipeline("financials")
 
 
@@ -123,7 +123,7 @@ def _p_report(ctx: dict[str, Any]):
     return {"report": "financials/report.md"}
 
 
-# ------------------------------------------------------------------ 赛题4
+# ------------------------------------------------------------------ 估值建模
 valuation_pipeline = Pipeline("valuation")
 
 
@@ -249,7 +249,7 @@ def _v_report(ctx: dict[str, Any]):
     return {"sections": [k for k in ("three_statement", "scenarios", "comps") if ctx.get(k)]}
 
 
-# ------------------------------------------------------------------ 赛题5
+# ------------------------------------------------------------------ 纠错核查
 check_pipeline = Pipeline("report_check")
 
 

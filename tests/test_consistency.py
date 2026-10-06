@@ -1,4 +1,4 @@
-"""研报内部一致性（评分标准 N-02 的程序判定，也用于选题 5 与 guard）：只在同口径时比较，命中即确认。"""
+"""研报内部一致性（评分标准 N-02 的程序判定，也用于研报纠错核查与 guard）：只在同口径时比较，命中即确认。"""
 
 import json
 
@@ -99,6 +99,14 @@ def test_guard_reports_but_gate_does_not_double_count(tmp_path):
     assert g["contradictions"] and g["ok"] is False
     # 硬闸门只看出处类问题；这里文稿数字在空真值表里都找不到出处，所以按出处判失败，但理由里不含矛盾
     assert "矛盾" not in check_guard(b, {})["detail"]
+
+
+def test_guard_keeps_citations_when_checking_contradictions(tmp_path):
+    """外部机构的评级、目标价带 [S编号]，不是本报告的结论；guard 不能先去掉编号再查矛盾。"""
+    # 取自中际旭创交付稿：去掉 [S10] 后，高盛目标价会被当成本报告的乐观情景每股价值
+    text = BASE + "\n高盛给予 A 股目标价 2645 元、H 股目标价 3267 港元 [S10]，我们的乐观情景每股价值 109.06 元。\n"
+    assert not check(text, 2025)["findings"]
+    assert run_guard(_bundle(tmp_path, text).run, text)["contradictions"] == []
 
 
 def test_rubric_v2_n02_is_program():

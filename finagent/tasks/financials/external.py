@@ -43,7 +43,8 @@ def _num_pattern(raw: str) -> re.Pattern[str] | None:
     core = core.replace("−", "-").replace("–", "-").lstrip("-")
     if not re.fullmatch(r"\d+(?:\.\d+)?", core):
         return None
-    return re.compile(r"(?<![\d.])" + re.escape(core) + r"(?![\d])")
+    # 右边界同时排除“小数点 + 数字”：原文 3,884.59 不能被 3884 命中（句末句号仍允许）
+    return re.compile(r"(?<![\d.])" + re.escape(core) + r"(?!\.?\d)")
 
 
 def _norm(text: str) -> str:
@@ -99,6 +100,10 @@ def _to_fact(item: dict[str, Any], doc: Document) -> Fact | str:
     unit = str(item.get("unit") or ch.unit_hint or "元").strip()
     if metric.kind == "amount" and unit not in UNIT_FACTORS:
         return f"{mid} {period} 单位不合法：{unit!r}"
+    hint = ch.unit_hint
+    if metric.kind == "amount" and hint in UNIT_FACTORS and UNIT_FACTORS[unit] != UNIT_FACTORS[hint]:
+        # 证据校验只核对数字本身；单位以页面声明为准，模型写的单位与之不符时不静默取舍
+        return f"{mid} {period}={raw} 声明单位 {unit} 与第 {page} 页的单位声明 {hint} 不一致"
     value = _scale(v, metric.kind, unit)
     if metric.kind == "shares":
         value = v * UNIT_FACTORS.get(unit, 1.0)

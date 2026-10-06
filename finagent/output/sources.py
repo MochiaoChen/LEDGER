@@ -145,7 +145,8 @@ def run_guard(run: Path, text: str, sources: str | Path | None = None) -> dict[s
     unverified = check_text(plain, truth + external)
     mismatched = check_binding(plain, run)
     citations = check_citations(text, ext, truth, check_text) if ext else []
-    contradictions = _contradictions(run, plain)
+    # 前后矛盾要看原文：consistency 靠 [S编号] 区分外部机构的评级、目标价与本报告自己的结论，去掉编号会误报
+    contradictions = _contradictions(run, text)
     return {"ok": not (unverified or mismatched or citations or contradictions),
             "unverified_numbers": unverified, "mismatched_claims": mismatched, "uncited_external": citations,
             "contradictions": contradictions,

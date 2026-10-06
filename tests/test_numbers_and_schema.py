@@ -37,3 +37,20 @@ def test_parse_period():
     assert parse_period("本年比上年增减") == "chg"
     assert parse_period("本期", 2024) == "2024"
     assert parse_period("上期", 2024) == "2023"
+
+
+def test_da_is_known_metric_for_claim_diagnosis():
+    """折旧摊销（da）由 analyze 派生，也在口径组里；不在指标字典时，口径错误会被误判为数值错误。"""
+    from finagent.tasks.report_check.verify import verify_claims
+
+    def row(mid, v):
+        return {"metric_id": mid, "period": "2025", "value": v, "raw": str(v), "unit": "元", "source": {},
+                "method": "derived" if mid == "da" else "rule_table"}
+
+    table = [row("depreciation", 8e8), row("amortization", 2e8), row("da", 1e9)]
+    claim = {"id": "C1", "metric_id": "depreciation", "period": "2025", "claim_type": "level", "unit": "亿元",
+             "raw_value": "10.00", "value": 10.0, "quote": "固定资产折旧 10.00 亿元", "is_forecast": False}
+    f = verify_claims([claim], table)["findings"][0]
+    assert f["verdict"] == "口径错误" and "折旧摊销" in f["explanation"]
+    da_claim = {**claim, "metric_id": "da", "raw_value": "8.00", "value": 8.0, "quote": "折旧摊销 8.00 亿元"}
+    assert verify_claims([da_claim], table)["findings"][0]["verdict"] == "口径错误"
