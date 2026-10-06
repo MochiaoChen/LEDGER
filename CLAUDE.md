@@ -1,19 +1,24 @@
-# CLAUDE.md — FinAgent 开发指南（给 Agent 看）
+# CLAUDE.md — LEDGER 开发指南（给 Agent 看）
 
 本仓库是 **2026 北京市大学生金融人工智能竞赛**（主题：金融投研智能体构建）的参赛作品。
+系统正式名 **LEDGER**（**L**LM-driven **E**quity Research with **D**eterministic **G**rounding, **E**valuation and **R**eporting）；
+代码仓库与 Python 包名仍为 `finagent`，不要为改名去动标识符。
 私有仓库：https://github.com/MochiaoChen/finagent
 
 ## 我们选了什么
 
-竞赛共 7 个选题，我们做 **2、4、5**，三者共用同一个数据底座：
+三个主选题、三个子选题，共用同一个数据底座（真值表）：
 
-| 选题 | 做什么 | 代码 |
-|---|---|---|
-| 2 财报分析 | 抽取 A 股财报指标、同比/环比、勾稽校验、异常信号、利润变动归因、实际 vs 一致预期/业绩预告、EPS 质量 | `finagent/tasks/financials/` |
-| 4 估值建模 | 分部预测 → 三表联动 → FCFF DCF 三情景 + 敏感性、反向 DCF、可比公司、程序评级 | `finagent/tasks/valuation/` |
-| 5 研报纠错 | 抽研报数字断言，与财报真值逐条核对，判断错误类型并给修改建议；研报内部一致性 | `finagent/tasks/report_check/` |
+| 层级 | 选题 | 做什么 | 代码 |
+|---|---|---|---|
+| 主选题 | 财报分析 | 抽取 A 股财报指标、同比/环比、单季拆分、勾稽校验、异常信号、利润变动归因、实际 vs 一致预期/业绩预告、EPS 质量 | `finagent/tasks/financials/` |
+| 主选题 | 自动化估值建模 | 分部预测 → 三表联动 → FCFF DCF 三情景 + 敏感性、反向 DCF、可比公司、程序评级、公式联动工作簿 | `finagent/tasks/valuation/` |
+| 主选题 | 研究报告质量评估 | 四层评分标准（L0 硬闸门 / L1 数据闭合 / L2 分析质量 / L3 表达合规 / 负向）、程序检查 + 盲评、程序计分、评审校准、`refine` 闭环 | `finagent/evaluation/`、`report_pipeline refine` |
+| 子选题 | 数据提取 | 模型读 PDF 抄数 + 逐字证据校验 + 规则通道交叉（稀疏网格、跨页续表、科目折行）；经营数据表逐格回查 | `finagent/parsing/`、`tasks/financials/{extract,external,extras}.py` |
+| 子选题 | 产业链分析 | 资料搜集（行业、竞争、可比公司）→ 分析框架的驱动链 → 深度专题；产业链图；外部数字带 `[S编号]` 过 guard | `.claude/skills/finagent-report/`（`references/research.md`、reportkit `C.flow`） |
+| 子选题 | 研究报告纠错核查 | 抽研报数字断言，与财报真值逐条核对，判断错误类型并给修改建议；研报内部一致性 | `finagent/tasks/report_check/` |
 
-**不做**：选题 1、3、6、7。除非用户明确要求，不要往这些方向扩展。
+**不做**：其他选题。除非用户明确要求，不要往其他方向扩展。
 
 ## 系统架构（只有这一条路线）
 
@@ -34,7 +39,7 @@
 
 历史上曾有“程序内调用国产模型 API”的 Agent 版本（`ask`、`--llm`）和 Codex 执行器，已删除，不要重新引入。
 
-架构说明见 `docs/architecture.md`；技术报告见 `paper/`。
+架构说明见 `docs/architecture.md`；计划书见 `paper/`；完整技术报告（长版）见 `paper/techreport/`。
 
 ## 比赛硬约束（违反即扣分或失格）
 
@@ -85,7 +90,7 @@
 
 ## 进展（截至 2026-10-05）
 
-- 三个选题端到端跑通；引擎自研替代原插件，产出一致（PR #1）。
+- 财报分析、估值建模、纠错核查端到端跑通；引擎自研替代原插件，产出一致（PR #1）。
 - 模型读 PDF + 程序校验计算（PR #3）；季报单季拆分与分季度勾稽；EBIT 口径、三表驱动 DCF、comps 利润率对比、投行排版 Excel。
 - 真实年报：茅台、宁德、招商、中际旭创、宇树科技（招股书）；稀疏网格、跨页续表、科目折行处理后，三家 314 个核验值规则通道取到 293 个，错配 0。
 - 研报流水线：隔离工作区、五会话、11 道闸门，先搜集后分析、深度专题调研；reportkit 排版（25～32 页、≥ 60 图表）。
@@ -98,7 +103,7 @@
 - 164 个测试通过（本地无原插件时跳过 5 个逐项对照测试）。
 
 **按优先级待做**：
-1. **计划书**（论文体例，`paper/`，XeLaTeX + ctex）；项目名待定（FinAgent 与已发表论文撞名）。
+1. **计划书**（论文体例，`paper/`，XeLaTeX + ctex）；项目名已定为 LEDGER。完整技术报告 `paper/techreport/`（`bash build.sh`），其中橙色 `\fab{}` 为待核实内容。
 2. **评测集**：清单见 `docs/eval-dataset-collection.md`（约 15 家年报季报 + 卖方研报人工埋错），团队收集中。
 3. 改进劣化算子（跨全文删除并同步删图表），做资料搜集 / 复核会话 / 深度专题三项消融。
 4. 规则通道识别季报表头；研报写作待优秀研报样例（`references/exemplars/`）到位后提炼分析逻辑。

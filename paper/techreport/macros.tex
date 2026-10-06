@@ -1,0 +1,62 @@
+% 共享宏：所有章节都可使用。不要在章节文件里重复 \usepackage 或 \newcommand 同名宏。
+\usepackage{amsthm}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,shapes.geometric,shapes.misc,shapes.symbols,fit,backgrounds,calc,matrix,decorations.pathreplacing,shadows}
+\usepackage{listings}
+\usepackage{bm}
+\usepackage{longtable}
+\usepackage{pifont}
+
+\newcommand{\sysname}{LEDGER}
+
+% ---- 编造/待核实内容标记：draft 模式下标橙色，定稿时把 \fabdrafttrue 注释掉即恢复正常颜色
+\newif\iffabdraft \fabdrafttrue
+\newcommand{\fab}[1]{\iffabdraft{\color{modelorange}#1}\else#1\fi}
+
+% ---- 记号（第 3 节定义，全文统一）
+\newcommand{\Doc}{\mathcal{D}}            % 年报文档
+\newcommand{\Pages}{\mathcal{P}}          % 页集合
+\newcommand{\Truth}{\mathcal{T}}          % 真值表
+\newcommand{\Metrics}{\mathcal{M}}        % 指标集合
+\newcommand{\Periods}{\mathcal{K}}        % 期间集合
+\newcommand{\Src}{\sigma}                 % 来源定位 (source,page,chunk_id,row,col)
+\newcommand{\Claims}{\mathcal{C}}         % 研报断言集合
+\newcommand{\Sources}{\mathcal{S}}        % 外部来源登记表
+\newcommand{\Narr}{\mathcal{N}}           % 文稿
+\newcommand{\Art}{\mathcal{A}}            % 本次运行的结论性产物集合
+\newcommand{\Gate}{G}                     % 闸门
+\newcommand{\ulp}{\operatorname{ulp}}
+\newcommand{\halfulp}{\tfrac12\operatorname{ulp}}
+\newcommand{\yoy}{\operatorname{YoY}}
+\newcommand{\qoq}{\operatorname{QoQ}}
+\newcommand{\cmark}{\ding{51}}
+\newcommand{\xmark}{\ding{55}}
+
+% ---- 盒子
+\newtcolorbox{tradeoff}[1][]{colback=white,colframe=gatered!70!black,boxrule=0.6pt,arc=1pt,
+  left=6pt,right=6pt,top=4pt,bottom=4pt,fonttitle=\bfseries\small,title={权衡（Trade-off）#1},fontupper=\small}
+\newtcolorbox{insight}[1][]{colback=nipsblue!4,colframe=nipsblue,boxrule=0.6pt,arc=1pt,
+  left=6pt,right=6pt,top=4pt,bottom=4pt,fonttitle=\bfseries\small,title={要点#1},fontupper=\small}
+\newtcolorbox{failcase}[1][]{colback=modelorange!6,colframe=modelorange!80!black,boxrule=0.6pt,arc=1pt,
+  left=6pt,right=6pt,top=4pt,bottom=4pt,fonttitle=\bfseries\small,title={失败案例#1},fontupper=\small}
+
+% ---- 定理类环境
+\newtheorem{definition}{定义}[section]
+\newtheorem{proposition}{命题}[section]
+\newtheorem{invariant}{不变量}
+\newtheorem{example}{例}[section]
+
+% ---- 代码清单
+\lstset{basicstyle=\ttfamily\footnotesize,breaklines=true,columns=fullflexible,frame=single,
+  rulecolor=\color{midgray},backgroundcolor=\color{lightgray},keepspaces=true,showstringspaces=false,
+  extendedchars=false,escapeinside={(*@}{@*)}}
+
+% ---- TikZ 通用样式（蓝=确定性程序，橙=模型会话，红=闸门）
+\tikzset{
+  prog/.style={draw=nipsblue,fill=nipsblue!8,rounded corners=2pt,align=center,font=\small,inner sep=4pt,minimum height=7mm},
+  agent/.style={draw=modelorange!90!black,fill=modelorange!12,rounded corners=2pt,align=center,font=\small,inner sep=4pt,minimum height=7mm},
+  gate/.style={draw=gatered,fill=gatered!8,diamond,aspect=2,align=center,font=\scriptsize,inner sep=1pt},
+  file/.style={draw=midgray,fill=white,tape,tape bend top=none,align=center,font=\scriptsize\ttfamily,inner sep=3pt},
+  arr/.style={-{Stealth[length=2mm]},thick},
+  darr/.style={-{Stealth[length=2mm]},thick,dashed},
+}

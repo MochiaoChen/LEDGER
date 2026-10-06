@@ -1,0 +1,731 @@
+% ============================================================================
+% 第 4 章 设计原则与系统不变量
+% ============================================================================
+\section{设计原则与系统不变量}
+\label{sec:principles}
+
+% ---- 本章局部记号（前缀 pr，避免与其他章节冲突）
+\newcommand{\prTok}{\operatorname{Tok}}        % 文本中的“数字+单位”记号集合
+\newcommand{\prVal}{\mathsf{V}}                % 产物中可作出处的数值集合
+\newcommand{\prFound}{\operatorname{Found}}    % 按展示精度能找到出处
+\newcommand{\prIss}{\mathcal{I}}               % issue 集合
+\newcommand{\prRej}{\mathcal{R}}               % 拒收集合
+\newcommand{\prBlock}{\operatorname{Block}}    % 估值阻断谓词
+\newcommand{\prWS}{\mathcal{W}}                % 隔离工作区
+\newcommand{\prRepo}{\mathcal{G}}              % 仓库目录树
+\newcommand{\prT}[1]{{\let\prUS\_\def\_{\prUS\allowbreak}\code{#1}}}  % 可在下划线处断行的标识符
+\sloppy  % 本章大量长标识符（测试名、函数名），允许较松的行距以避免溢出；章末恢复 \fussy
+
+\sysname{} 的代码量不大（引擎约一万两千行 Python），但它在几个方面比通常的“LLM + 工具”系统严格：模型抄下来的数字要在原文里逐字找到，
+文稿里的每个数字要在本次运行的产物里按展示精度找到，两条抽取通道不一致时整条估值链停下，复核编辑改写时数字只许减少。
+这些约束不是零散的工程习惯，而是十一条写进仓库开发指南（\file{CLAUDE.md}“设计规范”一节）的原则；所有模块、skill 和测试都围绕它们组织。
+
+本章把这十一条原则逐条形式化为\emph{系统不变量}（system invariant），即在任意一次合法运行结束时对产物集合 $\Art$、真值表 $\Truth$、
+文稿 $\Narr$、外部来源登记 $\Sources$ 成立的谓词，并给出：(i) 维持它的执行机制，具体到函数；(ii) 守护它的测试，均为 \file{tests/} 下真实存在的测试名；
+(iii) 违反时系统的行为；(iv) 设计动机，即开发过程中遇到的真实问题；(v) 考虑过但放弃的替代方案。第~\ref{sec:pr-tension} 节讨论原则之间的张力和优先级，
+第~\ref{sec:pr-table} 节给出原则—机制—测试总表。后续各章（抽取 \S\ref{sec:extract}、估值 \S\ref{sec:valuation}、纠错 \S\ref{sec:reportcheck}、
+护栏 \S\ref{sec:guards}、多 Agent 流水线 \S\ref{sec:pipeline}）讲每个机制的细节，本章只讲“为什么必须如此”和“如何保证如此”。
+
+% ----------------------------------------------------------------------------
+\subsection{原则的分类与执行强度}
+\label{sec:pr-taxonomy}
+
+十一条原则针对的失败模式各不相同。按它们保护的对象，可以分成四组（图~\ref{fig:pr-map}）：
+
+\begin{itemize}
+  \item \textbf{数值正确性}：P1 LLM 不做算术、P4 一张真值表、P6 单位约定。保护“数是对的”。
+  \item \textbf{可追溯性}：P2 每个数字可追溯、P5 所有读写走 tracing。保护“数从哪来、过程是什么”可以事后查验。
+  \item \textbf{冲突与误判处理}：P3 双通道不静默取舍、P7 误报控制优先于召回。规定系统拿不准时怎么办。
+  \item \textbf{生成约束与组织}：P8 事实→推论→观点、P9 模型输出加护栏、P10 会话隔离、P11 不预设行业框架、文风不做程序拦截。
+        规定模型写东西时的边界，以及多个模型会话之间如何分工。
+\end{itemize}
+
+\begin{figure}[t]
+\centering
+\begin{tikzpicture}[
+  pr/.style={draw=nipsblue,fill=nipsblue!6,rounded corners=2pt,align=center,font=\scriptsize,minimum width=26mm,minimum height=8mm,inner sep=2pt},
+  pa/.style={draw=modelorange!90!black,fill=modelorange!10,rounded corners=2pt,align=center,font=\scriptsize,minimum width=26mm,minimum height=8mm,inner sep=2pt},
+  grp/.style={draw=midgray,dashed,rounded corners=4pt,inner sep=5pt},
+  gl/.style={font=\footnotesize\bfseries,text=nipsblue}]
+  % 数值正确性
+  \node[pr] (p1) at (0,0) {P1 LLM 不做算术};
+  \node[pr,below=3mm of p1] (p4) {P4 一张真值表};
+  \node[pr,below=3mm of p4] (p6) {P6 单位约定};
+  \node[grp,fit=(p1)(p4)(p6)] (g1) {};
+  \node[gl,above=0mm of g1] {数值正确性};
+  % 可追溯
+  \node[pr] (p2) at (3.4,0) {P2 每个数字可追溯};
+  \node[pr,below=3mm of p2] (p5) {P5 读写走 tracing};
+  \node[grp,fit=(p2)(p5)] (g2) {};
+  \node[gl,above=0mm of g2] {可追溯性};
+  % 冲突
+  \node[pr] (p3) at (6.8,0) {P3 双通道不静默取舍};
+  \node[pr,below=3mm of p3] (p7) {P7 误报优先于召回};
+  \node[grp,fit=(p3)(p7)] (g3) {};
+  \node[gl,above=0mm of g3] {冲突与误判};
+  % 生成约束
+  \node[pa] (p9) at (10.2,0) {P9 护栏与数字锁};
+  \node[pa,below=3mm of p9] (p8) {P8 事实→推论→观点};
+  \node[pa,below=3mm of p8] (p10) {P10 会话隔离};
+  \node[pa,below=3mm of p10] (p11) {P11 不预设框架\\文风不拦截};
+  \node[grp,fit=(p9)(p8)(p10)(p11)] (g4) {};
+  \node[gl,above=0mm of g4] {生成约束与组织};
+  % 依赖关系
+  \draw[arr,midgray] (p1) -- (p2);
+  \draw[arr,midgray] (p2) -- (p3);
+  \draw[arr,midgray] (p3) -- (p9);
+  \draw[arr,midgray] (p4) -- (p5);
+  \draw[arr,midgray] (p5) -- (p7);
+  \draw[arr,midgray] (p7) -- (p8);
+\end{tikzpicture}
+\caption{十一条设计原则的分组。蓝色组主要由确定性程序执行，橙色组约束模型会话的行为。箭头表示“前者是后者成立的前提”：
+例如 P9 的护栏只有在 P1（数字全部来自程序产物）与 P2（产物数字带出处）成立时才有意义；P7 的容差要以 P4 的单一真值为比较对象。}
+\label{fig:pr-map}
+\end{figure}
+
+\paragraph{执行强度。}同样叫“原则”，被执行的方式差别很大。我们区分四个强度等级，后文每条原则都标注它的等级：
+
+\begin{definition}[执行强度]\label{def:pr-strength}
+设 $\phi$ 为一条不变量。
+\begin{enumerate}
+  \item[\textbf{E1}] \textbf{构造性}（by construction）：违反 $\phi$ 的状态在代码里不可表达，例如下游函数的签名只接受真值表，根本拿不到原始文档。
+  \item[\textbf{E2}] \textbf{拦截性}（gated）：违反 $\phi$ 可以发生，但会被某个确定性检查发现，检查返回非零退出码或抛出异常，阻断后续步骤或闸门。
+  \item[\textbf{E3}] \textbf{检测性}（tested）：运行时不检查，但有回归测试保证代码路径满足 $\phi$；对代码修改有效，对模型行为无效。
+  \item[\textbf{E4}] \textbf{约定性}（by convention）：只写在 skill 或开发指南里，由模型会话或人工评审遵守，没有程序检查。
+\end{enumerate}
+\end{definition}
+
+强度越高，对模型越不信任。\sysname{} 的总体倾向是：凡是能做成 E1/E2 的，就不留在 E4；做不成的（例如“不心算约数”“不套行业模板”）
+如实标为 E4，并在第~\ref{sec:pr-tension} 节讨论它们的残余风险。这一点与常见的“在系统提示里写清楚要求”的做法不同：
+提示词是 E4，模型在长任务里会遗忘或绕过它，我们在开发中多次观察到（见各节失败案例）。
+
+\paragraph{记号。}沿用第~\ref{sec:problem} 节的记号。另设：对一段文本 $x$，$\prTok(x)$ 为其中经正则 \code{NUM\_UNIT\_RE}
+识别出的“数字原文 $r$ + 单位 $u$”记号集合（年份、一位整数序号、页码除外）；对一次运行目录，$\prVal(\Art)$ 为结论性产物中全部数值换算到基本单位后的集合；
+$\prIss$ 为抽取与分析阶段的 issue 集合，$\prRej$ 为拒收集合。
+
+% ----------------------------------------------------------------------------
+\subsection{P1\quad LLM 不做算术}
+\label{sec:pr-p1}
+
+\begin{invariant}[无模型算术]\label{inv:pr-arith}
+设 $\Narr$ 为模型写下的文稿，$\Sources$ 为外部来源登记。对任意 $(r,u)\in\prTok(\Narr)$，存在
+$v\in\prVal(\Art)\cup\prVal(\Sources)$ 与单位换算因子 $s\in S(u)$，使
+\begin{equation}
+  \bigl|\,|v|\cdot s - |r|\,\bigr| \;\le\; \halfulp(r)\,(1+10^{-9}) + 10^{-12},
+  \label{eq:pr-found}
+\end{equation}
+其中 $\halfulp(r)=\tfrac12\cdot 10^{-d(r)}$，$d(r)$ 为 $r$ 的小数位数；$S(\text{亿元})=\{10^{-8}\}$、$S(\text{万元})=\{10^{-4}\}$、
+$S(\%)=S(\text{个百分点})=\{1,100\}$，其余为 $\{1\}$。并且 $\prVal(\Art)$ 中的派生数值全部由确定性代码计算。
+\end{invariant}
+
+式~\eqref{eq:pr-found} 就是 \code{output/guard.py} 中 \code{\_found} 的判定条件。它把“模型不做算术”转写为一个可检查的命题：
+模型写下的数，要么是从原文抄来的（进入真值表时已过 P2 的证据校验），要么是程序算好写进产物的，要么登记在外部来源里；模型自己算出来的数，
+只要它与程序结果在展示精度上不一致，就找不到出处。
+
+\paragraph{执行机制（E2 + E1）。}
+\begin{itemize}
+  \item \textbf{派生指标由引擎计算并登记公式}：\code{analyze.FactTable.add\_derived} 为每个派生值（毛利率、同比、单季拆分 Q4 = 全年 − 前三季度等）
+        写下 \code{formula} 与 \code{derived\_from}，\code{method="derived"}。
+  \item \textbf{经营数据的比率由程序算}：分析师在 \file{extras.json} 里只写比率的\emph{定义}（分子、分母引用哪一格），
+        \code{extras.verify\_extras} 内的 \code{\_ratios} 计算数值；skill 明确要求“增速、占比、差值、单价这类派生数不要自己算”，连“约三倍”“超过四成”这类心算约数也不许。
+  \item \textbf{估值全链在程序内}：分部量价预测（\code{segment\_forecast}）、三表、DCF、反向 DCF、可比公司、评级（\code{forecast\_summary.rating}）都是确定性函数。
+  \item \textbf{出口检查}：\code{guard} 命令（\code{output/sources.run\_guard}）对文稿逐数执行式~\eqref{eq:pr-found}，找不到出处即返回 1；阶段 8 的闸门要求 guard 通过（见 \S\ref{sec:pipe-gates}）。
+  \item \textbf{界面也不重算}：终端界面的渲染模块 \code{finagent\_tui/render.py} 在模块说明中写明“只做展示，不做任何计算”，数值全部来自引擎产物。
+\end{itemize}
+
+\paragraph{守护测试。}\prT{test\_extras\_verified\_and\_ratios\_computed}（比率由程序算出并与原文核对）、
+\prT{test\_guard\_flags\_invented\_number}（编造的数字被 guard 拦下）、\prT{test\_guard\_passes\_correct\_commentary}（正确的解读放行）、
+\prT{test\_guard\_accepts\_reverse\_dcf\_numbers}（反向 DCF 产物可作出处）、\prT{test\_guard\_valuation\_mm\_aliases\_and\_bridge}（估值产物的百万元数值换算后可作出处）。
+
+\paragraph{违反时的后果。}guard 返回 \code{unverified\_numbers} 列表与非零退出码；主笔会话只能回到产物抄写展示值，或让程序补算（写进 \file{extras.json} 的 \code{ratios} 后重跑）。
+
+\begin{failcase}[：心算取整]
+skill 易错点清单记录的一个真实案例：主笔会话把产物里的 Q2 环比 $-23.3445\%$ 心算取整写成 $23.35\%$（应为 $23.34\%$，且丢了符号的语义）。
+guard 按两位小数的展示精度在产物里找不到 $23.35$，拦下了这句话。
+它说明的问题是：即使是“抄写 + 四舍五入”这样最轻的算术，模型也会出错，而且错误恰好落在人眼难以察觉的末位。
+\end{failcase}
+
+\paragraph{设计动机。}\sysname{} 最早的原型（仓库首个提交）就把算术放在程序里，原因来自数值推理文献的共识：大模型在多步算术上的错误率远高于在“读懂题意、写出公式”上的错误率，
+把计算外包给解释器能显著提高正确率 \citep{gao2023pal,chen2023pot}。金融研报的特点放大了这一点：一份 25～32 页的深度报告有数百个数字，
+其中大量是增速、占比、单季拆分这类派生数；任何一个算错都会在复核时损害全文可信度，而逐个人工复算的成本又极高。
+
+\begin{tradeoff}[：让模型算、程序复核，还是完全不让模型算]
+\textbf{备选 A：模型自由计算，程序事后复核。}这是“工具增强”系统的常见做法：模型可以在文稿里写自己算的数，程序抽样或全量复算。
+问题在于复核需要知道模型\emph{用的是哪个公式、哪两个输入}。文稿里的“毛利率提升 1.2 个百分点”既可能是本期减上期，也可能是单季对比，复核程序要先猜公式，
+猜错就会把对的判成错的（误报），或把错的放过。要让复核可靠，就得要求模型声明公式与输入——而一旦公式与输入都声明了，直接让程序计算更简单。
+
+\textbf{备选 B：模型调用计算工具（如 Python 解释器），把结果写进文稿。}这比 A 好，但计算过程留在会话日志里，不进入运行产物，guard 无法区分
+“调用工具算的”和“心算的”；而且同一个派生数在不同会话里可能被算出不同的舍入版本。
+
+\textbf{选择：完全不让模型算（P1）。}派生数一律以“定义”的形式交给引擎（\file{extras.json} 的 \code{ratios}、假设文件的驱动参数），
+结果进入产物，文稿只抄产物的展示值。代价是写作会话要多走一步“先登记、再运行、再抄写”；
+连“约三倍”这类口语化约数也得先让程序算出比值。\fab{这在 v1 研报里导致部分段落读起来更“数字化”}，后由复核编辑（P11）处理措辞。
+\end{tradeoff}
+
+\paragraph{残余风险。}式~\eqref{eq:pr-found} 只能检查以阿拉伯数字出现的数。用汉字写的约数（“近三成”“翻一番”）不经过 \code{NUM\_UNIT\_RE}，
+对这类表述 P1 的执行强度降为 E4，由 skill 约束与复核编辑把关。另一个风险是\emph{巧合放行}：模型心算出的数恰好等于产物中某个无关数值，
+guard 只检查“有出处”，不检查“出处对应的是同一个指标”，后者由 P9 的指标—期间绑定检查（\code{check\_binding}）部分补上，见 \S\ref{sec:pr-tension}。
+
+% ----------------------------------------------------------------------------
+\subsection{P2\quad 每个数字可追溯}
+\label{sec:pr-p2}
+
+\begin{invariant}[证据定位]\label{inv:pr-evidence}
+对真值表中每条非派生事实 $f=(m,k,v,u,\Src)\in\Truth$，$\Src=(\text{source},\text{page},\text{chunk\_id},\ldots)$ 指向文档 $\Doc$ 的一个 chunk $c$，且
+\begin{equation}
+  c.\text{page} = \Src.\text{page}\quad\wedge\quad \pi(f.\text{raw}) \text{ 在 } \operatorname{norm}(c.\text{text}) \text{ 中按数字边界匹配成功},
+  \label{eq:pr-evidence}
+\end{equation}
+其中 $\pi(r)$ 为去掉千分位、括号、百分号与负号后的数字核，匹配模式为 \verb/(?<![\d.])/$\pi(r)$\verb/(?![\d])/。
+对派生事实，$\Src.\text{derived\_from}$ 列出全部输入事实的定位，递归地满足本不变量。
+对外部来源登记 $\Sources$ 中的每条事实 $(q, v, u)$（$q$ 为原文摘句），$v$ 的某种书写形式（整数、去尾零小数、千分位）原样出现在 $q$ 中。
+\end{invariant}
+
+\paragraph{执行机制（E2）。}
+\begin{itemize}
+  \item \code{tasks/financials/external.find\_evidence(doc, page, raw)}：只在模型声明的那一页的 chunk 里找，表格 chunk 优先；找不到返回 \code{None}，
+        \code{\_to\_fact} 生成拒收理由“未在第 $p$ 页原文中找到”。
+  \item \code{\_norm} 只去掉千分位逗号、\emph{保留空白}。早期实现删除全部空白，导致表格相邻两格“235 3884.59”被拼成“2353884.59”，
+        两个本来正确的数都被拒收；修复后由 \prT{test\_adjacent\_table\_numbers\_keep\_their\_boundaries} 守护。
+  \item \code{\_to\_fact} 同时检查指标合法、期间格式（\code{2024}、\code{2024H1}、\code{2024Q3}、\code{2024Q1-3}）、合并口径（\code{scope} 为母公司报表直接拒收）与单位合法。
+  \item 研报断言（\file{claims.json}）：\code{claims.ingest\_claims} 要求 \code{quote} 是研报原文的连续片段且包含该数值，否则拒收。
+  \item 外部来源：\code{output/sources.verify\_sources} 要求每条来源有网址、发布方、访问日期，每条事实有不超过 160 字的摘句，且数值出现在摘句中；
+        guard 的 \code{check\_citations} 再要求“只能从外部来源找到出处的数字”所在句子带对应的 \code{[S编号]}。
+\end{itemize}
+
+\paragraph{守护测试。}\prT{test\_fabricated\_number\_rejected}、\prT{test\_wrong\_page\_rejected}、\prT{test\_partial\_number\_not\_accepted\_as\_evidence}
+（“1.23”不能在“11.23”中匹配）、\prT{test\_parent\_company\_scope\_rejected}、\prT{test\_claims\_fake\_quote\_rejected}、
+\prT{test\_skill\_run\_truth\_table\_and\_provenance}、\prT{test\_verify\_sources}、\prT{test\_external\_numbers\_need\_citation}、
+\prT{test\_continuation\_inherits\_header\_and\_keeps\_its\_own\_page}（跨页续表沿用首页表头，但每行页码仍指向实际所在页）。
+
+\paragraph{违反时的后果。}被拒收的条目进入 \code{rejected}，\code{verify-facts} 返回 1；流水线的 \code{analyze} 步骤在带模型抽取文件时检查
+$\prRej\neq\emptyset$ 并抛出异常，估值不会开始（与 P3 共用同一个阻断点，见式~\eqref{eq:pr-block}）。
+
+\paragraph{为什么是“页 + 数字边界”，而不是更细的定位。}证据校验只确认“这个数在这一页出现过”，不确认“它在哪一行哪一列”。
+这是有意的分层：页级定位对模型友好（模型读 PDF 时天然以页为单位），而且足以拦住凭记忆编造和错页；
+行级错误（数字确在该页，但抄成了相邻行）交给 P3 的双通道比对与勾稽校验。\prT{test\_wrong\_row\_number\_caught\_as\_conflict} 正是这个分层的回归测试：
+它把营业收入改成同页出现的“1.23”（“增加 1.23 个百分点”中的数），证据校验放行，随后被“同一指标多处取值不一致”与“规则与 LLM 抽取不一致”两个 issue 拦下。
+
+\begin{tradeoff}[：证据粒度与匹配方式]
+\textbf{要求模型给出单元格坐标或包围盒。}最精确，但模型读 PDF 截图时给出的坐标不稳定，大量正确抽取会因坐标偏差被拒；而且 \code{pdfplumber} 的表格切分本身在真实年报上就会错列（宁德时代年报的稀疏网格）。
+\textbf{模糊匹配（编辑距离、数值容差）。}能容忍 OCR 误差，但会让“5,862.34”匹配“5,862.43”，等于放弃了“逐字可定位”的意义。
+\textbf{外部来源只要求网址。}模型可以登记一个真实网址，却把记忆里的数字挂在它名下；要求摘句包含数字后，这种“挂靠”需要模型同时伪造摘句，成本高且在人工抽查时一眼可见。
+\textbf{选择}：页级 + 精确数字边界匹配 + 摘句含数；扫描页直接拒收，不做 OCR（OCR 的识别错误会以“有证据”的身份进入真值表，比拒收更危险）。
+\end{tradeoff}
+
+% ----------------------------------------------------------------------------
+\subsection{P3\quad 双通道不静默取舍}
+\label{sec:pr-p3}
+
+\sysname{} 的财务抽取有两条通道：规则通道（\code{extract.extract\_rule}，基于表头期间识别与科目别名的确定性解析）与模型通道（分析师会话读 PDF 写下的 \file{facts.json}）。
+两者独立产生 $(m,k)\mapsto v$ 的映射。
+
+\begin{invariant}[冲突不被吞掉]\label{inv:pr-conflict}
+设 $F_R$、$F_L$ 分别为规则通道与模型通道的事实集合，$\operatorname{close}(a,b)\equiv|a-b|\le\max(10^{-6}\max(|a|,|b|),\,0.01)$。
+对任意键 $(m,k)$，若 $F_R$ 与 $F_L$ 都有取值且 $\neg\operatorname{close}(v_R,v_L)$，则 $\prIss$ 中存在类型为“规则与LLM抽取不一致”的 issue；
+同一通道内同一键的多处取值不一致时，存在类型为“同一指标多处取值不一致”的 issue。并且
+\begin{equation}
+  \prBlock \;\Longleftarrow\; \prRej\neq\emptyset \;\vee\; \exists\, i\in\prIss:\ i.\text{type}\in\{\text{冲突类}\} \;\vee\; \exists\,\text{勾稽失败} \;\vee\; \exists\,\text{核心指标本期缺失},
+  \label{eq:pr-block}
+\end{equation}
+其中 $\prBlock$ 表示估值流水线不得开始。
+\end{invariant}
+
+\paragraph{执行机制（E2）。}\code{extract.merge(rule\_facts, llm\_facts, prefer)} 合并两通道：一致时记 \code{method="rule+llm"} 并把另一方的来源加入 \code{corroborated\_by}；
+不一致时无论保留哪一方都记 issue。流水线以 \code{prefer="llm"} 调用，即暂时保留模型读原文的结果用于展示，但阻断照常生效。
+阻断点有两处，判定逻辑相同：命令行 \code{verify-facts}（返回 1，并写出 \file{facts.verified.json} 供闸门检查）与流水线 \code{pipelines.\_p\_analyze}
+（带 \code{-{}-facts} 时检查式~\eqref{eq:pr-block}，抛出 \code{ValueError}）。核心指标清单 \code{external.CORE\_METRICS} 共 14 项（营业收入、营业成本、
+归母净利润、扣非归母净利润、总资产、经营现金流、资本开支、基本每股收益等），本期缺失阻断、上期缺失只警示。
+
+\paragraph{为什么保留模型值而不是规则值。}在真实年报上，规则通道的主要失效形式是“取不到”（稀疏网格错列、跨页续表、科目折行），而不是“取错”：
+茅台、宁德、招商三家 301 个核验值中，规则通道取到且一致的有 280 个，冲突 0。模型读页面时能看到版式，抄错的形式多为错行、错期间。
+二者冲突时，“谁对”无法事先判定，因此保留哪一方只影响\emph{展示}，不影响\emph{阻断}；真正的裁决由分析师会话回到原文完成。
+
+\paragraph{不对称：缺失不是冲突。}当规则通道没有取到某个键时，模型值直接进入真值表（\code{confidence="medium"}），不视为冲突。
+否则在规则通道覆盖率低的文档（如招股说明书、季报）上，系统将完全无法运行。这意味着对这些键 P3 退化为 P2 单通道保护。
+季报就是典型：规则通道不识别“本报告期 / 年初至报告期末”表头，所以 \code{-{}-supplement} 的条目只走模型通道，规则通道不参与比对（\prT{test\_supplement\_requires\_skill\_facts}）。
+
+\paragraph{守护测试。}\prT{test\_model\_extraction\_run\_matches\_rule\_run}（样例上两通道产出逐项一致）、\prT{test\_wrong\_row\_number\_caught\_as\_conflict}、
+\prT{test\_skill\_pipeline\_stops\_before\_valuation\_on\_conflict}、\prT{test\_swapped\_period\_is\_flagged\_and\_model\_value\_kept}（期间看反被记为冲突且保留模型值）、
+\prT{test\_missing\_core\_metric\_blocks}、\prT{test\_verify\_cli\_exit\_codes}、\prT{test\_pdf\_model\_extraction\_verifies\_and\_matches\_rule\_run}。
+
+\begin{tradeoff}[：冲突时自动采信，还是交回原文裁决]
+\textbf{备选 A：固定采信一方。}简单，但会把另一方发现的错误静默吞掉。规则通道的“错列”与模型的“错行”都是系统性的，固定采信一方等于固定接受一类错误。
+\textbf{备选 B：置信度加权或多数投票。}只有两条通道，投票没有意义；引入第三条通道（例如另一个模型会话）作仲裁，成本翻倍，
+而且仲裁者同样可能错，最终仍需一个“仲裁者错了怎么办”的规则。
+\textbf{备选 C：程序按勾稽关系自动选一个让报表平衡的值。}看似聪明，但勾稽只约束少数恒等式（资产 = 负债 + 权益等），多数指标不在任何恒等式中；
+而且这会把“让数平衡”变成目标，掩盖真实的抄录错误。
+\textbf{选择（P3）}：冲突一律记 issue 并阻断估值，由分析师会话带着两个来源（页码、chunk）回到原文裁决。代价是一次冲突就要多一轮会话；
+但在真实运行中冲突很少：三家公司的最终抽取（\file{data/extractions/*/facts.verified.json}）拒收、冲突、勾稽失败均为 0，
+以招商轮船为例，规则 97 条、模型 97 条、合并后 115 条。少而硬的阻断比多而软的提示更容易被会话真正处理。
+\end{tradeoff}
+
+% ----------------------------------------------------------------------------
+\subsection{P4\quad 一张真值表}
+\label{sec:pr-p4}
+
+\begin{invariant}[单一数据源]\label{inv:pr-truth}
+设 $\Truth=\texttt{analyze}(\cdot)[\texttt{truth\_table}]$。估值流水线、研报核查流水线、文稿护栏中的指标绑定检查所使用的全部历史财务数值都取自 $\Truth$；
+没有任何下游模块重新解析 $\Doc$ 或重新抽取基础指标。估值内部，DCF 各情景的经营预测逐期等于三表模型同一情景的输出：
+\begin{equation}
+  \max_{s,\,t,\,j}\ \bigl|\,\text{DCF}_{s,t,j} - \text{TS}_{s,t,j}\,\bigr| \;\le\; 10^{-6}\ \text{百万元},
+  \label{eq:pr-tie}
+\end{equation}
+其中 $s$ 为情景，$t$ 为预测年度，$j$ 取遍 \code{TIE\_KEYS}（收入、EBIT、折旧摊销、资本开支、营运资本变动等）。
+\end{invariant}
+
+\paragraph{执行机制（E1 + E2）。}这是十一条原则中构造性最强的一条。\code{pipelines.py} 中估值步骤（\code{\_v\_three\_statement}、\code{\_v\_plan}、
+\code{\_v\_reverse\_dcf}、\code{\_v\_scenarios}、\code{\_v\_forecast\_summary}、\code{\_v\_comps}）与核查步骤（\code{\_c\_verify}）的数据入口都是
+\code{ctx["analysis"]["truth\_table"]}；guard 的 \code{check\_binding} 读的是运行目录下 \file{financials/analysis.json} 的 \code{truth\_table}。
+式~\eqref{eq:pr-tie} 由 \code{tasks/valuation/run.\_tie\_to\_three\_statement} 检查，失败时 \code{run\_dcf} 返回 \code{model\_status="blocked"}。
+需要原文的估值环节（非经营性资产逐项加回）同样要过 P2：\code{build\_plan.resolve\_non\_operating\_items} 逐项按原文核对后由程序加总。
+
+\paragraph{守护测试。}\prT{test\_valuation\_reads\_analysis\_truth\_table} 在财报流水线跑完后把 \code{ctx["extract"]["facts"]} 清空，
+再跑估值流水线，要求估值照常成功——如果有任何估值步骤绕过真值表去读抽取结果，这个测试就会失败。
+\prT{test\_dcf\_forecast\_comes\_from\_three\_statement} 与 \prT{test\_dcf\_blocked\_when\_three\_statement\_disagrees}（把三表输出的基准情景第一年 EBIT 加 1.0 百万元，DCF 必须判为 blocked）
+守护式~\eqref{eq:pr-tie}。\prT{test\_deterministic} 保证同一输入两次运行的核查结论与估值区间相同。
+
+\paragraph{设计动机。}财报分析、估值建模、纠错核查分开做时，最自然的实现是每个任务各自抽取所需数字。这在早期导致过一类隐蔽的不一致：
+\fab{财报分析报告里的归母净利润与估值模型里的基期净利润来自同一年报的不同页（摘要页与利润表页），四舍五入方式不同，
+最终研报正文与附录差了末位}。统一为一张表之后，三个任务的口径自动一致，纠错核查的“真值”与估值建模的“基期”是同一个对象。
+提交 \code{d321358}“统一下游真值表并阻断未校验的 Skill 抽取”就是这一原则落地的节点。
+
+\begin{tradeoff}[：每个任务按需抽取，还是共用一张表]
+按需抽取的好处是灵活：研报纠错遇到真值表没有的指标时，可以临时去原文找。我们放弃了这种灵活性：真值表缺的指标，纠错一律判“无法核实”（P7），
+而不是临时抽取。原因是临时抽取绕过了 P2/P3 的全部校验，等于在系统里开了一个不受保护的后门；
+扩大覆盖的正确方式是在指标字典 \code{tasks/financials/schema.py} 里增加指标，让它进入同一套校验。
+另一个代价是 DCF 不再接受假设文件中的 \code{ebit\_margin} 等字段（这些字段“不再生效”，开发指南已注明），因为情景向量必须全部来自三表模型。
+\end{tradeoff}
+
+% ----------------------------------------------------------------------------
+\subsection{P5\quad 所有读写走 tracing}
+\label{sec:pr-p5}
+
+\begin{invariant}[读写留痕]\label{inv:pr-trace}
+对引擎的任意一次流水线运行 $\rho$（运行目录 \file{runs/<run\_id>/}），设 $\mathrm{In}(\rho)$ 为该运行读取的输入文件集合，$\mathrm{Out}(\rho)$ 为写出的产物集合，则
+\begin{align}
+  \forall\,p\in\mathrm{In}(\rho):&\quad (p,\ \mathrm{sha256}(p)) \in \texttt{manifest.inputs}, \label{eq:pr-in}\\
+  &\quad \exists\,e\in\texttt{events}:\ e.\text{kind}=\texttt{file\_read}\ \wedge\ e.\text{path}=p, \nonumber\\
+  \forall\,a\in\mathrm{Out}(\rho):&\quad (\operatorname{rel}(a),\ \mathrm{sha256}(a)) \in \texttt{manifest.artifacts}, \label{eq:pr-out}
+\end{align}
+且事件按 \code{seq} 严格递增，每个 \code{Pipeline.step} 在事件流中有成对的 \code{step\_start}/\code{step\_end}（或 \code{step\_error}）。
+对模型会话，事件流原样保存在工作区 \file{.pipeline/agents/<时间>-claude-<角色>.jsonl}。
+\end{invariant}
+
+\paragraph{执行机制（E1 + E3）。}\code{core/tracing.py} 提供四个入口：\code{read\_file}（读取并记录哈希）、\code{RunTracer.write\_artifact}/\code{write\_json}
+（写出并登记哈希）、\code{register\_artifact}（登记由第三方函数写出的文件，如 xlsx）、\code{traced} 装饰器（记录工具函数的入参摘要、出参摘要、耗时与异常）。
+当前追踪器存放在 \code{ContextVar} 中，模块代码无需传递 tracer 对象，在没有活动追踪器时 \code{read\_file} 退化为普通读取，因此同一份代码既能在流水线里留痕，也能被测试直接调用。
+\code{parsing/document.load\_document} 经 \code{tracing.read\_file} 读入年报并记录 \code{document\_parsed} 事件；引擎中 9 个核心工具函数
+（\code{extract\_financials}、\code{analyze\_financials}、\code{earnings\_deep\_dive}、\code{run\_three\_statement}、\code{run\_dcf}、\code{run\_scenario\_tables}、
+\code{run\_comps}、\code{extract\_claims}、\code{verify\_claims}）用 \code{@tracing.traced} 注册。实现细节见 \S\ref{sec:arch-tracing}。
+
+\paragraph{守护测试。}\prT{test\_run\_artifacts\_and\_manifest} 要求一次 \code{all} 运行的 manifest 状态为 \code{ok}、登记了财报报告、估值工作簿与核查结论，
+事件种类至少包含 \code{file\_read}、\code{step\_start}、\code{tool\_end}、\code{artifact}、\code{run\_end}；\prT{test\_deterministic} 保证同一输入重跑结论相同；
+\prT{test\_render\_record\_binds\_artifacts\_and\_renderer} 把研报 PDF 的渲染记录绑定到产物与排版脚本的哈希上。
+
+\paragraph{一次真实运行的留痕规模。}仓库内样例全流程运行 \file{runs/20261006-002204-all/}：88 条事件，其中 7 次 \code{file\_read}、18 对步骤事件、
+9 对工具事件、24 次 \code{artifact} 事件（\file{check/report.md} 先后被核查与一致性两步写入，manifest 中去重后为 23 个产物），6 个输入文件哈希；
+有 18 条事件因载荷超过 2000 字符被截断为“哈希 + 预览”。
+
+\paragraph{执行范围的边界（如实说明）。}不变量~\ref{inv:pr-trace} 覆盖的是\emph{生成运行目录的流水线}。供模型会话调用的校验命令
+（\code{verify-facts}、\code{guard}、\code{numlock}、\code{verify-sources}、\code{verify-extra}）按设计不生成运行目录，读取文件时直接用 \code{Path.read\_text}；
+它们的调用记录在会话事件流里（工具调用及其输出），结论文件（\file{facts.verified.json}、\file{commentary\_guard.json}）写到工作区。
+因此这些命令的输入哈希不在任何 manifest 中，可追溯性依赖会话日志与闸门的“校验晚于修改”时间戳检查（\S\ref{sec:pipe-gates}），强度低于 E1。
+
+\begin{tradeoff}[：日志框架与截断策略]
+\textbf{通用可观测性框架（OpenTelemetry、MLflow 等）。}功能完整，但引入服务端或重依赖，与“引擎只用标准库”（\S\ref{sec:arch-deps}）冲突，评审复现时还要多装一套组件。
+我们选择 JSONL 事件流 + JSON manifest：任何文本工具都能读，终端界面的“追溯”页直接回放它。
+\textbf{全量记录每步输入输出。}可追溯性最好，但单次运行的真值表、三表明细动辄数百 KB，重复写进事件流会让日志膨胀数十倍。
+\textbf{选择}：事件载荷超过 \code{MAX\_LOG\_CHARS}${}=2000$ 字符时只记 \code{\{"\_truncated": true, "sha256", "preview"\}}，完整内容由产物文件保存且产物本身登记哈希；
+因此截断不损失可验证性：任何人都可以用产物文件重算哈希来确认日志与产物对应。
+\end{tradeoff}
+
+% ----------------------------------------------------------------------------
+\subsection{P6\quad 单位约定}
+\label{sec:pr-p6}
+
+\begin{table}[t]
+\centering
+\caption{单位约定。左列为数值所在的域，右列为执行换算的位置。}
+\label{tab:pr-units}
+\small
+\begin{tabularx}{\linewidth}{@{}l l X@{}}
+\toprule
+域 & 内部单位 & 换算位置 \\
+\midrule
+财务事实（真值表） & 元；股数为股 & \code{numbers.UNIT\_FACTORS}、\code{extract.\_scale}、\code{external.\_to\_fact} \\
+比率类（毛利率、同比） & 百分数值（14.49 表示 14.49\%） & \code{numbers.parse\_number} 去掉百分号但不除以 100 \\
+估值（DCF、三表、comps） & 百万元；每股为元 & \code{build\_plan.MM}${}=10^6$、\code{three\_statement.MM} \\
+经营数据（\file{extras.json}） & 按列声明单位原值保存，金额列换算为元 & \code{extras.verify\_extras}、\code{guard.\_extras\_scaled\_numbers} \\
+文稿 & 亿元、万元、元、\%、个百分点、倍 & \code{guard.\_found} 的换算因子集 $S(u)$ \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\begin{invariant}[单位域]\label{inv:pr-units}
+真值表中所有金额以元存储，所有比率以百分数值存储；估值域内所有金额以百万元存储；跨域换算只发生在表~\ref{tab:pr-units} 所列的边界函数中，不发生在模型会话中。
+\end{invariant}
+
+\paragraph{执行机制（E1 + E3）。}换算集中在 \code{core/numbers.py}（\code{UNIT\_FACTORS}、\code{to\_yuan}、\code{half\_ulp}、\code{pct\_change}）与估值入口（\code{build\_plan}）。
+护栏在比较时同时尝试两种表示：\code{guard.\_mm\_numbers} 把 \file{valuation.json} 中 \code{forecast\_base}、\code{pv\_base}、\code{bridge\_base} 块
+与以 \code{\_mm} 结尾的键按 $\times10^6$ 换回元，供“17,483.72 亿元”这类表述核对；百分数允许因子 $\{1,100\}$，以接受以小数存储的比例。
+\code{pct\_change} 在基期为负时按 A 股惯例用 $|\text{基期}|$ 作分母（\prT{test\_pct\_change\_negative\_base}）。
+
+\paragraph{守护测试。}\prT{test\_parse\_number}、\prT{test\_half\_ulp}、\prT{test\_guard\_valuation\_mm\_aliases\_and\_bridge}、
+\prT{test\_operating\_table\_units\_are\_scaled\_for\_source\_check}、\prT{test\_default\_units\_are\_tons}、\prT{test\_custom\_units\_flow\_to\_workbook}。
+
+\begin{tradeoff}[：全程一个单位，还是两个域]
+\textbf{全程用元。}最简单，但 DCF 与三表的数量级在 $10^{10}$～$10^{12}$，与原参照引擎（以百万元为单位）的输出逐位比对（\S\ref{sec:arch-golden}）将无法进行，
+工作簿里的数字也不符合卖方模型的阅读习惯。
+\textbf{带单位的数值类型（如物理量库）。}类型安全，但要求整个引擎、产物 JSON 与工作簿写出都携带单位对象，与标准库约束冲突，序列化也复杂。
+\textbf{选择}：两个域 + 少数边界函数 + 测试。代价是护栏必须同时认两种表示（因子集 $S(u)$ 变大），轻微增加了巧合放行的概率（\S\ref{sec:pr-tension}）。
+百分数存“14.49”而不是“0.1449”，是因为年报原文、研报与模型抄写都是前者，减少一次模型侧的心理换算——这本身也是 P1 的延伸。
+\end{tradeoff}
+
+% ----------------------------------------------------------------------------
+\subsection{P7\quad 误报控制优先于召回}
+\label{sec:pr-p7}
+
+这条原则主要约束研报纠错核查，也约束护栏的指标绑定与内部一致性检查。纠错的结论类型为
+\{正确, 数值错误, 单位错误, 期间错配, 口径错误, 方向错误, 无法核实\}，其中前五种错误类集合记为 $E$。
+
+\begin{invariant}[误报控制]\label{inv:pr-fp}
+对一条研报断言 $c$（原文数值 $r$、单位 $u$、类型 $\tau\in\{\text{level},\text{yoy},\text{ratio},\text{pp\_change}\}$），设真值为 $t$，
+\begin{equation}
+  \mathrm{tol}(c) = \halfulp(r)\cdot s_u \;+\; \begin{cases} 10^{-6}|t| & \tau=\text{level}\\ 0.005 & \text{否则}\end{cases}
+  \label{eq:pr-tol}
+\end{equation}
+其中 $s_u$ 为金额单位换算因子。则：(a) $c$ 被判为错误仅当 $|r s_u - t|>\mathrm{tol}(c)$；(b) 预测性表述或真值缺失时判“无法核实”，不计入错误；
+(c) 判为单位、期间、口径、方向错误，当且仅当存在一个\emph{精确}的替代解释（换一个单位、期间、同组相关指标或符号后落入容差），否则归为“数值错误”。
+\end{invariant}
+
+\begin{algorithm}[t]
+\caption{断言错误类型诊断（\code{report\_check/verify.verify\_claim} 的判定顺序）}
+\label{alg:pr-diag}
+\begin{algorithmic}[1]
+\Function{Diagnose}{$c$, $\Truth$}
+  \If{$c$ 为预测性表述}\State \Return 无法核实 \EndIf
+  \State $t \gets \Truth.\textsc{Value}(\tau, m, k)$
+  \If{$t$ 不存在}\State \Return 无法核实 \EndIf
+  \If{$|r s_u - t| \le \mathrm{tol}(c)$}\State \Return 正确 \EndIf
+  \If{$\tau=$ level}
+     \For{$u' \in$ \Call{UnitAlts}{$u$}}\Comment{如亿元 $\to$ 万元、元、百万元}
+        \If{$|r s_{u'} - t| \le \halfulp(r)s_{u'} + 10^{-6}|t|$}\State \Return 单位错误 \EndIf
+     \EndFor
+  \EndIf
+  \If{$\tau\in\{$yoy, pp\_change$\}$ \textbf{and} $|-r - t|\le \mathrm{tol}(c)$}\State \Return 方向错误 \EndIf
+  \For{$k' \ne k$ 且 $(m,k')\in\Truth$}
+     \If{$|r s_u - \Truth.\textsc{Value}(\tau,m,k')|\le\mathrm{tol}(c)$}\State \Return 期间错配 \EndIf
+  \EndFor
+  \For{$m' \in$ \Call{CaliberGroup}{$m$}$\setminus\{m\}$}\Comment{只在易混用的指标组内}
+     \If{$|r s_u - \Truth.\textsc{Value}(\tau,m',k)|\le\mathrm{tol}(c)$}\State \Return 口径错误 \EndIf
+  \EndFor
+  \State \Return 数值错误
+\EndFunction
+\end{algorithmic}
+\end{algorithm}
+
+\paragraph{执行机制（E1 + E3）。}容差按展示精度计算（\code{numbers.half\_ulp}）：研报写“58.62 亿元”，只要真值在 $58.62\pm0.005$ 亿元之内即判正确，
+不会把四舍五入当成错误。口径诊断只在 \code{CALIBER\_GROUPS} 定义的六组易混指标内进行（如\{净利润, 归母净利润, 扣非归母净利润, 利润总额, 营业利润\}），
+避免“恰好等于某个无关指标”的巧合匹配被诊断为口径错误。同一原则也用于护栏：\code{guard.check\_binding} 跳过预测句（\code{\_is\_forecast}）与分部口径的表述（\code{\_is\_segment\_claim}），
+只对“口径明确”的断言做真值绑定；内部一致性检查（\code{report\_check/consistency.py}）只在实体、口径、期间、情景都相同时才判矛盾。
+
+\paragraph{守护测试。}\prT{test\_half\_ulp}、\prT{test\_report\_check}、\prT{test\_display\_precision\_tolerated}、\prT{test\_not\_comparable\_contexts\_are\_skipped}、
+\prT{test\_guard\_skips\_forecast\_sentences\_but\_checks\_history}、\prT{test\_binding\_candidate\_avoids\_quarter\_segment\_and\_cash\_flow\_aliases}、
+\prT{test\_rating\_rule\_text\_and\_others\_ratings\_ignored}（文中引述的评级规则与他家评级不算本报告评级）。
+
+\begin{proposition}[诊断的保守性]\label{prop:pr-conservative}
+若算法~\ref{alg:pr-diag} 输出某个具体错误类型 $e\in E\setminus\{\text{数值错误}\}$，则存在对 $c$ 的单一修改（换单位、换期间、换同组指标或取反）使修改后的断言被判为“正确”。
+\end{proposition}
+\begin{proof}
+逐分支检查：单位错误分支的条件即“以 $u'$ 为单位时落入容差”；方向错误分支即“取反后落入容差”；期间、口径分支即“换 $k'$ 或 $m'$ 后落入容差”，
+且所用容差不大于式~\eqref{eq:pr-tol}。因此对应修改后的断言满足“正确”分支的条件。
+\end{proof}
+
+命题~\ref{prop:pr-conservative} 的意义在于：系统给出的每个具体错误类型都带一个可执行、可验证的修改建议（\code{suggestion} 字段），而不是凭“看起来像”下结论。
+反过来，系统可能把一个真实的期间错配归为“数值错误”（当错配的期间不在真值表中时），这是有意接受的召回损失。
+
+\begin{tradeoff}[：召回优先还是误报优先]
+\textbf{召回优先，交人工过滤。}在审计场景下常见：宁可多报。我们没有这样做，原因有两个。其一，纠错核查的读者是研报作者，对一篇正确的研报报出错误，
+比漏报一个错误更伤害系统的可信度，作者会很快学会无视所有提示。其二，更重要的是\emph{闭环效应}：同一套核查引擎被护栏复用（P9），
+用来检查我们自己生成的文稿。护栏误报会迫使写作会话去“修正”本来正确的数字，或者为了绕过检查改写成更含糊的表述，两者都让报告变差。
+\textbf{选择}：容差按展示精度、预测与缺真值判无法核实、错误类型要求精确替代解释。召回的损失由两处补偿：样例评测集上纠错召回仍为满分（\S\ref{sec:exp}），
+真实场景的漏报由盲评质检（\S\ref{sec:eval}）中的人工复核清单承接。
+\end{tradeoff}
+
+% ----------------------------------------------------------------------------
+\subsection{P8\quad 事实 → 推论 → 观点}
+\label{sec:pr-p8}
+
+大赛要求估值与投资判断“区分事实、推论与观点”。\sysname{} 把这条要求从写作规范落实为程序可计算的\emph{数字出处分类}。
+
+\begin{definition}[出处类型与认识论类别]\label{def:pr-evidence}
+对文稿中每个有出处的数字，按 \code{guard.EVIDENCE} 的顺序取第一个能找到出处的类型：
+报告披露 $\to$ 外部来源 $\to$ 程序计算 $\to$ 估值假设 $\to$ 模型预测；并映射到类别：报告披露、外部来源为\emph{事实}，程序计算为\emph{推论}，估值假设与模型预测为\emph{观点}。
+\end{definition}
+
+\begin{invariant}[可分类与结构]\label{inv:pr-fio}
+(a) 文稿中每个通过 guard 的数字都有唯一的类别（事实、推论或观点）；(b) 评级由程序按“基准情景每股价值相对参考股价的上行空间”确定（$\ge20\%$ 买入、$\ge5\%$ 增持、
+$\ge-5\%$ 中性、$\ge-20\%$ 减持、其余卖出），文稿只能引用，不能自定；(c) 估值报告包含假设、口径简化说明与“不构成投资建议”。
+\end{invariant}
+
+\paragraph{执行机制（E2 + E3）。}\code{guard.tagged\_truth\_values} 把运行产物按文件与抽取方式分到五个池：真值表中 \code{method="derived"} 的数进“程序计算”，其余进“报告披露”；
+\file{valuation.json}、\file{forecast\_summary.json} 等进“模型预测”；\file{plan.json} 中的 WACC 与终值参数进“估值假设”；可比公司原始行进“外部来源”，倍数统计进“程序计算”。
+\code{classify\_text} 对文稿逐数分类，结果写在 guard 输出的 \code{provenance} 字段，排版时由 reportkit 的 \code{provenance\_note} 写进研报附录（“可溯源的 $n$ 个数字中，事实 $a$ 个……”）。
+评级由 \code{forecast\_summary.rating} 计算，质检 L0 的 \code{evaluation/checks.check\_rating} 复算评级并检查正文出现的评级与之一致；\code{check\_disclaimer} 检查免责声明。
+
+\paragraph{守护测试。}\prT{test\_tags\_partition\_truth\_values}（五个池的并集等于全部真值）、\prT{test\_classify\_priority\_and\_classes}、
+\prT{test\_guard\_reports\_provenance\_and\_appendix\_note}（DCF 基准每股价值被归为“观点（模型预测）”并写进附录说明）、\prT{test\_rating\_rule\_thresholds}。
+
+\begin{tradeoff}[：让模型给句子打标签，还是程序按出处分类]
+让模型在每句后标注“【事实】【推论】【观点】”是最直接的做法，但标签本身不可验证：模型可以把自己的预测标成事实。
+按出处分类把问题转成“这个数是从哪个文件来的”，答案由文件决定。代价有二：只能分类\emph{数字}，不能分类无数字的定性判断（后者交给 L3 盲评条目“事实/推论/观点”）；
+同一个数同时出现在多个池时按“先认事实”的顺序归类，可能把一个恰好与披露值相等的预测值归成事实。我们接受这个偏差，因为它的方向是保守的（不会把事实降级为观点）。
+\end{tradeoff}
+
+% ----------------------------------------------------------------------------
+\subsection{P9\quad 模型输出加护栏}
+\label{sec:pr-p9}
+
+\begin{invariant}[护栏与数字锁]\label{inv:pr-guard}
+设 $\Narr_0$ 为主笔初稿（\file{narrative.draft.md}），$\Narr_1$ 为复核改写稿（\file{narrative.md}）。交付前同时成立：
+\begin{align}
+  &\texttt{guard}(\Narr_1, \Art, \Sources).\text{ok} = \text{true}, \label{eq:pr-guard}\\
+  &\prTok(\Narr_1) \subseteq \prTok(\Narr_0) \quad\wedge\quad \operatorname{Sid}(\Narr_1)\subseteq\operatorname{Sid}(\Narr_0), \label{eq:pr-numlock}
+\end{align}
+其中 $\operatorname{Sid}$ 为文中 \code{[S编号]} 集合。guard 的 ok 等价于四个集合同时为空：无出处数字、指标—期间绑定不符、未标注来源的外部数字、前后矛盾。
+\end{invariant}
+
+\paragraph{执行机制（E2）。}\code{output/sources.run\_guard} 组合四项检查（\code{check\_text}、\code{check\_binding}、\code{check\_citations}、\code{\_contradictions}）；
+\code{output/numlock.numlock} 计算 \code{added} 与 \code{new\_sources}，允许数字减少（删句）、不允许新增或改动；
+\code{report\_pipeline.status} 的阶段 8 闸门要求 guard 通过且核对的是当前稿，阶段 9 要求数字锁通过（\S\ref{sec:pipe-gates}、附录~\ref{app:gates}）。
+数字与指标的\emph{配对}是否被改写打乱，由改写后重跑 guard 的绑定检查兜底。
+
+\paragraph{守护测试。}\prT{test\_guard\_flags\_every\_planted\_report\_error}：样例研报草稿植入 7 处错误，把每处错误句写进解读，guard 都必须返回 1；
+\prT{test\_numlock\_allows\_deletion\_blocks\_new\_numbers}；\prT{test\_review\_stage\_numlock}（改写稿多出“同比增长 9.99\%”时闸门判“数字锁未通过”并列出该数）；
+\prT{test\_external\_numbers\_need\_citation}；\prT{test\_guard\_accepts\_segment\_figures\_and\_flags\_wrong\_ones}。
+
+\begin{tradeoff}[：数字锁的形式]
+\textbf{逐字 diff 或编辑距离上限。}会把正常的调序、合并段落判为违规，复核编辑就无法完成“理顺故事线”的本职工作。
+\textbf{让另一个模型判断“改写是否忠实”。}不可复现，且判官本身会漏看末位数字。
+\textbf{多重集包含（数字出现次数也不能增加）。}更严格，但复核常把一个数从正文移到小结再引用一次，这是合理的。
+\textbf{选择}：集合包含 + 来源编号包含 + 改写后重跑 guard。它的已知盲区是“同一个数换到另一个指标上”，由 guard 的绑定检查覆盖可识别的那部分。
+\end{tradeoff}
+
+% ----------------------------------------------------------------------------
+\subsection{P10\quad 会话隔离}
+\label{sec:pr-p10}
+
+\begin{invariant}[隔离边界]\label{inv:pr-isolation}
+设 $\prRepo$ 为仓库所在目录的\emph{父目录}树（仓库与参照插件副本都在其下），$\prWS$ 为一家公司的工作区，$\mathcal{B}$ 为盲评目录。则
+(a) $\prWS\cap\prRepo=\emptyset$ 且 $\prWS$ 的祖先目录（家目录除外）不含 \file{CLAUDE.md}；
+(b) \file{finagent/evaluation/} 与评分标准文件 $\notin\prWS$；
+(c) 五个生产会话之间没有共享的对话上下文，只通过 $\prWS$ 内的文件交接；
+(d) 回传给生产会话的问题单只含理由与证据，不含条目原文与分值；
+(e) $\mathcal{B}$ 只含交付物与不带分值的评审条目，位于 $\prRepo$ 与 $\prWS$ 之外。
+\end{invariant}
+
+\paragraph{执行机制（E2 + E1）。}\code{report\_pipeline.\_check\_location} 拒绝在 $\prRepo$ 内或祖先含 \file{CLAUDE.md} 的位置建工作区（Claude Code 会沿父目录加载 \file{CLAUDE.md}）；
+\code{build} 复制引擎时用 \code{ENGINE\_EXCLUDE}${}=\{$\code{\_\_pycache\_\_}, \code{evaluation}$\}$ 排除质检模块；工作区 \file{.claude/settings.json}
+禁止 \code{Read(/<父目录>/**)}，禁止修改引擎、skill、年报原件、\file{sample.json} 与 \file{CLAUDE.md}；同一份白名单 \code{ALLOWED\_TOOLS} 经 \code{-{}-allowedTools} 传入无头会话。
+每个角色由 \code{\_session} 起一次独立的 \code{claude -p} 进程。盲评目录由 \code{evaluation/judge.prepare} 准备，评测结果写在工作区之外的 \file{\textasciitilde/finagent-evals/}。
+本章只陈述不变量，边界的完整论证见 \S\ref{sec:pipe-build} 与 \S\ref{sec:eval-isolation}。
+
+\paragraph{守护测试。}\prT{test\_workspace\_contains\_only\_skills\_engine\_and\_one\_company}（工作区只有一份 PDF，不含其他公司的抽取、测试、评测）、
+\prT{test\_workspace\_guide\_and\_permissions}、\prT{test\_build\_guards}（在仓库 \file{runs/} 下建工作区被拒）、\prT{test\_workspace\_excludes\_evaluation}、
+\prT{test\_prepare\_blind\_dir}（评审条目不含 \code{points}，在仓库内准备盲评目录被拒）、\prT{test\_refine\_loop\_routes\_issues\_and\_restores\_best}、
+\prT{test\_run\_agent\_chains\_write\_then\_review}。
+
+\begin{failcase}[：权限白名单在无头模式下失效]
+第一次无头运行时，工作区 \file{settings.json} 中的 \code{allow} 规则全部不生效，会话的每条命令都被拒。原因是 Claude Code 对未被信任的目录忽略 \code{allow}（\code{deny} 照常生效）。
+修复方式是不去改用户的全局信任配置，而是把同一份白名单再经 \code{-{}-allowedTools} 传入（提交 \code{1dab4ca}）。
+第二个坑是通配写法：旧式 \code{前缀:*} 只在词边界匹配，\code{data/extractions/:*} 匹配不到 \code{data/extractions/<公司>/...}，改为 \code{Bash(cp data/extractions/*)} 这类通配规则（提交 \code{6d9a436}）。
+第三个坑是命令前缀：会话写 \code{cd ws \&\& ./py ...} 时前缀匹配失败，因此每个角色提示都要求“命令直接以 \code{./py} 开头，不加 \code{cd}、不串联”。
+这些都说明：隔离边界必须由程序生成并测试，不能靠人工维护配置。
+\end{failcase}
+
+\begin{tradeoff}[：单 Agent 长上下文，还是多会话文件交接]
+\textbf{单个长会话完成全部 11 个阶段。}上下文连续，不必重读文件，token 成本更低。v0 批次（旧流程，没有独立的资料搜集与复核会话）接近这种形态，\fab{观察到三个问题：
+写作阶段会引用调研阶段读到但未登记的数字（上下文里“记得”，来源表里没有）；上下文压缩后会丢失前序阶段的约束；
+自己写自己审，复核几乎不改东西}。v0 三家研报的质检分为 46～49 分。
+\textbf{多 Agent 对话框架（AutoGen、MetaGPT 式的角色对话）\citep{wu2023autogen,hong2024metagpt}。}角色之间通过消息交流，便于协作，但消息本身就是共享上下文，
+写作者的自我辩护会传给复核者；评审者若看到生成过程，也更容易偏向生成方 \citep{panickssery2024self}。
+\textbf{会话内 subagent。}父会话会把自己的上下文摘要带给子会话，隔离不彻底。
+\textbf{选择（P10）}：五个独立的无头会话 + 文件交接 + 程序闸门。交接文件就是接口契约，闸门判定的是文件而不是会话的自述。代价是每个会话冷启动要重读工作区（成本见 \S\ref{sec:pipe-timeline}），
+以及“交接文件写什么”需要精心设计（\S\ref{sec:arch-interface}）。
+\end{tradeoff}
+
+% ----------------------------------------------------------------------------
+\subsection{P11\quad 不预设行业框架，文风不做程序拦截}
+\label{sec:pr-p11}
+
+这条原则与前十条方向相反：前十条都在\emph{收紧}模型的自由度，P11 在两个方面有意\emph{不收紧}。
+
+\begin{invariant}[负向不变量]\label{inv:pr-neg}
+(a) skill 与工作区说明中不含任何特定行业的分析模板（“白酒看吨价”“航运看运价”之类），只含方法与约束；分析框架由会话读完年报与资料包后写入 \file{framework.md}；
+(b) \code{report\_pipeline.status} 的任何闸门都不依赖对文稿措辞的模式匹配（如禁用词表、句式正则）。闸门只检查结构（是否有外部调研清单、是否有 $\ge3$ 个深度专题）与数量（字数、来源数）。
+\end{invariant}
+
+\paragraph{执行机制（E4 为主）。}(a) 写在 \file{finagent-report/SKILL.md}（“分析框架自己推导。本 skill 不预设任何行业该看什么”）与 \file{references/analysis.md} 开头；
+(b) 文风由复核编辑会话（\file{finagent-review} skill）负责：以“没有参与写作的研究所质控编辑”身份通读，删去自证、圆场、程序口吻，改写受数字锁约束（P9）。
+两者都没有直接的程序检查，属于约定性原则。间接的测试是 reportkit 模板的通用性：\prT{test\_template\_on\_another\_company} 与 \prT{test\_template\_survives\_loss\_no\_quarterly\_no\_comps}
+保证排版模板不依赖某家公司或某个行业的数据形态；\prT{test\_skill\_docs\_in\_sync\_with\_code} 保证 skill 里引用的命令与指标清单与代码一致。
+
+\paragraph{设计动机。}(a) 的来源是框架污染：仓库里存有别家公司的分析框架与文稿，模型会照抄（\file{docs/architecture.md} 隔离工作区一节的理由）。\fab{例如为宁德时代出报告的会话读到贵州茅台的框架后，照搬了“量价拆分 + 渠道结构”的骨架，
+而对电池企业更关键的产能利用率、海外工厂与储能业务写得很薄。}隔离工作区（P10）解决了“读到别家文稿”，P11 解决“skill 本身就是别家框架”。
+(b) 来自 PR \#16（DeepSeek 执行器）的经验：那条路线加了正则文风闸门，\fab{命中“值得注意的是”等短语即拒收，结果模型学会同义替换，
+文风没有变好，闸门却让会话在措辞上反复打转}。合并该 PR 时（提交 \code{4e8fe66}）明确“不采用正则文风闸门（文风由复核会话把关）”，这条决定后被写进开发指南。
+
+\begin{tradeoff}[：行业模板 vs 模型自推导；正则拦截文风 vs 编辑会话]
+\textbf{行业模板。}可以保证每份报告覆盖“该行业该看的指标”，评审也容易对照。但模板是对行业的静态先验，对跨行业公司（中际旭创：光模块 + 数据中心周期）
+与新业态（宇树科技：招股书阶段的机器人公司）会给出错误的框架；而且模板一旦写进 skill，模型会填空而不是思考。
+\textbf{模型自推导}的风险是遗漏，由两道机制兜底：阶段 3 闸门要求框架含外部调研清单与至少 3 个深度专题；盲评 L2 条目检查“驱动拆解”“预期差”等通用问题（\S\ref{sec:eval-rubric}）。
+\textbf{正则拦截文风}的问题如上；\textbf{编辑会话}的代价是不可复现、每轮多一个 Sonnet 会话，且复核质量依赖模型能力。
+我们接受这个代价，因为文风是“读起来如何”的问题，它的评判本来就需要读者，而不是模式匹配。相关讨论另见 \S\ref{sec:disc-noframework}。
+\end{tradeoff}
+
+% ----------------------------------------------------------------------------
+\subsection{执行路线的收敛：从内嵌模型调用到无头 Claude Code}
+\label{sec:pr-route}
+
+十一条原则之外，开发指南还有一条架构层面的决定：“只有一条路线”。它不是一条不变量，但决定了上述原则由谁执行，所以在此一并说明。
+仓库共 93 个提交，路线经历了四个阶段（表~\ref{tab:pr-route}）。
+
+\begin{table}[t]
+\centering
+\caption{执行路线的演变（据 \code{git log}）。}
+\label{tab:pr-route}
+\small
+\begin{tabularx}{\linewidth}{@{}l l X@{}}
+\toprule
+阶段 & 代表提交 & 形态 \\
+\midrule
+内嵌 API & \code{dbcb501}（9 月 22 日） & 程序内 \code{core/llm.py} 调用 OpenAI 兼容接口（DeepSeek、通义千问、智谱），\code{core/tools.py} 工具注册表 + \code{ask} 工具循环；
+请求哈希作缓存键，\code{LLM\_MODE=replay} 可离线重放 \\
+Skill 版本 & \code{70cdd0d} & Claude Code 直接读 PDF，程序负责 \code{locate}、\code{verify-facts}、\code{guard}；与内嵌版本共用引擎 \\
+多执行器 & \code{1dab4ca}、PR \#16 & 研报流水线支持 Claude Code 与 Codex 两种 harness；PR \#16 增加 DeepSeek 执行器 \\
+单一路线 & \code{4e8fe66}、\code{d9ae074}（10 月 5 日） & 删除 DeepSeek 执行器、程序内 LLM 客户端、\code{ask}、prompt 模板、\code{-{}-llm} 参数与 Codex 执行器；只保留无头 Claude Code \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\begin{tradeoff}[：国产模型 API 内嵌调用 vs 无头 Claude Code harness]
+\textbf{内嵌调用的优点}是真实的：大赛优先国产模型；\code{temperature=0} + 固定 seed + 响应缓存使模型输出可以离线重放（可复现性更强，见 \S\ref{sec:arch-repro}）；不依赖外部命令行工具。
+\textbf{放弃它的理由}按重要性排列：
+(1) \emph{重复实现 harness}。读 PDF 页面图像、联网检索、文件读写权限、长任务的上下文管理，内嵌路线都要自己实现，而且实现得不如成熟 harness；
+\code{ask} 工具循环越做越像一个简化版 Claude Code。
+(2) \emph{两条抽取路径分叉}。内嵌版的 LLM 抽取补漏与 skill 版的 \file{facts.json} 是两套代码，行为细节不同，测试与文档都要双份维护，P4“一张真值表”的入口也随之变成两个。
+(3) \emph{能力与任务长度}。深度研报需要几十到上百轮工具调用、联网检索与自我检查（\S\ref{sec:pipe-timeline}），这是 agent harness 的强项，而不是一次 Chat Completions 调用的强项。
+(4) \emph{原则执行不依赖模型来源}。P1～P9 的执行全部在确定性引擎里，与哪个模型、哪个 harness 无关；保留单一路线反而让这些检查只有一个入口。
+\textbf{代价}：模型输出不再能离线重放（可复现性降为两层定义，\S\ref{sec:arch-repro}）；与“优先国产模型”的赛题偏好不一致，在计划书中单独说明理由；
+对一个外部商业工具形成依赖。为降低后者，编排器把 harness 封装在 \code{agent\_command} 与 \code{\_session} 两个函数里，引擎与闸门对 harness 一无所知，换执行器只需改这两处（另见 \S\ref{sec:disc-harness}）。
+\end{tradeoff}
+
+% ----------------------------------------------------------------------------
+\subsection{原则之间的张力与优先级}
+\label{sec:pr-tension}
+
+十一条原则并不总是同向。下面讨论开发中实际遇到的五对张力，以及系统给出的处理规则。
+
+\paragraph{张力一：召回 vs 误报（P7 对 P1、P9）。}
+P7 要求护栏宽容（按展示精度、跳过预测句、只绑定口径明确的断言），P1 与 P9 要求护栏严格（不放过任何编造数字）。
+护栏的放行条件式~\eqref{eq:pr-found} 是“存在某个出处”，所以它有一个结构性的\emph{巧合放行}率。设某单位下产物可作出处的数值集合为 $\prVal_u$，
+文稿数字 $r$ 在其展示精度下的取值区间长度为 $L$（例如两位小数、0～100 的百分数，$L=100$），若编造的数在区间内近似均匀分布，则被巧合放行的概率约为
+\begin{equation}
+  P_{\text{coinc}} \;\approx\; \min\Bigl(1,\ \frac{|\prVal_u|\cdot 2\cdot\halfulp(r)\cdot|S(u)|}{L}\Bigr).
+  \label{eq:pr-coinc}
+\end{equation}
+对两位小数的百分数，$\halfulp=0.005$，实测五份交付研报的结论性产物中 0～100 区间内约有 460～600 个不同的百分数值，取 $|S(\%)|=2$ 时上式给出 $P_{\text{coinc}}\approx 0.1$；实测的末位扰动放行率为 3\%～5\%（第 \ref{sec:guards-coinc} 节），低于均匀假设，因为真实数值并不均匀覆盖整个区间；对“亿元”两位小数、区间数千亿元的金额，概率低一到两个数量级。
+也就是说，guard 对\emph{小区间、低精度}的数（如一位小数的百分数）保护较弱。系统用两种方式收窄这个缺口：
+其一，\code{check\_binding} 对能识别指标与期间的表述做真值绑定，此时比较对象只有一个真值而不是整个 $\prVal$；
+其二，guard 的真值池只取结论性产物（真值表、DCF 结果、comps 等），不含三表明细与敏感性网格等中间结果，以控制 $|\prVal_u|$。
+我们没有进一步收紧（例如要求每个数都能绑定指标），因为那会把大量合法的叙述性数字（分部、经营数据、外部数据）判为违规，违反 P7。
+
+\paragraph{张力二：深度 vs 可验证（P1、P2 对报告质量）。}
+深度研报需要大量外部信息与多环定量推导，而 P1、P2 要求每个数都有出处、每个派生数都由程序算。直接后果是写作成本上升：
+外部数字要先检索、登记摘句（\code{verify-sources}），派生数要先写进 \file{extras.json} 的 \code{ratios}。\fab{v1 批次的研报因此显得“数字多、分析薄”。}
+v2 的处理不是放松 P1/P2，而是在流程上给深度留出空间：阶段 4 深度调研闸门（$\ge3$ 份专题笔记、每份 $\ge1500$ 字与 $\ge3$ 个独立来源）、
+阶段 8 篇幅闸门（正文 $\ge15{,}000$ 字、深度研究占比 $\ge60\%$），让“可验证”与“深度”在不同阶段各自被满足。质检分从 v1 的 74/67 升到 v2 的 90/88（单次盲评，非对照实验）。
+
+\paragraph{张力三：自动化 vs 人工复核（P3、P9 对端到端自动化）。}
+P3 的阻断与 P9 的拒收都会让流水线停下。\sysname{} 的规则是：\emph{程序能判定的，阻断并交回会话修复；程序判不了但重要的，写进人工复核清单}
+（\file{review.md}），而不是由模型自行决定放行。\code{refine} 在闸门未通过时不做盲评、直接停下交给人；三轮未达标时回滚到最佳一轮，并把剩余问题追加进 \file{review.md}（\S\ref{sec:pipe-refine}）。
+自动化的边界因此是明确的：系统保证“交出去的东西过了全部程序检查”，不保证“全部检查都会自动通过”。
+
+\paragraph{张力四：隔离 vs 效率（P10 对成本）。}
+五个会话各自冷启动，重读年报定位文件、资料包与运行产物；盲评会话还要在全新目录里重读交付物。隔离让每次运行的 token 成本显著高于单会话（\S\ref{sec:pipe-timeline}）。
+我们保持隔离，原因是 v0 的单会话流程在质量上的损失远大于成本节约；降低成本的手段是让每个会话\emph{少读}（工作区 \file{CLAUDE.md} 按阶段写明“读什么、不读什么”，
+上下文被压缩时“先跑 status，不要重读已完成阶段的文件”），而不是共享上下文。
+
+\paragraph{张力五：一致性 vs 修正（参照一致对 P4 与估值口径）。}
+自研引擎要与原参照插件逐位一致（\S\ref{sec:arch-golden}），这与“发现口径问题就修”有冲突。例如流动性压力测试沿用原插件口径 FCF${}\times(1+\text{冲击})$，
+FCF 为负时方向相反；为保持一致没有改，只在报告中注明。反之，EBIT 剔除投资收益与公允价值变动、三表经营费用改为轧差项、DCF 改由三表驱动，
+这些是\emph{有意}的口径修改，修改时同步重新生成 golden 快照并在 \file{THIRD\_PARTY.md} 中说明。规则是：引擎内部算法保持与参照一致，口径映射层可以改，但必须显式记录。
+
+\begin{figure}[t]
+\centering
+\begin{tikzpicture}[
+  lv/.style={draw=nipsblue,fill=nipsblue!6,rounded corners=2pt,align=left,font=\scriptsize,text width=62mm,inner sep=3pt},
+  lab/.style={font=\scriptsize\bfseries,align=center,text width=16mm}]
+  \node[lv] (l1) at (0,0) {P1 不做算术、P2 可追溯、P4 一张真值表、P6 单位\\\emph{数是对的、可查的}};
+  \node[lv,below=4mm of l1] (l2) {P3 不静默取舍、P10 会话隔离\\\emph{错误与偏差不被掩盖}};
+  \node[lv,below=4mm of l2] (l3) {P7 误报优先、P9 护栏与数字锁、P8 分类\\\emph{检查本身不制造错误}};
+  \node[lv,below=4mm of l3] (l4) {P11 不预设框架、文风交给编辑；P5 留痕\\\emph{质量与可读性}};
+  \node[lab,left=3mm of l1] {第 1 级\\（不可让步）};
+  \node[lab,left=3mm of l2] {第 2 级};
+  \node[lab,left=3mm of l3] {第 3 级};
+  \node[lab,left=3mm of l4] {第 4 级\\（可协商）};
+  \draw[arr,gatered] ([xshift=6mm]l1.east) -- ([xshift=6mm]l4.east) node[midway,right,font=\scriptsize,text=gatered,align=left]{冲突时\\上级优先};
+\end{tikzpicture}
+\caption{原则的优先级（字典序）。上级原则与下级原则冲突时，修改下级原则的实现，而不是放松上级原则。例如为提高可读性（第 4 级）
+而希望写“约三倍”，正确做法是让程序算出比值（第 1 级）后由编辑决定如何表述；为降低误报（第 3 级）而放宽护栏，不能放宽到允许无出处数字（第 1 级）。}
+\label{fig:pr-priority}
+\end{figure}
+
+\paragraph{优先级。}把上述处理规则归纳为图~\ref{fig:pr-priority} 的字典序。它的含义是可操作的：在代码评审中，任何为了下级目标而削弱上级不变量的修改都应被拒绝。
+有一个例外值得说明：P5（留痕）被放在第 4 级，不是因为它不重要，而是因为它几乎从不与其他原则冲突，且它的削弱（如截断日志）可以被产物哈希补偿。
+
+% ----------------------------------------------------------------------------
+\subsection{原则—机制—测试总表}
+\label{sec:pr-table}
+
+表~\ref{tab:pr-summary} 汇总十一条原则。“强度”列见定义~\ref{def:pr-strength}；测试列只列最有代表性的一到三个，完整对应关系可在 \file{tests/} 中按函数名检索。
+
+{\small
+\begin{longtable}{@{}p{0.11\linewidth}p{0.25\linewidth}p{0.25\linewidth}p{0.28\linewidth}l@{}}
+\caption{原则—机制—测试总表。}\label{tab:pr-summary}\\
+\toprule
+原则 & 不变量（简述） & 执行机制 & 代表测试 & 强度 \\
+\midrule
+\endfirsthead
+\toprule
+原则 & 不变量（简述） & 执行机制 & 代表测试 & 强度 \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+P1 不做算术 & 文稿每个数在产物/来源中按展示精度可找到；派生数全部由程序算 & \code{FactTable.add\_derived}、\code{extras.\_ratios}、\code{guard.check\_text} & \prT{test\_extras\_verified\_and\_ratios\_computed}、\prT{test\_guard\_flags\_invented\_number} & E2 \\
+P2 可追溯 & 事实带 $\Src$，数字核在所写页按数字边界匹配；外部数字在摘句中 & \code{external.find\_evidence}、\code{verify\_sources}、\code{check\_citations} & \prT{test\_fabricated\_number\_rejected}、\prT{test\_wrong\_page\_rejected}、\prT{test\_verify\_sources} & E2 \\
+P3 不静默取舍 & 两通道冲突必记 issue，并阻断估值 & \code{extract.merge}、\code{\_p\_analyze}、\code{verify-facts} & \prT{test\_wrong\_row\_number\_caught\_as\_conflict}、\prT{test\_skill\_pipeline\_stops\_before\_valuation\_on\_conflict} & E2 \\
+P4 一张真值表 & 下游只读 \code{truth\_table}；DCF 与三表逐期相等 & \code{pipelines.py} 数据入口、\code{\_tie\_to\_three\_statement} & \prT{test\_valuation\_reads\_analysis\_truth\_table}、\prT{test\_dcf\_blocked\_when\_three\_statement\_disagrees} & E1 \\
+P5 留痕 & 输入与产物哈希入 manifest，步骤成对记录 & \code{tracing.read\_file}、\code{RunTracer}、\code{Pipeline.step}、\code{@traced} & \prT{test\_run\_artifacts\_and\_manifest}、\prT{test\_deterministic} & E1/E3 \\
+P6 单位 & 事实为元、估值为百万元、比率为百分数值 & \code{numbers.UNIT\_FACTORS}、\code{build\_plan.MM}、\code{guard.\_mm\_numbers} & \prT{test\_parse\_number}、\prT{test\_guard\_valuation\_mm\_aliases\_and\_bridge} & E1/E3 \\
+P7 误报优先 & 容差 $=\halfulp$；预测判无法核实；错误类型需精确替代 & \code{verify\_claim}、\code{CALIBER\_GROUPS}、\code{\_is\_forecast} & \prT{test\_half\_ulp}、\prT{test\_display\_precision\_tolerated} & E1/E3 \\
+P8 事实/推论/观点 & 每个数有唯一类别；评级由程序定 & \code{tagged\_truth\_values}、\code{classify\_text}、\code{forecast\_summary.rating} & \prT{test\_classify\_priority\_and\_classes}、\prT{test\_rating\_rule\_thresholds} & E2/E3 \\
+P9 护栏与数字锁 & guard ok；改写稿数字与来源编号 $\subseteq$ 初稿 & \code{run\_guard}、\code{numlock}、阶段 8/9 闸门 & \prT{test\_guard\_flags\_every\_planted\_report\_error}、\prT{test\_review\_stage\_numlock} & E2 \\
+P10 会话隔离 & 工作区在仓库树外、无评测代码；会话只靠文件交接 & \code{\_check\_location}、\code{ENGINE\_EXCLUDE}、\code{settings}、\code{judge.prepare} & \prT{test\_workspace\_contains\_only\_skills\_engine\_and\_one\_company}、\prT{test\_prepare\_blind\_dir} & E2 \\
+P11 不预设框架 & skill 无行业模板；闸门不匹配措辞 & skill 文本、复核编辑会话 & \prT{test\_template\_on\_another\_company}（间接） & E4 \\
+\end{longtable}
+}
+
+% ----------------------------------------------------------------------------
+\subsection{小结}
+\label{sec:pr-summary}
+
+本章把 \sysname{} 的十一条设计原则写成了可检查的不变量。它们有一个共同的结构：\emph{模型负责读、抄、写、判断，程序负责校验、计算、拦截}，
+而二者之间的每一条边界都落在一个具体函数和一组具体测试上。十一条中，P1～P10 的执行强度为 E1～E3，即使模型不遵守 skill 中的要求，违反也会被程序发现；
+只有 P11 是有意保留的约定性原则，因为它约束的对象（行业判断与文风）不适合用程序判定。
+原则之间的冲突按图~\ref{fig:pr-priority} 的字典序处理：数值正确与可追溯不可让步，误报控制与可读性在其下协商。
+下一章描述承载这些不变量的系统架构。
+
+\fussy

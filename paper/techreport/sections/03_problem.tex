@@ -1,0 +1,863 @@
+% ============================================================
+% 第 3 章 问题形式化
+% ============================================================
+\section{问题形式化}
+\label{sec:problem}
+
+本章给出全文统一使用的记号，并把三项计算任务（财报分析、估值建模、纠错核查；数据提取贯穿其中）、系统要保证的性质、威胁模型、研报生成过程与评价过程分别形式化。
+形式化的目的不是追求数学上的完备，而是把“可追溯”“数字闭合”“LLM 不做算术”这类口号变成可以逐条检查、可以写成测试的命题，
+并把每个命题对应到代码中执行它的具体位置。凡是形式化与实现有差异（例如实现做了简化或只覆盖一部分情形），我们都在正文中明确指出。
+
+本章结构如下：\S\ref{sec:prob-notation} 汇总记号；\S\ref{sec:prob-doc}～\S\ref{sec:prob-truth} 定义文档、证据、事实与真值表；
+\S\ref{sec:prob-task2}～\S\ref{sec:prob-task5} 定义三项任务；\S\ref{sec:prob-props} 定义系统性质；\S\ref{sec:prob-units} 给出单位与口径约定；
+\S\ref{sec:prob-threat} 给出威胁模型与系统不变量；\S\ref{sec:prob-gen} 与 \S\ref{sec:prob-evalform} 分别形式化研报生成与评价。
+
+% ============================================================
+\subsection{记号总览}
+\label{sec:prob-notation}
+
+\begin{table}[h]
+\centering
+\caption{全文记号。代码中的对应物指仓库中实现该概念的主要数据结构或文件。}
+\label{tab:prob-notation}
+\small
+\begin{tabularx}{\linewidth}{@{}p{2.1cm}X p{3.9cm}@{}}
+\toprule
+记号 & 含义 & 代码中的对应物 \\
+\midrule
+$\Doc$ & 一份定期报告（年报、季报或招股书），解析为 chunk 序列 & \code{parsing.document.Document} \\
+$\Pages$ & $\Doc$ 的页集合 $\{1,\dots,|\Pages|\}$ & \code{Chunk.page} \\
+$c$ & 一个 chunk：$(\text{id},\text{source},p,\kappa,\text{text},\text{rows})$ & \code{Chunk} \\
+$\Metrics$ & 指标集合（可抽取指标与派生指标） & \code{schema.METRICS} \\
+$\Periods$ & 期间集合（年度、半年度、单季、前三季度累计） & \code{external.PERIOD\_RE} \\
+$f=(m,k,v,u,\Src)$ & 事实：指标、期间、数值、单位、来源定位 & \code{extract.Fact} \\
+$\Src$ & 来源定位 $(\text{source},\text{page},\text{chunk\_id},\text{row},\text{col})$ & \code{Fact.source} \\
+$F_R, F_L$ & 规则通道、模型通道的事实集合 & \code{extract\_rule}、\code{ingest} \\
+$\Truth$ & 真值表：$\Metrics\times\Periods$ 上的部分函数（含派生单元格） & \code{analysis.json} 的 \code{truth\_table} \\
+$\theta$ & 估值假设（情景向量、WACC 参数、终值参数、分部量价等） & \file{valuation\_assumptions.json} \\
+$\Claims$ & 研报断言集合 & \code{claims.Claim}、\file{claims.json} \\
+$\Sources$ & 外部来源登记 & \file{research/sources.json} \\
+$\Narr$ & 文稿（研报正文 Markdown） & \file{report/narrative.md} \\
+$\Narr^{0}$ & 复核改写前的初稿 & \file{report/narrative.draft.md} \\
+$\Art$ & 本次运行的结论性产物集合 & \code{guard.TRUTH\_FILES} 所列文件 \\
+$\mathcal{W}$ & 工作区状态（文件集合及其内容与修改时间） & 工作区目录 \\
+$\Gate_i$ & 第 $i$ 道闸门（$i=1,\dots,11$），$\mathcal{W}\to\{0,1\}$ & \code{report\_pipeline.status} \\
+$\mathcal{R}$ & 评分标准（条目集合） & \file{eval/rubrics/report\_v2.json} \\
+$\ulp(r)$, $\halfulp(r)$ & 原文写法 $r$ 末位的单位及其一半 & \code{numbers.half\_ulp} \\
+$\yoy$, $\qoq$ & 同比、环比算子 & \code{analyze.prior\_periods} \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+% ============================================================
+\subsection{文档、页与证据}
+\label{sec:prob-doc}
+
+\begin{definition}[文档与 chunk]
+\label{def:prob-doc}
+一份文档 $\Doc$ 是 chunk 的有限序列 $\Doc=(c_1,\dots,c_n)$。每个 chunk 为
+$c=(\text{id},\text{source},p,\kappa,\text{text},\text{rows},\text{unit},\text{caption})$，
+其中 $\text{source}$ 是文件名，$p\in\Pages$ 是页码，$\kappa\in\{\text{text},\text{table}\}$ 是类型，$\text{text}$ 是该 chunk 的文本，
+$\text{rows}$ 是表格 chunk 的单元格矩阵（文本 chunk 为空），$\text{unit}$ 是从“单位：”行识别的单位提示，$\text{caption}$ 是表格标题。
+记 $\Doc[p]=\{c\in\Doc : c.p=p\}$ 为第 $p$ 页的全部 chunk。文档另有内容哈希 $h(\Doc)$（SHA-256）。
+\end{definition}
+
+跨页续表的续页 chunk 另带“候选表头”与指向上一页表格的引用（\code{continued\_from}）；扫描页（无文本层）的 $\Doc[p]$ 为空，
+任何声明该页为来源的数字都无法通过下面的证据谓词，相当于直接拒收。
+
+\paragraph{数字的原文写法。}
+我们区分一个数字的\emph{原文写法} $r$（字符串，如 \code{"612,380,000.00"}、\code{"(1,234.56)"}、\code{"14.49\%"}）与其\emph{数值} $\operatorname{parse}(r)\in\mathbb{R}\cup\{\bot\}$。
+$\operatorname{parse}$ 去除空白、千分位与百分号（百分号不除以 100），把括号解释为负号，把“—”“-”“不适用”等占位符解析为 $\bot$。
+展示精度由 $r$ 的小数位数 $d(r)$ 决定：
+\begin{equation}
+\ulp(r) = 10^{-d(r)},\qquad \halfulp(r)=\tfrac12\cdot 10^{-d(r)}.
+\label{eq:prob-ulp}
+\end{equation}
+例如 $r=\code{"58.62"}$（亿元）时 $\halfulp(r)=0.005$ 亿元，即 50 万元。
+
+\begin{definition}[数字边界匹配]
+\label{def:prob-match}
+对原文写法 $r$，令 $\operatorname{core}(r)$ 为去掉千分位、括号、正负号与百分号后的数字串（须形如 \texttt{\textbackslash d+(\textbackslash .\textbackslash d+)?}，否则无定义）。
+称 $r$ \emph{按数字边界出现在}文本 $s$ 中，记 $r\sqsubset s$，当且仅当在去掉千分位的 $s$ 中存在 $\operatorname{core}(r)$ 的一次出现，
+其左侧紧邻字符不是数字或小数点，右侧紧邻字符不是数字。
+\end{definition}
+
+数字边界的作用是避免子串误配：\code{"12.3"} 不会匹配到 \code{"112.34"} 中，\code{"612380000"} 不会匹配到 \code{"6123800001"} 中。
+实现中保留单元格之间的空白，以防删除空白后相邻两个数字被拼接成一个（例如 \code{"235 3884.59"} 被误拼为 \code{"2353884.59"}），
+这是一个在真实年报上踩到的问题，对应测试 \file{tests/test\_evidence\_spacing.py}。
+
+\begin{definition}[证据谓词]
+\label{def:prob-evidence}
+给定文档 $\Doc$、页码 $p$ 与原文写法 $r$，定义
+\[
+\operatorname{Ev}(\Doc,p,r) = \begin{cases}
+c^\star & \text{若存在 } c\in\Doc[p] \text{ 使 } r\sqsubset c.\text{text}\text{；}c^\star \text{ 取满足条件的第一个 chunk，表格优先}\\
+\bot & \text{否则。}
+\end{cases}
+\]
+$\operatorname{Ev}$ 的返回值即该数字的 chunk 级定位。实现为 \code{external.find\_evidence}。
+\end{definition}
+
+证据谓词刻画的是“这个写法在这一页出现过”，而不是“这个写法在这一页表示这个指标”。前者是可判定的字符串性质，
+后者是语义性质。\sysname{} 用证据谓词保证模型没有编造或改写数字，用规则通道的交叉比对（\S\ref{sec:prob-truth}）部分覆盖语义性质。
+
+% ============================================================
+\subsection{指标、期间与事实}
+\label{sec:prob-facts}
+
+\paragraph{指标。}
+指标集合 $\Metrics$ 由指标字典给出（\file{finagent/tasks/financials/schema.py}）。每个指标 $m$ 有类型 $\operatorname{kind}(m)\in\{\text{amount},\text{per\_share},\text{pct},\text{shares},\text{ratio}\}$
+与所属报表 $\operatorname{stmt}(m)\in\{\text{key\_data},\text{income},\text{balance},\text{cashflow},\text{non\_recurring},\text{derived}\}$。
+$\Metrics=\Metrics_{\text{ext}}\cup\Metrics_{\text{der}}$，其中 $\Metrics_{\text{ext}}$ 是可抽取指标（营业收入、营业成本、各项费用、投资收益、利润总额、
+净利润、归母净利润、扣非归母净利润、非经常性损益、经营活动现金流量净额、资本开支、折旧摊销、资产负债表主要科目、每股收益、ROE、总股本等），
+$\Metrics_{\text{der}}$ 是只能由程序派生的指标（毛利率、净利率、资产负债率、各项费用率、净现比）。
+称 $m$ 为\emph{发生额指标}，当且仅当 $\operatorname{kind}(m)=\text{amount}$ 且 $\operatorname{stmt}(m)\notin\{\text{balance},\text{derived}\}$；
+只有发生额指标可以跨期相减。每个指标还有两组别名：财报科目别名 $A_{\text{fs}}(m)$（规则通道匹配表格行名用）与研报说法别名 $A_{\text{cl}}(m)$（纠错时匹配研报措辞用）。
+
+\paragraph{期间。}
+期间集合由文法
+\[
+k \;::=\; Y \mid Y\text{H1} \mid Y\text{Q}q \mid Y\text{Q1-3},\qquad Y\in\{2000,\dots,2099\},\ q\in\{1,2,3,4\}
+\]
+生成（与 \code{external.PERIOD\_RE} 一致）。定义同比基期与环比基期算子：
+\[
+\beta_{\yoy}(Y s) = (Y-1)s,\qquad
+\beta_{\qoq}(Y\text{Q}q) = \begin{cases} Y\text{Q}(q-1) & q>1\\ (Y-1)\text{Q4} & q=1\end{cases},
+\]
+$\beta_{\qoq}$ 只对单季期间有定义。对数值 $a,b$，变动率定义为
+\begin{equation}
+\Delta\%(a,b)=\frac{a-b}{|b|}\times 100,\qquad b\neq 0,
+\label{eq:prob-pct}
+\end{equation}
+分母取绝对值是 A 股惯例：基期为负时，“亏损收窄”表现为正增长。比率类指标的变动用百分点差 $a-b$，不用变动率。
+
+\begin{definition}[事实]
+\label{def:prob-fact}
+一条事实是五元组 $f=(m,k,v,u,\Src)$，附带原文写法 $r$ 与抽取方式 $\mu\in\{\text{rule},\text{llm},\text{rule+llm},\text{derived}\}$。其中
+$m\in\Metrics$，$k\in\Periods$，$u$ 为原文单位，$v$ 为规范化数值：
+\[
+v = \begin{cases} \phi(u)\cdot\operatorname{parse}(r) & \operatorname{kind}(m)\in\{\text{amount},\text{shares}\}\\
+\operatorname{parse}(r) & \text{否则}\end{cases},
+\]
+$\phi$ 为单位换算系数（元 $=1$，千元 $=10^3$，万元 $=10^4$，百万元 $=10^6$，亿元 $=10^8$；股、万股、亿股同理）。
+来源定位 $\Src=(\text{source},\text{page},\text{chunk\_id},\text{row},\text{col})$；对模型通道的事实，$\text{row},\text{col}$ 可缺省，
+chunk 由证据谓词给出；对派生事实，$\Src$ 替换为公式与输入单元格列表。
+\end{definition}
+
+\begin{definition}[可接受的模型抽取条目]
+\label{def:prob-accept}
+模型通道提交的一条抽取条目 $x=(m,k,r,u,p,\text{scope},\text{file})$（file 即 \code{source\_file}）被接受，当且仅当以下条件全部成立：
+(i)~$m\in\Metrics_{\text{ext}}$；(ii)~$k$ 符合期间文法；(iii)~$\text{scope}=\text{合并}$；(iv)~$\operatorname{parse}(r)\neq\bot$；
+(v)~file 是主文件或已传入的补充文件之一，记其文档为 $\Doc'$；(vi)~$\operatorname{Ev}(\Doc',p,r)\neq\bot$；
+(vii)~若 $\operatorname{kind}(m)=\text{amount}$，则 $u$ 属于可换算单位。
+不满足的条目进入拒收集合 $\mathrm{Rej}$，附带具体理由。实现为 \code{external.\_to\_fact} 与 \code{ingest}。
+\end{definition}
+
+% ============================================================
+\subsection{双通道抽取与真值表}
+\label{sec:prob-truth}
+
+\begin{definition}[两个通道与一致性]
+\label{def:prob-channels}
+规则通道 $R(\Doc)$ 从主文件的合并报表表格中按科目别名与表头期间取数，得到事实集 $F_R$；
+模型通道把模型提交的条目按定义~\ref{def:prob-accept} 过滤，得到事实集 $F_L$。对键 $\kappa=(m,k)$，记 $F(\kappa)$ 为通道中该键的事实。
+两条事实 $f,f'$ 称为\emph{一致}，当且仅当 $|f.v-f'.v|\le\max(10^{-6}\,|f'.v|,\ 0.01)$。
+冲突集合定义为
+\[
+\mathrm{Conf}=\{\kappa : \exists f\in F_R(\kappa), f'\in F_L(\kappa),\ f,f' \text{ 不一致}\}\ \cup\ \{\kappa : \text{同一通道内 } \kappa \text{ 的两处取值不一致}\}.
+\]
+\end{definition}
+
+合并规则是：一致时保留一条，抽取方式记为 \code{rule+llm} 并把另一条的来源记为佐证；只有一个通道有值时保留该值；
+冲突时\textbf{不静默取舍}——在流水线中暂时保留模型通道的值（它来自模型逐页读原文，且已过证据谓词），但把该键记入 $\mathrm{Conf}$，
+并在 $\mathrm{Conf}\neq\emptyset$ 时阻断估值（\code{pipelines.\_p\_analyze}）。季报补充文件不进入规则通道（\S\ref{sec:rel-ashare}），
+其事实只来自模型通道。
+
+\begin{definition}[派生规则与真值表]
+\label{def:prob-truth}
+派生规则是形如 $\rho:\ (m,k)\leftarrow g\big((m_1,k_1),\dots,(m_j,k_j)\big)$ 的确定性等式，$g$ 为初等函数。本文使用三类规则：
+\begin{enumerate}
+\item \textbf{季度规则}（只作用于发生额指标 $m$，对每个年度 $Y$）：
+  \[
+  \begin{aligned}
+  &(m,Y\text{H1})\leftarrow (m,Y\text{Q1})+(m,Y\text{Q2}), && (m,Y\text{Q1-3})\leftarrow (m,Y\text{H1})+(m,Y\text{Q3}),\\
+  &(m,Y\text{Q2})\leftarrow (m,Y\text{H1})-(m,Y\text{Q1}), && (m,Y\text{Q3})\leftarrow (m,Y\text{Q1-3})-(m,Y\text{H1}),\\
+  &(m,Y\text{Q4})\leftarrow (m,Y)-(m,Y\text{Q1-3});
+  \end{aligned}
+  \]
+\item \textbf{比率规则}（每个期间 $k$）：毛利率 $=(\text{营业收入}-\text{营业成本})/\text{营业收入}\times100$，净利率、各项费用率、资产负债率同理，
+      净现比 $=$ 经营活动现金流量净额 $/$ 归母净利润；
+\item \textbf{恒等规则}：非经常性损益 $=$ 归母净利润 $-$ 扣非归母净利润（仅在未列示时派生）；折旧摊销 $=$ 固定资产折旧 $+$ 无形资产摊销。
+\end{enumerate}
+给定合并后的事实集 $F$，真值表 $\Truth=\operatorname{cl}(F)$ 是从 $F$ 出发反复应用派生规则、直到不再产生新单元格为止得到的部分函数
+$\Truth:\Metrics\times\Periods\rightharpoonup\mathbb{R}$。规则只在目标单元格\emph{不存在}且全部输入单元格\emph{存在}时触发，从不覆盖已有单元格；
+派生单元格记录公式与输入单元格的来源。实现为 \code{analyze.\_split\_quarters} 与 \code{\_derive}。
+\end{definition}
+
+\begin{proposition}[闭包的终止性与条件唯一性]
+\label{prop:prob-closure}
+(a)~$\operatorname{cl}(F)$ 的计算必然终止。(b)~若 $F$ 满足全部季度等式（即凡等式两侧单元格均为列示值时，等式精确成立），
+则 $\operatorname{cl}(F)$ 与规则的应用顺序无关。
+\end{proposition}
+\begin{proof}
+(a)~涉及的键集合有限（$F$ 中出现的指标与年度只有有限个，每个年度的期间只有七种），每次触发规则都使已定义单元格数严格增加且从不删除，故步数有限。
+(b)~季度规则构成线性方程组 $\{\text{H1}=\text{Q1}+\text{Q2},\ \text{Q1-3}=\text{H1}+\text{Q3},\ \text{年}=\text{Q1-3}+\text{Q4}\}$，每条规则只是其中某个等式对某个未知量的求解。
+若某个目标可经两条不同路径派生，两条路径的结果之差可以写成列示单元格上若干等式残差的线性组合；当列示值满足全部等式时残差为零，两路径结果相同。
+比率与恒等规则的输入在其触发时已确定，不受顺序影响。
+\end{proof}
+
+命题~\ref{prop:prob-closure}(b) 的前提在真实数据中未必成立（例如年报分季度表中的 Q4 与“全年 $-$ 三季报累计”因追溯调整而不等）。
+此时闭包结果依赖顺序，正因如此，\code{analyze()} 对“列示单季 vs 累计相减”逐项做勾稽，把不满足前提的情形显式暴露为勾稽失败。
+为避免“自己和自己比”，实现为每个单元格 $\kappa$ 维护其\emph{列示依赖集} $B(\kappa)\subseteq\operatorname{dom}(F)$：
+列示单元格 $B(\kappa)=\{\kappa\}$，派生单元格 $B(\kappa)=\bigcup_i B(\kappa_i)$。一项季度勾稽 $\kappa = \kappa_a-\kappa_b$ 只在
+$B(\kappa)=\{\kappa\}$（目标本身是列示值）且 $\kappa\notin B(\kappa_a)\cup B(\kappa_b)$ 时才执行。
+
+\begin{definition}[勾稽]
+\label{def:prob-tieout}
+勾稽是一组等式 $E=\{e_1,\dots,e_q\}$，每个 $e_j$ 形如 $\ell_j(\Truth)=r_j(\Truth)$，带相对容差 $\epsilon_j$。
+对期间 $k$，$e_j$ 的状态为：输入缺失时“不可评估”；$|\ell_j-r_j|\le\max(\epsilon_j|r_j|,\,1\text{元})$ 时“通过”；否则“失败”。
+本文的 $E$ 包括：资产总计 $=$ 负债和所有者权益总计；负债和所有者权益总计 $=$ 负债合计 $+$ 所有者权益合计；
+所有者权益合计 $=$ 归母权益 $+$ 少数股东权益；列示的非经常性损益 $=$ 归母净利润 $-$ 扣非归母净利润；
+年报列示的同比增减 vs 程序计算的同比（容差 $\halfulp(r)+0.01$）；列示单季 vs 累计相减（满足依赖条件时）。
+\end{definition}
+
+\begin{definition}[抽取通过]
+\label{def:prob-extract-pass}
+称一次抽取\emph{通过}，记 $\operatorname{Pass}_{\text{ext}}=1$，当且仅当
+$\mathrm{Rej}=\emptyset$、$\mathrm{Conf}=\emptyset$、全部勾稽无“失败”，且本期核心指标（营业收入、营业成本、营业利润、利润总额、净利润、
+归母净利润、扣非归母净利润、资产总计、负债合计、所有者权益合计、货币资金、经营活动现金流量净额、资本开支、基本每股收益）无缺失。
+只有 $\operatorname{Pass}_{\text{ext}}=1$ 时真值表才可被估值使用（实现为 \code{verify-facts} 的 \code{ok} 字段与流水线中的阻断检查）。
+\end{definition}
+
+% ============================================================
+\subsection{任务一：数据提取与财报分析}
+\label{sec:prob-task2}
+
+\paragraph{输入。}
+主文件 $\Doc$（年报，或招股书），可选补充文件 $\Doc_1,\dots,\Doc_s$（季报），报告年度 $Y$，模型抽取文件 $X$（可缺省，缺省时只走规则通道），
+可选的经营数据抄录 $X_{\text{extra}}$、一致预期表 $\mathcal{E}$ 与业绩预告表 $\mathcal{G}$。
+
+\paragraph{输出。}
+分析产物 $A_2=(\Truth,\ \mathrm{Chg},\ \mathrm{Tie},\ \mathrm{Sig},\ \mathrm{Qtr},\ \mathrm{Earn},\ \mathrm{Ext})$：
+\begin{itemize}
+\item $\Truth$：真值表（定义~\ref{def:prob-truth}），每个单元格带来源或公式；
+\item $\mathrm{Chg}$：关键指标在期间 $k$ 的水平值、同比（$\Delta\%$ 或百分点差）、环比（单季期间）；
+\item $\mathrm{Tie}$：勾稽结果（定义~\ref{def:prob-tieout}）；
+\item $\mathrm{Sig}$：异常信号集合，每个信号 $\sigma=(\text{id},\text{类型},\text{严重度},\text{事实陈述},\text{推论},\text{证据})$，
+      由阈值规则触发（非经常性损益占比、归母与扣非增速差、净现比、利润与现金流方向背离、应收与存货增速快于收入、毛利率大幅变动、会计口径变化披露）；
+\item $\mathrm{Qtr}$：单季表，逐季标注“列示”或“累计相减推出”及公式；
+\item $\mathrm{Earn}$：实际值 vs 一致预期（超预期 / 符合 / 低于）、业绩预告区间对比、EPS 质量筛查、利润变动归因桥；
+\item $\mathrm{Ext}$：经营数据表（逐格回查原文后的分产品、分渠道、产销量等）与程序计算的比率。
+\end{itemize}
+信号把“事实陈述”与“推论”分成两个字段，对应研报“区分事实与推论”的要求；信号阈值是确定性的，不由模型判断。
+
+\paragraph{利润变动归因的闭合约束。}
+利润变动归因桥把归母净利润的同比变化分解为
+\begin{equation}
+\begin{split}
+\Delta\text{NP}_{\text{parent}} ={}& \underbrace{\Delta\text{Rev}\cdot \text{GM}_{k-1}}_{\text{收入规模效应}} + \underbrace{\text{Rev}_k\cdot\Delta\text{GM}}_{\text{毛利率效应}}
+- \sum_{e}\Delta\text{Exp}_e + \Delta\text{其他经营损益}\\
+&+ \Delta\text{营业外收支} - \Delta\text{所得税} - \Delta\text{少数股东损益},
+\end{split}
+\label{eq:prob-bridge}
+\end{equation}
+其中 $e$ 遍历销售、管理、研发、财务费用。我们要求等式\textbf{严格闭合}：“其他经营损益”作为轧差项吸收税金及附加、投资收益、减值等未单列项目，
+从而各项之和精确等于归母净利润的变化，正文对归因项的任何引用都能与桥表对账。
+
+\paragraph{正确性标准与指标。}
+设金标准 $\mathcal{G}^\star=\{(m,k)\mapsto v^\star\}$。抽取正确率（\file{eval/run\_eval.py}）为
+\[
+\operatorname{Acc}=\frac{1}{|\mathcal{G}^\star|}\sum_{(m,k)}\mathbb{1}\big[\Truth(m,k)\text{ 有定义且 }|\Truth(m,k)-v^\star|\le 10^{-9}|v^\star|+10^{-6}\big].
+\]
+在没有金标准的真实年报上，我们报告\emph{规则通道覆盖率}（模型抽取并通过校验的核验值中规则通道独立取到的比例）
+与\emph{错配数}（两通道都有值但不一致、最终仍未解决的键数）。勾稽通过率与信号的事实正确性作为辅助指标。
+
+% ============================================================
+\subsection{任务二：自动化估值建模}
+\label{sec:prob-task4}
+
+\paragraph{输入。}
+真值表 $\Truth$（要求 $\operatorname{Pass}_{\text{ext}}=1$）、估值假设 $\theta$、可选经营数据 $\mathrm{Ext}$、可比公司表 $\mathcal{P}$、参考股价 $P_0$ 及其来源。
+$\theta$ 包含：三个情景 $s\in\{\text{base},\text{downside},\text{upside}\}$ 的收入增速向量（或分部量价设定）、资本开支率、终值参数与 WACC 调整；
+三表模型参数（毛利率偏移、周转天数偏移、分红率等）；WACC 参数（无风险利率 $r_f$、$\beta$、股权风险溢价 ERP、规模 / 特定 / 国别溢价、税前债务成本 $k_d$、
+边际税率 $t$、目标资本结构权重）；非经营性资产明细；评级规则（可缺省）。
+
+\paragraph{分部预测。}
+若 $\theta$ 含分部设定，对分部 $j$、预测年 $t$、情景 $s$：
+\[
+\text{Vol}_{j,t}=\text{Vol}_{j,t-1}(1+g^{\text{vol}}_{j,t,s}),\quad
+\text{Price}_{j,t}=\text{Price}_{j,t-1}(1+g^{\text{price}}_{j,t,s}),\quad
+\text{Rev}_{j,t}=\text{Vol}_{j,t}\cdot\text{Price}_{j,t},
+\]
+公司收入增速、综合毛利率与经营费用率由分部加总得到，覆盖 $\theta$ 中对应的情景向量。基期（$t=0$）的分部收入之和须与真值表营业收入闭合（评分条目 L1-02）。
+
+\paragraph{三表模型。}
+三表模型是一个映射 $\operatorname{TS}:(\Truth,\theta,s)\mapsto (\text{IS}_t,\text{BS}_t,\text{CF}_t)_{t=1}^{N}$，单位百万元，满足以下约束（勾稽容差 0.05 百万元）：
+\begin{align}
+&\text{资产}_t = \text{负债}_t + \text{权益}_t, \label{eq:prob-bs}\\
+&\text{现金}_t = \text{现金}_{t-1} + \text{CFO}_t + \text{CFI}_t + \text{CFF}_t, \label{eq:prob-cash}\\
+&\text{权益}_t = \text{权益}_{t-1} + \text{NI}_t - \text{Div}_t, \label{eq:prob-re}\\
+&\text{Interest}_t = f\big(\text{Debt}_t,\text{Cash}_t\big),\ \text{Debt}_t,\text{Cash}_t \text{ 依赖 } \text{NI}_t \text{（不动点迭代求解）}. \label{eq:prob-fixpoint}
+\end{align}
+历史期 EBIT 采用式~\eqref{eq:rel-ebit} 的口径；经营费用（不含折旧摊销）为轧差项 $\text{毛利}-\text{EBIT}-\text{D\&A}$，从而历史期模型 EBIT 与 DCF 的 EBIT 同口径。
+
+\paragraph{三表驱动的 DCF。}
+记 $\operatorname{drv}(\operatorname{TS},s)$ 为从三表模型情景 $s$ 导出的 DCF 驱动向量：收入增速 $g_t$、EBIT 利润率 $m_t$、税率 $\tau_t$、
+折旧摊销率 $\delta_t$、资本开支率 $\kappa_t$、营运资本占收入比 $w_t$。DCF 定义为
+\begin{align}
+\text{Rev}_t &= \text{Rev}_{t-1}(1+g_t),\quad \text{EBIT}_t = m_t\text{Rev}_t,\\
+\text{FCFF}_t &= \text{EBIT}_t(1-\tau_t) + \delta_t\text{Rev}_t - \kappa_t\text{Rev}_t - (w_t\text{Rev}_t - w_{t-1}\text{Rev}_{t-1}),\\
+K_e &= r_f + \beta\cdot\text{ERP} + \pi_{\text{size}} + \pi_{\text{spec}} + \pi_{\text{country}},\\
+\text{WACC}_s &= E\%\cdot K_e + D\%\cdot k_d(1-t) + P\%\cdot K_p + \Delta_s,
+\end{align}
+企业价值按式~\eqref{eq:rel-ev}（年中折现、终值按第 $N$ 年末折现，永续增长法或退出倍数法）。股权价值桥为
+\begin{equation}
+\begin{split}
+\text{EqV}_s = \text{EV}_s &+ \underbrace{(\text{现金}+\text{非经营性资产}+\text{联营投资})}_{\text{加回}}\\
+&- \underbrace{(\text{有息负债}+\text{租赁}+\text{少数股东权益}+\text{养老金}+\text{优先股}+\text{期权}+\text{其他类债务})}_{\text{扣减}},
+\end{split}
+\label{eq:prob-bridgeeq}
+\end{equation}
+每股价值 $V_s=\text{EqV}_s/\text{摊薄股本}$（元）。非经营性资产若以明细给出，每项须过证据谓词，由程序换算加总（\code{build\_plan.resolve\_non\_operating\_items}）。
+
+\paragraph{敏感性、评级与反向 DCF。}
+敏感性矩阵 $S[i,j]=V_{\text{base}}(\text{WACC}+\Delta_i,\ g+\Delta_j)$。评级为上行空间 $u=V_{\text{base}}/P_0-1$ 的阶梯函数
+\begin{equation}
+\operatorname{rating}(u)=\begin{cases}
+\text{买入} & u\ge 0.20\\ \text{增持} & 0.05\le u<0.20\\ \text{中性} & -0.05\le u<0.05\\ \text{减持} & -0.20\le u<-0.05\\ \text{卖出} & u<-0.20
+\end{cases}
+\label{eq:prob-rating}
+\end{equation}
+反向 DCF 对单个变量 $x\in\{g\text{（整体平移）},\ m\text{（整体平移）},\ \text{WACC},\ g_{\infty}\text{ 或退出倍数}\}$ 求解
+\begin{equation}
+x^\star=\arg\min_{x\in\mathcal{X}^\star}|x-x_{\text{base}}|,\qquad \mathcal{X}^\star=\{x : V_{\text{base}}(x)=P_0\},
+\label{eq:prob-rdcf}
+\end{equation}
+即在所有使每股价值等于参考股价的取值中取离基准最近者；其余变量固定为基准情景。由于 $V(x)$ 对增速不一定单调（增长越快，营运资本与资本开支占用越多），
+实现先在区间上做 400 点网格扫描找全部变号区间，取离基准最近的一个再二分（精度 $10^{-6}$ 元）；无解时报告网格上的最大可达每股价值。
+隐含值按“不高于基准 / 高于基准但在历史区间内 / 超出历史最好水平 / 无历史可比”分档。
+
+\paragraph{可比公司。}
+对可比公司集合 $\mathcal{P}$ 与倍数 $\mu\in\{\text{P/E},\text{EV/EBITDA},\text{EV/Sales},\text{P/B}\}$，分母非正时记为 NM 并剔除，
+按四分位距规则剔除离群值后取 P25、中位数、P75，乘以目标公司对应分母得到隐含价值区间，再经股权价值桥换算为每股价值。
+
+\paragraph{正确性标准。}
+估值没有“真值”，其正确性是\emph{内部闭合}与\emph{实现一致}：
+\begin{enumerate}[label=(V\arabic*)]
+\item 三表勾稽：式~\eqref{eq:prob-bs}～\eqref{eq:prob-re} 在全部预测期、全部情景成立；
+\item DCF 与三表同口径：$\forall s,t$，DCF 使用的驱动向量与 $\operatorname{drv}(\operatorname{TS},s)$ 逐项相等；
+\item 股权价值桥闭合：式~\eqref{eq:prob-bridgeeq} 各项逐项列示且加总等于股权价值；每股价值可由股权价值与股本复算；
+\item 情景排序：$V_{\text{downside}}\le V_{\text{base}}\le V_{\text{upside}}$；敏感性方向：$\partial V/\partial\text{WACC}<0$、$\partial V/\partial g_\infty>0$（在矩阵上逐格检查）；
+\item 评级一致：正文评级 $=\operatorname{rating}(u)$；
+\item 实现一致：在相同输入上，自研引擎与参照引擎的输出逐位相等（三表、情景表、业绩分析）或相对误差 $<10^{-9}$（DCF）。
+\end{enumerate}
+(V1)～(V5) 对应评分标准 L0-02、L0-03、L0-05 与 L1-03～L1-06；(V6) 由 golden 快照测试与参照对照测试守护。
+此外我们报告终值占企业价值比例与预测首年相对历史的衔接（毛利率与增速的跳变），作为合理性提示而非正确性标准。
+
+% ============================================================
+\subsection{任务三：研究报告纠错核查}
+\label{sec:prob-task5}
+
+\paragraph{输入与断言。}
+输入为一篇研报 $\Doc_R$（Markdown 或 PDF）与真值表 $\Truth$。断言是一个元组
+\[
+\gamma = (m,\ k,\ \tau,\ r,\ x,\ u,\ \text{quote},\ \text{loc},\ \text{fc}),
+\]
+其中 $\tau\in\{\text{level},\text{yoy},\text{ratio},\text{pp\_change}\}$ 为断言类型（水平值、同比、比率、百分点变动），
+$r$ 为原文写法，$x$ 为带方向的数值（“下降 5\%”记为 $-5$），$u$ 为单位，quote 为原文片段，loc 为位置（页、chunk、句序号），
+$\text{fc}\in\{0,1\}$ 标记预测性表述（含“预计”“预测”“有望”“目标”或晚于报告期的年份）。断言集 $\Claims$ 由规则通道（中文数字模式与最长别名匹配）
+与模型通道（模型拆出、要求 quote 为原文连续片段且包含该数字）合并去重得到。
+
+\paragraph{真值函数。}
+对断言类型 $\tau$ 定义真值 $T_\tau(m,k)$：
+\begin{gather*}
+T_{\text{level}}=T_{\text{ratio}}=\Truth(m,k),\\
+T_{\text{yoy}}=\Delta\%\big(\Truth(m,k),\Truth(m,\beta_{\yoy}(k))\big),\qquad
+T_{\text{pp}}=\Truth(m,k)-\Truth(m,\beta_{\yoy}(k)),
+\end{gather*}
+其中 $T_{\text{pp}}$ 对应 \code{pp\_change} 类型。
+断言的规范化数值为 $\hat x = x\cdot\phi(u)$（水平值）或 $\hat x=x$（其余）。
+
+\begin{definition}[按展示精度的容差]
+\label{def:prob-tol}
+断言 $\gamma$ 的容差为
+\[
+\operatorname{tol}(\gamma)=\begin{cases}
+\halfulp(r)\cdot\phi(u) + 10^{-6}\,|T| & \tau=\text{level}\\
+\halfulp(r) + 0.005 & \text{否则}
+\end{cases}
+\]
+称 $\gamma$ 与值 $y$ \emph{相符}，记 $\gamma\approx y$，当且仅当 $|\hat x-y|\le\operatorname{tol}(\gamma)$。
+\end{definition}
+
+\begin{definition}[判定函数]
+\label{def:prob-verdict}
+判定集合 $\mathcal{V}=\{$正确，数值错误，单位错误，期间错配，口径错误，方向错误，无法核实$\}$。
+判定函数 $\operatorname{verdict}(\gamma,\Truth)$ 按以下顺序取第一个成立的分支：
+\begin{enumerate}
+\item 若 $\text{fc}=1$ 或 $T_\tau(m,k)$ 无定义，判“无法核实”；
+\item 若 $\gamma\approx T_\tau(m,k)$，判“正确”；
+\item 若 $\tau=\text{level}$ 且存在替代单位 $u'\neq u$ 使 $|x\phi(u')-T|\le\halfulp(r)\phi(u')+10^{-6}|T|$，判“单位错误”；
+\item 若 $\tau\in\{\text{yoy},\text{pp\_change}\}$ 且 $-\hat x$ 与 $T$ 相符，判“方向错误”；
+\item 若存在期间 $k'\neq k$ 使 $\gamma\approx T_\tau(m,k')$，判“期间错配”；
+\item 若存在同组指标 $m'\neq m$（$m,m'$ 属于同一“易混口径组”）使 $\gamma\approx T_\tau(m',k)$，判“口径错误”；
+\item 否则判“数值错误”。
+\end{enumerate}
+易混口径组为：$\{$净利润，归母净利润，扣非归母净利润，利润总额，营业利润$\}$、$\{$营业收入，营业成本$\}$、$\{$毛利率，净利率$\}$、
+$\{$资产总计，负债合计，所有者权益合计，归母权益$\}$、$\{$折旧，摊销，折旧摊销$\}$、$\{$经营现金流，资本开支$\}$。
+每个错误判定附真值、来源（派生值附公式与输入单元格）与修改建议。实现为 \code{verify.verify\_claim}。
+\end{definition}
+
+\begin{proposition}[四舍五入安全]
+\label{prop:prob-rounding}
+设真值为 $T$，研报作者把 $T$（换算到单位 $u$ 后）按四舍五入保留 $d$ 位小数写成 $r$，且 $\text{fc}=0$、$T$ 有定义。则 $\operatorname{verdict}(\gamma,\Truth)=\text{正确}$。
+\end{proposition}
+\begin{proof}
+四舍五入保证 $|\operatorname{parse}(r)-T/\phi(u)|\le\tfrac12 10^{-d}=\halfulp(r)$，两边乘以 $\phi(u)$ 得 $|\hat x - T|\le\halfulp(r)\phi(u)\le\operatorname{tol}(\gamma)$，
+故分支 2 成立。对非水平值类型同理，额外的 0.005 只放宽容差。
+\end{proof}
+
+命题~\ref{prop:prob-rounding} 说明“把四舍五入判为错误”这一最常见的误报在定义上不可能发生。反方向的代价是：低于展示精度的真实错误
+（例如真值 58.624 亿元写成 58.62 亿元在任何意义上都不算错，但真值 58.626 写成 58.62 是“舍入方向错误”）被视为正确。
+我们认为这是合理的——研报读者无法从 58.62 分辨这两种情形。
+
+\paragraph{误报控制的形式化。}
+判定函数的设计目标是在固定召回率下最小化误报。三条规则共同实现这一点：
+(1)~分支 1 把预测与缺真值的断言排除在“错误”之外；(2)~分支 3～6 的错误类型诊断要求\emph{精确匹配}一个替代解释，
+找不到就退回“数值错误”，而不是猜测最可能的类型；(3)~口径诊断只在易混组内搜索，避免跨指标的巧合匹配
+（指标越多、期间越多，随机命中某个替代值的概率越高）。
+
+\paragraph{内部一致性。}
+另定义研报自身的内部一致性：对评级、各情景每股价值、预测年度的公司整体收入 / 归母净利润 / 扣非归母净利润 / 净利润 / 每股收益 / 毛利率及其增速，
+若同一（指标、期间、情景）键在文中出现两个数值 $a,b$ 且 $|a-b|>\halfulp(r_a)+\halfulp(r_b)$，记为一处矛盾。
+为保证“命中即确认”，引用外部来源的句子、条件句、敏感性与区间表述、分部口径的句子不进入比较（\code{consistency.py}）。
+
+\paragraph{评价指标。}
+设标注错误集合 $\mathcal{L}$（每个标注有匹配片段与期望判定），系统判为错误的断言集合 $\hat{\mathcal{L}}$。
+召回率 $=|\{\ell\in\mathcal{L}:\ell\text{ 被判为错误}\}|/|\mathcal{L}|$；精确率 $=$ 真阳性 $/|\hat{\mathcal{L}}|$；误报数 $=|\hat{\mathcal{L}}|-$ 真阳性；
+类型准确率 $=$ 判出且类型正确的数目 $/$ 判出数目（\code{eval\_check}）。
+
+% ============================================================
+\subsection{系统性质}
+\label{sec:prob-props}
+
+本节定义系统层面要保证的性质。它们刻画的不是某一个任务的正确性，而是“整个系统的输出可以被信任到什么程度”。
+
+\paragraph{按展示精度的数值匹配。}
+对文稿中的一个数字 $(r,u)$（原文写法与紧随的单位），定义其候选换算因子集合
+$\Phi(u)=\{10^{-8}\}$（$u=$ 亿元或亿）、$\{10^{-4}\}$（$u=$ 万元或万）、$\{1,100\}$（$u=\%$ 或个百分点，允许以小数存储的比例）、$\{1\}$（其余）。
+称 $(r,u)$ \emph{在值集 $V$ 中有出处}，记 $(r,u)\models V$，当且仅当
+\begin{equation}
+\exists v\in V,\ \exists \varphi\in\Phi(u):\quad \big|\,|v|\cdot\varphi - |\operatorname{parse}(r)|\,\big| \le \halfulp(r)(1+10^{-9}) + 10^{-12}.
+\label{eq:prob-models}
+\end{equation}
+比较取绝对值：文稿写“下降 5\%”时数字本身不带符号。年份、一位整数序号、页码（前有“第”、后有“页 / 年 / 月 / 日 / 节”）不参与检查。
+
+\begin{definition}[结论性产物与值集]
+\label{def:prob-art}
+本次运行的结论性产物 $\Art$ 是运行目录中以下文件的集合：财报分析（含真值表）、业绩分析、抽取结果、经营数据、DCF 结果、可比公司结果、
+非经营性资产明细、盈利预测摘要、分部预测、反向 DCF、估值输入假设（WACC 与终值参数）、纠错结论中的正确值。
+记 $\operatorname{val}(\Art)$ 为从这些文件中递归收集的全部数值（含字符串中“58.62亿元”式写法换算后的值；以百万元计的块另按 $\times10^6$ 换算）。
+研报原文中的断言数字、三表与敏感性等中间网格\emph{不}属于 $\Art$。外部来源值集 $\operatorname{val}(\Sources)$ 为 $\Sources$ 中各条摘句所登记的数值。
+\end{definition}
+
+把中间网格排除在 $\Art$ 之外是有意的：网格中的数值数量巨大（三情景 × 多年 × 数十个科目，加上敏感性矩阵），
+值集越大，编造的数字“碰巧”落入某个容差窗口的概率越高（见 \S\ref{sec:prob-threat} 的分析）。研报原文的断言数字被排除，是因为研报里的错误数字不能成为出处。
+
+\begin{definition}[数字闭合]
+\label{def:prob-closure}
+文稿 $\Narr$ 相对 $(\Art,\Sources)$ \emph{数字闭合}，当且仅当 $\Narr$ 中每个参与检查的数字 $(r,u)$ 满足 $(r,u)\models\operatorname{val}(\Art)\cup\operatorname{val}(\Sources)$。
+\end{definition}
+
+\begin{definition}[引用完备]
+\label{def:prob-cite}
+文稿 $\Narr$ 相对 $\Sources$ \emph{引用完备}，当且仅当对每个句子 $\varsigma$：(i)~$\varsigma$ 引用的每个编号 \code{[S$i$]} 都在 $\Sources$ 中登记；
+(ii)~若 $\varsigma$ 中某个数字 $(r,u)\not\models\operatorname{val}(\Art)$ 但 $(r,u)\models\operatorname{val}(\Sources)$（即只能在外部来源中找到出处），
+则 $\varsigma$ 至少引用了一个其值集包含该数字出处的来源编号。
+\end{definition}
+
+\begin{definition}[绑定正确（部分）]
+\label{def:prob-binding}
+把文稿当作一篇研报，用研报纠错的断言抽取与判定函数处理；记 $\Claims_{\text{bind}}\subseteq\Claims(\Narr)$ 为口径明确的历史断言
+（排除预测、季度、跨年序列、分部、现金流明细等，规则见 \code{guard.\_binding\_candidate}）。
+文稿\emph{绑定正确}，当且仅当 $\forall\gamma\in\Claims_{\text{bind}}$，$\operatorname{verdict}(\gamma,\Truth)\in\{\text{正确},\text{无法核实}\}$，或 $\gamma$ 能按分部数据核对通过。
+\end{definition}
+
+绑定正确是一个\emph{部分}性质：它只覆盖断言抽取器能识别的表述。\S\ref{sec:intro-failures} 中股权价值桥构成写错的案例就落在它的覆盖范围之外。
+
+\begin{definition}[可追溯性]
+\label{def:prob-trace}
+一个数字是\emph{可追溯的}，当且仅当存在一条有限的出处链终止于原文或外部摘句：
+(a)~真值表的列示单元格追溯到 $(\text{source},\text{page},\text{chunk\_id}[,\text{row},\text{col}])$，且证据谓词成立；
+(b)~派生单元格追溯到公式与输入单元格，输入单元格递归可追溯；
+(c)~估值产物中的数值追溯到其计算函数、输入单元格与假设文件中的具体字段；
+(d)~外部数值追溯到 $\Sources$ 中的一条来源（网址、发布与访问日期、摘句），且数值原样出现在摘句中；
+(e)~文稿中的数字通过式~\eqref{eq:prob-models} 追溯到 (a)～(d) 中的某个值。
+系统\emph{可追溯}，当且仅当 $\Truth$、$\operatorname{val}(\Art)$ 与 $\Narr$ 中的全部数字都可追溯。
+\end{definition}
+
+\begin{definition}[出处类型]
+\label{def:prob-provenance}
+对 $\Narr$ 中有出处的数字，按顺序“报告披露 $\succ$ 外部来源 $\succ$ 程序计算 $\succ$ 估值假设 $\succ$ 模型预测”取第一个能找到出处的值集，
+定义其出处类型；报告披露与外部来源归为\emph{事实}，程序计算归为\emph{推论}，估值假设与模型预测归为\emph{观点}。
+\end{definition}
+
+先认事实、再认推论、最后认观点的顺序意味着：一个数若同时是披露值和某个预测值（巧合相等），按事实计。
+这一偏向使“观点”计数成为下界，适合用来提示“正文中至少有多少数字依赖我们的判断”。
+
+\begin{definition}[数字锁]
+\label{def:prob-numlock}
+记 $\operatorname{tok}(\Narr)$ 为文稿去掉注释与来源标记后提取的“数字 + 单位”记号多重集（去千分位，年份与一位序号除外），$\operatorname{src}(\Narr)$ 为其引用的来源编号集合。
+改写 $\Narr^0\to\Narr$ 满足\emph{数字锁}，当且仅当
+\begin{equation}
+\operatorname{set}(\operatorname{tok}(\Narr))\subseteq\operatorname{set}(\operatorname{tok}(\Narr^0))\quad\text{且}\quad\operatorname{src}(\Narr)\subseteq\operatorname{src}(\Narr^0).
+\label{eq:prob-numlock}
+\end{equation}
+\end{definition}
+
+\begin{proposition}[数字锁保持数字闭合]
+\label{prop:prob-numlock}
+若 $\Narr^0$ 相对 $(\Art,\Sources)$ 数字闭合，且 $\Narr^0\to\Narr$ 满足数字锁，则 $\Narr$ 相对 $(\Art,\Sources)$ 数字闭合。
+\end{proposition}
+\begin{proof}
+数字闭合只依赖每个数字记号 $(r,u)$ 本身。$\Narr$ 中每个记号都以相同写法与单位出现在 $\Narr^0$ 中，而 $\Narr^0$ 中该记号有出处，故 $\Narr$ 中该记号也有出处。
+\end{proof}
+
+注意数字锁\emph{不}保持绑定正确与引用完备：改写可能把一个数字挪到另一个指标旁边，或把带 \code{[S$i$]} 的句子拆成两句使数字与编号分离。
+因此流水线要求改写后重跑完整的护栏（\S\ref{sec:guards}），数字锁只是第一道、最便宜的检查。
+
+\begin{definition}[可复现性]
+\label{def:prob-repro}
+引擎运行是一个确定性函数 $E:(\Doc,\{\Doc_i\},X,X_{\text{extra}},\theta,\mathcal{P},\mathcal{E},\mathcal{G},\text{argv})\mapsto\Art$。
+一次运行\emph{可复现}，当且仅当其清单（manifest）记录了全部输入文件的 SHA-256 与命令行参数，且在任意环境中以哈希相同的输入重跑 $E$ 得到逐字节（数值逐位）相同的 $\Art$。
+\end{definition}
+
+系统分三层讨论可复现性：引擎层满足定义~\ref{def:prob-repro}（模型写下的抽取文件随代码提交，评审无需模型即可复算）；
+会话层只满足\emph{可审计}——事件流完整记录每次工具调用与文件读写，但模型输出不能离线重放；
+质检层的计分可由保存的逐条判定重算，重新盲评需要模型。
+
+% ============================================================
+\subsection{单位与口径约定}
+\label{sec:prob-units}
+
+表~\ref{tab:prob-units} 汇总全系统的单位与口径约定。这些约定在各模块之间是强制一致的：跨模块传递的数值从不隐式换算单位，
+换算只发生在明确标注的边界（抽取入表、估值取数、护栏比对）。
+
+\begin{table}[h]
+\centering
+\caption{单位与口径约定。}
+\label{tab:prob-units}
+\small
+\begin{tabularx}{\linewidth}{@{}p{2.8cm}p{3.2cm}X@{}}
+\toprule
+对象 & 约定 & 说明 \\
+\midrule
+财务事实（金额） & 元 & 抽取时按原文单位换算：$v=\phi(u)\operatorname{parse}(r)$；原文写法 $r$ 与单位 $u$ 同时保留 \\
+每股收益 & 元 / 股 & 不换算 \\
+比率 & 百分数值 & 14.49 表示 14.49\%；比率变动用百分点差 \\
+股本 & 股 & 万股、亿股按 $\phi$ 换算 \\
+估值模块 & 百万元 & 三表、DCF、可比公司；每股价值为元；产物中以 \code{\_mm} 结尾的键与特定块按百万元计 \\
+DCF 与反向 DCF 中的比率 & 小数 & 0.08 表示 8\%（与财务事实的百分数值不同，在边界处换算） \\
+经营数据 & 按列单位保存 & 金额列须能换算为元；其余计量单位（吨、台、元 / 吨）原值保存；外币与少见量级拒收 \\
+报表口径 & 合并报表 & 母公司报表一律排除 \\
+营业收入 & “营业收入”行 & 同表同时出现营业总收入时取营业收入 \\
+EBIT & 式~\eqref{eq:rel-ebit} & 利润总额 $+$ 财务费用 $-$ 投资收益 $-$ 公允价值变动收益；资产处置、其他收益、减值、营业外收支留在 EBIT 内 \\
+非经营性资产 & 股权价值桥加回 & 被 EBIT 剔除的投资类资产在此加回；未设置时报告提示估值偏保守 \\
+归母净利润预测 & 三表净利润 $\times$ 最近实际年度归母占比 & 假设少数股东损益占比不变（简化） \\
+同比基期为负 & 分母取绝对值 & 式~\eqref{eq:prob-pct} \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\begin{example}[单位边界上的一个错误类别]
+估值产物 \file{valuation.json} 中企业价值以百万元存为 \code{1748372.0}，正文写“17,483.72 亿元”。护栏若只按“亿元”换算 $10^{-8}$，
+会在值集中找 $1.748372\times10^{-2}$ 亿元而失败；因此 \code{guard} 对以百万元计的块额外生成 $\times10^6$ 的元值。
+反过来，若把全部数值都同时按元与百万元两种解释放入值集，值集翻倍、巧合匹配概率上升。实现只对明确标注为百万元的块做双重解释，正是为了在两者之间取平衡。
+\end{example}
+
+% ============================================================
+\subsection{威胁模型与系统不变量}
+\label{sec:prob-threat}
+
+\subsubsection{把 LLM 当作不可信但有用的组件}
+我们借用安全工程中“威胁模型”的说法，但对象不是外部攻击者，而是系统内部的模型会话。模型被视为一个\emph{不可信但有用}的组件：
+它的输出往往正确且有价值，但系统不默认信任任何一条输出，所有进入下游的内容都必须经过确定性检查。
+
+\paragraph{能力假设。}
+在工作区内，一个模型会话可以：读取工作区内的任意文件（年报、技能、引擎源码、上游产物）；联网检索与抓取网页；
+在 \file{data/} 下创建与修改任意文件；以白名单方式调用引擎命令与编排器命令。它\emph{不能}（由权限配置强制）：
+读取仓库所在目录及其上级目录；修改引擎（\file{finagent/}）、技能（\file{.claude/}）、年报原件、工作区元数据与 \file{CLAUDE.md}；
+调用白名单之外的命令。盲评会话只能读盲评目录、写判定文件，不能联网。
+
+\paragraph{故障模型。}
+我们不假设模型是恶意的，但假设它的错误可以是\emph{任意的}，并且错误在局部看起来合理（\S\ref{sec:intro-failures}）。
+具体地，模型可能：(T1)~写出原文中不存在的数字；(T2)~写出存在但属于其他口径、期间或对象的数字；(T3)~写出心算的派生数；
+(T4)~写出无出处的外部数字或错误的来源编号；(T5)~在改写中改动数字；(T6)~在两通道冲突时选择其一并不报告；
+(T7)~跳过阶段、使用过期产物或声称完成了未完成的工作；(T8)~读取并迎合评分标准；(T9)~评审时受到过程信息或自身偏好的影响。
+
+\paragraph{信任边界。}
+图~\ref{fig:prob-trust} 给出信任边界：橙色区域内的一切都是模型可写的，因而不可信；蓝色区域是只读的确定性程序与数据，是可信计算基（trusted computing base）。
+每条跨越边界、从橙色流向下游的数据，都必须经过一个红色检查点。
+
+\begin{figure}[t]
+\centering
+\begin{tikzpicture}[node distance=5mm and 6mm,
+  lab/.style={font=\scriptsize,text=midgray}]
+\node[agent,minimum width=24mm] (fx) {\file{facts.json}\\\file{extras.json}};
+\node[agent,below=of fx,minimum width=24mm] (sx) {\file{sources.json}};
+\node[agent,below=of sx,minimum width=24mm] (th) {估值假设 $\theta$};
+\node[agent,below=of th,minimum width=24mm] (nx) {文稿 $\Narr^0$};
+\node[agent,below=of nx,minimum width=24mm] (nr) {改写稿 $\Narr$};
+\node[gate,right=8mm of fx] (c1) {证据谓词\\双通道};
+\node[gate,right=8mm of sx] (c2) {摘句含数};
+\node[gate,right=8mm of th] (c3) {结构校验\\有来源};
+\node[gate,right=8mm of nx] (c4) {guard};
+\node[gate,right=8mm of nr] (c5) {numlock\\+ guard};
+\node[prog,right=8mm of c1,minimum width=26mm] (T) {真值表 $\Truth$};
+\node[prog,right=8mm of c3,minimum width=26mm] (A) {产物 $\Art$};
+\node[prog,right=8mm of c5,minimum width=26mm] (D) {交付物};
+\node[prog,above=6mm of T,minimum width=26mm] (doc) {年报原文 $\Doc$（只读）};
+\foreach \a/\b in {fx/c1,sx/c2,th/c3,nx/c4,nr/c5} \draw[arr] (\a)--(\b);
+\draw[arr] (c1)--(T); \draw[arr] (T)--(A); \draw[arr] (c3)--(A);
+\draw[arr] (c2.east) -- ++(2mm,0) |- ([yshift=-2mm]A.west);
+\draw[arr] (c4.east) -- ++(4mm,0) |- (D.west);
+\draw[arr] (c5)--(D);
+\draw[darr] (doc)--(T);
+\draw[darr,nipsblue] (A.south) -- ++(0,-3mm) -| ([xshift=4mm]c4.east);
+\begin{scope}[on background layer]
+\node[draw=modelorange!80!black,dashed,rounded corners,fill=modelorange!5,fit=(fx)(nr),inner sep=3mm,label={[lab]above:模型可写（不可信）}] {};
+\node[draw=nipsblue,dashed,rounded corners,fill=nipsblue!4,fit=(T)(A)(D)(doc),inner sep=3mm,label={[lab]below:确定性程序与只读数据（可信计算基）}] {};
+\end{scope}
+\end{tikzpicture}
+\caption{信任边界。模型可写的文件（左）只能经过程序检查点（中，红色）进入可信区域（右）；
+护栏检查文稿时以产物 $\Art$ 为参照（蓝色虚线）。引擎、技能与年报原件对模型只读。}
+\label{fig:prob-trust}
+\end{figure}
+
+\subsubsection{系统不变量}
+在上述故障模型下，系统保证以下不变量。每条不变量后给出强制执行的机制；第 \ref{sec:principles} 节逐条论证。
+
+\begin{invariant}[证据]
+\label{inv:evidence}
+$\forall f\in\Truth$，若 $f.\mu\in\{\text{llm},\text{rule+llm}\}$，则 $\operatorname{Ev}(\Doc_{f.\text{source}},f.\text{page},f.r)\neq\bot$ 且 $f$ 取自合并口径。
+\emph{机制}：定义~\ref{def:prob-accept}，\code{verify-facts}。\emph{应对}：T1，部分 T2。
+\end{invariant}
+
+\begin{invariant}[不静默取舍]
+\label{inv:noselect}
+若 $\mathrm{Conf}\neq\emptyset$ 或 $\mathrm{Rej}\neq\emptyset$ 或存在失败勾稽或核心缺失，则估值不运行。
+\emph{机制}：流水线阻断与阶段 2 闸门。\emph{应对}：T2、T6。
+\end{invariant}
+
+\begin{invariant}[单一真值]
+\label{inv:single}
+估值、纠错与护栏使用的全部历史财务数字都是 $\Truth$ 的单元格；下游不重新抽取或重算基础数字。
+\emph{机制}：模块接口只接受 \code{truth\_table}；代码评审与测试。\emph{应对}：防止同一数在不同模块中取值不同。
+\end{invariant}
+
+\begin{invariant}[计算外置]
+\label{inv:compute}
+$\operatorname{val}(\Art)$ 中的每个派生数由引擎计算；模型不写入 $\Art$。
+\emph{机制}：$\Art$ 只由引擎写入运行目录，运行目录由追踪器记录哈希；模型只能写 \file{data/} 下的输入文件。\emph{应对}：T3。
+\end{invariant}
+
+\begin{invariant}[数字闭合与引用完备]
+\label{inv:closure}
+进入排版阶段的文稿 $\Narr$ 相对 $(\Art,\Sources)$ 数字闭合（定义~\ref{def:prob-closure}）、引用完备（定义~\ref{def:prob-cite}）、
+绑定正确（定义~\ref{def:prob-binding}），且无内部矛盾；外部登记的每个数值原样出现在其摘句中。
+\emph{机制}：\code{guard --sources}、\code{verify-sources}、阶段 1、4、8 闸门。\emph{应对}：T1、T3、T4，部分 T2。
+\end{invariant}
+
+\begin{invariant}[改写不增数]
+\label{inv:numlock}
+任何由模型执行的改写满足数字锁（定义~\ref{def:prob-numlock}），且改写后重新满足不变量~\ref{inv:closure}。
+\emph{机制}：阶段 9 闸门、\code{refine} 中复核与修订会话。\emph{应对}：T5。
+\end{invariant}
+
+\begin{invariant}[阶段单调与新鲜]
+\label{inv:gates}
+第 $i$ 阶段判为通过，当且仅当 $\Gate_1,\dots,\Gate_i$ 均成立，且第 $i$ 阶段的产物晚于其全部输入。
+\emph{机制}：\code{status} 的前序阻断与修改时间比较。\emph{应对}：T7。
+\end{invariant}
+
+\begin{invariant}[信息隔离]
+\label{inv:isolation}
+生成方会话可读的文件集合与评分标准、质检代码、评测结果、其他公司的产物不相交；评审会话可读的文件集合只含交付物与脱敏的评审条目。
+\emph{机制}：仓库外工作区、权限配置、引擎复制时排除 \file{evaluation/}、盲评目录、问题单脱敏。\emph{应对}：T8、T9。
+\end{invariant}
+
+\begin{invariant}[可审计]
+\label{inv:audit}
+引擎的每次文件读取与产物写入都带 SHA-256 记录；每个会话的完整事件流落盘。
+\emph{机制}：\code{tracing.read\_file}、\code{write\_artifact}、\code{.pipeline/agents/*.jsonl}。\emph{应对}：事后追查任何一类故障。
+\end{invariant}
+
+\subsubsection{不保证什么：残余风险}
+不变量刻画了系统能证明的东西，也就划定了它不能证明的东西。我们明确列出残余风险：
+
+\begin{enumerate}[label=(R\arabic*)]
+\item \textbf{语义错配。} 证据谓词与数字闭合都是“存在性”判定：一个数在原文所写页出现、在产物中有匹配值，并不说明它被配给了正确的指标。
+      规则通道比对与绑定核对覆盖了可识别的部分，聚合数构成描述、分部与整体混淆等仍依赖复核与盲评（负向条目 N-03）。
+\item \textbf{巧合匹配。} 编造的数字可能碰巧落入某个产物值的容差窗口。设文稿中一个两位小数、以亿元计的编造数字近似均匀地落在长度为 $L$（亿元）的区间内，
+      值集中有 $n$ 个落在该区间、彼此间距大于窗口宽度的值，则巧合通过概率约为 $n\cdot 2\halfulp/L = n\cdot 0.01/L$。
+      例如 \fab{$n=300$、$L=1000$ 亿元时约为 0.3\%}；把中间网格排除在 $\Art$ 之外正是为了控制 $n$。对一位小数或整数写法，窗口变宽，风险相应上升。
+\item \textbf{规则通道的盲区。} 季报不进规则通道；股本变动表、政府补助口径、部分扣非季度别名规则通道取不到。这些键上只有单通道，冲突检测失效，只剩证据谓词。
+\item \textbf{假设的合理性。} 估值假设 $\theta$ 由模型起草，程序只检查结构、有无来源引用与闭合，不判断增速或 WACC 是否合理；合理性由盲评条目（预测假设有依据、情景与敏感性）与人工复核清单兜底。
+\item \textbf{外部来源的真实性。} \code{verify-sources} 检查摘句含数与结构，不检查网页是否真实存在、摘句是否确实来自该网页（不在线复查）。
+      模型可以在形式上伪造一条来源；我们依赖检索记录（事件流中的 WebSearch / WebFetch 调用）事后审计。
+\item \textbf{评审误差。} 盲评的稳定性与精确率是被度量而非被保证的（\S\ref{sec:intro-results}）；整节删除类缺陷的判出率尤其低。
+\end{enumerate}
+
+\begin{tradeoff}[：存在性判定 vs 语义判定]
+一个自然的问题是：为什么不让另一个模型核对“数字是否配给了正确的指标”，从而覆盖 R1？
+我们的回答是分层：能确定判定的部分（存在性、精度、绑定中可识别的部分、内部矛盾）一律由程序做，因为它没有判定误差、可复现、可单元测试；
+只能由语义理解判定的部分交给与写作者隔离的复核编辑与盲评，并通过校准度量其误差。把语义核对也交给模型并作为硬闸门，
+会把一个有误差的判定放进阻断路径，导致流水线在误判时卡死或在漏判时给出虚假的安全感。
+\end{tradeoff}
+
+% ============================================================
+\subsection{研报生成任务的形式化}
+\label{sec:prob-gen}
+
+\paragraph{工作区与角色。}
+工作区状态 $\mathcal{W}$ 是一个文件系统快照：路径到（内容，修改时间）的映射。角色集合
+$\mathcal{Q}=\{\text{研究助理},\text{分析师},\text{主笔},\text{复核编辑},\text{排版设计师}\}$，每个角色 $q$ 负责连续的一段阶段 $I_q\subseteq\{1,\dots,11\}$：
+研究助理 $\{1\}$、分析师 $\{2,\dots,7\}$、主笔 $\{8\}$、复核编辑 $\{9\}$、排版设计师 $\{10,11\}$。
+一次会话是一个（非确定性的）状态转移 $\mathcal{W}\xrightarrow{q}\mathcal{W}'$，其写集合受权限限制：$\operatorname{dom}(\mathcal{W}')\setminus\operatorname{dom}(\mathcal{W})$ 与被修改的文件都在 \file{data/} 与运行目录下。
+会话之间没有共享状态，除 $\mathcal{W}$ 之外不传递任何信息。
+
+\paragraph{阶段与闸门。}
+第 $i$ 阶段有读集合 $\mathrm{In}_i$、产物集合 $\mathrm{Out}_i$ 与闸门谓词 $\Gate_i:\mathcal{W}\to\{0,1\}$（表~\ref{tab:prob-gates}）。闸门由三类原子条件组合而成：
+\emph{存在性}（文件存在）、\emph{校验性}（引擎命令在该文件上返回通过，如证据校验、护栏、数字锁）、\emph{数量下限}（检索次数、专题数、字数、页数、图表数）。
+另有\emph{新鲜性}条件：$\operatorname{mtime}(\mathrm{Out}_i)\ge\max\operatorname{mtime}(\mathrm{In}_i)$，例如阶段 2 要求校验结果晚于抽取文件，
+阶段 7 要求估值运行晚于抽取、经营数据、假设与可比公司表，阶段 10 要求 PDF 晚于文稿与排版脚本。
+
+\begin{table}[h]
+\centering
+\caption{11 道闸门的形式化摘要（阈值取自 \file{report\_pipeline.py}；完整定义见附录~\ref{app:gates}）。}
+\label{tab:prob-gates}
+\small
+\begin{tabularx}{\linewidth}{@{}p{0.5cm}p{1.5cm}X@{}}
+\toprule
+$i$ & 阶段 & $\Gate_i(\mathcal{W})=1$ 当且仅当 \\
+\midrule
+1 & 资料搜集 & 来源登记与资料包存在；七个类别全覆盖；资料搜集检索 $\ge 20$ 次；近 90 天发布的来源 $\ge 3$ 个；\code{verify-sources} 通过 \\
+2 & 财务抽取 & 校验结果晚于抽取文件，且 $\operatorname{Pass}_{\text{ext}}=1$ \\
+3 & 分析框架 & 框架文件含“外部调研清单”节与 $\ge 3$ 个深度专题 \\
+4 & 深度调研 & 专题笔记 $\ge 3$ 份，每份 $\ge 1500$ 字、$\ge 3$ 个独立来源；补充检索问题 $\ge 8$ 个；来源登记晚于框架；\code{verify-sources} 通过 \\
+5 & 经营数据 & 经营数据逐格回查拒收 0 格 \\
+6 & 估值假设 & 有参考股价及其来源；依据中引用了 \code{[S编号]} \\
+7 & 估值运行 & 存在成功的估值运行，晚于全部输入，且带上经营数据与可比公司表 \\
+8 & 文稿 & 对当前文稿、以当前运行目录与来源登记跑过护栏且通过；正文 $\ge 15{,}000$ 字，深度研究占比 $\ge 60\%$ \\
+9 & 复核改写 & 初稿备份、修改记录、复核清单存在；数字锁通过 \\
+10 & 排版 & PDF 晚于文稿与脚本；25～32 页；图表 $\ge 60$；已命名且与主文件一致；渲染检查凭证有效 \\
+11 & 交付说明 & 交付说明存在 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\begin{definition}[阶段状态]
+\label{def:prob-stage}
+第 $i$ 阶段的状态为 $\operatorname{ok}_i(\mathcal{W})=\Gate_i(\mathcal{W})\wedge\operatorname{ok}_{i-1}(\mathcal{W})$，$\operatorname{ok}_0\equiv1$。
+工作区\emph{完成}当且仅当 $\operatorname{ok}_{11}(\mathcal{W})=1$。下一个待办阶段为 $\min\{i:\operatorname{ok}_i=0\}$。
+\end{definition}
+
+前序阻断使 $\operatorname{ok}$ 关于阶段号单调不增：一个阶段即便自身文件齐全，只要前序阶段未过（例如上游抽取被修改后重新校验失败），也判为未通过。
+这避免了“拿过期产物当成果”——不变量~\ref{inv:gates}。
+
+\paragraph{运行过程。}
+\code{run} 按角色顺序执行：对角色 $q$，若 $\operatorname{ok}_{\max I_q}(\mathcal{W})=1$ 则跳过，否则启动一次会话；会话结束后重新计算阶段状态，
+若 $\operatorname{ok}_{\max I_q}=0$ 则停止并把卡住的闸门与下一步建议交给人。于是 \code{run} 是一个确定性的外层循环包着若干非确定性的会话：
+\begin{algorithm}[h]
+\caption{研报生成的外层编排（\code{report\_pipeline.run\_agent} 的抽象）}
+\label{alg:prob-run}
+\begin{algorithmic}[1]
+\Function{Run}{$\mathcal{W}$}
+  \For{$q$ \textbf{in} (研究助理, 分析师, 主笔, 复核编辑, 排版设计师)}
+    \If{$\operatorname{ok}_{\max I_q}(\mathcal{W})=1$} \State \textbf{continue} \Comment{已通过的阶段跳过，可断点续跑}
+    \EndIf
+    \State $\mathcal{W}\gets \textsc{Session}(q,\ \text{model}(q),\ \text{prompt}(q),\ \text{allowlist})(\mathcal{W})$ \Comment{独立无头会话}
+    \If{$\operatorname{ok}_{\max I_q}(\mathcal{W})=0$} \State \Return (未完成, $\min\{i:\operatorname{ok}_i=0\}$)
+    \EndIf
+  \EndFor
+  \State \Return (完成, $\bot$)
+\EndFunction
+\end{algorithmic}
+\end{algorithm}
+
+\paragraph{交付物。}
+完成的工作区产出交付物集合
+$\mathcal{D}=\{$研报 PDF，估值工作簿，$\Narr$，$\Art$，$\Sources$，复核清单，交付说明$\}$。
+研报 PDF 中的每个图表由排版脚本从 $\Art$ 读数绘制，正文取自 $\Narr$；因此 PDF 中的数字继承 $\Art$ 与 $\Narr$ 的可追溯性。
+排版脚本本身由模型编写（属于不可信区），其“只从产物读数”是写作规范而非程序保证——这是残余风险 R1 的另一种表现，由渲染检查与盲评部分覆盖。
+
+% ============================================================
+\subsection{评价问题的形式化}
+\label{sec:prob-evalform}
+
+\paragraph{评分标准。}
+评分标准是条目集合 $\mathcal{R}=\{\rho_1,\dots,\rho_n\}$，每个条目
+$\rho=(\text{id},\ell,j,w,\text{cap},\text{crit},\text{route})$，其中层级 $\ell\in\{$L0，L1，L2，L3，N$\}$，
+判定者 $j\in\{\text{program},\text{llm}\}$，分值 $w$（L0 为 0，N 为负），可选封顶 cap，判定标准与反例文本，问题单路由。
+v2 评分标准有 L0 5 条、L1 13 条（合计 35 分）、L2 12 条（45 分）、L3 7 条（20 分）、N 4 条（$-8,-8,-6,-8$）。
+
+\paragraph{判定。}
+程序条目的判定 $\operatorname{res}(\rho)\in\{0,1\}$ 由确定性检查给出。模型条目由评审会话给出，评审的信息集为
+\begin{equation}
+\mathcal{I}_{\text{judge}} = \big(\mathcal{D}_{\text{blind}},\ \{(\text{id},\text{criterion},\text{fail\_examples}) : \rho\in\mathcal{R}, j(\rho)=\text{llm}\}\big),
+\label{eq:prob-judgeinfo}
+\end{equation}
+即只含交付物副本与条目的编号、判定标准和反例——不含分值、层级权重、写作过程、生成模型名。评审对每个条目输出 $(\text{passed},\text{evidence},\text{reason})$，
+规则为“拿不准判不通过”。负向条目的 $\text{passed}=1$ 表示“命中”。
+
+\paragraph{计分。}
+记 $\operatorname{res}(\rho)\in\{0,1\}$，缺判定按 0 计。层得分 $S_\ell=\sum_{\rho:\ell(\rho)=\ell} w_\rho\operatorname{res}(\rho)$，满分 $M_\ell=\sum_{\rho:\ell(\rho)=\ell}w_\rho$（$\ell\neq\text{N}$）。
+扣分 $D=\max\big(\sum_{\rho\in\text{N}}w_\rho\operatorname{res}(\rho),\ D_{\min}\big)$，$D_{\min}=-20$。总分
+\begin{equation}
+\text{Total}=\min\Big(\max\big(0,\ S_{\text{L1}}+S_{\text{L2}}+S_{\text{L3}}+D\big),\ \min C\Big),
+\label{eq:prob-score}
+\end{equation}
+其中封顶集合 $C$ 包含：若任一 L0 条目未通过，则含 40；若命中带封顶的负向条目（无来源外部数据封顶 70），则含其封顶值；$C$ 为空时 $\min C=+\infty$。
+
+\begin{definition}[交付标准]
+\label{def:prob-deliver}
+研报\emph{可交付}，当且仅当 L0 全部通过、$\text{Total}\ge 75$、$S_{\text{L1}}/M_{\text{L1}}\ge0.8$、$S_{\text{L2}}/M_{\text{L2}}\ge0.6$、$S_{\text{L3}}/M_{\text{L3}}\ge0.6$，且未命中任何负向条目。
+\end{definition}
+
+计分与交付判定完全由程序完成（\code{evaluation.rubric.score}）；改权重或门槛后可用保存的逐条判定重算，不必重跑评审。
+
+\paragraph{闭环。}
+设第 $n$ 轮的评测结果为 $(\text{Total}_n,\ \text{deliverable}_n,\ \mathcal{J}_n)$，$\mathcal{J}_n$ 为问题单。问题单只保留每个未通过条目的理由、证据与路由，
+不含条目原文与分值。路由函数把问题分到三类：数据与假设类 $\to$ 修订会话（之后删除初稿备份，复核与排版从头再来）；措辞与结构类 $\to$ 复核编辑；
+版面类（阶段 10）$\to$ 排版设计师。停止规则为
+\[
+\text{stop}_n \iff \text{deliverable}_n \ \vee\ n\ge 3 \ \vee\ (\text{Total}_n-\text{Total}_{n-1}<2 \wedge \text{Total}_{n-1}-\text{Total}_{n-2}<2)\ \vee\ \mathcal{J}_n^{\text{route}}=\emptyset,
+\]
+结束时回滚到 $n^\star=\arg\max_n\text{Total}_n$ 的快照；若该轮仍不可交付，把剩余问题追加进复核清单交人工。
+另外，若某轮开始时闸门未全过（$\operatorname{ok}_{11}=0$），不做盲评而直接停止——交付物不全时盲评没有意义。
+
+\paragraph{评审校准。}
+评审是一个随机判定器 $J:\mathcal{I}_{\text{judge}}\to\{0,1\}^{|\mathcal{R}_{\text{llm}}|}$。我们用三组量刻画它：
+\begin{itemize}
+\item \textbf{稳定性}：对同一份交付物独立评审 $K$ 次，得到判定向量 $\mathbf{y}^{(1)},\dots,\mathbf{y}^{(K)}$。
+      逐条全一致率 $=\frac{1}{|\mathcal{R}_{\text{llm}}|}\sum_\rho\mathbb{1}[y^{(1)}_\rho=\dots=y^{(K)}_\rho]$；
+      两两不一致率 $=\binom{K}{2}^{-1}\sum_{a<b}\frac{1}{|\mathcal{R}_{\text{llm}}|}\sum_\rho\mathbb{1}[y^{(a)}_\rho\neq y^{(b)}_\rho]$；总分极差 $=\max_a\text{Total}^{(a)}-\min_a\text{Total}^{(a)}$。
+\item \textbf{劣化判出率}：劣化算子 $\delta$ 把交付物 $\mathcal{D}$ 变成 $\delta(\mathcal{D})$，制造一个已知缺陷，其目标条目集合为 $\mathcal{R}_\delta$。
+      若原稿已被多数评审判出该缺陷，则该变体\emph{无效}（命中不说明灵敏）；对有效变体，判出 $\iff$ 评审在 $\delta(\mathcal{D})$ 上对 $\mathcal{R}_\delta$ 中某条给出“有缺陷”的判定。
+      连带改判 $=$ 非目标条目中与原稿多数判定不同的条目数，应与稳定性中的两两不一致率相当，否则说明劣化干扰了无关判断。
+\item \textbf{精确率}：人工复核评审判“不通过”（或负向“命中”）的条目，精确率 $=$ 人工确认数 $/$（确认数 $+$ 误报数），待查不计。
+\end{itemize}
+这三组量分别对应评审的方差、灵敏度（召回的代理）与特异度（精确率）。由于人工只复核评审判出的问题，我们没有评审“漏判”的直接估计，
+劣化判出率是它的代理——这一限制在第 \ref{sec:eval} 节讨论。
+
+% ============================================================
+\subsection{小结}
+\label{sec:prob-summary}
+
+本章把 \sysname{} 要解决的问题分解为三层。\textbf{任务层}：财报分析、估值建模与纠错核查分别是“从文档构造带出处的真值表并派生分析”、
+“在真值表与假设上构造内部闭合的估值模型”和“在真值表上按展示精度判定研报断言”，各有明确的输入、输出与正确性标准。
+\textbf{性质层}：数字闭合、引用完备、绑定正确（部分）、可追溯、出处类型、数字锁与可复现，刻画了“系统输出可以被信任到什么程度”；
+其中命题~\ref{prop:prob-rounding} 与命题~\ref{prop:prob-numlock} 给出了误报控制与改写安全的简单保证。
+\textbf{过程层}：在把模型视为不可信但有用的组件的威胁模型下，九条不变量通过证据谓词、阻断、单一真值表、计算外置、护栏、数字锁、
+单调闸门、信息隔离与追踪来强制执行；残余风险（语义错配、巧合匹配、规则通道盲区、假设合理性、来源真实性、评审误差）被明确列出，
+由复核编辑、盲评与人工复核清单兜底。后续各章按这一框架展开实现与实验。

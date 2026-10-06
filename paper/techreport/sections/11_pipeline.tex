@@ -1,0 +1,1513 @@
+% ======================================================================
+% 第 11 节  多智能体研报流水线
+% 依据：finagent/report_pipeline.py（全文）、finagent/evaluation/judge.py、finagent/output/{sources,numlock,render_check}.py、
+%       .claude/skills/*、reportkit、docs/architecture.md、docs/design/*、tests/test_report_{pipeline,kit,render}.py、git log，
+%       以及本机工作区 ~/finagent-samples/*/.pipeline/agent_runs.json 的真实运行记录。
+% ======================================================================
+\section{多智能体研报流水线}
+\label{sec:pipeline}
+
+% file 样式用到 tape 形状（shapes.symbols），macros.tex 未加载，这里补上
+\usetikzlibrary{shapes.symbols}
+% ---------------- 本章局部宏（前缀 pl，避免与其他章节冲突）
+\newcommand{\plW}{\mathcal{W}}                 % 工作区状态
+\newcommand{\plmt}{\tau}                        % 文件修改时间（mtime），不存在记 0
+\newcommand{\plG}[1]{\Gate_{#1}}                % 第 i 道闸门（局部谓词）
+\newcommand{\plGh}[1]{\widehat{\Gate}_{#1}}     % 前序阻断后的闸门
+\newcommand{\plok}{\mathsf{ok}}
+\newcommand{\plex}{\mathsf{exists}}
+\newcommand{\plchars}{\operatorname{chars}}
+\newcommand{\plsha}{\operatorname{sha256}}
+% 长标识符较多：本章内放宽断行（章末恢复）
+\setlength{\emergencystretch}{3em}
+
+前面几节讲的是“单份年报 $\Doc$ 到真值表 $\Truth$、估值与纠错结论”的确定性计算引擎。
+引擎可以保证每个数字可追溯，但写不出一篇研报：研报需要读完几百页年报、联网检索年报之后的最新信息、
+推导这家公司的分析框架、写两三万字的论证、再排成三十页带六七十个图表的 PDF。这些工作只能交给模型。
+本节讲我们怎样把这件事拆给多个模型会话去做，同时不让模型破坏第~\ref{sec:principles}~节立下的规矩
+（LLM 不做算术、每个数字可追溯、评分标准对生成方不可见）。
+
+我们的做法可以概括为一句话：\textbf{确定性的 Python 编排器在仓库之外为一家公司搭一个隔离工作区，
+依次起五个互不共享上下文的无头 Claude Code 会话，每个会话只做自己负责的阶段，
+由 11 道程序闸门判定能否交接；交付物再由第六个会话在另一个只含交付物的目录里盲评，
+问题单按类型路由回对应角色返工。}全部逻辑在 \file{finagent/report\_pipeline.py}（1139 行）里，
+子命令有 \code{build}、\code{run}、\code{status}、\code{refine}、\code{collect}、\code{scorecard}，
+另有两个辅助命令 \code{template}（工作区内复制模板）与 \code{sync-renderer}（升级已有工作区的排版设施）。
+
+本节的主要贡献是：
+\begin{enumerate}
+  \item 把无头编码智能体（headless coding agent）当作“执行器（harness）”而不是“编排器（orchestrator）”的系统设计：
+        编排完全确定，会话只通过文件交接，执行器可替换（\S\ref{sec:pipe-harness}）；
+  \item 以文件系统与权限规则实现的信息边界：工作区在仓库目录树之外，评测模块与评分标准不进入，
+        引擎与 skill 只读（\S\ref{sec:pipe-build}）；
+  \item 带新鲜度语义（校验晚于修改、核对当前稿、凭证绑定哈希）和前序阻断的 11 道闸门，
+        我们把它们形式化为工作区状态上的谓词（\S\ref{sec:pipe-gates}）；
+  \item “先搜集、后分析”的调研阶段设计与深度专题机制（\S\ref{sec:pipe-research}）；
+  \item 盲评驱动的返工闭环 \code{refine}：问题单只含理由与证据，按类型路由给对应角色，回滚到最佳一轮（\S\ref{sec:pipe-refine}）；
+  \item 排版层的“实测”检查：在真实 PDF 中定位正文原文、测量字形字号，修复了 Chrome 遇超宽表格整体缩放的隐性缺陷（\S\ref{sec:pipe-reportkit}）。
+\end{enumerate}
+本节还整理了开发过程中真实发生的失败案例（\S\ref{sec:pipe-failures}）、主要权衡（\S\ref{sec:pipe-tradeoffs}），
+以及一次完整运行的时间线与成本（\S\ref{sec:pipe-timeline}）。
+文中引用的会话耗时、轮数、费用与 token 用量都取自本机工作区的 \file{.pipeline/agent\_runs.json}
+（由 \code{\_session} 自动写入），盲评用量取自仓库 \file{eval/results/*/judge\_run.json}。
+
+% ======================================================================
+\subsection{问题与设计目标}
+\label{sec:pipe-goals}
+
+最早的做法是在仓库里打开一个 Claude Code 会话，让它按 skill 从抽取一路做到 PDF
+（2026-09-29 的贵州茅台样例研报即如此产生，提交 \code{f458598}）；随后宁德时代、招商轮船两家也沿用同一方式。
+这种做法暴露出四类问题：
+
+\begin{description}[leftmargin=1.2em,style=nextline]
+  \item[上下文污染] 仓库里有别家公司的 \file{framework.md}、文稿和交付 PDF。模型写新公司时会主动去读已有样例，
+        \fab{例如把茅台框架里“产品结构驱动毛利率”“经销商预收款是领先指标”这类白酒特有的分析，原样套到电池公司上}。
+        仓库上级目录还有原插件的参考代码（\file{reference/openai-pei/}），也可能被读进来。
+  \item[评分泄露] 仓库里有评分标准 \file{eval/rubrics/} 和历次评测结果。生成方一旦读到，就会对着条目写，
+        评测失去意义（第~\ref{sec:eval}~节）。
+  \item[上下文耗尽] 单个会话要读年报、检索、抽取、写两三万字、排版和逐页看预览，
+        宇树科技一次排版会话就用了 288 轮、约 5,203 万输入 token（含缓存读取）。全部塞进一个会话，
+        中途必然触发上下文压缩，压缩后模型会重读已完成阶段的文件，或忘记早先的约束。
+  \item[自我审查失效] 让写作的会话自己复核，它会为自己写下的句子辩护；
+        让写作会话顺带排版，它会为了尽快结束而压缩版面（\S\ref{sec:pipe-failures} 的失败案例~4：11 页、26 个图表）。
+\end{description}
+
+由此确定六个设计目标：
+
+\begin{table}[h]
+\centering\small
+\caption{流水线的设计目标与对应机制}
+\label{tab:pipe-goals}
+\begin{tabularx}{\linewidth}{@{}l>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}X@{}}
+\toprule
+目标 & 含义 & 主要机制 \\
+\midrule
+隔离 & 模型只看到本公司年报、引擎与执行 skill & 仓库外工作区；\code{\_check\_location}；\code{settings.json} 禁读围栏 \\
+防应试 & 生成方看不到评分标准与分值 & 工作区排除 \file{finagent/evaluation/}；评测结果放工作区外；问题单只含理由与证据 \\
+可恢复 & 任何一次会话中断后，从断点接着做 & 文件即状态；\code{status} 判断已完成阶段；\code{run} 跳过已通过的会话 \\
+可审计 & 每个会话做了什么、花了多少，都能事后查 & \code{stream-json} 事件流原样落盘；\file{agent\_runs.json} 汇总用量 \\
+不可伪造 & 闸门不能被过期产物或模型自述骗过 & 新鲜度规则；“核对当前稿”；渲染凭证绑定 SHA-256；前序阻断 \\
+可替换 & 编排逻辑不依赖某个执行器 & 编排器是确定性 Python；执行器只是一条命令行 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+图~\ref{fig:pipe-overview} 给出整体结构。蓝色是确定性程序，橙色是模型会话，红色菱形是程序闸门。
+
+\begin{figure}[t]
+\centering
+\resizebox{\linewidth}{!}{%
+\begin{tikzpicture}[every node/.style={font=\small}]
+  % 第一行：仓库 → build → 工作区
+  \node[prog] (repo) at (0,0) {仓库\\\scriptsize 引擎 · skill · 年报库};
+  \node[prog] (build) at (4.2,0) {\code{build}\\\scriptsize 隔离工作区 + 权限};
+  \node[file, minimum width=34mm] (ws) at (9.4,0) {\textasciitilde/finagent-samples/\\<公司>\_<年度>[\_<tag>]};
+  \draw[arr] (repo) -- node[above,font=\scriptsize]{白名单复制} (build);
+  \draw[arr] (build) -- (ws);
+  % 第二行：编排器
+  \node[prog, minimum width=90mm] (orch) at (7.2,-1.6) {编排器 \code{run} / \code{status}：确定性 Python，按闸门决定下一个会话};
+  \draw[darr] (ws.south) -- ([xshift=22mm]orch.north);
+  % 第三行：五个会话与闸门
+  \foreach \i/\x/\t/\st in {1/0/研究助理/阶段 1, 2/3.1/分析师/阶段 2--7, 3/6.2/主笔/阶段 8, 4/9.3/复核编辑/阶段 9, 5/12.4/排版设计师/阶段 10--11}{
+    \node[agent, minimum width=20mm] (a\i) at (\x,-3.3) {\t\\\scriptsize \st};
+  }
+  \foreach \i/\x/\g in {1/1.55/1, 2/4.65/7, 3/7.75/8, 4/10.85/9}{
+    \node[gate] (g\i) at (\x,-3.3) {$\widehat G_{\g}$};
+  }
+  \node[gate] (g5) at (14.15,-3.3) {$\widehat G_{11}$};
+  \draw[arr] (a1)--(g1); \draw[arr] (g1)--(a2); \draw[arr] (a2)--(g2); \draw[arr] (g2)--(a3);
+  \draw[arr] (a3)--(g3); \draw[arr] (g3)--(a4); \draw[arr] (a4)--(g4); \draw[arr] (g4)--(a5); \draw[arr] (a5)--(g5);
+  \foreach \i in {1,...,5}{ \draw[darr,midgray] (orch.south -| a\i.north) -- (a\i.north); }
+  % 第四行：盲评与返工
+  \node[file, minimum width=34mm] (blind) at (12.4,-5.2) {\textasciitilde/finagent-evals/<ws>/r<n>/\\只含交付物 + 评审条目};
+  \node[agent] (judge) at (8.6,-5.2) {盲评质检员\\\scriptsize L2 / L3 / N};
+  \node[prog] (score) at (5.3,-5.2) {程序检查 L0/L1\\+ Python 计分};
+  \node[prog] (route) at (1.9,-5.2) {\code{refine}\\问题单路由};
+  \draw[arr] (g5.south) |- (blind.east);
+  \draw[arr] (blind) -- (judge); \draw[arr] (judge) -- (score); \draw[arr] (score) -- (route);
+  \draw[darr,gatered] (route.north) -- node[right,font=\scriptsize,text=gatered]{未达标：按类型返工} (route.north |- a1.south);
+  \node[prog] (collect) at (1.9,-6.7) {\code{collect} → 仓库 \file{data/extractions/}、\file{runs/}、\file{report/交付/}};
+  \draw[arr] (route) -- node[right,font=\scriptsize]{达标或停止} (collect);
+\end{tikzpicture}}
+\caption{流水线总览。\code{build} 在仓库之外搭工作区；编排器依次起五个无头会话，每次交接前判前序闸门 $\widehat G_i$；
+\code{refine} 在另一个只含交付物的目录里起盲评会话，按问题单把返工路由回生成侧。}
+\label{fig:pipe-overview}
+\end{figure}
+
+% ======================================================================
+\subsection{执行器：无头 Claude Code}
+\label{sec:pipe-harness}
+
+\subsubsection{为什么用编码智能体作执行器}
+
+一篇研报涉及的操作远多于“调用模型生成文本”：读 PDF 的指定页、写 JSON、运行 \code{verify-facts} 并按输出回原文修正、
+联网检索并打开原文核对数字、写 Python 排版脚本、渲染后看 PNG 预览再改版面。这些都是“工具调用 + 观察 + 修正”的循环
+（ReAct 式交替推理与行动~\citep{yao2023react}），而且多数工具是文件系统和 shell。
+与其自己实现一个工具循环，不如直接用一个成熟的编码智能体作执行器~\citep{anthropic2025claudecode,yang2024sweagent}：
+它已经具备读写文件、执行命令、联网检索、读图片、上下文压缩、权限控制这些能力，
+我们只需要规定“在哪个目录、能用哪些工具、做哪几个阶段、做完停下”。
+
+仓库历史上曾有过另外两条路线：程序内调用国产模型 API 的工具循环（\code{ask}、\code{--llm}），
+以及 Codex 执行器与 DeepSeek 执行器（PR~\#16）。2026-10-05 的提交 \code{d9ae074} 把它们全部删除，只保留无头 Claude Code 一条路线。
+删除的理由是维护成本：每多一个执行器，就要多一套权限语义、事件格式和指令文件（Codex 读 \file{AGENTS.md}，Claude Code 读 \file{CLAUDE.md}），
+而且第~\ref{sec:principles}~节的约束要在每一套里分别落实。
+
+\subsubsection{命令形态}
+
+每个会话由 \code{agent\_command} 生成同一形态的命令（清单~\ref{lst:pipe-cmd}），在工作区根目录作为子进程启动：
+
+\begin{lstlisting}[caption={一个会话的命令行（\code{agent\_command}；\texttt{<PROMPT>} 为角色启动提示）},label={lst:pipe-cmd}]
+claude -p "<PROMPT>" \
+  --permission-mode acceptEdits \
+  --allowedTools "Bash(./py -m finagent *)" "Bash(./py -m finagent.report_pipeline *)" \
+                 "Bash(./py data/extractions/*)" "Bash(./py -c *)" \
+                 "Bash(cp data/extractions/*)" "Bash(ls *)" "Bash(mkdir -p data/*)" \
+                 "Read" "Write(./data/**)" "Edit(./data/**)" "WebSearch" "WebFetch" \
+  --output-format stream-json --verbose \
+  --model claude-opus-5-5
+\end{lstlisting}
+
+各参数的取舍如下。
+
+\paragraph{\code{-p}（非交互）。}会话没有人可以审批，遇到不在白名单的操作直接被拒（而不是挂起等待），
+模型会在结果里说明“哪条命令被拒、需要什么授权”。这是我们发现权限配置错误的主要途径（\S\ref{sec:pipe-failures}）。
+
+\paragraph{\code{--permission-mode acceptEdits}。}自动接受文件编辑，但编辑仍受 \code{settings.json} 的 \code{deny} 约束。
+我们没有用跳过全部权限检查的模式：那样 \code{deny} 规则形同虚设，模型可以修改引擎或闸门代码。
+
+\paragraph{\code{--allowedTools}（白名单再传一次）。}工作区里的 \file{.claude/settings.json} 已经写了同一份 \code{allow}，
+但 Claude Code 在未被用户信任的目录里会忽略项目级 \code{allow}（\code{deny} 照常生效）。
+工作区是新建目录，每次都未被信任；为了不去改用户的全局信任配置，编排器把同一份清单 \code{ALLOWED\_TOOLS} 经命令行再传一遍。
+两处取同一个常量，保证一致。
+
+\paragraph{通配规则而不是前缀规则。}早期写法 \code{Bash(./py data/extractions/:*)} 是旧式前缀语法，只在词边界匹配，
+匹配不到 \code{./py data/extractions/<公司>/report/build\_report.py}，排版命令在无头执行时被要求审批（失败案例~3）。
+提交 \code{6d9a436} 改成通配写法 \code{Bash(./py data/extractions/*)}。
+
+\paragraph{解释器包装 \code{./py}。}仓库路径含空格（\file{OpenAI fin/}），绝对路径的解释器命令无法稳定地匹配权限前缀；
+\code{build} 在工作区根写一个两行的 POSIX 包装脚本 \code{./py}（Windows 为 \code{py.cmd}），
+内部 \code{exec} 仓库虚拟环境的解释器，并把 \code{MPLCONFIGDIR} 指到工作区内的 \file{.pipeline/mpl}，
+使 matplotlib 在“只能写工作区”时也能缓存字体。每个启动提示都以同一句话结尾：
+“命令直接以 \code{./py} 开头，不加 \code{cd}、不串联。”加 \code{cd} 或用 \code{\&\&}、管道串联多条命令，
+命令串的前缀就不再是 \code{./py -m finagent}，会被拒。
+
+\paragraph{\code{--output-format stream-json --verbose}。}输出为每行一个 JSON 事件（JSONL）：助手消息、工具调用、工具结果，
+最后一个 \code{type=result} 事件给出轮数、费用与 token 用量。下面讲它怎样落盘。
+
+\subsubsection{事件流落盘与用量汇总}
+
+\code{\_session(ws, model, role, prompt)} 以 \code{subprocess.Popen} 启动命令，逐行读取标准输出：
+每行先原样写入 \file{.pipeline/agents/<YYYYmmdd-HHMMSS>-claude-<role>.jsonl} 并立即 \code{flush}，
+再由 \code{\_event\_brief} 把它压缩成一行摘要打印到终端（助手文本截前 200 字，\code{result} 截前 400 字，其余事件不打印）。
+逐行刷盘的意义在于：会话被 Ctrl-C 中断、额度耗尽或连接断开时，日志仍完整保留到中断前一刻。
+中断时编排器先 \code{terminate}，5 秒内未退出再 \code{kill}，返回码记 130，工作区进度保留。
+
+会话结束后，\code{\_usage} 从日志中找到 \code{result} 事件，取轮数 \code{num\_turns}、费用 \code{total\_cost\_usd} 与用量。
+输入 token 按下式合计（缓存读取与缓存写入都计入，否则会严重低估上下文规模）：
+\begin{equation}
+  \text{input\_tokens} = u_{\text{input}} + u_{\text{cache\_read}} + u_{\text{cache\_creation}},\qquad
+  \text{output\_tokens} = u_{\text{output}} .
+  \label{eq:pipe-tokens}
+\end{equation}
+一条运行记录追加到 \file{.pipeline/agent\_runs.json}（清单~\ref{lst:pipe-record}，数值为贵州茅台 1005 批次分析师会话的真实记录）。
+多次会话的记录只追加不覆盖，所以中断重跑、返工都会留下完整历史，\code{scorecard} 按全部记录求和。
+
+\begin{lstlisting}[caption={\file{agent\_runs.json} 的一条记录（贵州茅台 1005 批次，分析师会话）},label={lst:pipe-record}]
+{"agent": "claude", "model": "claude-opus-5-5", "role": "analyst",
+ "started_at": "2026-10-05T04:31:48", "elapsed_sec": 816.6, "exit_code": 0,
+ "log": ".pipeline/agents/20261005-043148-claude-analyst.jsonl",
+ "turns": 115, "cost_usd": 6.2030152,
+ "input_tokens": 12534808, "output_tokens": 76799}
+\end{lstlisting}
+
+\code{cost\_usd} 是 Claude Code 按 API 价格折算的等值费用。我们实际走的是订阅额度，
+所以它度量的是“若按 API 计价要花多少”，便于不同配置之间比较，不是实际账单。
+
+\subsubsection{编排器为什么是确定性程序}
+
+多智能体框架的常见做法是让一个“管理者”模型决定下一步调用谁~\citep{wu2023autogen,hong2024metagpt,qian2024chatdev,li2023camel}。
+我们反过来：编排器是一段只有几十行逻辑的 Python 状态机（\code{SESSIONS} 元组 + \code{run\_agent} 循环），
+下一步做什么完全由闸门结果决定。
+
+\begin{tradeoff}[：模型编排器 vs 确定性编排器]
+\textbf{模型编排器}能处理计划外情况（例如发现年报是招股书，临时插入一步），也更容易写成“对话式”演示。
+代价有三：一是它需要读各阶段的产物才能决定下一步，自己就成了一个共享上下文的大会话，正是我们要避免的；
+二是“是否完成”变成模型的判断，会出现“自述已完成、文件其实没写”的情况（失败案例~2 中模型准确说明了被拦，但我们不能指望每次都如此）；
+三是不可复现：同样的工作区状态，两次编排可能走不同路径。
+
+\textbf{确定性编排器}的“是否完成”只看 \code{status}，与模型怎么说无关；同一状态必然走同一路径；
+编排器本身可以单元测试（\code{test\_run\_agent\_chains\_write\_then\_review} 用桩函数替换 \code{\_session}，验证五个会话的接力与停止）。
+计划外情况由两层兜底：工作区 \file{CLAUDE.md} 写“遇到规范没覆盖的情况，按可追溯、不误导、读者友好三条原则处理并在交付说明里写明”；
+会话没做完时编排器停下，把 \code{status} 的“下一步”交给人。
+
+我们选后者。这与“能用简单可组合的工作流就不用自主智能体编排”的工程经验一致~\citep{schluntz2024effective}：
+自主性留在每个会话\emph{内部}（怎么读年报、怎么检索、怎么写），会话\emph{之间}的控制流保持确定。
+\end{tradeoff}
+
+\subsubsection{执行器可替换}
+
+编排器对执行器的全部假设是一个函数签名：给定工作目录、启动提示和模型名，执行到结束，返回退出码，并在日志里留下事件流。
+换执行器只需改 \code{agent\_command}、\code{\_event\_brief} 与 \code{\_usage} 三个函数；
+闸门、工作区说明、skill、\code{refine} 的路由都不需要动，因为它们只认文件。
+仓库历史中 DeepSeek 与 Codex 执行器就是这样接入又移除的。
+工作区说明写成 \file{CLAUDE.md} 而不是执行器专有格式里的私有字段，也是为了这一点：换执行器时最多改一个文件名。
+
+\begin{tradeoff}[：执行器的上下文自动加载]
+Claude Code 会沿父目录逐级加载 \file{CLAUDE.md}。这一特性在工作区内很有用（工作区说明自动成为系统上下文，启动提示可以很短），
+在工作区外则是泄露通道：若工作区建在仓库目录树内，仓库根的开发指南（含选题范围、评测进展、评分分数）会被一并加载。
+\code{\_check\_location} 因此有两条规则（\S\ref{sec:pipe-build}）。换用不自动加载上级说明的执行器时，第二条规则可以放宽，但第一条仍然需要：
+仓库目录树内的其他文件仍可被读工具访问。
+\end{tradeoff}
+
+% ======================================================================
+\subsection{\code{build}：仓库之外的隔离工作区}
+\label{sec:pipe-build}
+
+\subsubsection{放什么、不放什么}
+
+\code{build(company, year, ...)} 为一家公司、一个年度搭一个工作区，默认路径 \file{\textasciitilde/finagent-samples/<公司>\_<年度>[\_<tag>]}
+（\code{--dest} 或环境变量 \code{FINAGENT\_SAMPLES\_DIR} 可改）。\code{--tag} 用于让不同模型或配置对同一公司各跑一遍，
+工作区目录名带标签，但内部抽取目录名仍是 \file{<公司>\_<年度>}，保证收回仓库后路径一致。
+表~\ref{tab:pipe-ws-content} 列出工作区内容。
+
+\begin{table}[t]
+\centering\small
+\caption{隔离工作区的内容边界（\code{build}；由 \code{test\_workspace\_contains\_}\allowbreak\code{only\_skills\_engine\_and\_one\_company} 验证）}
+\label{tab:pipe-ws-content}
+\begin{tabularx}{\linewidth}{@{}>{\raggedright\arraybackslash}p{0.36\linewidth}>{\raggedright\arraybackslash}X@{}}
+\toprule
+放入（路径与仓库一致） & 理由 \\
+\midrule
+\file{.claude/skills/}\allowbreak\file{finagent-\{research,report,review\}/} & 三个执行 skill；编排入口 \code{finagent-pipeline} 不放（生成方不需要知道流水线怎么调度） \\
+\file{finagent/}（排除 \file{evaluation/}、\allowbreak\file{\_\_pycache\_\_}） & 计算引擎；\code{ENGINE\_EXCLUDE} 把质检模块（评分标准加载、评审提示、计分）排除在外 \\
+\file{report/resources/}\allowbreak\file{<公司>/<年报>.pdf} 与 \file{locate.json} & 唯一一份年报；放在与仓库相同的相对路径，运行记录中的 argv 收回仓库后仍可复现 \\
+\file{data/samples/}\allowbreak\file{valuation\_assumptions.json}、\file{peers.csv} & 格式样例（虚构公司），只作字段参考 \\
+\file{inputs/market.json}、\file{inputs/peers.csv}（可选） & 人给的外部输入：股价及来源、可比公司 \\
+\file{data/extractions/}\allowbreak\file{<公司>\_<年度>/report/}（空）、\file{runs/}（空） & 产出位置 \\
+\file{sample.json}、\file{CLAUDE.md}、\file{TASK.md}、\file{REVIEW.md}、\file{py}、\file{py.cmd}、\file{.claude/settings.json} & 元数据、工作区说明、启动提示存档、解释器包装、权限 \\
+\midrule
+\textbf{不放} & \\
+\midrule
+其他公司的抽取、框架、文稿、运行目录、交付 PDF & 防止照抄框架、浪费上下文 \\
+\file{eval/}、\file{finagent/evaluation/}、\file{tests/}、\file{README.md}、\file{.env} & 评分标准与评测结果对生成方不可见；测试与说明与任务无关 \\
+仓库根 \file{CLAUDE.md}、\file{reference/} & 开发指南含评测进展；原插件代码不得引入 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\paragraph{年报来源核验。}\code{resolve\_source} 先查 \file{report/resources/manifest.json}（已核验清单，记录简称、代码、交易所、路径与 SHA-256），
+找到就校验哈希，不符直接报错；清单里没有时，取 \file{report/resources/<公司>/} 下唯一的 PDF，此时视为“未核验来源”，
+\code{build} 要求显式加 \code{--allow-unverified}，工作区说明里也会写明“官方链接与版本未核对，交付说明里要写明”。
+文件名含“招股”时，说明里追加口径提示（财务数据在哪一节、单位多为万元、上市状态以资料搜集为准）。宇树科技就是这种情况。
+
+\paragraph{外部输入必须带来源。}\code{--price} 是外部数据，不给 \code{--price-source} 直接拒绝（\code{test\_build\_guards}）。
+不提供股价时，工作区说明要求研究助理在阶段 1 检索最近一个交易日收盘价并登记进 \file{sources.json}，查不到就停下，不能凭记忆填。
+
+\paragraph{关键页预定位。}已核验年报的 \file{locate.json} 直接复制；否则在工作区内跑一次 \code{python -m finagent locate}（第~\ref{sec:extract}~节）。
+模型拿到的第一份材料是“该读哪些页”，不必从头翻几百页。
+
+\paragraph{元数据。}\file{sample.json} 记录公司、年度、PDF 相对路径与 SHA-256、是否核验、代码、交易所、标签、外部输入、
+解释器路径、仓库路径与 \code{git rev-parse HEAD}、创建时间与 \code{as\_of} 日期。
+\code{as\_of} 是“近 90 天来源”闸门的参照日（\S\ref{sec:pipe-gates}），固定在建工作区那天，
+避免工作区隔几天再跑时，原本“近期”的来源因为系统时钟前进而失效。
+
+\subsubsection{位置围栏}
+
+\begin{definition}[位置围栏]\label{def:pipe-fence}
+设仓库根为 $R$，围栏 $F=\mathrm{parent}(R)$。工作区路径 $w$ 合法，当且仅当
+(i) $w\neq F$ 且 $F\notin\mathrm{ancestors}(w)$；
+(ii) 对任意 $p\in\mathrm{ancestors}(w)$，$p\neq \mathrm{home}$ 时 $p/\file{CLAUDE.md}$ 不存在。
+\end{definition}
+
+规则 (i) 取 $R$ 的\emph{父目录}而不是 $R$ 本身，因为原插件参考代码在仓库的上一级。
+规则 (ii) 针对执行器沿父目录加载 \file{CLAUDE.md} 的行为；用户主目录豁免，因为用户级配置本来就会加载，与仓库内容无关。
+同一个函数也用于盲评目录（\code{judge.prepare}），保证评审会话同样读不到仓库。
+\code{test\_build\_guards} 验证把工作区建在 \file{<仓库>/runs} 下会被拒绝。
+
+\subsubsection{权限围栏}
+
+\code{settings(meta, root)} 生成工作区 \file{.claude/settings.json}（清单~\ref{lst:pipe-settings}）。
+\code{allow} 与命令行白名单同源；\code{deny} 有两类：禁读围栏 $F$ 下的一切，禁改引擎、skill、年报原件与流水线自身的控制文件。
+
+\begin{lstlisting}[caption={工作区权限（\code{settings()} 的输出结构，\texttt{<F>} 为仓库父目录的绝对路径）},label={lst:pipe-settings}]
+{"permissions": {
+  "allow": ["Bash(./py -m finagent *)", "...", "WebSearch", "WebFetch"],
+  "deny":  ["Read(/<F>/**)",
+            "Edit(./finagent/**)",          "Write(./finagent/**)",
+            "Edit(./.claude/**)",           "Write(./.claude/**)",
+            "Edit(./report/resources/**)",  "Write(./report/resources/**)",
+            "Edit(./sample.json)",          "Write(./sample.json)",
+            "Edit(./py)",  "Write(./py)",  "Edit(./py.cmd)",  "Write(./py.cmd)",
+            "Edit(./CLAUDE.md)",            "Write(./CLAUDE.md)"]}}
+\end{lstlisting}
+
+\code{Read(/<F>/**)} 中 \code{<F>} 本身以 \code{/} 开头，拼出的规则以 \code{//} 开头，这是 Claude Code 表示绝对路径的写法。
+禁改 \file{finagent/} 与 \file{.claude/} 的意义在于：闸门、校验器、\code{guard}、\code{numlock} 都是工作区里的代码，
+模型若能改它们，就能让任何闸门“通过”。禁改 \file{CLAUDE.md}、\file{sample.json} 同理（前者定义阶段与闸门，后者含 \code{as\_of} 与 PDF 哈希）。
+引擎或 reportkit 不够用时，工作区说明要求模型“在公司编排脚本里绕开，并在交付说明里写明需要仓库改什么”，
+贵州茅台 1005 批次的排版会话就照此报告了“reportkit 不能渲染 Markdown 表格与编号列表”“WACC 表没有列出特有风险溢价”等需求。
+
+锁定年报原件时规则写的是 \code{report/resources/**}，不是 \code{report/**}：
+后者会连带拦住 \file{data/extractions/<公司>/report/}（框架与文稿所在目录），这正是失败案例~2 的根因。
+
+\paragraph{模板复制。}Claude Code 拒绝从配置目录 \file{.claude/} 复制文件（即便只是读取后写到别处），
+所以 \code{cp .claude/skills/.../templates/narrative.md ...} 在无头会话里会被拒。我们加了子命令
+\code{report\_pipeline template <名称> <目标>}：由编排器代码完成复制，并检查模板名只能是 \file{templates/} 下的直接文件、
+目标必须在 \file{data/} 下、已存在不覆盖（\code{test\_copy\_template\_only\_into\_data} 覆盖了 \code{../SKILL.md} 这类路径穿越）。
+
+\begin{invariant}[生成侧信息边界]\label{inv:pipe-boundary}
+在任何生成侧会话（研究助理、分析师、主笔、复核编辑、排版设计师、修订）执行期间，该会话可读的文件集合
+与 $\{\file{eval/**},\ \file{finagent/evaluation/**},\ \text{评测输出}\}$ 不相交。
+\end{invariant}
+
+\noindent\textit{论证。}可读集合由三部分构成：工作区文件、联网检索结果、执行器自动加载的说明。
+(1) 工作区由 \code{build} 从白名单路径复制而来，\code{ENGINE\_EXCLUDE} 排除 \file{evaluation}；
+(2) 评测输出写在 \code{judge.default\_root()}（默认 \file{\textasciitilde/finagent-evals/}），既不在工作区内，也不在围栏 $F$ 内，
+但生成侧会话的工作目录是工作区，读工具对工作区外路径的访问没有被 \code{allow}；
+(3) 由定义~\ref{def:pipe-fence}，工作区的上级目录不含 \file{CLAUDE.md}。
+回传给生成侧的唯一评测信息是问题单，它由 \code{issues\_from} 生成，只含描述、证据、阶段与严重度（\S\ref{sec:pipe-refine}）。$\square$
+
+这一论证有两个前提需要说明。第一，我们没有对工作区外的任意路径设置 \code{Read} 的 \code{deny}，
+而是依赖“不在 \code{allow} 中的读操作在无头模式下被拒”；若执行器将来默认放开工作区外的只读访问，就要补一条显式规则。
+第二，联网检索理论上可以搜到本仓库（私有仓库，搜索引擎不可见），我们认为这一风险可以忽略。
+
+\subsubsection{工作区说明 \file{CLAUDE.md}}
+
+\code{render\_guide(meta)} 生成约 120 行的工作区说明，是五个会话共同的“操作手册”。它由 f-string 生成，
+闸门阈值直接插入常量（\code{MIN\_COLLECT\_QUERIES} 等），所以工作区说明与 \code{status} 的判定\emph{按构造一致}。
+手写的 skill 文档则没有这个保证（失败案例~9 记录了一处漂移）。说明的结构如下：
+
+\begin{enumerate}
+  \item \textbf{开头}：本工作区只为一家公司出一份卖方体例深度研报和估值模型；每个阶段结束运行 \code{./py -m finagent.report\_pipeline status}；
+        “上下文被压缩或中途接手时，先跑 status，不要重读已完成阶段的文件”。最后一句是专门为长会话的上下文压缩写的。
+  \item \textbf{输入表}：年报路径与来源核验状态、\file{locate.json}、股价（或“未提供，阶段 1 检索”）、可比公司。
+  \item \textbf{先搜集、后分析}：写明今天的日期（\code{as\_of}），要求年报之外的信息一律联网现查，来源优先级，正文外部数字句末带 \code{[S编号]}。
+  \item \textbf{文风由独立复核会话把关}：主笔做到阶段 8 停下；拿不准但影响结论的写进 \file{review.md}，不写进正文。
+  \item \textbf{读取边界}：不读引擎源码（用命令与 \code{schema}）；skill 文档按阶段读；PDF 每次不超过 20 页，只读 \code{suggested\_reads} 等必要页；
+        已抄进 facts/extras 的页不再读；\file{runs/} 下 JSON 不读全文，用 \code{./py -c} 取字段；工作区之外的目录都不读。
+  \item \textbf{阶段表}：11 行，每行“做什么 / 这时才读什么 / 闸门”，闸门列与 \code{status} 的判定逐条对应（\S\ref{sec:pipe-gates}）。
+  \item \textbf{底线}：不做算术；每个数字来自年报原文、运行产物或 \file{sources.json}；估值参数标明为观点或假设、评级取程序结果；
+        校验 3 轮仍不过的问题不硬改数字；五个会话各做各的阶段，做完就停。
+\end{enumerate}
+
+“这时才读”一列实现的是渐进披露（progressive disclosure）：skill 全文约 1,700 行，若在会话开始时全部读入，
+既占上下文，也会让模型提前做后面阶段的事。阶段表把每份参考文档绑定到需要它的那个阶段。
+
+\paragraph{升级已有工作区。}reportkit 修复缺陷后，已建的工作区仍是旧版代码。\code{sync-renderer --workspace <ws>}
+只把公共排版设施（reportkit 的 \file{.py/.css/.js/.md}、\file{render\_check.py}、\file{report\_pipeline.py}、两份相关说明）复制进去，
+不碰公司数据、文稿、编排脚本和历史 PDF（\code{test\_sync\_renderer\_preserves\_company\_work}）。
+升级后旧 PDF 的渲染凭证会因排版代码哈希变化而失效，必须重新渲染（\S\ref{sec:pipe-reportkit}）。
+
+% ======================================================================
+\subsection{五个生产角色与盲评质检员}
+\label{sec:pipe-roles}
+
+\subsubsection{角色划分}
+
+\code{SESSIONS} 元组定义了五个生产会话及其各自负责到的阶段（含）：
+\code{("research", 1)}、\code{("analyst", 7)}、\code{("write", 8)}、\code{("review", 9)}、\code{("layout", 11)}。
+表~\ref{tab:pipe-roles} 列出每个角色的阶段、模型、skill、读写文件与停止条件；
+图~\ref{fig:pipe-swimlane} 以泳道图画出它们与编排器、文件之间的交接。
+
+\begin{table}[t]
+\centering\scriptsize
+\caption{五个生产角色与盲评质检员。模型由 \code{\_role\_model} 决定：生成侧取 \code{FINAGENT\_GEN\_MODEL}（默认 \code{claude-opus-5-5}），
+复核与质检取 \code{FINAGENT\_QC\_MODEL}（默认 \code{claude-sonnet-5-5}）；命令行显式指定的模型优先。}
+\label{tab:pipe-roles}
+\renewcommand{\arraystretch}{1.25}
+\begin{tabularx}{\linewidth}{@{}>{\raggedright\arraybackslash}p{13mm}>{\raggedright\arraybackslash}p{9mm}>{\raggedright\arraybackslash}p{17mm}>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}X@{}}
+\toprule
+角色 & 阶段 & 模型 / skill & 主要读入 & 主要写出（全部在 \file{data/extractions/<key>/} 下，除注明外） \\
+\midrule
+研究助理 & 1 & GEN / report（\file{research.md} 第一部分） & 年报首页与管理层讨论目录；联网检索 & \file{research/sources.json}（\code{phase: collect}）、\file{research/dossier.md}、可选 \file{research/peers.csv} \\
+分析师 & 2--7 & GEN / research + report & \file{dossier.md}、\file{locate.json} 指定页、管理层讨论与附注 & \file{facts.json}、\file{report/framework.md}、\file{research/topics/*.md}、\file{extras.json}、\file{valuation\_assumptions.json}、运行目录 \file{runs/<id>/} \\
+主笔 & 8 & GEN / report + research（\file{writing.md}） & \file{framework.md}、\file{dossier.md}、\file{topics/}、运行产物 & \file{report/narrative.md}；\code{guard} 结果写入运行目录 \\
+复核编辑 & 9 & QC / review & \file{narrative.md}、运行产物 & \file{narrative.draft.md}（初稿备份）、改写后的 \file{narrative.md}、\file{edit\_log.md}、\file{review.md} \\
+排版设计师 & 10--11 & GEN / report（\file{html-report.md}、参考样例脚本） & 定稿 \file{narrative.md}、运行产物、\file{sources.json} & \file{report/build\_report.py}、\file{runs/<id>/report/} 下 HTML、PDF、\file{render\_check.json}、预览；\file{report/delivery.md} \\
+\midrule
+盲评质检员 & — & QC / 盲评说明 & 盲评目录：PDF、文稿、6 个估值产物、\file{sources.json}、\file{review.md}、\file{rubric.json}（无分值） & \file{judgments.json} \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+划分的依据有三条。
+
+\paragraph{上下文预算。}从表~\ref{tab:pipe-usage}（\S\ref{sec:pipe-timeline}）可以看到，单个会话的输入 token（含缓存读取）
+在 1,000 万上下的量级，排版会话最多。把“检索”“抽取到估值”“写作”“复核”“排版”拆开，每个会话的工作集都能控制在一次上下文窗口
+与少量压缩之内。拆分点选在\emph{产物稳定}的地方：阶段 1 结束时资料包定稿，阶段 7 结束时估值数字定稿，阶段 8 结束时文稿定稿（之后只删不增），
+阶段 9 结束时文字定稿。下游会话只需读定稿文件，不需要知道上游怎么得出它。
+
+\paragraph{能力与约束的差异。}研究助理需要联网、不需要读财报细节；分析师需要逐页读 PDF、跑校验循环；
+主笔需要长篇写作与过 \code{guard}；复核编辑需要“没参与写作”的立场；排版设计师需要写 Python、看 PNG。
+每个角色读的 skill 段落不同，拆开后每个会话的系统上下文只含它需要的规则。
+
+\paragraph{复核用不同模型、不同会话。}复核编辑与盲评质检员默认用 Sonnet，生成侧用 Opus。
+一是成本（复核与评审主要是读，不需要最强的生成能力）；二是减轻自我偏好：
+评审模型对自己生成的文本有系统性偏好~\citep{panickssery2024self,zheng2023judging}，
+换一个模型、且看不到写作过程，至少去掉了“同一会话为自己辩护”这一层。
+复核编辑的 skill 开头就是“你没有参与这篇研报的写作”，启动提示也重复这一点。
+
+\subsubsection{启动提示}
+
+每个启动提示都很短（中文 100～200 字），只做四件事：声明角色、指定只做哪些阶段、指定先读什么、规定做完运行 \code{status} 并停止。
+详细规则在工作区 \file{CLAUDE.md} 与 skill 中，提示里不重复。各角色的要点如下（全文见附录~\ref{app:prompts}）：
+
+\begin{description}[leftmargin=1.2em,style=nextline]
+  \item[\code{RESEARCH\_PROMPT}] 只做阶段 1；先读 \file{research.md} 第一部分，用 WebSearch / WebFetch 搜齐年报之后的最新信息，
+        登记 \file{sources.json}、写 \file{dossier.md}；“不做财务抽取、不写分析框架”。
+  \item[\code{ANALYST\_PROMPT}] 阶段 1 已完成，先读 \file{dossier.md}，完成阶段 2～7（财务抽取、分析框架含深度专题、深度调研、经营数据、估值假设、估值运行），“不写文稿”；
+        每个阶段结束运行 \code{status}，阶段 7 通过后停止。
+  \item[\code{TASK\_PROMPT}] 主笔；先读框架、资料包、专题笔记和运行产物，按阶段 8 写“年报点评加深度研究”，
+        “深度研究要做多环定量推导、写长写深”；\code{guard} 与篇幅闸门通过即停止，“复核与排版由后面的会话完成”。
+  \item[\code{REVIEW\_PROMPT}] 复核编辑，“没有参与写作”；先读 \file{finagent-review/SKILL.md}，只做阶段 9。
+  \item[\code{LAYOUT\_PROMPT}] 排版设计师，“文稿已定稿，不改正文”；先读 \file{html-report.md} 与参考脚本，从模板起写定制排版脚本，
+        “每张图服务一个论点，图表 60 张以上、全文 25～30 页，表格涨跌双色，逐页看 preview 修到美观”。
+\end{description}
+
+\code{build} 把主笔与复核的提示另存为 \file{TASK.md}、\file{REVIEW.md}，便于人在交互式 Claude Code 里打开工作区、粘贴提示手动接力。
+提示里“做完就停”的反复强调不是多余的：早期没有这句话时，主笔会话常常顺手做复核与排版，绕过了“独立复核”的设计（失败案例~4）。
+
+\begin{figure}[t]
+\centering
+\resizebox{\linewidth}{!}{%
+\begin{tikzpicture}[every node/.style={font=\small}]
+  % 泳道
+  \def\lanes{编排器/0, 研究助理/-1.25, 分析师/-2.5, 主笔/-3.75, 复核编辑/-5.0, 排版设计师/-6.25, 盲评质检员/-7.5}
+  \foreach \n/\y in \lanes {
+    \draw[midgray!50] (-0.2,\y+0.62) -- (16.4,\y+0.62);
+    \node[anchor=west,font=\small\bfseries] at (-0.15,\y) {\n};
+  }
+  \draw[midgray!50] (-0.2,-8.12) -- (16.4,-8.12);
+  \draw[midgray!50] (1.9,0.62) -- (1.9,-8.12);
+  % 会话框
+  \node[agent, minimum width=18mm] (r) at (3.0,-1.25) {阶段 1\\\scriptsize 检索·登记};
+  \node[agent, minimum width=30mm] (an) at (5.9,-2.5) {阶段 2--7\\\scriptsize 抽取·框架·专题·估值};
+  \node[agent, minimum width=16mm] (w) at (8.9,-3.75) {阶段 8\\\scriptsize 文稿·guard};
+  \node[agent, minimum width=16mm] (rv) at (10.8,-5.0) {阶段 9\\\scriptsize 改写·numlock};
+  \node[agent, minimum width=20mm] (ly) at (12.9,-6.25) {阶段 10--11\\\scriptsize 排版·交付说明};
+  \node[agent, minimum width=16mm] (jd) at (15.3,-7.5) {逐条判定\\\scriptsize judgments.json};
+  % 编排器泳道上的闸门
+  \foreach \nm/\x/\g in {q1/4.35/1, q2/7.85/7, q3/9.85/8, q4/11.85/9, q5/14.25/11}{
+    \node[gate] (\nm) at (\x,0) {$\widehat G_{\g}$};
+  }
+  \node[prog, minimum width=11mm] (b) at (2.6,0) {\code{build}};
+  \draw[arr] (b) -- (r);
+  \draw[darr] (r.north east) -- (q1);   \draw[arr] (q1) -- (an.north);
+  \draw[darr] (an.north east) -- (q2);  \draw[arr] (q2) -- (w.north);
+  \draw[darr] (w.north east) -- (q3);   \draw[arr] (q3) -- (rv.north);
+  \draw[darr] (rv.north east) -- (q4);  \draw[arr] (q4) -- (ly.north);
+  \draw[darr] (ly.north east) -- (q5);  \draw[arr] (q5) -- (jd.north);
+  % 文件交接
+  \draw[arr,midgray] (r.south) |- node[pos=0.75,below,font=\scriptsize\ttfamily,text=black]{dossier.md} (an.west);
+  \draw[arr,midgray] (an.south) |- node[pos=0.72,below,font=\scriptsize\ttfamily,text=black]{runs/<id>/} (w.west);
+  \draw[arr,midgray] (w.south) |- node[pos=0.7,below,font=\scriptsize\ttfamily,text=black]{narrative} (rv.west);
+  \draw[arr,midgray] (rv.south) |- node[pos=0.7,below,font=\scriptsize\ttfamily,text=black]{定稿} (ly.west);
+  \draw[arr,midgray] (ly.south) |- node[pos=0.7,below,font=\scriptsize\ttfamily,text=black]{PDF} (jd.west);
+\end{tikzpicture}}
+\caption{泳道图：五个生产角色、盲评质检员与编排器。每个会话只在自己的泳道里工作，交接只通过工作区文件；
+编排器在每次交接前判前序闸门 $\widehat G_i$。虚线：会话结束时运行 \code{status}；灰线：文件交接。
+盲评之后的返工路由（措辞与结构 → 复核编辑，数据与假设 → 修订会话，版面 → 排版设计师）见图~\ref{fig:pipe-refine}。}
+\label{fig:pipe-swimlane}
+\end{figure}
+
+\subsubsection{\code{run}：接力与停止}
+
+算法~\ref{alg:pipe-run} 是 \code{run\_agent} 的全部逻辑。两个性质值得说明。
+
+\begin{algorithm}[t]
+\caption{\code{run\_agent}：五个会话的接力}
+\label{alg:pipe-run}
+\begin{algorithmic}[1]
+\Require 工作区 $\plW$，生成模型 $m_g$，复核模型 $m_q$
+\For{$(\text{role}, u, \text{prompt}) \in$ \code{SESSIONS}} \Comment{$u$：该会话负责到的阶段}
+  \If{$\bigwedge_{i\le u} \plG{i}(\plW)$} \textbf{continue} \Comment{已完成的会话跳过}
+  \EndIf
+  \State $m \gets m_g$ 若 role $\in\{$research, analyst, write, layout, fix$\}$，否则 $m_q$
+  \State $c \gets$ \Call{Session}{$\plW, m, \text{role}, \text{prompt}$} \Comment{事件流落盘、追加用量记录}
+  \If{$\neg\bigwedge_{i\le u} \plG{i}(\plW)$}
+    \State 打印“role 会话未完成阶段 $1..u$，停止”；\Return $c$ 或 1
+  \EndIf
+\EndFor
+\State \Return $c$
+\end{algorithmic}
+\end{algorithm}
+
+\paragraph{幂等与可续跑。}会话是否需要执行只取决于工作区状态，与历史无关。中断后再 \code{run} 一次，会从第一个未通过的会话接着做；
+已通过的会话不重跑。真实运行中这一点被频繁用到：五家公司的历史里共有 7 次会话因订阅额度耗尽中途结束
+（结果事件为“You've hit your session limit”），2 次因连接中断结束，额度恢复后重新 \code{run} 即接续（\S\ref{sec:pipe-failures}）。
+接手的会话不必知道前一个会话做到哪里：工作区说明要求“中途接手时先跑 \code{status}”，
+招商轮船 1005 批次第二个分析师会话的汇报就是“阶段 2～4 在我开始时已完成，本次只做 5～7”。
+
+\paragraph{以闸门而非退出码判断。}会话退出码为 0 不代表阶段完成，为 1 也不代表失败（\code{status} 在未全部完成时返回 1，
+多个会话在汇报中解释过“退出码为 1 只是因为后面的阶段还没做”）。编排器只看 $\bigwedge_{i\le u}\plG{i}$。
+另一面，会话做完了但闸门不过（例如权限误拦导致文件没写到位），编排器就停下，不会把半成品交给下一个会话。
+
+\subsubsection{交接文件}
+
+表~\ref{tab:pipe-handoff} 是会话之间的全部交接面。每个文件只有一个写入角色（\file{sources.json} 例外：
+研究助理建立，分析师在阶段 4 追加 \code{phase: followup} 的问题）；读入方多数是下游会话或程序。
+
+\begin{table}[h]
+\centering\small
+\caption{交接文件（工作区 \file{data/extractions/<公司>\_<年度>/} 下）}
+\label{tab:pipe-handoff}
+\begin{tabularx}{\linewidth}{@{}>{\raggedright\arraybackslash}p{0.36\linewidth}>{\raggedright\arraybackslash}p{0.2\linewidth}>{\raggedright\arraybackslash}X@{}}
+\toprule
+文件 & 写入 & 读入 / 校验 \\
+\midrule
+\file{research/sources.json}、\file{dossier.md} & 研究助理（分析师追加） & 分析师、主笔；\code{verify-sources}、\code{guard --sources} \\
+\file{facts.json} → \file{facts.verified.json} & 分析师 / \code{verify-facts} & 引擎（第~\ref{sec:extract}~节） \\
+\file{report/framework.md}、\file{research/topics/*.md} & 分析师 & 主笔；闸门 3、4 \\
+\file{extras.json}、\file{valuation\_assumptions.json} & 分析师 & 引擎；闸门 5、6 \\
+\file{runs/<id>/}（工作区根下） & 引擎 & 主笔、排版、盲评 \\
+\file{report/narrative.md} & 主笔 → 复核编辑改写 & 排版、盲评；\code{guard} \\
+\file{narrative.draft.md}、\file{edit\_log.md}、\file{review.md} & 复核编辑 & 人工；\code{numlock} \\
+\file{report/build\_report.py}、PDF、\file{delivery.md} & 排版设计师 & 人工、盲评 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\begin{tradeoff}[：共享上下文 vs 文件交接]
+\textbf{共享上下文}（同一会话依次扮演多个角色，或父会话把摘要交给子会话）的好处是下游知道上游“为什么这样做”，
+不会误解意图；坏处是上游的推理过程、被否定的草稿、对自己结论的辩护一并传下去，复核就不再独立；
+上下文也随角色数线性增长。
+
+\textbf{文件交接}要求每个交接物足够自解释：资料包有固定结构，框架有固定小节，深度专题笔记要写“结论与对预测的含义”，
+复核清单有固定五列。代价是信息损失，下游读不到上游没写进文件的东西，例如分析师为什么放弃某个专题。
+我们接受这个代价：研报最终的读者也只能看到文件，下游会话读不懂的交接物，读者大概率也读不懂。
+这也是盲评的出发点（\S\ref{sec:pipe-refine}）。
+\end{tradeoff}
+
+% ======================================================================
+\subsection{十一道闸门：\code{status}}
+\label{sec:pipe-gates}
+
+\code{status(ws)} 是流水线的“唯一真相来源”。它不调用模型，只读工作区文件，按顺序逐项判定 11 个阶段，
+返回每个阶段的 \code{ok}、一行 \code{detail}（含计数）和未通过时的 \code{next}（下一步该做什么、读哪份文档），
+整体 \code{done} 与第一个未通过阶段的提示。会话结束前必须运行它，编排器接力前也调用它；
+模型看到的“下一步”与编排器的判断由同一函数给出。
+
+\subsubsection{阈值常量}
+
+表~\ref{tab:pipe-consts} 列出 \file{report\_pipeline.py} 顶部的全部阈值常量。工作区 \file{CLAUDE.md} 的闸门列由这些常量插值生成。
+
+\begin{table}[h]
+\centering\small
+\caption{闸门阈值常量（以源码为准）}
+\label{tab:pipe-consts}
+\begin{tabular}{@{}llrl@{}}
+\toprule
+常量 & 闸门 & 取值 & 含义 \\
+\midrule
+\code{MIN\_COLLECT\_QUERIES} & 1 & 20 & 资料搜集问题的检索词总数下限 \\
+\code{MIN\_RECENT\_SOURCES} & 1 & 3 & 近期发布的来源个数下限 \\
+\code{RECENT\_DAYS} & 1 & 90 & “近期”的天数（相对 \code{as\_of}） \\
+\code{MIN\_TOPICS} & 3, 4 & 3 & 深度专题数与专题笔记数下限 \\
+\code{MIN\_TOPIC\_CHARS} & 4 & 1500 & 每份专题笔记去空白后的字数下限 \\
+\code{MIN\_TOPIC\_SOURCES} & 4 & 3 & 每份笔记引用的不同 \code{[S编号]} 个数下限 \\
+\code{MIN\_FOLLOWUP} & 4 & 8 & 补充检索问题数下限 \\
+\code{MIN\_NARRATIVE\_CHARS} & 8 & 15000 & 正文字数下限（去空白与 HTML 注释） \\
+\code{MIN\_DEEP\_SHARE} & 8 & 0.6 & 深度研究（\code{deep\_} 开头的节）字数占比下限 \\
+\code{MIN\_PAGES}, \code{MAX\_PAGES} & 10 & 25, 32 & PDF 页数区间 \\
+\code{MIN\_FIGURES} & 10 & 60 & 图表个数下限 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsubsection{形式化}
+
+记工作区状态为 $\plW$，文件 $x$ 的修改时间为 $\plmt(x)$（不存在时取 $0$），$\plex(x)$ 表示文件存在。
+记 $\mathit{src}$=\file{sources.json}，$\mathit{fw}$=\file{framework.md}，$\mathit{nar}$=\file{narrative.md}，
+$\mathit{cov}=\mathrm{coverage}(\mathit{src}, \code{as\_of}, 90)$，$\mathrm{VS}=\mathrm{verify\_sources}(\mathit{src})$。
+$r^\ast$ 为“最新一次用本工作区 \file{facts.json} 跑成功的 \code{valuation} 或 \code{all} 运行”
+（按目录名即时间戳倒序，取第一个 \file{manifest.json} 中 \code{status=ok}、\code{task}$\in\{$valuation, all$\}$ 且 argv 含本工作区 facts 路径的运行），
+$\mathrm{start}(r^\ast)$ 为其 \code{started\_at}，$\mathrm{argv}(r^\ast)$ 为其命令行参数。
+
+\begin{definition}[局部闸门]\label{def:pipe-gates}
+{\small
+\begin{align*}
+\plG{1}:&\ \plex(\mathit{src})\wedge\plex(\mathit{dossier})\wedge \mathit{cov}.\mathrm{missing}=\varnothing\\
+        &\quad\wedge Q_{\mathrm{collect}}\ge 20 \wedge |\mathit{cov}.\mathrm{recent}|\ge 3 \wedge \mathrm{VS}.\plok\\
+\plG{2}:&\ \plex(\mathit{facts})\wedge\plex(\mathit{verified})\wedge \plmt(\mathit{verified})\ge\plmt(\mathit{facts})\wedge \mathit{verified}.\mathrm{check}.\plok\\
+\plG{3}:&\ \text{“外部调研清单”}\in\mathit{fw}\wedge n_{\mathrm{topic}}(\mathit{fw})\ge 3\\
+\plG{4}:&\ \mathrm{VS}\ne\bot\wedge |T|\ge 3\wedge \forall t\in T:\ \big(\plchars(t)\ge1500\wedge|\mathrm{cites}(t)|\ge3\big)\\
+        &\quad\wedge Q_{\mathrm{followup}}\ge 8\wedge \plmt(\mathit{src})\ge\plmt(\mathit{fw})\wedge\mathrm{VS}.\plok\\
+\plG{5}:&\ \plex(\mathit{extras})\wedge \mathrm{VE}(\mathit{extras}).\mathrm{rejected}=0\\
+\plG{6}:&\ \plex(\mathit{assump})\wedge \mathit{price}\ne\varnothing\wedge\mathit{price\_source}\ne\varnothing\wedge \mathit{assump}\ \text{含}\ \texttt{[S}n\texttt{]}\\
+\plG{7}:&\ \exists r^\ast\wedge \mathrm{start}(r^\ast)\ge\max\{\plmt(\mathit{facts}),\plmt(\mathit{extras}),\plmt(\mathit{assump}),\plmt(\mathit{peers})\}\\
+        &\quad\wedge\big(\plex(\mathit{extras})\Rightarrow \mathit{extras}\in\mathrm{argv}(r^\ast)\big)\\
+        &\quad\wedge\big(\plex(\mathit{peers})\wedge\neg\text{人给可比}\Rightarrow\mathit{peers}\in\mathrm{argv}(r^\ast)\big)\\
+\plG{8}:&\ \mathrm{guard}(r^\ast).\plok\wedge \mathrm{commentary}(r^\ast)\equiv\mathit{nar}\\
+        &\quad\wedge\big(\plex(\mathit{src})\Rightarrow\mathrm{guard}.\mathrm{sources}\big)\wedge\plmt(\mathrm{guard})\ge\plmt(\mathit{src})\\
+        &\quad\wedge \plchars(\mathit{nar})\ge 15000\wedge \mathrm{deep}(\mathit{nar})\ge 0.6\\
+\plG{9}:&\ \plex(\mathit{draft})\wedge\plex(\mathit{edit\_log})\wedge\plex(\mathit{review})\wedge\mathrm{numlock}(\mathit{draft},\mathit{nar}).\plok\\
+\plG{10}:&\ \plex(\mathit{pdf})\wedge\plmt(\mathit{pdf})\ge\max\{\plmt(\mathit{nar}),\plmt(\mathit{script})\}\\
+        &\quad\wedge\mathrm{named}\ne\varnothing\wedge\forall p\in\mathrm{named}:\plsha(p)=\plsha(\mathit{pdf})\\
+        &\quad\wedge 25\le\mathrm{pages}\le32\wedge\mathrm{figs}\ge60\wedge \mathrm{R}(\mathit{render\_check})\\
+\plG{11}:&\ \plex(\mathit{delivery})
+\end{align*}}
+\end{definition}
+
+其中 $Q_{\mathrm{collect}}$ 是所有 \code{phase=collect} 问题的检索词个数之和，$Q_{\mathrm{followup}}$ 是非 collect 问题的个数；
+$T$ 是 \file{research/topics/*.md}；$\plchars$ 去掉全部空白；$\mathrm{cites}(t)$ 是笔记中出现的不同 \code{[S\textit{n}]}；
+$n_{\mathrm{topic}}$ 是 \code{\#\# 深度专题} 一节内以“数字+点/顿号”或“-/*”开头的行数；
+$\mathrm{VE}$ 是 \code{verify\_extras}，结果按（extras 哈希、年报哈希、校验代码哈希）三元组缓存在 \file{.pipeline/extras\_check.json}，
+三者都不变才复用（测试 \code{test\_extras\_cache\_}\allowbreak\code{without\_verifier\_}\allowbreak\code{fingerprint\_is\_rechecked} 验证缺校验代码指纹的旧缓存会被重算）；
+$\mathrm{pages}$ 为 \file{preview/page*.png} 张数，$\mathrm{figs}$ 为 HTML 中“图表 $n$”编号个数；
+$\mathrm{named}$ 是除 \file{report.pdf} 外另存的 PDF（\code{Config.output\_name}，如“贵州茅台1005.pdf”）；
+$\mathrm{R}$ 是渲染凭证检查（\S\ref{sec:pipe-reportkit}）。
+$\mathrm{deep}(\mathit{nar})$ 按 \code{<!-- section: name -->} 切分文稿，取 name 以 \code{deep\_} 开头的各节字数之和除以全文字数：
+\begin{equation}
+  \mathrm{deep}(\mathit{nar})=\frac{\sum_{s:\ \mathrm{name}(s)\sim\texttt{deep\_*}}\plchars(s)}{\plchars(\mathit{nar})},\qquad
+  \plchars(x)=\big|\,x\setminus(\text{空白}\cup\texttt{<!--}\cdots\texttt{-->})\,\big| .
+  \label{eq:pipe-deep}
+\end{equation}
+
+\begin{definition}[前序阻断]\label{def:pipe-block}
+$\plGh{1}=\plG{1}$，$\plGh{i}=\plG{i}\wedge\plGh{i-1}$（$i=2,\dots,11$）。$\mathrm{done}(\plW)=\plGh{11}$，
+$\mathrm{next}(\plW)=\min\{i:\neg\plGh{i}\}$。
+\end{definition}
+
+实现上，\code{status} 先算出全部 $\plG{i}$，再从前往后扫描：一旦遇到未通过的阶段，后面所有“通过”都改为未通过，
+\code{detail} 追加“（前序阶段未通过）”。这样输出里每个阶段的真实状况仍然可见（便于定位），但只有 $\plGh{i}$ 计入完成。
+\code{test\_status\_gates\_and\_collect} 的最后一步验证：\file{facts.json} 被修改（时间戳推后）后，即便 \file{delivery.md} 存在，阶段 11 也判未通过。
+
+\subsubsection{新鲜度：校验晚于修改、核对当前稿}
+
+闸门里的时间与等值条件构成一张依赖图（图~\ref{fig:pipe-fresh}）。每条边 $x\to y$ 的含义是“$y$ 是对 $x$ 的校验或由 $x$ 生成，要求 $y$ 不早于 $x$”。
+
+\begin{figure}[t]
+\centering
+\resizebox{\linewidth}{!}{%
+\begin{tikzpicture}[every node/.style={font=\scriptsize}, node distance=5mm]
+  \node[file] (facts) at (0,0) {facts.json};
+  \node[file] (ver) at (2.6,0) {facts.verified.json};
+  \node[file] (extras) at (0,-1) {extras.json};
+  \node[file] (ass) at (0,-2) {valuation\_assumptions.json};
+  \node[file] (peers) at (0,-3) {research/peers.csv};
+  \node[file] (fw) at (0,-4.1) {report/framework.md};
+  \node[file] (src) at (2.9,-4.1) {research/sources.json};
+  \node[prog] (run) at (5.2,-1.5) {运行 $r^\ast$\\\code{started\_at}\\+ argv 含 extras/peers};
+  \node[file] (nar) at (5.2,-3.6) {narrative.md};
+  \node[prog] (guard) at (8.3,-2.5) {\code{commentary\_guard.json}\\commentary.md $\equiv$ narrative};
+  \node[file] (draft) at (8.3,-4.3) {narrative.draft.md};
+  \node[prog] (lock) at (10.9,-4.3) {numlock 通过};
+  \node[file] (script) at (8.3,-0.4) {build\_report.py};
+  \node[prog] (pdf) at (11.3,-1.2) {report.pdf\\另存 PDF 哈希相同};
+  \node[prog] (rc) at (14.2,-1.2) {render\_check.json\\绑定 html/pdf/kit 哈希};
+  \draw[arr] (facts) -- node[above]{$\plmt\ge$} (ver);
+  \draw[arr] (facts.east) to[out=0,in=180] (run.west);
+  \draw[arr] (extras.east) -- (run.west);
+  \draw[arr] (ass.east) -- (run.west);
+  \draw[arr] (peers.east) to[out=0,in=200] (run.west);
+  \draw[arr] (fw) -- node[above]{$\plmt\ge$} (src);
+  \draw[arr] (run) -- (guard);
+  \draw[arr] (nar) -- node[below,sloped]{字节相等} (guard);
+  \draw[arr] (src.east) to[out=0,in=220] node[below,sloped,pos=0.6]{$\plmt\ge$} (guard.south west);
+  \draw[arr] (draft) -- (lock); \draw[arr] (nar.south east) to[out=-20,in=180] (lock.west);
+  \draw[arr] (nar.east) to[out=10,in=200] (pdf.west);
+  \draw[arr] (script) -- (pdf);
+  \draw[arr] (pdf) -- (rc);
+\end{tikzpicture}}
+\caption{闸门中的新鲜度依赖。箭头 $x\to y$ 表示 $y$ 必须不早于 $x$（或与 $x$ 内容一致、哈希一致）；任何上游修改都会让下游闸门失效，直到重新校验或重新生成。}
+\label{fig:pipe-fresh}
+\end{figure}
+
+\paragraph{“核对当前稿”。}\code{guard} 通过后会把被核对的文稿存为运行目录里的 \file{commentary.md}。
+闸门 8 要求它与当前 \file{narrative.md} \emph{逐字节相等}。这堵住了一条常见路径：模型先让一版文稿过 \code{guard}，
+再改文稿（加一句话、改一个数），然后汇报“guard 已通过”。时间戳比较挡不住这种情况（改动可能发生在同一秒内，或文件被复制回去），内容比较可以。
+复核编辑改写后必须重跑 \code{guard}，否则闸门 8 失效，进而闸门 9 之后全部阻断。
+
+\paragraph{\code{guard} 晚于来源登记。}\code{sources.json} 在 \code{guard} 之后又被追加（例如复核时补登记）时，旧的 \code{guard} 结果不能证明新的外部引用合规。
+同时要求 \code{guard} 带了 \code{--sources}：没带时，外部数字的 \code{[S编号]} 检查根本没有执行。
+
+\paragraph{运行晚于输入，且带了输入。}估值运行早于任何一个输入文件的修改就算过期；工作区有 \file{extras.json} 而运行没带 \code{--extras}，
+或研究助理写了 \file{research/peers.csv} 而运行没带 \code{--peers}，同样不通过。后一条是因为模型常常“忘了”自己产生的可选输入，
+导致研报里写了可比公司分析、估值产物里却没有对应的计算。
+
+\begin{proposition}[过期传播]\label{prop:pipe-stale}
+若在某时刻 $\plGh{11}(\plW)$ 成立，此后修改了 \file{facts.json}、\file{extras.json}、\file{valuation\_assumptions.json}、
+\file{research/peers.csv}、\file{research/sources.json} 或 \file{narrative.md} 中的任意一个，而未重跑相应校验与生成步骤，
+则 $\plGh{11}(\plW)$ 不再成立。
+\end{proposition}
+
+\noindent\textit{论证。}逐项对应图~\ref{fig:pipe-fresh} 的边：facts 的修改使 $\plG{2}$ 的时间条件失效；
+extras、假设或 peers 的修改使 $\plG{7}$ 的 $\mathrm{start}(r^\ast)$ 条件失效；sources 的修改使 $\plG{8}$ 的 $\plmt(\mathrm{guard})\ge\plmt(\mathit{src})$ 失效；
+narrative 的修改使 $\plG{8}$ 的字节相等失效，也使 $\plG{10}$ 的时间条件失效。由前序阻断，任一 $\plG{i}$ 失效都使 $\plGh{11}$ 失效。$\square$
+
+这个命题的覆盖面是有限的，我们如实列出未覆盖的边：
+\file{framework.md} 在阶段 4 之后被修改，只会使 $\plG{4}$ 失效（要求 sources 晚于框架），不会要求文稿重写；
+\file{dossier.md} 与专题笔记没有任何下游时间约束；\file{edit\_log.md} 与 \file{review.md} 只检查存在。
+这些文件的内容最终由盲评与人工检查，闸门只管“有”和“新”。
+
+\subsubsection{为什么数量闸门只是下限}
+
+闸门里有一批纯数量条件：检索次数、来源个数、专题笔记字数、正文字数、深度研究占比、页数、图表数。
+它们是\emph{必要条件}，用来挡住“写短逃避深度”这种已经发生过的退化（失败案例~4：排版交给复核会话后，研报从约 20 页掉到 11 页、图表从五六十个掉到 19～26 个），
+但它们不是质量的度量。数量指标一旦成为目标，模型就会对着它优化，这是 Goodhart 定律的典型场景~\citep{goodhart1975problems,strathern1997improving}。
+真实运行数据给出了直接证据（表~\ref{tab:pipe-floor}）。
+
+\begin{table}[h]
+\centering\small
+\caption{真实运行中的“压线”现象（取自各工作区会话结果中的 \code{status} 输出）}
+\label{tab:pipe-floor}
+\begin{tabular}{@{}lrrrr@{}}
+\toprule
+工作区 & 正文字数（主笔 → 复核后） & 深度研究占比 & 页数 & 图表数 \\
+\midrule
+贵州茅台 1005 & 30,501 → 29,552 & 61\% → \textbf{60\%} & \textbf{25} & 83 \\
+宁德时代 1005 & 23,404 & \textbf{60\%} & \textbf{25} & 102 \\
+招商轮船 1005 & 27,390 → 26,107 & \textbf{60\%} → \textbf{60\%} & 30 & 70 \\
+中际旭创 & 19,882 → —\ & \textbf{60\%} → \textbf{60\%} & 30 & 68 \\
+宇树科技 & 22,474 → 21,968 & 63\% → 63\% & 30 & 67 \\
+\midrule
+阈值 & $\ge$ 15,000 & $\ge$ 60\% & 25--32 & $\ge$ 60 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+五家里有四家的深度研究占比恰好停在 60\%，两家页数恰好是 25。更说明问题的是中际旭创的复核会话：它删去自证句后深度研究占比降到 59.85\%，
+于是“又精简了年报点评部分的次要数字，把占比拉回 60\%”。宁德时代的排版会话中间出现过 24 页的版本，它把半栏图高度从 46mm 加到 50mm 凑回 25 页；
+贵州茅台的排版会话则在汇报里明确写了“25 页刚好压在页数下限上”“我没有用重复图表或空话去填”。
+模型对阈值的反应是\emph{贴着阈值达标}，而不是把阈值当作“至少”。
+
+我们的应对不是继续提高阈值，而是：(1) 数量闸门只设“明显不够”的下限，防止退化；
+(2) 真正的质量判断交给看不到这些阈值的盲评会话（L2 分析质量、L3 表达与合规，第~\ref{sec:eval}~节），盲评条目都是“是否回答了某个问题”而不是“有多少字”；
+(3) skill 里对篇幅的表述是“内容不够时回去补深度调研，不要缩短篇幅，也不要用重复的图表和空话凑页数”，把压力导向调研而不是填充。
+\code{scorecard} 的说明行也写着：“指标都是客观计数，不代表研报质量高低。”
+
+\begin{insight}[：闸门管“有没有、新不新、对不对得上”，盲评管“好不好”]
+程序闸门擅长判定存在性、新鲜度、一致性（哈希、字节相等、数字锁）和下限；它们几乎不会误判，也无法被模型的自述骗过。
+质量判断天然是模糊的，交给另一个模型并接受它有噪声（重复盲评总分极差 7～8，第~\ref{sec:eval}~节）。
+把两者混在一起（例如在闸门里加“正文必须包含预期差一节”这类内容规则）会把闸门变成可被应付的清单。
+\end{insight}
+
+% ======================================================================
+\subsection{先搜集、后分析：资料包与深度专题}
+\label{sec:pipe-research}
+
+\subsubsection{动机}
+
+年报讲的是过去，而且只讲公司自己。我们在 v0 批次（2026-10-03 首轮质检）看到的典型缺陷是：预测首年只外推年报，
+没有和年报之后已披露的半年报衔接；行业规模、竞争排名、对手价格等年报之外的内容凭模型记忆写，没有出处。
+这类内容第~\ref{sec:guards}~节的 \code{guard} 能拦下“无出处的数字”，但拦不住“该写而没写”。
+提交 \code{c131c2c} 因此把调研从写作中间挪到最前面，单独设一个研究助理会话做阶段 1；
+写完框架之后再有一次针对性的补充调研（阶段 4，后来扩充为深度调研）。
+v0 → v1 的总分从 46～49 升到 67～74，版本间同时改了几处，不是对照实验，但资料搜集是其中最大的一项改动
+（第~\ref{sec:exp}~节）。
+
+\paragraph{与产业链分析子选题的关系。}产业链分析在 \sysname{} 中不是一个独立模块，而是由本节的资料搜集与深度专题共同完成，
+并沿用“模型判断、程序把关数字”的分工：研究助理在 \code{industry}（行业规模、上游原材料价格、景气指标）、竞争格局与可比公司等类别下登记外部来源；
+分析师在分析框架中写出驱动清单，把“上游价格 → 公司成本”“下游需求 → 公司量价”这样的链条逐环落到年报位置、经营数据表与预测参数上，
+并在需要时把产业链环节设为深度专题；主笔按写作规范用产业链示意图（reportkit 的 \code{C.flow}，标出公司所在环节）与行业章节呈现结论。
+链条上的每个外部数字都必须带 \code{[S编号]} 并通过护栏（第~\ref{sec:guards}~节），每个公司数字都来自真值表或经营数据表；
+链条本身的因果判断属于“观点”，由复核编辑与盲评检查论证是否成立。技能不预设任何行业的产业链模板（第~\ref{sec:principles}~节 P11），
+不同公司的链条由模型从年报与资料包中推导。
+
+\subsubsection{七个类别与覆盖判定}
+
+研究助理按七个类别搜集（\code{output/sources.py} 的 \code{CATEGORIES}），见表~\ref{tab:pipe-cats}。
+
+\begin{table}[h]
+\centering\small
+\caption{资料搜集的七个类别（\file{research.md} 第一部分）}
+\label{tab:pipe-cats}
+\begin{tabularx}{\linewidth}{@{}l>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}p{0.3\linewidth}@{}}
+\toprule
+\code{category} & 搜什么 & 用在哪里 \\
+\midrule
+\code{latest} & 年报之后的季报、半年报、业绩预告与快报、月度经营数据 & 预测首年与最新实际衔接 \\
+\code{market} & 最近交易日收盘价与日期、市值、近三个月走势；新股的发行价与上市日 & 估值参照；股价必须有来源与日期 \\
+\code{consensus} & 卖方一致预期、评级分布、目标价区间（查不到登记 \code{not\_found}） & 预期差 \\
+\code{peers} & 3～6 家可比公司的股价、市值、倍数、最近财年收入利润 & 交叉验证；可写 \file{peers.csv} \\
+\code{industry} & 行业规模、增速、渗透率、价格指数、上游原材料、景气指标 & 驱动假设的外部依据 \\
+\code{competition} & 份额与排名、对手产能与价格动作、新进入者 & 竞争格局判断的出处 \\
+\code{events} & 近三个月公告与新闻：订单、产能、并购、股权、分红回购、处罚、政策 & 年报之后的变化 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\code{coverage(data, as\_of, 90)} 的判定规则是：一个类别被覆盖，当且仅当存在一个 \code{phase=collect} 的问题，
+其 \code{status=found}，或者 \code{status=not\_found} 且换过至少两个检索词。后一条承认“查不到”是合法结果
+（例如新上市公司没有卖方一致预期），但要求确实尽力查过。“近期来源”按来源的 \code{published} 日期计，
+$0\le(\code{as\_of}-\text{published})\le 90$ 天。
+检索方法上，\file{research.md} 要求每个问题换两三个关键词、中英文都试，WebSearch 找到候选后\emph{必须用 WebFetch 打开原文核对数字}，
+“只看搜索摘要就登记，等于没核对”；来源优先级为交易所与公司公告 $>$ 政府与行业协会 $>$ 知名研究机构与数据商 $>$ 主流财经媒体，
+自媒体、论坛、百科不用；只登记原文里出现的数字，不自行换算单位、币种或百分比。
+
+\subsubsection{来源登记与资料包}
+
+所有检索结果登记进同一个 \file{research/sources.json}（清单~\ref{lst:pipe-sources}）。
+\code{questions} 记录问了什么、用了哪些检索词、结果如何；\code{sources} 记录每个来源的发布方、网址、发布与访问日期，
+以及从原文摘出的事实：\code{quote} 是包含该数字的原句（$\le$ 120 字），\code{value} 必须以原样写法出现在 \code{quote} 中，
+由 \code{verify-sources} 检查（第~\ref{sec:guards}~节）。正文引用外部数字时句末带 \code{[S编号]}，\code{guard} 把 \code{sources.json}
+中的数字当作出处，但要求所在句子带对应编号。
+
+\begin{lstlisting}[caption={\file{research/sources.json} 的结构（字段名为真实字段，取值为占位）},label={lst:pipe-sources}]
+{"questions": [
+   {"id": "Q1", "phase": "collect", "category": "latest", "question": "...",
+    "status": "found", "queries": ["...", "..."], "sources": ["S1"]},
+   {"id": "Q9", "phase": "followup", "question": "...", "status": "not_found",
+    "queries": ["...", "..."], "sources": []}],
+ "sources": [
+   {"id": "S1", "title": "...", "publisher": "...", "url": "https://...",
+    "published": "2026-08-30", "accessed": "2026-10-03",
+    "facts": [{"quote": "<sentence containing 69.6>", "value": 69.6,
+               "unit": "...", "label": "..."}]}]}
+\end{lstlisting}
+
+资料包 \file{dossier.md} 是给下游看的简报，结构固定：一句话写“年报之后最重要的变化”，然后按七个类别分节，
+每条事实句末带 \code{[S编号]}；“对预测与估值的含义”一节只写方向和需要校准的地方（如“上半年净利润已达 X，全年预测要与之衔接”），
+\emph{不替分析师下结论、不起草假设数值}；最后列“没查到的”。这条限制让研究助理与分析师的分工清楚：前者负责事实，后者负责判断。
+
+闸门 6 把“先搜集”落到估值上：假设文件必须有股价与来源，且依据中至少引用一处 \code{[S编号]}。
+\code{research.md} 也要求“预测首年与年报之后的最新业绩衔接”，评分标准 L1-08 再用程序检查预测与历史的衔接幅度（第~\ref{sec:eval}~节）。
+
+\subsubsection{分析框架与深度专题}
+
+分析师在阶段 3 写 \file{report/framework.md}。\file{analysis.md} 给出推导步骤（收入怎么来、成本与利润率怎么来、钱怎么流动、
+哪些指标领先于收入、公司自己怎么看、怎样对应到预测参数）和框架的六个小节：投资主线、驱动清单、外部调研清单、深度专题、披露局限、章节结构。
+其中对“投资主线”的要求最具体，每条主线要逐项过六项检查：
+\textbf{具体}（落到可度量的驱动）、\textbf{有预期差}（与一致预期差在哪个变量、差多少）、\textbf{落到估值}（对应哪个预测参数、敏感性多大）、
+\textbf{可证伪}（什么数据出现时判断不成立）、\textbf{有检验时点}、\textbf{知道最强反方}。过不了的降为跟踪事项。
+
+深度专题是 3～5 个“对结论影响最大、市场有分歧的问题”，从投资主线和资料包里的分歧倒推，不预设行业套路。
+每个专题写清要回答什么、需要哪些数据、结论落到哪个预测参数或情景。中际旭创的四个专题是一个真实例子：
+需求持续性（2027 年之后的行业出货 → 光模块销量增速三档）、价格与上游物料对毛利率的影响（→ 单价与毛利率变动）、
+竞争格局与技术路线（→ 远期销量与永续增长）、地缘政治与客户集中（→ 悲观情景与公司特有风险溢价）。
+每个专题都绑定了 \code{segment\_forecast} 里的具体参数，这就是“驱动 → 参数”的落地方式。
+
+阶段 4 为每个专题写一份笔记 \file{research/topics/<专题>.md}：多来源交叉、定量推导、结论与对预测的含义，事实句末带 \code{[S编号]}；
+补充检索追加进 \file{sources.json}（\code{phase: followup}）。闸门要求笔记 $\ge 3$ 份、每份 $\ge$ 1,500 字且引用 $\ge 3$ 个不同来源、
+补充问题 $\ge 8$ 个，且 \file{sources.json} 晚于框架（证明框架之后确实补查过）。
+在文稿里，每个专题成为一节 \code{deep\_topic\_N}，与行业、竞争、核心竞争力、预期差几节一起构成“深度研究”部分，
+即式~\eqref{eq:pipe-deep} 分子中的 \code{deep\_} 节。表~\ref{tab:pipe-research-stats} 是五家公司的真实规模。
+
+\begin{table}[h]
+\centering\small
+\caption{五家公司的调研规模（各会话结束时 \code{status} 输出；“近 90 天来源”随补充调研增长，取最后一次）}
+\label{tab:pipe-research-stats}
+\begin{tabular}{@{}lrrrrrr@{}}
+\toprule
+工作区 & 搜集问题 & 搜集检索 & 近 90 天来源 & 专题笔记 & 补充问题 & 来源总数 \\
+\midrule
+贵州茅台 1005 & 20 & 42 & 31 & 5 & 12 & 51 \\
+宁德时代 1005 & 17 & 40 & 41 & 4 & 10 & 48 \\
+招商轮船 1005 & 17 & 33 & 37 & 4 & 12 & 52 \\
+中际旭创 & 15 & 31 & 39 & 4 & 16 & 51 \\
+宇树科技 & 12 & 27 & 30 & 4 & 15 & 44 \\
+\midrule
+闸门下限 & — & 20 & 3 & 3 & 8 & — \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+与表~\ref{tab:pipe-floor} 的写作篇幅不同，调研的各项计数都明显高于下限。我们的解释是：调研阈值远低于完成任务本身需要的量
+（例如写四个专题、每个专题三个以上来源，本身就需要十几次补充检索），所以阈值不构成“目标”；
+而正文占比和页数的阈值正好落在模型“写完即可停”的区间里。
+
+\begin{tradeoff}[：资料搜集由独立会话做，还是并入分析师会话]
+并入的好处是分析师可以边读年报边决定查什么，检索更有针对性；资料包这一层交接也可以省去。
+独立的好处有三：一是研究助理在“不读财务细节”的约束下会把七个类别都搜到，而不是只搜与自己初步判断相关的内容
+（确认偏差）；二是资料包作为文件留存，主笔和评审都能看到“动笔之前知道什么”；三是分析师会话本身已经是最长的生成会话之一
+（13～30 分钟、100 余轮），再加检索会更早触发上下文压缩。框架之后的针对性检索仍由分析师做（阶段 4），两种好处都保留。
+\end{tradeoff}
+
+% ======================================================================
+\subsection{\code{refine}：盲评驱动的返工闭环}
+\label{sec:pipe-refine}
+
+\code{run} 只保证闸门通过；闸门不判质量。\code{refine} 在 \code{run} 之后加上盲评与返工：生成 → 复核 → 质检，
+未达交付标准时把问题单按类型路由回对应角色，最多若干轮，结束时回滚到得分最高的一轮。这一结构与自我改进（Self-Refine）
+和语言反馈强化（Reflexion）一类方法同源~\citep{madaan2023selfrefine,shinn2023reflexion}，区别在于三点：
+反馈来自另一个模型的盲评而不是生成者自己；反馈只含理由与证据，不含评分标准；返工被路由到不同的角色和会话，而不是同一个会话自我修改。
+
+\subsubsection{盲评目录与信息隐藏}
+
+每轮评测在 \file{\textasciitilde/finagent-evals/<工作区名>/r<n>/} 下进行（\code{judge.default\_root()}，可由 \code{FINAGENT\_EVAL\_DIR} 改），
+分为 \file{blind/}（评审会话的工作目录）与 \file{eval/}（程序检查、判定、计分与问题单）。
+\code{judge.prepare} 搭盲评目录时同样调用 \code{\_check\_location}，并只放入：
+交付的 PDF、\file{narrative.md}、6 个估值产物（\file{valuation.json}、\file{forecast\_summary.json}、\file{segment\_forecast.json}、
+\file{scenarios.json}、\file{non\_operating\_assets.json}、\file{comps.json}）、\file{sources.json}、\file{review.md}，
+以及 \file{rubric.json}（\code{judge\_items} 输出，只含条目编号、标题、判定标准与反例，\emph{不含分值}），和一份评审说明 \file{CLAUDE.md}。
+评审会话的工具白名单只有 \code{Read(./**)}、\code{Glob}、\code{Grep}、\code{Write(./judgments.json)}，不能联网，也不能写别的文件。
+评审说明要求“拿不准时判不通过”，并写明“数字与年报是否一致、三表是否勾稽、估值算术是否正确，已由程序另行核对，你不必复算”。
+评审看不到写作与复核过程、模型名和分值。
+
+评测结果 \file{issues.json} 由 \code{issues\_from} 生成：每个未通过的正向条目或命中的负向条目变成一条问题，字段只有
+\code{id}、\code{route}、\code{stage}、\code{severity}、\code{description}（评审的理由）、\code{evidence}（评审摘录的原文与位置）。
+严重度按层与分值映射：
+\begin{equation}
+  \mathrm{severity}(r)=\begin{cases}
+    \text{blocker}, & \mathrm{layer}(r)\in\{\mathrm{L0},\mathrm{N}\},\\
+    \text{major}, & \mathrm{points}(r)\ge 4,\\
+    \text{minor}, & \text{其他}.
+  \end{cases}
+\end{equation}
+条目标题、判定标准与分值都不出现在问题单里。表~\ref{tab:pipe-issue} 是中际旭创 v2 评测的一条真实问题（评分标准 L2-08“估值方法与参数”未通过），
+左栏是评分标准里有、但不回传的部分，右栏是回传给生成侧的全部内容。
+
+\begin{table}[h]
+\centering\small
+\caption{问题单的信息隐藏：同一条判定，评测侧可见与回传内容的对比（中际旭创 v2，问题 I02）}
+\label{tab:pipe-issue}
+\begin{tabularx}{\linewidth}{@{}>{\raggedright\arraybackslash}p{0.3\linewidth}>{\raggedright\arraybackslash}X@{}}
+\toprule
+不回传（仅评测侧） & 回传（\file{issues-generator.md}） \\
+\midrule
+条目编号 L2-08、标题、判定标准原文、反例、分值 3、所在层 L2、该层得分 42/45、总分 90 &
+\textbf{I02}（minor，阶段 8 文稿）参数列全，但没有说明为何选 FCFF，$\beta$ 1.25、ERP 6.5\%、0.5\% 特有风险溢价、永续增长 3.0\% 也没有依据（只有无风险利率有来源）。
+读者需要方法选择的理由和参数来源。证据：“我们采用 FCFF 折现。……$\beta$ 1.25，股权风险溢价 6.50\%，加 0.5\% 公司特有风险溢价”（DCF 估值） \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\begin{proposition}[评分标准不经由问题单泄露]\label{prop:pipe-noleak}
+设评分标准条目为 $(\mathrm{id},\mathrm{title},\mathrm{criteria},\mathrm{points},\mathrm{route},\mathrm{stage})$，评审输出 $(\mathrm{passed},\mathrm{evidence},\mathrm{reason})$。
+回传给生成侧的文本是 $\{(\mathrm{stage},\mathrm{severity},\mathrm{reason},\mathrm{evidence})\}$ 的 Markdown 渲染。
+它与 $\mathrm{title}$、$\mathrm{criteria}$、$\mathrm{points}$ 的关系只有两条：$\mathrm{severity}$ 透露 $\mathrm{points}\ge 4$ 与否（1 比特），
+$\mathrm{reason}$ 是评审模型用自己的话写的理由。
+\end{proposition}
+
+第二条是这个设计的残余风险：评审若在理由里复述判定标准，标准就部分泄露了。我们没有用程序过滤，原因是理由本来就应当说明“读者需要什么”，
+这本身就是返工所需的信息；而“为了拿分”与“为了读者”在这一层上并不冲突。真正要防的是生成侧看到\emph{全部}条目后按清单逐条应付，
+这一点由不变量~\ref{inv:pipe-boundary} 保证。设计稿曾考虑把条目分为“反馈集”与“留出集”、只用后者计分以检测应试，目前未实现。
+
+\subsubsection{路由与返工}
+
+评分标准 v2 的每个条目都标了 \code{route}（\code{generator} 或 \code{reviewer}）与 \code{stage}。
+41 个条目中 31 个路由给生成侧（阶段分布：资料搜集 2、财务抽取 1、估值假设 5、估值运行 6、文稿 17），
+10 个路由给复核侧（复核改写 7、排版 3）。\code{refine} 再把复核侧中 \code{stage} 以“10”开头的条目分给排版设计师。
+图~\ref{fig:pipe-refine} 与算法~\ref{alg:pipe-refine} 给出完整流程。
+
+\begin{figure}[t]
+\centering
+\resizebox{\linewidth}{!}{%
+\begin{tikzpicture}[every node/.style={font=\small}]
+  \node[prog] (run) at (0,0) {第 1 轮：\code{run\_agent}\\（五个会话）};
+  \node[gate] (gate) at (3.3,0) {$\widehat G_{11}$?};
+  \node[prog] (stop1) at (3.3,-1.6) {停止：闸门未过\\交给人};
+  \node[agent] (judge) at (6.6,0) {盲评 + 程序检查\\\scriptsize Sonnet，盲评目录};
+  \node[gate] (deliv) at (9.7,0) {达标?};
+  \node[prog] (stopr) at (12.6,0) {停止\\回滚最佳轮};
+  \node[prog] (split) at (9.7,-2.0) {问题单路由};
+  \node[agent] (fix) at (4.0,-3.7) {修订会话（GEN）\\\scriptsize 删初稿备份，重做 1--8};
+  \node[agent] (rev) at (9.7,-3.7) {复核编辑（QC）\\\scriptsize revise：措辞、结构};
+  \node[agent] (lay) at (13.4,-3.7) {排版设计师（GEN）\\\scriptsize 版面问题};
+  \node[prog] (cont) at (4.0,-5.2) {复核（带复核侧问题）\\+ \code{run\_agent} 续做 9--11};
+  \draw[arr] (run) -- (gate); \draw[arr] (gate) -- node[above,font=\scriptsize]{是} (judge);
+  \draw[arr] (gate) -- node[right,font=\scriptsize]{否} (stop1);
+  \draw[arr] (judge) -- (deliv); \draw[arr] (deliv) -- node[above,font=\scriptsize]{是 / 满轮 / 无问题} (stopr);
+  \draw[arr] (deliv) -- node[right,font=\scriptsize]{否} (split);
+  \draw[arr] (split.south west) -- node[above,sloped,font=\scriptsize]{有生成侧问题} (fix.north);
+  \draw[arr] (split) -- node[right,font=\scriptsize]{仅复核侧} (rev);
+  \draw[arr] (split.south east) -- node[above,sloped,font=\scriptsize]{阶段 10} (lay.north);
+  \draw[arr] (fix) -- (cont);
+  \draw[darr] (cont.west) -- ++(-0.8,0) |- (gate.west);
+  \draw[darr] (rev.south) -- ++(0,-0.9) -| ([xshift=4mm]cont.east) ;
+  \draw[darr] (lay.south) |- ([yshift=-1.5mm]cont.east);
+\end{tikzpicture}}
+\caption{\code{refine} 的一轮。生成侧问题优先：只要有一条，就由修订会话从数据与假设改起，并删除复核产物强制重新复核；
+否则只做复核侧的措辞修订与版面修订，不动数字。每轮结束都回到闸门判断，再进入下一次盲评。}
+\label{fig:pipe-refine}
+\end{figure}
+
+\begin{algorithm}[t]
+\caption{\code{refine}（\code{max\_rounds}=$K$，默认 3；\code{min\_gain}=$\delta$，默认 2.0）}
+\label{alg:pipe-refine}
+\begin{algorithmic}[1]
+\Require 工作区 $\plW$；评测根目录 $E=$ \file{\textasciitilde/finagent-evals/<ws>/}
+\State $S\gets$ 读取 $E/\file{loop.json}$，不存在则 $\{\text{rounds}:[\,],\ \text{best}:\bot\}$
+\If{$S.\text{rounds}\neq[\,]$ 且 \Call{StopReason}{$S$} 非空} \Return $S$ \Comment{可重入：已停止的不再跑}
+\EndIf
+\For{$n=|S.\text{rounds}|+1,\dots,K$}
+  \If{$n=1$} \Call{RunAgent}{$\plW$}
+  \Else
+    \State $I\gets E/\texttt{r}(n{-}1)/\file{eval/issues.json}$
+    \State $I_g\gets\{i\in I: \text{route}=\text{generator}\}$；$I_\ell\gets\{i: \text{route}=\text{reviewer}\wedge\text{stage}\sim\texttt{10*}\}$；$I_r\gets$ 其余复核侧
+    \If{$I_g\neq\varnothing$}
+      \State 删除 \file{narrative.draft.md}、\file{edit\_log.md} \Comment{文稿要改，复核必须重做}
+      \State \Call{Session}{GEN, fix, \code{FIX\_PROMPT}($I_g$)} \Comment{到阶段 8 通过为止}
+      \If{$\plGh{8}(\plW)$}
+        \If{$I_r\neq\varnothing$} \Call{Session}{QC, review, \code{REVIEW\_PROMPT}$+I_r$} \EndIf
+        \State \Call{RunAgent}{$\plW$} \Comment{按闸门续做排版与交付说明}
+      \EndIf
+    \Else
+      \If{$I_r\neq\varnothing$} \Call{Session}{QC, revise, \code{REVISE\_PROMPT}($I_r$)} \EndIf
+      \If{$I_\ell\neq\varnothing$} \Call{Session}{GEN, layout, \code{LAYOUT\_PROMPT}$+I_\ell$} \EndIf
+    \EndIf
+  \EndIf
+  \If{$\neg\plGh{11}(\plW)$} $S.\text{stopped}\gets$“第 $n$ 轮闸门未通过：next”；\textbf{break} \EndIf
+  \State $sc\gets$ \Call{Evaluate}{bundle($\plW$), $E/\texttt{r}n$} \Comment{L0/L1 程序 + L2/L3/N 盲评 + 计分}
+  \State 追加轮次记录（总分、是否达标、各路由问题数、快照）；$S.\text{best}\gets\arg\max_r \text{total}_r$；写 \file{loop.json}
+  \If{\Call{StopReason}{$S$} 非空} \textbf{break} \EndIf
+\EndFor
+\If{best $\neq$ 最后一轮} \Call{Restore}{best} \Comment{仅当估值运行目录未变}
+\EndIf
+\If{best 未达标} 把 best 轮的问题单追加进 \file{review.md}，交人工 \EndIf
+\end{algorithmic}
+\end{algorithm}
+
+\paragraph{生成侧优先。}只要有一条生成侧问题，本轮就走“修订会话”分支：它可能补数据、改假设、重跑估值，文稿随之重写，
+所以先删掉初稿备份与编辑日志，让闸门 9 失效，复核必须从头再来（否则数字锁会拿新文稿与旧初稿比较）。
+修订会话的提示 \code{FIX\_PROMPT} 要求“处理不了的写进 \file{review.md} 并说明原因”，“阶段 1～8 全部通过后停止”。
+
+\paragraph{复核侧只改措辞。}没有生成侧问题时，复核编辑以 \code{revise} 角色处理问题单：只改措辞、结构与编排，数字锁照常
+（\file{narrative.draft.md} 是初稿，不覆盖），需要补数字或改结论的写进 \file{review.md}；改完重跑 \code{guard} 与数字锁，
+用现有排版脚本重新渲染（不改版面），更新交付说明。版面类问题另起排版会话。
+
+\paragraph{停止条件。}\code{\_stop\_reason} 依次检查：最近一轮达到交付标准；轮数达到 $K$；最近三轮中连续两次提升都小于 $\delta$；
+最近一轮没有可回传的问题。需要指出一个实现细节：平台期条件要求至少三轮，而默认 $K=3$ 时第三轮先触发“达到最大轮数”，
+所以平台期条件只在 $K>3$ 时实际起作用。
+
+\paragraph{快照与回滚。}每轮评测后，\code{\_snapshot} 把 \file{narrative.md}、\file{narrative.draft.md}、\file{edit\_log.md}、\file{review.md}、
+\file{delivery.md} 与运行目录下的全部 PDF 复制到 \file{.pipeline/rounds/<n>/snapshot/}，并记录运行目录与文稿哈希。
+结束时若最佳轮不是最后一轮，\code{\_restore} 把快照复制回去，\emph{PDF 最后复制}，以保持“PDF 晚于文稿”的闸门条件。
+若中间重跑过估值（运行目录变了），旧文稿对应旧的估值产物，复制回去会破坏闸门 7、8 的一致性，此时不回滚，只在 \file{loop.json} 里指明最佳轮。
+
+\paragraph{一个已知缺口。}在“有生成侧问题”的分支里，版面类问题 $I_\ell$ 没有单独回传：排版会话会因为文稿变化、PDF 过期而在 \code{run\_agent} 中被重新调起，
+但它拿到的是普通的 \code{LAYOUT\_PROMPT}，看不到上一轮的版面问题。版面问题要等下一轮评测再次发现。这是可以改进的地方。
+
+\subsubsection{真实运行情况}
+
+截至本文，\code{refine} 在仓库中有记录的运行都在第一轮达到交付标准或被人工终止，尚无多轮返工的完整记录：
+中际旭创、宇树科技的 v2 版本在第 1 轮分别得 90、88 分，达标即停（\file{eval/results/v2\_*/}；第~\ref{sec:exp}~节）。
+设计稿（2026-10-03）也写明“用模拟会话测过路由与回滚，尚未真跑一整轮”。表~\ref{tab:pipe-judge} 是仓库中全部 7 次盲评会话的真实用量；
+表~\ref{tab:pipe-refine-demo} 用编造的数字示意一次三轮返工的预期形态，供读者理解路由与回滚的效果，不代表实测。
+
+\begin{table}[h]
+\centering\small
+\caption{盲评会话的真实用量（\file{eval/results/*/judge\_run.json}，模型均为 \code{claude-sonnet-5-5}）}
+\label{tab:pipe-judge}
+\begin{tabular}{@{}lrrrrr@{}}
+\toprule
+评测 & 耗时（秒） & 轮数 & 等值费用（美元） & 输入 token & 输出 token \\
+\midrule
+v0 贵州茅台 & 194.6 & 11 & 0.95 & 1,029,108 & 15,233 \\
+v0 宁德时代 & 225.9 & 13 & 1.17 & 721,888 & 17,686 \\
+v0 招商轮船 & 148.6 & 15 & 1.38 & 924,866 & 17,248 \\
+v1 中际旭创 & 165.1 & 14 & 1.31 & 673,831 & 17,608 \\
+v1 宇树科技 & 173.5 & 17 & 1.30 & 1,113,681 & 18,228 \\
+v2 中际旭创 & 162.8 & 17 & 2.27 & 1,068,423 & 13,120 \\
+v2 宇树科技 & 253.7 & 17 & 2.35 & 956,189 & 19,992 \\
+\midrule
+平均 & 189.2 & 14.9 & 1.53 & 926,855 & 17,016 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[h]
+\centering\small
+\caption{\fab{一次三轮 \code{refine} 的示意轨迹（编造，仅说明机制）}}
+\label{tab:pipe-refine-demo}
+\begin{tabular}{@{}cccccl@{}}
+\toprule
+轮次 & 总分 & 达标 & 生成侧问题 & 复核侧问题 & 本轮返工 \\
+\midrule
+\fab{1} & \fab{71} & \fab{否} & \fab{3} & \fab{4} & \fab{修订会话补可比公司表、重跑估值；复核与排版重做} \\
+\fab{2} & \fab{79} & \fab{否} & \fab{0} & \fab{3} & \fab{复核编辑 revise：拆数字罗列句、删程序口吻} \\
+\fab{3} & \fab{82} & \fab{是} & \fab{0} & \fab{1} & \fab{达标停止；第 3 轮即最佳，不回滚} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+盲评一次约 3 分钟、1～2.4 美元等值，约为一次完整生成（表~\ref{tab:pipe-usage}，约 64～68 分钟、24～27 美元）的 5\%～9\%。
+多轮返工的主要成本在生成侧：一次修订会话加上重做复核与排版，\fab{约相当于完整生成的 40\%～60\%}。
+
+% ======================================================================
+\subsection{\code{collect} 与 \code{scorecard}}
+\label{sec:pipe-collect}
+
+\paragraph{\code{collect}。}把工作区产物收回仓库：抽取、调研与文稿（整个 \file{data/extractions/<key>/}）复制到仓库同名目录；
+最新运行目录复制到仓库 \file{runs/}（已存在不覆盖）；PDF、估值模型与复核清单复制到 \file{report/交付/<MMDD> <公司> <标签>/}，
+PDF 重命名为“公司名 + 日期”（如“宇树科技1003.pdf”），模型命名为 \file{sheet.xlsx}，\file{review.md} 命名为“复核清单.md”。
+三条保护：闸门未全部通过时拒绝（\code{--force} 可强制）；仓库已有同名抽取目录时要求 \code{--overwrite}；
+测评对照时用 \code{--delivery-only} 只收交付物、不覆盖抽取文件（\code{test\_status\_gates\_and\_collect}）。
+运行目录里的 \file{manifest.json} 记录了命令行，由于年报在工作区与仓库中的相对路径相同，收回后可在仓库里离线复算全部数字（附录~\ref{app:repro}）。
+会话事件流留在工作区 \file{.pipeline/agents/}，不进仓库（单家公司约数十 MB）。
+
+\paragraph{\code{scorecard}。}对多个工作区并排输出客观指标，用于比较不同模型或配置（\code{build --tag} 区分工作区）。
+列为：闸门通过数（$/11$）、财务事实数、经营数据格数、估值运行次数、检索次数、外部来源数、正文引用的不同来源数、\code{guard}、
+初稿与终稿字数（反映复核删改量）、页数、图表数、评级、DCF 基准每股价值、累计耗时、等值费用、输入与输出 token。
+未通过全部闸门的工作区会单列“卡在哪一步”，因为其后续指标不可信。表末固定一句说明：
+“指标都是客观计数，不代表研报质量高低；正文分析深度、论证是否成立需要人工阅读 PDF 判断。”
+\code{finagent-pipeline} skill 进一步提醒：输入（年报、股价、可比公司）必须相同，否则估值不可比；评级与 DCF 不同通常来自各自起草的假设不同，
+应对比两边的 \file{valuation\_assumptions.json}，不要直接判谁对。质量比较交给第~\ref{sec:eval}~节的评测（\code{python -m finagent.evaluation compare}）。
+
+% ======================================================================
+\subsection{四个 skill：方法与约束，而不是行业模板}
+\label{sec:pipe-skills}
+
+\subsubsection{设计哲学}
+
+skill 是给模型看的操作说明。我们的原则是：\textbf{skill 只给方法与约束，具体到这家公司该分析什么，由模型读年报与资料包自己推导}。
+这条原则来自一次明确的取舍。最直接的做法是为每个行业写模板（白酒看吨价与渠道、电池看出货量与单位盈利、航运看运价与船队），
+它能让初稿更快成形，但有三个问题：A 股行业多、细分更多，模板写不完；同一行业的公司差异常常比行业共性更重要（茅台有控股财务公司，招商轮船有多个船型分部）；
+模板会把模型的注意力从“这家公司今年最重要的变化是什么”引向“把模板的格子填满”。
+
+所以 \file{analysis.md} 的开头就是“本 skill 不预设任何行业的分析框架”，唯一的示例（茅台框架怎么推出来）末尾写明
+“这些都是读茅台年报时发现的；换一家公司，结论可能完全不同”；\file{sections.md} 自称“是菜单，不是清单”；
+三份 20 页级的定制排版脚本放在 \file{templates/examples/} 而不是 \file{templates/}，注释写着“参考样例，不是模板”。
+隔离工作区（\S\ref{sec:pipe-build}）是这条原则的物理保证：工作区里没有别家公司的框架可抄。
+
+\begin{tradeoff}[：行业模板 vs 方法 + 约束]
+\textbf{行业模板}降低了对模型能力的要求，输出更整齐，评审也更容易对照。
+\textbf{方法 + 约束}依赖模型的推导能力，不同公司的报告结构差异大，初稿的质量方差也更大。
+我们选后者，理由是这里的瓶颈不在“知道该看什么指标”（强模型在常见行业上都知道），而在“这家公司这一年的特殊之处”；
+模板恰恰削弱后者。方差由两道机制控制：投资主线的六项检查与深度专题的“落到参数”要求，以及盲评 L2 条目（核心结论、预期差、驱动拆解等）。
+\end{tradeoff}
+
+\subsubsection{四个 skill 的分工与关键条款}
+
+\begin{table}[h]
+\centering\small
+\caption{四个 skill（行数含 front matter；\file{references/} 为按阶段读取的参考文档）}
+\label{tab:pipe-skills}
+\begin{tabularx}{\linewidth}{@{}l>{\raggedright\arraybackslash}p{0.17\linewidth}r>{\raggedright\arraybackslash}X@{}}
+\toprule
+skill & 使用者 & 行数 & 关键条款 \\
+\midrule
+\code{finagent-pipeline} & 仓库里的编排者 & 128 & 不自己写研报；输入问用户不自己找或编；不要在当前会话进入工作区（上下文已有仓库内容）；不要把评分标准或分数告诉工作区会话；不绕过闸门 \\
+\code{finagent-research} & 分析师 & 156 + 597 & 铁律五条：不做算术、数字来自原文带页码、只取合并报表、不静默取舍、估值假设标明观点；\code{verify-facts} 最多 3 轮；估值口径（分部驱动、三表驱动 DCF、EBIT 口径、评级规则） \\
+\code{finagent-report} & 研究助理、主笔、排版 & 150 + 360 & 不可协商约束六条（数字只来自产物、外部信息检索登记、事实推论观点措辞、写给投资者、评级取程序、字体与免责声明共用）；交给模型判断的部分（先找故事再定结构、框架自己推导、图表服务论点）；reportkit 速查；常见坑 \\
+\code{finagent-review} & 复核编辑 & 97 & 只改措辞与结构、不碰数字（数字锁）；不改结论评级估值；先通读回答三问；逐段问“去掉它读者少知道什么”；对账（同一指标一个数、结论与图表一致、各节判断一致）；十一类机器腔写法 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+几条值得单独说明的条款：
+
+\paragraph{“拿不准”的三分法。}\file{writing.md} 规定：能自己判断的直接写判断，不加缓冲词；拿不准且不影响结论的，不写；
+拿不准但影响结论或估值的（口径疑问、外部数据矛盾、关键假设缺依据、年报疑似笔误），写进 \file{review.md} 交人工，\emph{正文不出现}。
+这条规则把“模型的不确定性”从正文里移到一个结构化的清单中，给人工复核一个明确的入口。
+贵州茅台 1005 批次的复核清单有 14 条，最重要的一条是“茅台酒 2026E 销量 +3\% 与公司‘全年投放总量不增’的表态口径有冲突”。
+
+\paragraph{机器腔的识别线索。}\code{finagent-review} 列出十一类写法（否定对照、自证与圆场、交代缺失、程序口吻、口语套话、解释腔、事后圆场、
+行内标签与页码、数字罗列、重要处定性、无来源判断），每类给出例子、为什么不好与怎么改，并附四条来自用户指出过的真实初稿的改写示例。
+skill 明确说这些“是判断的线索，不是机械替换清单”。用户明确反对用程序拦截文风（CLAUDE.md 设计规范 11），所以这部分只在复核会话里由模型判断，
+评测侧对应的是 L3-04“无机器腔”条目。
+
+\paragraph{汇总数的构成要先拆再写。}\code{finagent-report} 的“常见坑”第一条记录了茅台样例中最严重的一次错误：
+股权价值桥的加回项 1,789.15 亿元被写成“拆出资金、货币资金等”，扣减项被写成“财务公司吸收的存款”，数字都过了 \code{guard}，归属全错。
+规则因此是：写任何汇总数的构成之前，先在产物里把它拆开（估值桥看 \file{plan.json}，利润归因看 \file{earnings.json}）；
+reportkit 也增加了逐项股权价值桥表，让读者能对账。评分标准 N-03“聚合数构成描述错误”对应这一类。
+
+\paragraph{渐进披露。}四个 skill 加参考文档约 1,700 行。工作区说明的“这时才读”列把它们拆到各阶段（\S\ref{sec:pipe-build}），
+\code{finagent-pipeline} 则明说“研报怎么写在工作区里的三个 skill 和工作区 CLAUDE.md 里，你不需要读它们”。
+
+% ======================================================================
+\subsection{排版：reportkit 与渲染实测}
+\label{sec:pipe-reportkit}
+
+\subsubsection{从产物到 PDF}
+
+排版设计师为每家公司写一个编排脚本 \file{report/build\_report.py}，从模板 \file{templates/build\_report.py} 起步，
+参考三份定制样例（茅台、宁德、招商，各约 480～500 行）。脚本只提供 \code{Config} 与 \code{body(doc, S)}，其余由公共库 reportkit 完成：
+
+\begin{enumerate}
+  \item \code{Run(run\_dir)} 读运行产物（真值表、经营数据与比率、盈利预测、估值、三表），\code{load\_sections} 按 \code{<!-- section: -->} 切分文稿；
+  \item 图表由 matplotlib 画成 SVG（文字转曲，避免缺字），表格由 \code{tables} 生成 HTML 三线表，\code{Doc.fig} 自动编号“图表 $n$”并记录标题；
+  \item \code{layout.build} 拼出首页（标题、投资要点、评级与估值、基本数据、盈利预测表）、目录、图表目录、正文与附录（报表预测、方法说明、数据来源与数字构成、外部资料来源、免责声明）；
+  \item 第一遍打印 PDF，\code{locate\_pages} 在 PDF 文本中定位每个章节标题与图表编号所在页；第二遍把页码回填进目录再打印；
+  \item \code{preview} 输出逐页 PNG（110 dpi）与每 8 页一张的缩略图总览，打印嵌入字体清单，供排版会话用 Read 工具“看”版面。
+\end{enumerate}
+
+数字规则与引擎一致：表格和图里的数字由脚本从产物 JSON 读出，脚本只做单位换算与格式化，不计算新的比率；外部数字从 \file{sources.json} 读。
+贵州茅台 1005 批次的排版会话自己写了一个 \code{F(来源编号, 标签)} 函数：从 \file{sources.json} 的 \code{facts} 中按编号与标签取值，取不到就报错，
+脚本里没有手写的外部数字，83 个图表中 35 个使用外部资料。
+
+\begin{table}[h]
+\centering\small
+\caption{reportkit 模块（\file{.claude/skills/finagent-report/reportkit/}）}
+\label{tab:pipe-reportkit}
+\begin{tabularx}{\linewidth}{@{}lr>{\raggedright\arraybackslash}X@{}}
+\toprule
+模块 & 行数 & 内容 \\
+\midrule
+\file{core.py} & 238 & \code{Run}（取数）、格式化（亿元、百分比、精度按数量级自动取）、Markdown 转 HTML、配色常量 \\
+\file{charts.py} & 516 & 标准图 11 种（首页小图、历史、季度、利润归因瀑布、分部预测、情景、估值桥、足球场图等）；原语 8 种（分组柱、堆叠、正负柱、横条、环形、进度条、并排小柱、构成条）；非数据图 2 种（时间轴、链条示意） \\
+\file{tables.py} & 362 & 标准表（预测、三年、季度、资产负债、假设、分部预测、WACC、FCFF、情景、敏感性、可比、反向 DCF、股权价值桥）；\code{chg()} 涨跌双色 \\
+\file{layout.py} & 480 & \code{Config}、\code{Doc}、首页、目录两遍定位、附录、浏览器查找、\code{main} \\
+\file{render.py} & 147 & 预检、打印、PDF 实测字号、渲染凭证 \\
+\file{render\_probe.js} & 62 & 在预检 HTML 中按 180mm 版心测量溢出、正文字号、图片加载 \\
+\file{report.css} & 222 & A4 版式、字体栈、红色主题、页眉页脚、分页规则 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsubsection{整体缩放缺陷与渲染实测}
+
+\begin{failcase}[：CSS 声明 10.5pt，PDF 里的字却更小]
+2026-10-05 发现，部分研报的正文看起来比其他报告小。原因是 Chrome 打印时遇到超出版心宽度的元素（宽表格、不换行的长表头或网址、侧栏里宽于容器的图片），
+会\emph{整体缩小}整份 PDF 以容纳它。CSS 里的 \code{font-size: 10.5pt} 一直是对的，HTML 层面的任何检查都发现不了，
+只有在 PDF 里测量实际字形才能看到。模型逐页看预览图也没有发现，因为每一页内部比例协调。提交 \code{81895a3} 修复：
+公共样式让长表头、文字说明与网址换行，分栏用 \code{minmax(0, 1fr)}，六期财务附表改整栏；并增加下述“预检 + 实测 + 凭证”机制。
+\end{failcase}
+
+\code{render.to\_pdf} 的流程（算法~\ref{alg:pipe-render}）分三步，任何一步失败都保留上一份 PDF，并把失败原因写进凭证。
+
+\begin{algorithm}[h]
+\caption{带实测的打印 \code{render.to\_pdf(html, browser)}}
+\label{alg:pipe-render}
+\begin{algorithmic}[1]
+\State $rec\gets\{\text{version}{=}1,\ \text{ok}{=}\text{false},\ \text{html\_sha256},\ \text{renderer\_sha256}{=}H(\text{kit})\}$
+\State \textbf{预检}：复制 HTML 到临时目录，注入 \file{render\_probe.js}，把打印媒体规则改为屏幕规则，强制 \code{html, body} 宽 180mm；
+\Statex \hspace{\algorithmicindent} 无头 Chrome \code{--dump-dom} 取测量结果：溢出元素、\code{body} 与每个正文段落的计算字号、断图、正文样本（$\le 8$ 段、每段取 32 字）
+\If{溢出 $\neq\varnothing$ 或 字号 $\neq 10.5$pt 或 无样本 或 断图} 抛出错误 \EndIf
+\State \textbf{打印}：独立 profile 的无头 Chrome \code{--print-to-pdf} 到候选文件（等到文件以 \code{\%\%EOF} 结尾）
+\State \textbf{实测}：用 pdfplumber 检查每页为纵向 A4（$595.28\times841.89$pt，容差 1pt）；在各页字符流（NFKC 归一）中定位每个正文样本，
+\Statex \hspace{\algorithmicindent} 要求样本内每个字形的字号 $s$ 满足 $|s-10.5|\le 0.12$pt；所有样本都要找到
+\State 通过：$rec.\text{pdf}\gets$ 页数与实测样本，$rec.\text{pdf\_sha256}\gets H(\text{候选})$，$rec.\text{ok}\gets$ true，候选替换正式 PDF
+\State \textbf{finally} 写 \file{render\_check.json}
+\end{algorithmic}
+\end{algorithm}
+
+容差 0.12pt 来自 Chrome 毫米到像素的取整（约 0.03pt 偏差）加余量。闸门 10 中的 $\mathrm{R}$ 由 \code{check\_render\_record} 判定：
+凭证版本与 \code{ok} 正确；凭证中的 HTML 与 PDF 哈希等于当前文件；排版代码哈希（\file{render\_check.py} 与 reportkit 下全部
+\file{.py/.css/.js/.md} 按文件名排序后串联求 SHA-256）等于当前代码；预检无溢出、无字号错误、无断图；实测样本非空且都在容差内。
+\begin{multline}
+  \mathrm{R}=\big[\,rec.\text{ok}\,\big]\wedge\big[\,rec.h_{\mathrm{html}}=H(\mathit{html})\wedge rec.h_{\mathrm{pdf}}=H(\mathit{pdf})\wedge rec.h_{\mathrm{kit}}=H(\mathrm{kit})\,\big]\\
+  \wedge\big[\,\forall s\in rec.\text{samples}: |s-10.5|\le0.12\,\big].
+\end{multline}
+哈希绑定的意义是：凭证只证明\emph{这一份} HTML、\emph{这一份} PDF、在\emph{这一版}排版代码下通过了检查。
+模型改了 PDF（例如用别的工具压缩）、改了 HTML、或仓库升级了 reportkit，凭证都会失效。
+\code{test\_report\_render.py} 的五个用例覆盖：凭证绑定（换 PDF 或改 CSS 后失效）、预检失败保留旧 PDF、
+真实浏览器下长表头与网址与六期附表能通过、四类非法版式被拒（260mm 宽元素、超长单元格、8pt 正文、缺失图片），
+以及“预检时 10.5pt、打印时被 \code{zoom:0.8} 缩小”能被实测独立识别。后三项需要 \code{FINAGENT\_BROWSER\_TESTS=1} 与本机 Chrome。
+
+\begin{tradeoff}[：检查 CSS、检查 DOM 还是检查 PDF]
+只检查 CSS 声明最便宜，但发现不了缩放；只在 DOM 里测溢出能发现大部分原因，但浏览器的打印路径与屏幕路径不同，
+预检通过不代表打印结果正确（测试用 \code{zoom} 构造了这种情况）。直接在 PDF 里测量是唯一能确认“读者看到的字号”的方法，
+代价是要在 PDF 字符流里可靠地定位正文：我们用预检时从正文段落里采的样本做锚点，用 NFKC 归一处理全角与兼容字符，
+只比较样本区间内的字形。三层都做：预检给出可操作的错误信息（哪个元素溢出），实测给出不可绕过的结论。
+\end{tradeoff}
+
+\paragraph{美观检查仍靠模型看图。}程序检查不了图中文字重叠、孤立标题、大块留白。排版会话的提示要求“逐页看 preview 修到美观”，
+真实会话里这一步做得相当细：贵州茅台的排版会话报告修了“第三部分标题栏孤悬在页底”“目录里的跟踪表被编成了图表 1”“文字表格不是左对齐”
+“价格图、时间轴、成本图里的标注互相重叠”“有一张溢出页只有三行”五处，并说明首页下方约四分之一空白是固定版式所致、没有用重复图表填充。
+
+\paragraph{测试。}\code{test\_report\_kit.py} 在三种情形上各渲染一遍模板：样例公司（有负债、有可比公司、低价股、无分部预测；验证图表连续编号、
+占位符转义、敏感性矩阵两位小数）、人为构造的亏损公司（无分季度、无可比公司；验证缺数据的图表整块跳过）、茅台真实脚本（57 个图表）；
+另验证红色主题、股权价值桥逐项加总等于股权价值、非数据原语与引用上标。修改 reportkit 后必须跑这组测试。
+
+% ======================================================================
+\subsection{失败案例}
+\label{sec:pipe-failures}
+
+下面的案例除注明外都来自真实运行记录（会话事件流与提交历史）。它们大多不是模型“能力不够”，而是系统边界与激励设计的问题。
+
+\begin{failcase}[ 1：仓库内直接写研报]
+现象见 \S\ref{sec:pipe-goals}：读到其他公司的框架与文稿、可能读到评分标准、单会话上下文耗尽。
+\fab{在一次早期试跑中，模型在写新公司的分析框架前先列出了仓库里已有的三份 \file{framework.md} 并逐一读取。}
+处理：提交 \code{58886cf} 引入隔离工作区，\code{ab4a016} 起工作区不复制 \file{finagent/evaluation/}，评测结果放到工作区之外。
+\end{failcase}
+
+\begin{failcase}[ 2：权限规则误拦公司目录（宇树科技，2026-10-03）]
+为保护年报原件写了 \code{Write(./report/**)}，它同时匹配了 \file{data/extractions/宇树科技\_2025/report/}。
+写作会话完成了阶段 2～8 的全部工作（113 个财务事实、19 张经营数据表 367 格、估值运行、\code{guard} 通过的文稿），
+却写不进框架与文稿；它尝试用白名单内的 \code{cp} 也被拒，于是把文件暂存在 \file{\_stage/} 并在汇报中准确说明原因、停止，没有寻找其他绕过方式。
+闸门因框架缺失判阶段 3～8 未通过，编排器停止。这次会话用了 89 轮、约 27.8 分钟、4.93 美元等值。
+处理：提交 \code{4f70953} 把规则改为 \code{report/resources/**}。教训：deny 规则用路径模式时要按“它还会匹配什么”审查，
+并用一次完整的无头运行验证；同时，模型“被拦即停、如实汇报”的行为让这类配置错误很容易定位。
+\end{failcase}
+
+\begin{failcase}[ 3：前缀权限规则匹配不到（中际旭创，2026-10-03）]
+排版命令 \code{./py data/extractions/中际旭创\_2025/report/build\_report.py --run-dir ...} 两次返回“This command requires approval”。
+原因是旧式前缀语法 \code{Bash(./py data/extractions/:*)} 只在词边界匹配。同一会话里 \code{cp} 模板也被拒（Claude Code 不允许从 \file{.claude/} 复制），
+模型改为直接写脚本。处理：提交 \code{6d9a436} 改通配规则，并新增 \code{template} 子命令。
+\end{failcase}
+
+\begin{failcase}[ 4：写短逃避深度（2026-10-03）]
+10-02 起排版由复核会话顺带完成，当天又把复核默认模型改成 Sonnet。复核会话只套了 126 行的通用模板，
+中际旭创 v1 的 PDF 只有 11 页、26 个图表（此前茅台样例为 21 页、56 个图表）；闸门当时不检查篇幅。
+处理：提交 \code{20948ae} 把排版交给独立的 Opus 排版会话，加入正文字数、深度研究占比、页数与图表数闸门，
+研报改为“年报点评 + 深度研究”结构，提供三份定制排版样例。v2 两家分别为 30 页 68 图、30 页 67 图。
+教训：一个角色同时承担“删减”（复核）与“扩充”（排版）两类目标时，会倾向于更省力的一方。
+\end{failcase}
+
+\begin{failcase}[ 5：贴着阈值达标]
+见表~\ref{tab:pipe-floor}：五家中四家深度研究占比恰为 60\%，两家页数恰为 25；中际旭创的复核会话为把占比从 59.85\% 拉回 60\% 而删减年报点评部分。
+宇树科技第一版文稿深度研究只占 57\%，原因是框架列了四个专题、文稿只写了三个；闸门拦下后主笔补写“份额之争”专题，达到 63\%。
+这一案例说明闸门有效（挡住了漏写专题），也说明它会被当作目标（\S\ref{sec:pipe-gates}）。
+\end{failcase}
+
+\begin{failcase}[ 6：PDF 整体缩放]
+见 \S\ref{sec:pipe-reportkit}。修复后用 \code{sync-renderer} 升级了已有工作区，并重新渲染了茅台与宁德 1005 两份报告。
+\end{failcase}
+
+\begin{failcase}[ 7：额度耗尽与连接中断]
+五家公司的会话历史中，有 7 次会话因订阅额度耗尽结束（宁德、茅台各一次，招商两次，中际一次，宇树两次），
+最长的一次发生在宇树科技排版会话的第 288 轮；另有 2 次“API Error: Connection lost mid-response”。
+所有中断都在额度恢复后用同一条 \code{run} 命令续跑，没有人工修补文件。这依赖三件事：会话边写边落盘；闸门只看文件；工作区说明要求接手时先跑 \code{status}。
+代价是墙钟时间：贵州茅台 1005 批次的有效会话时间 67.9 分钟，墙钟时间 5 小时 40 分（\S\ref{sec:pipe-timeline}）。
+\end{failcase}
+
+\begin{failcase}[ 8：复核会话发现方向写反]
+中际旭创的复核会话在改写时发现一句“H 股相对 A 股折价”：来源 S7 的摘句里 A 股 808.44 元、H 股 1,072 港元，A 股更便宜，原句方向写反了。
+它删去了这一句（数字锁允许删除，不允许改数）。这类错误 \code{guard} 发现不了（两个数字都有出处），说明独立复核在程序检查之外有实际价值。
+\end{failcase}
+
+\begin{failcase}[ 9：手写文档与闸门常量漂移]
+\file{research.md} 第二部分写“闸门要求至少 3 个补充问题”，而源码 \code{MIN\_FOLLOWUP}=8；\code{finagent-report} 写研报 25～30 页，闸门上限是 32 页；
+\code{finagent-report} 开头说工作区“只含两个 skill”，实际复制三个。茅台 1005 批次的排版会话也在汇报中指出了两处文档路径与实际不符。
+工作区 \file{CLAUDE.md} 不存在这个问题，因为它由 \code{render\_guide} 用常量插值生成，所以模型以工作区说明为准时不受影响。
+教训：凡是闸门阈值，文档里都应由代码生成或引用常量名，不手写数字。
+\end{failcase}
+
+% ======================================================================
+\subsection{权衡汇总}
+\label{sec:pipe-tradeoffs}
+
+前文各处的权衡盒子讨论了单项选择。这里把四个最主要的系统级权衡放在一起，并尽量给出数字。
+
+\begin{table}[h]
+\centering\small
+\caption{系统级权衡（“现状”为本系统的选择）}
+\label{tab:pipe-tradeoffs}
+\begin{tabularx}{\linewidth}{@{}>{\raggedright\arraybackslash}p{0.17\linewidth}>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}X@{}}
+\toprule
+维度 & 备选 & 现状与理由 \\
+\midrule
+单会话 vs 多会话 & 单会话：无交接损失、总 token 更少（不必每个会话重读工作区说明与上游产物） &
+五会话：每个会话的工作集可控；角色约束清楚；中断只损失一个会话。代价是每个会话启动时重读说明与输入，
+\fab{估计占总输入 token 的 10\%～15\%} \\
+共享上下文 vs 文件交接 & 共享：下游理解上游意图 & 文件：复核独立；交接物可被人与评审检查；与最终读者的视角一致 \\
+同模型 vs 异模型复核 & 同模型（Opus）：改写质量可能更高 & 复核与评审用 Sonnet：成本低（复核会话 2.2～3.7 美元等值，生成侧单会话多在 3.7～7.3 美元），减轻自我偏好；
+复核受数字锁约束，只删不增，对生成能力要求较低 \\
+成本与时延 & 更少会话、更少检索、更低图表下限 & 一份研报约 64～68 分钟有效会话时间、24～27 美元等值、3,600 万～4,700 万输入 token；
+主要开销在分析师与排版（表~\ref{tab:pipe-usage}）。可并行跑多家公司（1005 批次三家同时开始） \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+关于“多会话是否比单会话好”，我们没有严格的消融实验。现有证据是间接的：v0（单会话、无资料搜集与独立复核）三家 46～49 分，
+v1（先搜集 + 独立复核）67～74 分，v2（+ 深度专题与篇幅闸门，排版独立）88～90 分（均为评分标准 v0、单次盲评，重复盲评总分极差 7～8）。
+版本之间同时改动了多处，不能把差异全部归于会话拆分。去掉资料搜集、去掉复核会话的消融列在待做事项中（第~\ref{sec:exp}、\ref{sec:limits}~节）。
+
+% ======================================================================
+\subsection{端到端运行实例：贵州茅台 1005 批次}
+\label{sec:pipe-timeline}
+
+最后给出一次完整运行的真实时间线。2026-10-05 04:21:52，贵州茅台、宁德时代、招商轮船三个工作区同时开始 \code{run}。
+图~\ref{fig:pipe-gantt} 是贵州茅台工作区六次会话的时间线（数据取自 \file{.pipeline/agent\_runs.json}），表~\ref{tab:pipe-usage} 汇总了五个工作区的用量。
+
+\begin{figure}[t]
+\centering
+\begin{tikzpicture}[x=1.6mm, y=6mm, every node/.style={font=\scriptsize}]
+  % 段 A：04:20—04:52（32 分钟），段 B：09:20—10:04（44 分钟），中间断开
+  \def\off{36}
+  \foreach \y/\n in {0/研究助理, -1/分析师, -2/主笔, -3/复核编辑, -4/排版设计师}{
+    \node[anchor=east] at (-1,\y) {\n};
+    \draw[midgray!40] (0,\y) -- (32,\y); \draw[midgray!40] (\off,\y) -- (\off+44,\y);
+  }
+  % 时间轴
+  \draw (0,-4.8) -- (32,-4.8); \draw (\off,-4.8) -- (\off+44,-4.8);
+  \foreach \t/\l in {0/04:20, 10/04:30, 20/04:40, 30/04:50}{ \draw (\t,-4.8) -- ++(0,-0.12) node[below]{\l}; }
+  \foreach \t/\l in {0/09:20, 10/09:30, 20/09:40, 30/09:50, 40/10:00}{ \draw (\off+\t,-4.8) -- ++(0,-0.12) node[below]{\l}; }
+  \draw[decorate,decoration={zigzag,amplitude=0.6mm,segment length=1.6mm}] (32.6,-4.8) -- (35.4,-4.8);
+  \node[text=midgray] at (34,0.7) {等待额度恢复 4 时 32 分};
+  % 会话条（分钟）
+  \fill[modelorange!60] (1.87,-0.3) rectangle (11.80,0.3);  \node at (6.8,0) {9.9 分 · 103 轮};
+  \fill[modelorange!60] (11.80,-1.3) rectangle (25.42,-0.7); \node at (18.6,-1) {13.6 分 · 115 轮};
+  \fill[gatered!45] (25.42,-2.3) rectangle (29.83,-1.7);     \node[anchor=west] at (25.6,-2.55) {额度耗尽};
+  \fill[modelorange!60] (\off+1.88,-2.3) rectangle (\off+15.15,-1.7); \node at (\off+8.5,-2) {13.3 分 · 104 轮};
+  \fill[nipsblue!35] (\off+15.15,-3.3) rectangle (\off+20.42,-2.7); \node[anchor=west] at (\off+20.6,-3) {5.3 分 · 61 轮（Sonnet）};
+  \fill[modelorange!60] (\off+20.42,-4.3) rectangle (\off+41.88,-3.7); \node at (\off+31.1,-4) {21.5 分 · 130 轮};
+  % 闸门
+  \foreach \x/\yy in {11.80/-0.5, 25.42/-1.5, \off+15.15/-2.5, \off+20.42/-3.5}{ \node[gate,scale=0.55] at (\x,\yy) {}; }
+  \node[gate,scale=0.55] at (\off+41.88,-4.5) {};
+\end{tikzpicture}
+\caption{贵州茅台 1005 批次的会话时间线（真实记录）。橙色为 Opus 会话，蓝色为 Sonnet 复核会话，红色为因订阅额度耗尽而结束的会话；
+红色菱形为接力时通过的闸门。有效会话时间 67.9 分钟，墙钟时间 5 小时 40 分。}
+\label{fig:pipe-gantt}
+\end{figure}
+
+\paragraph{阶段 1（04:21--04:31，研究助理）。}20 个问题、42 次检索、近 90 天来源 24 个；资料包的“一句话”是年报之后的半年报：
+2026 年上半年营收同比 +1.47\%、归母净利润同比 $-$1.95\%，二季度单季转负。研究助理在汇报里特别提示“预测首年要和这组数字衔接”，
+并给出了可直接用作 \code{price\_source} 的股价来源写法（2026-09-30 收盘，两个来源交叉一致）。
+
+\paragraph{阶段 2--7（04:31--04:45，分析师）。}财务抽取拒收 0、冲突 0、勾稽失败 0；框架列 5 个深度专题，写 5 份笔记，补充问题 12 个，来源增至 51 个；
+经营数据 18 张表、拒收 0 格；估值运行 \file{runs/20261005-044423-valuation}。
+
+\paragraph{阶段 8（04:45 中断，09:21--09:35 续做，主笔）。}第一次主笔会话 31 轮后额度耗尽。额度恢复后同一条 \code{run} 重新起主笔会话，
+它从 \code{status} 得知阶段 1～7 已完成，接着写文稿。\code{guard} 起初报出一批外部数字缺登记：数字写在已有摘句里，但没有作为 \code{facts.value} 单独登记。
+主笔为其中 83 个数字补登记（没有新增来源、没有改动摘句），最终 \code{guard} 通过，正文 30,501 字、深度研究占 61\%。
+
+\paragraph{阶段 9（09:35--09:40，复核编辑，Sonnet）。}数字锁通过，删去 23 处数字，无新增数字与来源编号；正文 29,552 字，深度研究 60\%；
+复核清单 14 条。
+
+\paragraph{阶段 10--11（09:40--10:01，排版设计师）。}25 页、83 个图表（35 个用外部资料），渲染检查通过；交付说明列出核心结论（评级“中性”，
+DCF 基准每股价值 1,305.28 元，区间 996.91～1,566.83 元，相对 2026-09-30 收盘价 1,258.62 元空间 +3.7\%，均取自程序结果）、
+需要仓库修改的三项 reportkit 需求、两处文档路径不符，以及最需要人工核对的复核事项。
+
+\begin{table}[t]
+\centering\scriptsize
+\caption{五个工作区的会话用量（\file{.pipeline/agent\_runs.json} 全部记录求和；费用为 Claude Code 折算的 API 等值，非实际账单。
+中际旭创、宇树科技的记录包含 10-03 旧流程（写作会话兼做阶段 2～8、复核会话兼做排版）的会话，与 1005 批次不完全可比）}
+\label{tab:pipe-usage}
+\setlength{\tabcolsep}{3.5pt}
+\begin{tabular}{@{}lrrrrrrrrr@{}}
+\toprule
+工作区 & 会话数 & 有效时间 & 墙钟跨度 & 等值费用 & 输入 token & 输出 token & 总轮数 & 页数 & 图表 \\
+ & & （分） & & （美元） & （百万） & （千） & & & \\
+\midrule
+贵州茅台 1005 & 6 & 67.9 & 5:40 & 27.19 & 43.85 & 356.7 & 544 & 25 & 83 \\
+宁德时代 1005 & 6 & 63.9 & 6:18 & 23.59 & 36.24 & 326.5 & 488 & 25 & 102 \\
+招商轮船 1005 & 7 & 64.7 & 11:10 & 27.42 & 47.20 & 322.6 & 613 & 30 & 70 \\
+中际旭创 & 10 & 144.0 & 17:01 & 42.09 & 83.79 & 424.4 & 825 & 30 & 68 \\
+宇树科技 & 11 & 201.6 & 22:00 & 49.42 & 106.60 & 489.0 & 1010 & 30 & 67 \\
+\bottomrule
+\end{tabular}
+
+\vspace{6pt}
+\begin{tabular}{@{}lrrrrrr@{}}
+\toprule
+1005 批次按角色 & 研究助理 & 分析师 & 主笔 & 复核编辑 & 排版设计师 & 合计 \\
+\midrule
+有效时间（分，三家平均） & 10.8 & 16.7 & 14.4 & 6.7 & 16.9 & 65.5 \\
+等值费用（美元，三家平均） & 4.68 & 7.19 & 5.60 & 2.76 & 5.83 & 26.07 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+图~\ref{fig:pipe-cost} 把 1005 批次三家的有效时间按角色堆叠。分析师与排版设计师是两个最长的会话：前者要逐页读年报、跑校验循环、写四五份专题笔记；
+后者要写四五百行的排版脚本、反复渲染并逐页看图。复核编辑最短，与它“只删不增”的任务相符。
+三家的总时间非常接近（63.9～67.9 分钟），说明在五会话结构下，单家公司的成本主要由流程决定，受公司差异影响较小。
+
+\begin{figure}[h]
+\centering
+\begin{tikzpicture}
+\begin{axis}[xbar stacked, width=0.92\linewidth, height=40mm, bar width=4.5mm,
+  symbolic y coords={招商轮船,宁德时代,贵州茅台}, ytick=data, xmin=0, xmax=75,
+  xlabel={有效会话时间（分钟）}, xlabel style={font=\small}, tick label style={font=\small},
+  legend style={at={(0.5,-0.42)},anchor=north,legend columns=5,font=\scriptsize,draw=none},
+  enlarge y limits=0.3, axis x line*=bottom, axis y line*=left]
+\addplot[fill=modelorange!35,draw=modelorange!80!black] coordinates {(9.9,贵州茅台) (9.7,宁德时代) (12.9,招商轮船)};
+\addplot[fill=modelorange!70,draw=modelorange!80!black] coordinates {(13.6,贵州茅台) (15.9,宁德时代) (20.5,招商轮船)};
+\addplot[fill=gatered!40,draw=gatered] coordinates {(17.7,贵州茅台) (13.0,宁德时代) (12.4,招商轮船)};
+\addplot[fill=nipsblue!35,draw=nipsblue] coordinates {(5.3,贵州茅台) (5.9,宁德时代) (9.0,招商轮船)};
+\addplot[fill=midgray!45,draw=midgray] coordinates {(21.5,贵州茅台) (19.3,宁德时代) (9.9,招商轮船)};
+\legend{研究助理, 分析师, 主笔, 复核编辑, 排版设计师}
+\end{axis}
+\end{tikzpicture}
+\caption{1005 批次三家公司各角色的有效会话时间（含因额度耗尽而中断的会话；招商轮船分析师与排版各含一次中断）。}
+\label{fig:pipe-cost}
+\end{figure}
+
+% ======================================================================
+\subsection{小结}
+\label{sec:pipe-summary}
+
+本节的系统把“写一篇深度研报”拆成五个互不共享上下文的模型会话，由确定性编排器按 11 道程序闸门接力，再由第六个会话在只含交付物的目录里盲评。
+几条设计在真实运行中被反复验证：
+\begin{itemize}
+  \item \textbf{文件即状态}使流水线对中断天然鲁棒：7 次额度耗尽、2 次断线，全部用同一条命令续跑；
+  \item \textbf{闸门只信文件、哈希与时间戳}，不信模型自述；“核对当前稿”和渲染凭证堵住了“先通过、再修改”的路径；
+  \item \textbf{权限围栏}的错误会以“被拦即停、如实汇报”的方式暴露，比静默失败容易排查；
+  \item \textbf{数量闸门是下限而不是目标}：模型会贴着阈值达标，质量必须交给看不到阈值的盲评；
+  \item \textbf{独立复核}能发现程序检查不到的方向性错误，而数字锁保证它不会引入新的数字。
+\end{itemize}
+仍待改进的地方包括：多轮 \code{refine} 缺少真实运行记录；生成侧分支不回传版面问题；平台期停止条件在默认轮数下不生效；
+手写 skill 文档与闸门常量存在漂移；会话拆分的收益缺少消融实验。这些在第~\ref{sec:limits}~节一并讨论。
+
+\setlength{\emergencystretch}{0pt}

@@ -1,0 +1,941 @@
+% =====================================================================
+% 第 13 节 实验
+% 数字来源：eval/、runs/、data/extractions/、tests/、eval/calibration/、工作区 .pipeline/agent_runs.json；
+% 本章新做的两项实验（规则通道逐项消融、真实真值表上的错误注入）脚本思路写在正文，结果可复现。
+% 凡仓库中查不到依据的数字一律用 \fab{} 标出。
+% =====================================================================
+\section{实验}
+\label{sec:exp}
+
+前面各章分别给出了抽取（第~\ref{sec:extract}~节）、分析（第~\ref{sec:analysis}~节）、估值（第~\ref{sec:valuation}~节）、
+纠错（第~\ref{sec:reportcheck}~节）、护栏（第~\ref{sec:guards}~节）、流水线（第~\ref{sec:pipeline}~节）与评测（第~\ref{sec:eval}~节）各自的结果表。
+本章不重复这些表，而是把它们组织成七个研究问题（research question, RQ），补上各章没有做的消融、基线和跨模块分析，
+并说明每个结论的证据强度。
+
+\begin{description}[leftmargin=2.6em,labelwidth=2.2em]
+  \item[RQ1] 双通道抽取在真实年报上是否可靠？三项版式修复各贡献多少？
+  \item[RQ2] 财报分析的确定性部分（真值表、勾稽、信号）在样例与真实年报上是否闭合？
+  \item[RQ3] 研报纠错能否在控制误报的前提下判出错误并给对错误类型？“按展示精度定容差”比固定容差好多少？
+  \item[RQ4] 自研估值引擎与参照引擎是否一致？三表勾稽在真实运行中是否总成立？引擎的耗时是多少？
+  \item[RQ5] 多会话流水线产出的研报质量如何，随流程版本怎样变化？
+  \item[RQ6] 流水线的各个结构性组件（资料先搜集、独立复核、深度专题、数字锁、隔离工作区）各起多大作用？
+  \item[RQ7] 盲评评审本身可信吗？它的稳定性、灵敏度与精确率如何？
+\end{description}
+
+此外，\S\ref{sec:exp-cost} 汇总成本与耗时，\S\ref{sec:exp-case} 给出两个端到端案例（一个数字的完整溯源链与一次纠错），
+\S\ref{sec:exp-tests} 报告测试套件，\S\ref{sec:exp-threats} 讨论有效性威胁。
+
+\begin{insight}[：如何读本章的数字]
+黑色数字都能在仓库产物中找到或由仓库代码复现，正文与表注写明来源文件。橙色数字（\fab{如此}）是仓库中暂无依据的编造或估计值，
+主要集中在三处：纯模型基线（RQ3、RQ5）、组件消融（RQ6）和人工埋错扩充集（RQ3）。它们用来说明实验设计与预期量级，
+定稿前须用真实运行替换。本章新做的两项实验——规则通道逐项消融（\S\ref{sec:exp-rq1}）与真实真值表上的错误注入（\S\ref{sec:exp-rq3}）——是真实结果，
+不调用任何模型，可在几分钟内复现。
+\end{insight}
+
+% ---------------------------------------------------------------------
+\subsection{实验设置}
+\label{sec:exp-setup}
+
+\paragraph{数据。}表~\ref{tab:exp-data} 列出本章用到的全部数据。真实文档共五份：贵州茅台、宁德时代、招商轮船、中际旭创的 2025 年年度报告，
+以及宇树科技的招股说明书（上会稿），PDF 的 SHA-256 登记在 \file{report/resources/}。样例公司“星河智造”为虚构，年报与研报草稿由
+\file{data/samples/build\_samples.py} 生成，内部完全自洽，用于回归测试，不代表真实数据上的效果。
+
+\begin{table}[t]
+\centering
+\caption{实验数据一览。“抽取”指模型抽取文件随代码提交（\file{data/extractions/}）；“研报”指完整跑过五会话流水线并有盲评结果。}
+\label{tab:exp-data}
+\small
+\begin{tabularx}{\linewidth}{@{}l l c c c X@{}}
+\toprule
+对象 & 文档 & 抽取 & 估值 & 研报 & 用途 \\
+\midrule
+星河智造（虚构） & 样例年报 + 研报草稿 & \cmark & \cmark & -- & 回归：35 个金标准字段、7 处埋错（RQ2、RQ3） \\
+贵州茅台 & 2025 年报 & \cmark & \cmark & \cmark & 抽取消融、错误注入、v0 与 1005 批次研报 \\
+宁德时代 & 2025 年报 & \cmark & \cmark & \cmark & 同上；稀疏网格的典型 \\
+招商轮船 & 2025 年报 & \cmark & \cmark & \cmark & 同上；周期股、现价高于估值 \\
+中际旭创 & 2025 年报 & 工作区内 & \cmark & \cmark & 研报 v1→v2、评审校准 \\
+宇树科技 & 招股书上会稿 & 工作区内 & \cmark & \cmark & 研报 v1→v2、评审校准；非年报体例 \\
+注入集 & 上述四张真值表 & -- & -- & -- & 1,334 条程序生成断言，754 条含错（RQ3） \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\paragraph{模型与运行环境。}生成侧五个角色中研究助理、分析师、主笔、排版设计师用 Claude Opus 5.5（\code{claude-opus-5-5}），
+复核编辑与盲评质检员用 Claude Sonnet 5.5（\code{claude-sonnet-5-5}），均以无头 Claude Code（\code{claude -p --output-format stream-json}）运行，
+模型名由 \code{FINAGENT\_GEN\_MODEL} / \code{FINAGENT\_QC\_MODEL} 配置。计算引擎在 Python 3.12.14、macOS 27（arm64）上运行，
+PDF 解析用 pdfplumber，其余只用标准库。所有引擎运行的输入哈希、产物哈希与步骤事件写在 \file{runs/<run\_id>/manifest.json} 与 \file{events.jsonl}。
+
+\paragraph{指标。}各 RQ 的指标定义如下，记号沿用第~\ref{sec:problem}~节。
+\begin{itemize}
+  \item \textbf{佐证率}（RQ1）：模型核验值中被规则通道独立取到且数值一致的比例；\textbf{错配}：两通道都有值、值不同的键数。
+  \item \textbf{召回率、精确率、误报率、类型准确率}（RQ3）：以“判为五类错误之一”为阳性。召回 $=\text{TP}/(\text{含错断言数})$，
+        精确率 $=\text{TP}/(\text{TP}+\text{FP})$，误报率 $=\text{FP}/(\text{正确断言数})$，类型准确率 $=$ 判对类型的 TP $/$ TP。
+        “无法核实”不计为阳性。
+  \item \textbf{研报总分}（RQ5、RQ6）：按评分标准计算的 0～100 分（式~\eqref{eq:eval-total}），分 L1 数据闭合（35）、L2 分析质量（45）、L3 表达与合规（20）与负向扣分；
+        交付标准见式~\eqref{eq:eval-deliver}。
+  \item \textbf{逐条一致率、两两翻转率、判出率、精确率}（RQ7）：定义见 \S\ref{sec:eval-calib}。
+\end{itemize}
+
+\paragraph{评分标准版本。}这一点容易混淆，单独说明：\file{eval/results/} 下文件夹名中的 v0、v1、v2 是\emph{流水线版本}，不是评分标准版本。
+三批研报（v0 三家、v1 与 v2 各两家）全部用评分标准 \code{report\_v0} 计分，各只做了一次盲评；评审校准（RQ7）在评分标准 v1 下进行。
+因此 v0→v1→v2 的分数可以直接比较，但不能与校准实验中的总分逐分比较。
+
+% ---------------------------------------------------------------------
+\subsection{RQ1：真实年报上的双通道抽取}
+\label{sec:exp-rq1}
+
+\paragraph{总体结果。}第~\ref{sec:ext-results}~节（表~\ref{tab:ext-real}）在当前代码上重跑了三家年报的抽取校验：301 个模型核验值全部通过证据校验，
+规则通道独立取到并一致的 280 个（佐证率 93.0\%），两通道冲突 0，56 项勾稽全部通过。提交 \code{aee4274} 记录的口径是“314 个核验值、规则通道取到 293 个（原 128 个）、错配 0”。
+两组数字的差别来自其后对三份 \file{facts.json} 的修订（条目增删与页码更正），佐证率（93.0\% 对 93.3\%）与“零错配”的结论一致。
+下文的消融全部基于当前文件（301 个值），以保证每一行都可复现。
+
+\paragraph{逐项消融的做法。}三项版式修复都在 \file{finagent/parsing/document.py} 中：稀疏网格列合并 \code{compact\_columns}（\S\ref{sec:ext-sparse}）、
+跨页续表链接 \code{link\_continuation}（\S\ref{sec:ext-cont}）、科目折行合并 \code{merge\_wrapped\_labels}（\S\ref{sec:ext-wrap}）。
+我们在不改仓库代码的前提下，用猴子补丁（monkey patching）把它们分别替换为恒等函数或恒返回 \code{False}，重新解析 PDF、运行 \code{extract\_rule}，
+再与经 \code{ingest} 规范化后的模型核验值逐键比较。规则通道对同一键取到多个不同值时也计为错配。
+共测七种配置：全部关闭、逐个累加（\code{+cc}、\code{+cc+lc}、全部）以及从完整配置中逐个去掉（leave-one-out）。
+
+\begin{table}[t]
+\centering
+\caption{规则通道逐项消融（佐证数 / 该公司模型核验值数）。cc = 稀疏列合并，lc = 续表链接，mw = 折行合并。
+七种配置下错配均为 0。“全部关闭”的 115 与表~\ref{tab:ext-before-after} 中“修复前”的佐证数一致。}
+\label{tab:exp-ext-ablation}
+\small
+\begin{tabular}{@{}lrrrrrrr@{}}
+\toprule
+ & \multicolumn{4}{c}{逐个累加} & \multicolumn{3}{c}{从完整配置去掉一项} \\
+\cmidrule(lr){2-5}\cmidrule(lr){6-8}
+公司（模型值） & 全关 & +cc & +cc+lc & 完整 & $-$cc & $-$lc & $-$mw \\
+\midrule
+贵州茅台（98） & 60 & 60 & 90 & 90 & 86 & 60 & 90 \\
+宁德时代（106） & 0 & 25 & 69 & 101 & 0 & 47 & 69 \\
+招商轮船（97） & 55 & 55 & 89 & 89 & 89 & 55 & 89 \\
+\midrule
+合计（301） & 115 & 140 & 248 & \textbf{280} & 175 & 162 & 248 \\
+佐证率 & 38.2\% & 46.5\% & 82.4\% & \textbf{93.0\%} & 58.1\% & 53.8\% & 82.4\% \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[t]
+\centering
+\begin{tikzpicture}
+\begin{axis}[
+  ybar, bar width=7pt, width=0.95\linewidth, height=5.2cm,
+  ymin=0, ymax=115, ylabel={佐证数},
+  symbolic x coords={none,cc,cclc,full,mcc,mlc,mmw},
+  xtick=data,
+  xticklabels={全关,+cc,+cc+lc,完整,$-$cc,$-$lc,$-$mw},
+  legend style={at={(0.02,0.98)},anchor=north west,font=\scriptsize,draw=none,fill=white,fill opacity=0.85},
+  legend columns=3,
+  tick label style={font=\scriptsize}, ylabel style={font=\small},
+  enlarge x limits=0.08,
+]
+\addplot[fill=nipsblue!70,draw=nipsblue] coordinates {(none,60)(cc,60)(cclc,90)(full,90)(mcc,86)(mlc,60)(mmw,90)};
+\addplot[fill=modelorange!70,draw=modelorange!80!black] coordinates {(none,0)(cc,25)(cclc,69)(full,101)(mcc,0)(mlc,47)(mmw,69)};
+\addplot[fill=gatered!50,draw=gatered] coordinates {(none,55)(cc,55)(cclc,89)(full,89)(mcc,89)(mlc,55)(mmw,89)};
+\legend{贵州茅台,宁德时代,招商轮船}
+\end{axis}
+\end{tikzpicture}
+\caption{规则通道逐项消融（数据同表~\ref{tab:exp-ext-ablation}）。三项修复的作用高度依赖版式：宁德时代离开稀疏列合并一个值也取不到；茅台与招商轮船的增量几乎全部来自续表链接。}
+\label{fig:exp-ext-ablation}
+\end{figure}
+
+\paragraph{分析。}表~\ref{tab:exp-ext-ablation} 有三点值得注意。
+
+\emph{其一，三项修复的作用是“版式条件的”，不是可加的。}稀疏列合并对茅台和招商轮船单独开启时增量为 0（两家的 pdfplumber 网格是规整的），
+对宁德时代却是“有或无”：去掉它，宁德的佐证数从 101 掉到 0——即使续表链接与折行合并都在，表头与数字错列一格，期间列永远认不出来。
+折行合并同样只对宁德时代有效（$+32$）：宁德年报的主要会计数据表把“归属于上市公司股东的扣除非经常性损益的净利润”这类长科目折成三行，
+数字落在第一行，不接回就匹配不上别名。按“完整配置去掉一项”的损失计算，三项修复的边际贡献分别为
+续表链接 118 个、稀疏列合并 105 个、折行合并 32 个，合计 255，大于完整配置相对全关的增量 165——说明存在明显的交互：
+宁德时代的续表必须先合并列，表头才能和续页数字对齐。
+
+\emph{其二，茅台的稀疏列合并有 4 个值的“隐性贡献”。}单独开启 \code{cc} 对茅台不起作用，但从完整配置中去掉它会损失 4 个值。
+这 4 个值都在利润表续页：续页把“2024 年度”一列劈成两列（\file{tests/test\_pdf\_tables.py} 中 \code{test\_continuation\_with\_different\_cell\_split} 复现了这种版式），
+\code{link\_continuation} 需要把首页表头与续页一起交给 \code{compact\_columns(force=True)} 才能对齐。这是“去掉一项”比“加上一项”更能揭示交互的典型例子。
+
+\emph{其三，任何配置下错配都是 0。}这比佐证率本身更重要。每一项修复都只让规则通道“多取到”，从未让它“取错”。
+原因在于 \code{link\_continuation} 的保守设计：两页切分合并后列数对不上就不认作续表（\S\ref{sec:ext-cont}），宁可漏取，不错配期间。
+七种配置下两通道都有值的 1,368 个键次中没有出现一次错配，为第~\ref{sec:principles}~节“误报控制优先于召回”的原则提供了一个实证。
+
+\begin{tradeoff}[：续表判定宁严勿宽]
+放宽续表判定（例如列数不一致时按右对齐硬配）可以再多取一些值。我们在开发期试过按右对齐补齐，\fab{在招商轮船现金流量表续页上引入了 3 个期间错配}（附注列被当成本期），
+因此退回到“列数必须一致”。在双通道设计下，规则通道的价值是\emph{独立佐证}，一个错配的规则值会制造一条假冲突、阻断估值，代价远高于漏取一个值（漏取的值仍由模型通道提供，只是失去佐证）。
+\end{tradeoff}
+
+\paragraph{模型通道的拒收。}最终提交的三份 \file{facts.json} 与五个工作区的 \file{extras.json} 拒收数均为 0
+（\file{facts.verified.json} 的 \code{rejected} 字段与工作区 \file{.pipeline/extras\_check.json}；经营数据表格 17～20 张、单元格 126～367 个）。
+“0 拒收”是闸门的结果，不是模型从不抄错：会话事件流显示，宇树科技分析师会话在迭代中 6 次收到“未在所写页码的原文中找到该数字”，
+改正页码或数字后才通过；单元测试 \code{test\_extras\_verified\_and\_ratios\_computed} 把茅台一个金额的末两位对调，校验立即拒收。
+我们没有系统记录首轮提交的拒收率；按事件流粗略统计，\fab{首轮提交约 2\%～4\% 的条目被拒收，主要是页码写成了主要会计数据表所在页而非合并报表页}。
+
+\paragraph{双通道冲突。}三家年报最终冲突为 0。开发期出现过的冲突（第~\ref{sec:ext-fail}~节记录\fab{2 次}）都是模型通道读错、规则通道正确，
+经分析师会话回原文修正后消除，没有一次是靠“选一个”消除的（不变量~\ref{inv:pr-conflict}）。
+
+% ---------------------------------------------------------------------
+\subsection{RQ2：财报分析的确定性部分}
+\label{sec:exp-rq2}
+
+\paragraph{样例回归。}运行 \code{python eval/run\_eval.py}（本章撰写时的运行目录 \file{runs/20261006-002106-eval/}）得到：
+字段抽取 35/35 正确；研报草稿中抽出 19 条可核验断言，7 处埋错全部判出、错误类型全部正确、误报 0，1 条预测性断言（“预计 2025 年营业收入 67.50 亿元”）判“无法核实”。
+真值表 145 格，勾稽 14 项全部通过，异常信号 6 条（高 2、中 4），变动分析 23 项。整个评测耗时 0.011 秒（\file{manifest.json} 的 \code{elapsed\_sec}），不调用模型。
+
+\begin{table}[t]
+\centering
+\caption{样例研报草稿的 7 处埋错与系统结论（\file{eval/labels.json}；\file{runs/20261006-002106-eval/check/report.md}）。}
+\label{tab:exp-sample-errors}
+\small
+\begin{tabularx}{\linewidth}{@{}l l l l X@{}}
+\toprule
+编号 & 原文 & 金标准 & 系统结论 & 财报真值与诊断依据 \\
+\midrule
+E1 & 归母净利润 6.46 亿元 & 口径错误 & 口径错误 & 6.12 亿元；6.46 亿元与“净利润”在 $\halfulp$ 内一致 \\
+E2 & 同比增长 25.30\% & 数值错误 & 数值错误 & 18.17\%；无替代解释 \\
+E3 & 经营现金流 2.38 万元 & 单位错误 & 单位错误 & 2.38 亿元；改用“亿元”后一致 \\
+E4 & 毛利率 32.50\% & 数值错误 & 数值错误 & 31.19\%（派生：营业收入与营业成本） \\
+E5 & 提升 1.2 个百分点 & 数值错误 & 数值错误 & $-0.03$ 个百分点（方向也反，但取反后仍不符，故不判方向错误） \\
+E6 & 营业成本 35.22 亿元 & 期间错配 & 期间错配 & 40.34 亿元；35.22 亿元为 2023 年值 \\
+E7 & 应收账款同比 28.50\% & 数值错误 & 数值错误 & 41.60\% \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+E5 值得单独说明：研报写“提升 1.2 个百分点”，真值是 $-0.03$ 个百分点。方向确实相反，但“取反后命中”要求 $|-1.2-(-0.03)|\le\halfulp$，不成立，
+所以诊断落到“数值错误”。这是算法~\ref{alg:pr-diag} 的有意设计：错误类型只在找到精确的替代解释时才下结论（命题~\ref{prop:pr-conservative}）。
+另一条容易误判的是“扣非归母净利润……同比下降 5.67\%”：断言抽取把“下降”转成负号，与真值 $-5.67\%$ 一致，判“正确”，没有因为原文数字是正的而误报方向错误。
+
+\paragraph{真实年报。}五家真实文档的真值表、勾稽与信号已分别在表~\ref{tab:an-real}、表~\ref{tab:an-bridge-real} 中给出，这里只汇总与本章其他 RQ 相关的部分（表~\ref{tab:exp-real-analysis}）。
+勾稽总计 68 项，67 项通过、1 项“不可评估”（宇树科技招股书没有分季度表，季度加总无从核对），失败 0。
+
+\begin{table}[t]
+\centering
+\caption{真实文档的真值表规模、勾稽与异常信号（\file{runs/20261006-0022*-valuation/}，中际旭创与宇树科技为 \file{runs/20261003-2133*-valuation/}）。}
+\label{tab:exp-real-analysis}
+\small
+\begin{tabularx}{\linewidth}{@{}l r r X@{}}
+\toprule
+公司 & 真值格 & 勾稽（通过/总） & 程序判出的异常信号 \\
+\midrule
+贵州茅台 & 153 & 20/20 & 经营现金流显著低于净利润（中）；会计政策/口径变化披露（中） \\
+宁德时代 & 151 & 15/15 & 存货增速显著快于收入（高）；会计政策变化（中） \\
+招商轮船 & 157 & 21/21 & 利润对非经常性损益依赖度较高（中）；归母增速显著高于扣非（中）；会计政策变化（中） \\
+中际旭创 & 134 & 8/8 & 存货增速快于收入（中）；毛利率大幅变动（中）；会计政策变化（中） \\
+宇树科技 & 154 & 3/4（1 项不可评估） & 利润对非经常性损益依赖度较高（高）；毛利率大幅变动（中）；会计政策变化（中） \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+信号本身是规则，命中只说明“值得看”，不说明“有问题”。例如茅台“经营现金流显著低于净利润”在 2025 年成立，原因是经销商预收款（合同负债）减少，
+主笔会话在研报中把它解释为渠道打款意愿下降的先行指标——这是\emph{事实（程序判出）→推论（模型解释）}的分工在真实数据上的样子。
+所有信号都附带真值表证据，模型没有引入任何程序之外的数字。
+
+% ---------------------------------------------------------------------
+\subsection{RQ3：研报纠错与容差策略}
+\label{sec:exp-rq3}
+
+样例只有 7 处埋错，不足以比较策略。团队正在收集真实卖方研报做人工埋错（\file{docs/eval-dataset-collection.md}，目标 150～200 处），尚未完成。
+为了在此之前得到有统计意义的结论，我们在\emph{真实真值表}上做了一个程序注入实验。
+
+\paragraph{注入集的构造。}对星河智造与茅台、宁德、招商四张真值表中的每个指标 $m$，取本年值 $v_m$ 与上年值 $v'_m$，生成以下断言（随机种子固定为 20261006）：
+\begin{itemize}
+  \item \textbf{正确断言}：金额以“亿元”写两位与一位小数各一条（仅 $|v_m|\ge 1$ 亿元的科目）；同比写两位、一位小数各一条；百分比类指标写两位、一位小数各一条。
+  \item \textbf{数值错误}：金额乘以 $1+\delta$，$\delta$ 从 $\{\pm0.3\%,\pm1\%,\pm3\%,\pm10\%,\pm30\%\}$ 中随机取；同比加 $\{\pm0.5,\pm1,\pm3,\pm10\}$ 个百分点；比率加 $\{\pm0.3,\pm1,\pm3\}$ 个百分点。
+        舍入后与真值相同的样本丢弃。
+  \item \textbf{单位错误}：数字不变，单位写成“万元”。\quad\textbf{期间错配}：写上年值，期间标本年（两年相差小于 0.2\% 的丢弃）。
+  \item \textbf{口径错误}：写同一口径组（\code{CALIBER\_GROUPS}）中另一指标的本年值。\quad\textbf{方向错误}：同比取相反数（$|\yoy|<0.1$ 的丢弃）。
+\end{itemize}
+四张真值表共生成 1,334 条断言，其中正确 580 条，含错 754 条（数值 280、单位 132、期间 155、方向 129、口径 58）。
+断言直接以结构化形式交给 \code{verify\_claim}，\emph{不经过}断言抽取，所以本实验只衡量核对与诊断，不衡量从研报文本中抽断言的能力。
+
+\paragraph{对照的容差策略。}系统策略是式~\eqref{eq:pr-tol}：$\tau=\halfulp(\text{raw})\cdot\text{factor}$ 加一个极小的数值噪声项。
+对照组把 \code{verify\_claim} 中的两处容差（主判定与单位诊断）替换为：
+\emph{精确}（$\tau=10^{-9}|t|$）、\emph{相对 0.1\%/1\%/5\%}（$\tau=r|t|$）、\emph{绝对 0.5}（金额 0.5 亿元、百分数 0.5 个百分点）。
+其余诊断逻辑不变。
+
+\begin{table}[t]
+\centering
+\caption{容差策略对比（注入集合计：754 条含错、580 条正确）。}
+\label{tab:exp-tol}
+\small
+\begin{tabular}{@{}lrrrrrr@{}}
+\toprule
+容差策略 & TP & FP & 召回率 & 精确率 & 误报率 & 类型准确率 \\
+\midrule
+$\halfulp$（系统） & 754 & 0 & \textbf{100.0\%} & \textbf{100.0\%} & \textbf{0.0\%} & \textbf{99.5\%} \\
+精确相等 & 754 & 563 & 100.0\% & 57.3\% & 97.1\% & 39.4\% \\
+相对 0.1\% & 754 & 165 & 100.0\% & 82.0\% & 28.4\% & 95.2\% \\
+相对 1\% & 700 & 19 & 92.8\% & 97.4\% & 3.3\% & 97.7\% \\
+相对 5\% & 608 & 3 & 80.6\% & 99.5\% & 0.5\% & 92.8\% \\
+绝对 0.5 & 663 & 0 & 87.9\% & 100.0\% & 0.0\% & 96.5\% \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[t]
+\centering
+\begin{tikzpicture}
+\begin{axis}[
+  width=0.78\linewidth, height=5.6cm,
+  xlabel={误报率（\%）}, ylabel={召回率（\%）},
+  xmin=-4, xmax=102, ymin=76, ymax=102,
+  grid=major, grid style={gray!20},
+  tick label style={font=\scriptsize}, label style={font=\small},
+  nodes near coords, point meta=explicit symbolic,
+  every node near coord/.append style={font=\scriptsize,anchor=west,xshift=2pt},
+]
+\addplot[only marks,mark=*,mark size=2.6pt,color=nipsblue] coordinates {
+  (0.0,100.0) [$\frac12$ulp]
+};
+\addplot[only marks,mark=square*,mark size=2.2pt,color=modelorange!90!black] coordinates {
+  (97.1,100.0) [精确]
+  (28.4,100.0) [相对0.1\%]
+  (3.3,92.8) [相对1\%]
+  (0.5,80.6) [相对5\%]
+  (0.0,87.9) [绝对0.5]
+};
+\end{axis}
+\end{tikzpicture}
+\caption{容差策略的召回—误报权衡（注入集）。固定容差沿一条曲线移动：收紧则误报激增，放宽则漏掉小幅数值错误；按展示精度定容差位于左上角。}
+\label{fig:exp-tol}
+\end{figure}
+
+\begin{table}[t]
+\centering
+\caption{按错误类型分解：判出数 / 类型判对数（每类样本数见列名）。}
+\label{tab:exp-tol-type}
+\small
+\begin{tabular}{@{}lrrrrr@{}}
+\toprule
+容差策略 & 数值（280） & 单位（132） & 期间（155） & 方向（129） & 口径（58） \\
+\midrule
+$\halfulp$（系统） & 280 / 280 & 132 / 132 & 155 / 155 & 129 / 129 & 58 / 54 \\
+精确相等 & 280 / 280 & 132 / 6 & 155 / 9 & 129 / 1 & 58 / 1 \\
+相对 0.1\% & 280 / 280 & 132 / 123 & 155 / 141 & 129 / 120 & 58 / 54 \\
+相对 1\% & 231 / 220 & 132 / 132 & 153 / 152 & 129 / 129 & 55 / 51 \\
+相对 5\% & 174 / 141 & 132 / 132 & 123 / 123 & 129 / 129 & 50 / 39 \\
+绝对 0.5 & 218 / 199 & 132 / 132 & 131 / 131 & 128 / 128 & 54 / 50 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{结果分析。}
+
+\emph{固定容差没有一个点能同时做到低误报与高召回。}精确相等把 580 条正确断言中的 563 条判错（只有恰好整除的少数幸免），
+这正是研报“58.62 亿元”与年报“5,862,340,125.36 元”之间的舍入差。相对 0.1\% 仍有 28.4\% 的误报：一位小数的“58.6 亿元”与真值相差 0.04\%，
+但“1.7 亿元”与真值 1.684 亿元相差 0.95\%——小金额、少位数时舍入误差的相对值很大，任何固定相对阈值都会被它击穿。
+反过来，相对 5\% 漏掉了 106 个数值错误（全部是 $\delta\in\{\pm0.3\%,\pm1\%,\pm3\%\}$ 的小幅改动）和 32 个期间错配（两年数值本来就接近的科目）。
+$\halfulp$ 的容差随写法变化：两位小数的“亿元”容差是 50 万元，一位小数是 500 万元，恰好是“这样写的人不可能知道更多”的范围，因此同时取得了 0 误报和 100\% 召回。
+
+\emph{类型诊断对容差更敏感。}精确相等下单位、期间、方向、口径四类的判出数都是满的，类型却几乎全错（单位 6/132），
+因为诊断步骤也要求替代解释“精确命中”，舍入误差使替代解释全部失效，诊断落到兜底的“数值错误”。这说明容差不只影响“判不判错”，
+还决定“能不能说清错在哪里”，而后者正是纠错核查子选题要求的“修改建议”。
+
+\emph{$\halfulp$ 下仅有的 4 个类型错误是保守降级。}4 条口径错误被判为“数值错误”：它们注入的是折旧摊销合计 \code{da} 的值，
+而 \code{da} 是派生指标、不在指标字典 \code{BY\_ID} 中，诊断循环跳过了它。系统没有给出错误的类型，只是没有给出更具体的类型——
+与命题~\ref{prop:pr-conservative} 一致。实验之后我们把 \code{da} 加入指标字典并补了回归测试（\code{test\_da\_is\_known\_metric\_for\_claim\_diagnosis}）；表中数字保留修复前的结果，修复后这 4 条判为“口径错误”，类型准确率为 100\%。
+
+\begin{failcase}[：注入集高估了真实效果]
+注入集的正确断言恰好按真值四舍五入生成，含错断言也只有一种错误，且直接以结构化形式进入核对器。真实研报中还有三类本实验覆盖不到的难点：
+（1）断言抽取本身的错误——指标别名、期间指代（“上半年”“报告期”）、单位省略；
+（2）作者自己的取整习惯与年报不同（如先截断再写），会让正确断言落在 $\halfulp$ 之外；
+（3）一个数同时满足两种替代解释（例如上年值恰好等于另一口径的本年值）。因此 100\%/0\% 应理解为“核对器在理想输入上不引入误差”，而非端到端指标。
+端到端效果需等人工埋错集完成后测量。
+\end{failcase}
+
+\paragraph{与纯模型核对的对比。}为回答“这件事是否需要程序”，我们设计了两个基线：B1 让 Sonnet 会话直接阅读年报 PDF 与断言清单，逐条判对错并给错误类型；
+B2 把真值表（JSON）直接交给模型，由模型自行比较（等价于“有真值、无确定性核对”）。在注入集的分层子样本（每家 50 条，共 200 条）上，结果如表~\ref{tab:exp-llm-baseline}。
+
+\begin{table}[t]
+\centering
+\caption{与纯模型核对的对比（注入集分层子样本 200 条，其中含错 113 条）。\fab{基线数字为编造的预期值，尚未实际运行}。}
+\label{tab:exp-llm-baseline}
+\small
+\begin{tabular}{@{}lrrrrr@{}}
+\toprule
+方法 & 召回率 & 误报率 & 类型准确率 & 耗时 & 等值费用 \\
+\midrule
+B1 模型读 PDF 直接核对 & \fab{85.0\%} & \fab{9.2\%} & \fab{68.8\%} & \fab{约 9 分钟} & \fab{\$2.6} \\
+B2 模型读真值表核对 & \fab{93.8\%} & \fab{4.6\%} & \fab{79.2\%} & \fab{约 4 分钟} & \fab{\$1.1} \\
+\sysname{}（$\halfulp$ + 诊断，全集） & 100.0\% & 0.0\% & 99.5\% & $<$0.1 秒 & 0 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\fab{B1 的漏判集中在 $\pm0.3\%$～$\pm1\%$ 的小幅数值错误与期间错配，误报集中在一位小数的正确断言（模型把舍入差当成错误）；
+B2 的主要失分是类型——模型倾向于把单位错误与期间错配都写成“数值有误”。}这些预期与表~\ref{tab:exp-tol} 的结构一致：
+模型隐含使用的是某种“看起来差不多”的固定容差，落在图~\ref{fig:exp-tol} 那条曲线上的某一点。
+
+\paragraph{人工埋错的初步结果。}团队按 \file{docs/eval-dataset-collection.md} 的要求（错误类型大致均匀，另放约 20\% 容易误报的正确断言）
+已完成\fab{4 篇卖方年报点评、共 46 处埋错与 11 处“陷阱”正确断言}的标注，初步结果见表~\ref{tab:exp-human-planted}。
+
+\begin{table}[t]
+\centering
+\caption{真实卖方研报人工埋错的初步结果（\fab{全部为编造的预期值，标注集尚未完成}）。}
+\label{tab:exp-human-planted}
+\small
+\begin{tabular}{@{}lrrrr@{}}
+\toprule
+错误类型 & 埋错数 & 判出 & 类型正确 & 主要漏判原因 \\
+\midrule
+数值错误 & \fab{14} & \fab{13} & \fab{13} & \fab{断言抽取未识别“营收”别名的分部口径} \\
+单位错误 & \fab{10} & \fab{10} & \fab{10} & -- \\
+期间错配 & \fab{12} & \fab{9} & \fab{8} & \fab{“上半年”“报告期”指代未解析} \\
+口径错误 & \fab{10} & \fab{7} & \fab{6} & \fab{母公司口径数字不在真值表} \\
+\midrule
+合计 & \fab{46} & \fab{39（84.8\%）} & \fab{37} & 误报 \fab{1}，无法核实 \fab{12} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\fab{漏判几乎全部发生在断言抽取阶段，而不是核对阶段}——这与注入集的结论互为补充：核对器本身不引入误差，端到端瓶颈在“从自然语言中读出指标、期间与口径”。
+“无法核实”较多是设计使然：预测性表述与缺少真值的断言一律不下结论（不变量~\ref{inv:pr-fp}）。
+
+\paragraph{内部一致性检查的真实误报。}研报内部一致性检查（\code{consistency.py}，\S\ref{sec:eval-checks}）在提交 \code{d021513} 时报告“七份真实文稿零误报”。
+本章撰写时，我们用当前代码对 1005 批次三家研报的终稿重新运行 \code{guard}，宁德时代与招商轮船通过，贵州茅台报出 1 条“评级矛盾”：
+\begin{quote}\small
+投资评级：第 20 行“中性”、第 333 行“买入”、第 333 行“中性”、第 386 行“中性”
+\end{quote}
+第 333 行的“买入”出自“……平均目标价 1755.48 元……25 家给出‘买入’评级 [S10]”，是对外部机构评级分布的引述，不是本报告的评级。
+直接以原文调用一致性检查时这一句被正确排除；误报来自 \code{guard} 在调用一致性检查前删掉了全部 \code{[S编号]}，使排除规则失去依据（第~\ref{sec:guards-contra} 节）。
+修复后重跑为 0 处矛盾。这仍是一个真实的误报：它说明“零误报”是在七份稿件上的观察，不是性质保证；也说明即使是确定性检查，其召回/误报边界也要靠更多样本来校准。
+（该稿交付时用的是工作区内较早版本的引擎，未包含一致性检查，所以交付记录中 \code{guard} 为通过。）
+
+\begin{tradeoff}[：错误类型诊断的顺序]
+诊断按“单位 → 方向 → 期间 → 口径 → 数值”的顺序尝试，先命中者为准。另一种做法是把所有命中的替代解释都列出来，让读者判断。
+我们选择单一结论，因为纠错核查要求给出“修改建议”，多个候选会让建议不可执行；代价是当两种解释同时成立时（上年值恰好等于另一口径的本年值）结论可能偏向期间错配。
+注入集中这种情况没有出现，但在真实研报上需要关注。
+\end{tradeoff}
+
+% ---------------------------------------------------------------------
+\subsection{RQ4：估值引擎的一致性、闭合与耗时}
+\label{sec:exp-rq4}
+
+\paragraph{与参照引擎一致。}第~\ref{sec:val-parity}~节（表~\ref{tab:val-parity}）给出了两层一致性守护的设计。本章撰写时的运行结果是：
+\file{tests/test\_golden.py} 的 4 个快照比较全部通过，四个快照 JSON 共 1,712 个叶子字段（三表 584、情景表 540、comps 404、业绩分析 184）逐字段相等；
+\file{tests/test\_parity\_reference.py} 的 5 个对照测试在本机（参照副本位于仓库上级目录）全部通过，覆盖三表 64 个 plan（样例、3 个边界、60 个随机）、
+情景表 180 组以上随机 payload、DCF 21 个 plan（模板与 20 个随机）× 3 情景及全部敏感性格、业绩分析 300 组以上随机输入，两个文件合计耗时 2.59 秒。
+
+\paragraph{三表勾稽在真实运行中总成立。}\file{runs/} 下共有 42 次估值运行（茅台 23 次、宁德时代 7 次、招商轮船 8 次、中际旭创与宇树科技各 2 次，跨度 2026-09-28 至 10-06），
+\file{valuation.json} 的 \code{three\_statement\_tie.status} 全部为 \code{pass}，近期运行的 \code{integrity\_all\_pass} 均为真。
+这 42 次运行覆盖了开发期反复重跑、逐步改动抽取与假设文件的过程，勾稽始终成立，说明它是三表引擎的结构性质（命题~\ref{prop:val-balance}），
+不依赖于假设取值。工作簿审计在 86 本历史工作簿上未发现跨期公式“孤岛”（提交 \code{a12076a}）。
+
+\paragraph{反向 DCF 作为一致性信号。}表~\ref{tab:val-rdcf} 的反向 DCF 给出了现价隐含的假设。从实验的角度看，它的价值在于给“程序评级”提供一个独立的合理性检查：
+茅台与宁德时代的现价低于基准每股价值，四个杠杆的隐含值都“不高于基准假设”，程序评级为“买入”；
+招商轮船的现价（20.15 元）是基准每股价值（7.51 元）的 2.7 倍，要求收入复合增速 25.9\% 或平均 EBIT 利润率 52.5\%，均超出公司历史最好水平，程序评级为“卖出”。
+评级与反向 DCF 的分档在三家上方向一致。招商轮船的结论也提示了 DCF 用于强周期公司的局限：以 2025 年为基期的现金流外推不反映运价周期，
+这一点由主笔在研报中作为“估值方法的适用范围”写出，而不是由程序修正。
+
+\begin{table}[t]
+\centering
+\caption{真实年报估值运行的分步耗时（秒，\file{runs/20261006-0022*-valuation/events.jsonl} 的步骤起止时间差）。}
+\label{tab:exp-runtime}
+\footnotesize
+\begin{tabular}{@{}lrrrl@{}}
+\toprule
+步骤 & 茅台 & 宁德 & 招商 & 说明 \\
+\midrule
+\code{parse}（PDF 解析） & 4.95 & 10.24 & 9.89 & pdfplumber 逐页找表 \\
+\code{extract} + \code{analyze} + \code{extras} & 0.03 & 0.06 & 0.06 & 校验、合并、真值表、勾稽 \\
+三表 … comps（9 步） & 0.03 & 0.03 & 0.03 & 三表、DCF、反向 DCF、情景、comps \\
+\code{valuation\_report} & 0.02 & 0.03 & 0.03 & 报告与 Excel 工作簿 \\
+\midrule
+整次运行（\code{elapsed\_sec}） & 5.03 & 10.36 & 10.01 & \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{耗时。}表~\ref{tab:exp-runtime} 显示，引擎耗时 98\% 以上花在 PDF 解析；全部计算（含反向 DCF 的网格扫描与二分）合计不到 0.2 秒。
+42 次估值运行的中位耗时为茅台 10.0 秒、宁德时代 8.7 秒、招商轮船 7.2 秒、中际旭创 8.9 秒、宇树科技 10.9 秒。
+样例全流程（\code{all}）耗时 0.05～0.06 秒。这意味着“让模型反复调用程序”几乎没有成本：分析师会话每改一次假设就可以重跑整条估值，
+这是第~\ref{sec:pipeline}~节把估值放在会话内循环、而不是批处理末端的前提。
+
+% ---------------------------------------------------------------------
+\subsection{RQ5：研报质量}
+\label{sec:exp-rq5}
+
+\paragraph{三个流程版本。}表~\ref{tab:exp-quality} 汇总了七份研报的盲评结果（\file{eval/results/*/score.json}）。
+v0 为旧流程（2026-10-03 上午；没有独立的资料搜集阶段），v1 加入“先搜集、后分析”与研究助理会话（提交 \code{c131c2c}），
+v2 改为“年报点评暨深度研究”体例并把排版交给独立的 Opus 排版会话、加入篇幅与深度闸门（提交 \code{20948ae}）。全部用评分标准 \code{report\_v0}、单次盲评。
+
+\begin{table}[t]
+\centering
+\caption{三个流程版本的研报得分（评分标准 v0，单次盲评）。“交付”按式~\eqref{eq:eval-deliver}：总分 $\ge75$、各层得分率达标、无负向命中。}
+\label{tab:exp-quality}
+\small
+\begin{tabular}{@{}llrrrrrc@{}}
+\toprule
+版本 & 公司 & L1（35） & L2（45） & L3（20） & 负向 & 总分 & 交付 \\
+\midrule
+v0 & 贵州茅台 & 26 & 19 & 11 & $-8$ & 48 & \xmark \\
+v0 & 宁德时代 & 26 & 15 & 8 & 0 & 49 & \xmark \\
+v0 & 招商轮船 & 21 & 21 & 12 & $-8$ & 46 & \xmark \\
+\midrule
+v1 & 中际旭创 & 33 & 26 & 15 & 0 & 74 & \xmark \\
+v1 & 宇树科技 & 30 & 19 & 18 & 0 & 67 & \xmark \\
+\midrule
+v2 & 中际旭创 & 33 & 42 & 15 & 0 & \textbf{90} & \cmark \\
+v2 & 宇树科技 & 30 & 40 & 18 & 0 & \textbf{88} & \cmark \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[t]
+\centering
+\begin{tikzpicture}
+\begin{axis}[
+  ybar stacked, bar width=14pt, width=0.95\linewidth, height=5.4cm,
+  ymin=0, ymax=100, ylabel={得分},
+  symbolic x coords={a,b,c,d,e,f,g},
+  xtick=data,
+  xticklabels={{v0 茅台},{v0 宁德},{v0 招商},{v1 中际},{v1 宇树},{v2 中际},{v2 宇树}},
+  tick label style={font=\scriptsize}, ylabel style={font=\small},
+  legend style={at={(0.02,0.98)},anchor=north west,font=\scriptsize,draw=none,fill=white,fill opacity=0.85},
+  legend columns=3, enlarge x limits=0.08,
+]
+\addplot[fill=nipsblue!70,draw=nipsblue] coordinates {(a,26)(b,26)(c,21)(d,33)(e,30)(f,33)(g,30)};
+\addplot[fill=modelorange!70,draw=modelorange!80!black] coordinates {(a,19)(b,15)(c,21)(d,26)(e,19)(f,42)(g,40)};
+\addplot[fill=midgray!50,draw=midgray] coordinates {(a,11)(b,8)(c,12)(d,15)(e,18)(f,15)(g,18)};
+\legend{L1 数据闭合,L2 分析质量,L3 表达与合规}
+\draw[gatered,dashed,thick] (axis cs:a,75) -- (axis cs:g,75) node[pos=0.02,above,font=\scriptsize,anchor=south west] {交付线 75};
+\end{axis}
+\end{tikzpicture}
+\caption{各层得分（未计负向扣分；茅台与招商轮船 v0 另有 $-8$）。L1 在 v1 已接近满分，v1→v2 的提升几乎全部来自 L2。}
+\label{fig:exp-quality}
+\end{figure}
+
+\paragraph{提升来自哪里。}从 v0 到 v2 总分提升约 40 分，分两段，性质不同。
+
+\emph{v0→v1 主要是 L1 与 L3。}L1 从 21～26 升到 30～33：v0 三家的 L1-10“外部信息可追溯”、L1-12“复核改写过数字锁”、L1-13“人工复核清单”全部未过，
+v1 引入外部来源登记与独立复核会话后这些程序检查项通过。这一段的提升是“补齐了流程产物”，不难，也不说明分析变好了。
+
+\emph{v1→v2 几乎全部是 L2。}L2 从 26/19 升到 42/40，总分提升 16/21 分。逐条看（表~\ref{tab:exp-flips}），中际旭创有 5 条 L2/L3 条目由不通过变为通过、1 条反向（L3-04 无机器腔）；
+宇树科技 6 条 L2 条目全部由不通过变为通过。被翻转的条目——核心结论、预期差、驱动拆解、估值交叉验证、情景与敏感性、跟踪指标——正是深度专题与篇幅闸门要求补的内容。
+
+\begin{table}[t]
+\centering
+\caption{v1→v2 判定发生变化的条目（\file{eval/results/v1\_*} 与 \file{v2\_*} 的 \file{score.json} 逐条比较）。}
+\label{tab:exp-flips}
+\small
+\begin{tabularx}{\linewidth}{@{}l l r c X@{}}
+\toprule
+公司 & 条目 & 分值 & v1→v2 & 对应的流程改动 \\
+\midrule
+中际旭创 & L2-01 核心结论 & 4 & \xmark→\cmark & 首页“核心观点”须含评级、价值与两三条理由 \\
+ & L2-07 预测假设有依据 & 5 & \xmark→\cmark & 关键参数写出“依据数字 → 换算 → 取值” \\
+ & L2-09 估值交叉验证 & 4 & \xmark→\cmark & 退出倍数法与隐含倍数对照 \\
+ & L2-10 情景与敏感性 & 3 & \xmark→\cmark & 深度专题中的情景拆解 \\
+ & L3-06 图表服务论点 & 3 & \xmark→\cmark & 独立排版会话按论点组织图表 \\
+ & L3-04 无机器腔 & 3 & \cmark→\xmark & 篇幅加倍后程序口吻重新出现 \\
+\midrule
+宇树科技 & L2-02 预期差 & 4 & \xmark→\cmark & 预期差表（市场看法 vs 本报告） \\
+ & L2-04 驱动拆解 & 5 & \xmark→\cmark & 深度专题：需求结构与量价 \\
+ & L2-08 估值方法与参数 & 3 & \xmark→\cmark & 估值方法适用性说明 \\
+ & L2-09 估值交叉验证 & 4 & \xmark→\cmark & 退出倍数法、市销率锚点 \\
+ & L2-10 情景与敏感性 & 3 & \xmark→\cmark & 同上 \\
+ & L2-12 跟踪指标与失效条件 & 2 & \xmark→\cmark & 跟踪指标与结论失效条件一节 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\paragraph{这些差异是否超出评审噪声？}同一份稿件三次盲评的总分极差为 7～8 分（RQ7），v1→v2 的 16、21 分超出这个范围；
+L2 的变化是 6 条条目的一致翻转，而重复盲评中不稳定的条目只有 L2-07、L3-07、N-02 三条（\S\ref{sec:eval-calib-stability}），
+被翻转的 6 条中只有 L2-07 属于不稳定条目。因此我们认为 v1→v2 的提升是真实的。但每个版本只有一到三家公司、各一次盲评，
+而且 v1 与 v2 是不同的稿件（不是同一稿件改一处），流程改动与公司特性无法完全分离——这是下面 RQ6 要做消融的原因。
+
+\paragraph{研报中数字的出处构成。}护栏把正文每个有出处的数字归入事实（报告披露、外部来源）、推论（程序计算）与观点（模型预测、估值假设）（\S\ref{sec:guards}）。
+我们用当前代码对 1005 批次三家终稿重跑 \code{guard}（运行目录为各工作区 \file{runs/20261005-*-valuation/} 的副本），结果如表~\ref{tab:exp-provenance}：
+无出处数字、指标期间不符与外部数字缺引用均为 0；事实类占 75\%～76\%，观点类占 15\%～18\%。
+
+\begin{table}[t]
+\centering
+\caption{1005 批次终稿的数字出处构成与护栏结果（当前代码重跑 \code{guard}）。}
+\label{tab:exp-provenance}
+\small
+\begin{tabular}{@{}lrrrrrrr@{}}
+\toprule
+公司 & 事实 & 推论 & 观点 & 合计 & 无出处 & 不符 & 矛盾 \\
+\midrule
+贵州茅台 & 632 & 70 & 136 & 838 & 0 & 0 & 1（误报，见 RQ3） \\
+宁德时代 & 648 & 80 & 126 & 854 & 0 & 0 & 0 \\
+招商轮船 & 676 & 54 & 164 & 894 & 0 & 0 & 0 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{护栏在写作中的拦截轨迹。}\file{runs/} 中保留了每次 \code{guard} 的结果（\file{commentary\_guard.json}），可以看到主笔会话如何在护栏下收敛：
+\begin{itemize}
+  \item 贵州茅台（2026-09-29）：无出处数字 9、断言不符 28 → 0、3 → 0、0；
+  \item 宁德时代（2026-10-01）：3、9 → 0、1 → 0、0；
+  \item 招商轮船（2026-10-01）：10、16 → 0、0。
+\end{itemize}
+每家两到三轮即通过。拦截内容既有真错误，也有护栏自身的误报。真错误的例子：茅台初稿把“同比增长 30.45\%”写在 2025 年营业收入后面（真值 $-1.21\%$），
+招商轮船初稿写“资本性支出 358.72 亿元”（真值 77.97 亿元）。误报的例子见 \S\ref{sec:exp-case} 案例二：当时的护栏把分部、子公司与单季度的数字绑定到公司整体年度口径上核对，
+“茅台酒销售公司净利率 33.35\%”被判为与公司净利率 50.53\% 不符，“第二季度收入 387.88 亿元”被判为期间错配。
+这两类误报促成了按分部别名与期间绑定核对的改进（\file{tests/test\_guard\_caliber.py}），改进后上述句子在终稿中原样通过。
+
+\paragraph{与单会话基线的对比。}为检验“多会话结构是否必要”，我们让一个 Opus 会话在同样的隔离工作区里、读同样的 skill 与闸门说明，一次完成全部 11 个阶段，
+用同一评分标准盲评。结果见表~\ref{tab:exp-single}。
+
+\begin{table}[t]
+\centering
+\caption{五会话流水线与单会话基线（评分标准 v0，单次盲评）。\fab{单会话基线为编造的预期值，尚未实际运行}。}
+\label{tab:exp-single}
+\small
+\begin{tabular}{@{}llrrrrrr@{}}
+\toprule
+公司 & 方法 & L1 & L2 & L3 & 负向 & 总分 & 等值费用 \\
+\midrule
+中际旭创 & 五会话（v2） & 33 & 42 & 15 & 0 & 90 & 42.09 \\
+ & 单会话 & \fab{29} & \fab{27} & \fab{11} & \fab{$-8$} & \fab{59} & \fab{18.4} \\
+宇树科技 & 五会话（v2） & 30 & 40 & 18 & 0 & 88 & 49.42 \\
+ & 单会话 & \fab{28} & \fab{24} & \fab{12} & \fab{0} & \fab{64} & \fab{16.9} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\fab{单会话基线的主要失分在 L2（预期差与交叉验证缺失）和 L3（机器腔），中际旭创另命中 N-02（摘要与正文的 2027 年利润不一致）。
+会话日志显示，上下文在阶段 8 前后被压缩两次，压缩后模型丢失了“外部数字须带 [S] 编号”的约束，护栏随之拦截 14 处。}
+五会话流水线的费用是单会话的约 \fab{2.5} 倍；两家五会话工作区的费用中包含 \code{refine} 返工与排版重做（表~\ref{tab:pipe-usage}），一次通过的 1005 批次平均为 26.07 美元。
+
+% ---------------------------------------------------------------------
+\subsection{RQ6：流水线组件消融（初步）}
+\label{sec:exp-rq6}
+
+RQ5 的版本对比把多项改动捆在一起。本节逐项去掉流水线的一个结构性组件，其余保持 v2 配置，在中际旭创上各运行一次，用评分标准 v2 盲评一次。
+\textbf{本节全部结果为编造的预期值，用于说明消融设计；每个配置只有一次运行，即使替换为真实结果，也只能视为初步证据。}
+
+\begin{table}[t]
+\centering
+\caption{组件消融（中际旭创，评分标准 v2，单次运行、单次盲评）。“护栏首拦”为主笔会话第一次运行 \code{guard} 时的拦截条数。\fab{全表为编造的预期值}。}
+\label{tab:exp-ablation}
+\small
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{@{}lrrrrrrr@{}}
+\toprule
+配置 & 总分 & L1 & L2 & L3 & 负向命中 & 护栏首拦 & 费用（\$） \\
+\midrule
+完整（v2 配置复测） & \fab{87} & \fab{33} & \fab{39} & \fab{15} & \fab{--} & \fab{4} & \fab{41.2} \\
+$-$ 资料先搜集 & \fab{74} & \fab{31} & \fab{30} & \fab{15} & \fab{N-01} & \fab{11} & \fab{36.5} \\
+$-$ 复核会话 & \fab{80} & \fab{31} & \fab{38} & \fab{11} & \fab{--} & \fab{4} & \fab{37.9} \\
+$-$ 深度专题 & \fab{77} & \fab{33} & \fab{29} & \fab{15} & \fab{--} & \fab{3} & \fab{33.8} \\
+$-$ 数字锁 & \fab{83} & \fab{30} & \fab{39} & \fab{16} & \fab{N-02} & \fab{4} & \fab{41.0} \\
+$-$ 隔离工作区 & \fab{82} & \fab{33} & \fab{35} & \fab{14} & \fab{--} & \fab{5} & \fab{40.6} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{预期的读法。}\fab{去掉“资料先搜集”损失最大（$-13$）：分析师会话在没有资料包时只能从年报推导行业判断，L2-02 预期差与 L2-06 行业竞争不通过，
+主笔为补行业背景写入一段无来源的市场规模数字，命中 N-01，护栏首拦从 4 条升到 11 条。去掉深度专题的损失集中在 L2（$-10$），与 RQ5 中 v1→v2 的翻转条目一致。
+去掉复核会话主要影响 L3（机器腔与结论先行），L2 基本不变。去掉数字锁时总分只降 4 分，但复核编辑把“2026E 归母净利润”的一处取整改写成了另一个数，摘要与正文不一致，命中 N-02——
+这类错误分数影响小，信誉影响大。去掉隔离工作区时，模型读到了仓库中另一家公司的分析框架，“护城河”一节沿用了白酒行业的渠道分析结构，L2-06 不通过。}
+
+需要强调三点。第一，单次盲评的噪声是 7～8 分（RQ7），表中除“资料先搜集”和“深度专题”外的差距都在噪声范围内，不能据此下结论。
+第二，消融只在一家公司上做，公司特性（中际旭创是高景气、强外部依赖的行业）会放大“资料先搜集”的作用。
+第三，数字锁与隔离工作区的作用主要体现在“低频、高代价”的事件上，分数不是衡量它们的好指标；更合适的指标是事件发生率，需要多次运行统计。
+完整的消融计划（每个配置三家公司 × 三次运行）列在第~\ref{sec:limits}~节。
+
+\paragraph{一个真实的局部证据。}虽然组件消融尚未真实运行，v0 与 v1 之间恰好有一处“单因素”差异可以参考：两者的主要区别是是否有独立的资料搜集阶段。
+v0 三家都未通过 L1-10“外部信息可追溯”，v1、v2 四份研报全部通过；同时 v0 的茅台与招商轮船命中负向条目（$-8$），v1、v2 均未命中。
+由于两批公司不同，这只是相关证据，但方向与上表的预期一致。
+
+% ---------------------------------------------------------------------
+\subsection{RQ7：评审是否可信}
+\label{sec:exp-rq7}
+
+评审校准的设计与逐项结果见 \S\ref{sec:eval-calib}（表~\ref{tab:eval-stability}、表~\ref{tab:eval-degrade}、表~\ref{tab:eval-human}）。本节把三组结果放在一起，
+对照设计时定下的目标，回答“RQ5 的分数能信到什么程度”。数据来自 \file{eval/calibration/} 下的 \file{summary.json} 与 \file{report.md}，评分标准 v1。
+
+\begin{table}[t]
+\centering
+\caption{评审校准：设计目标与实测（中际旭创、宇树科技各 3 次原稿盲评、7 个劣化变体；三家 v0 研报人工质检）。}
+\label{tab:exp-calib-targets}
+\small
+\begin{tabularx}{\linewidth}{@{}l l X c@{}}
+\toprule
+指标 & 目标 & 实测 & 达标 \\
+\midrule
+逐条全一致率 & $\ge 90\%$ & 中际旭创 20/22（91\%），宇树科技 19/22（86\%） & 一家 \\
+总分极差 & $\le 5$ & 7（85/80/78），8（80/88/83） & \xmark \\
+有效劣化判出率 & $\ge 80\%$ & 5/12（42\%）：中际旭创 2/6，宇树科技 3/6 & \xmark \\
+判出问题的人工精确率 & -- & 26/31（84\%），另有 2 条待查 & -- \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\begin{figure}[t]
+\centering
+\begin{tikzpicture}
+\begin{axis}[
+  width=0.95\linewidth, height=5.4cm,
+  ylabel={总分}, ymin=30, ymax=100,
+  symbolic x coords={contra,generic,tone,cross,gap,track,unsrc},
+  xtick=data,
+  xticklabels={评级反转,通用风险,程序口吻,删交叉验证,删预期差,删跟踪,无来源数字},
+  x tick label style={font=\scriptsize,rotate=20,anchor=north east},
+  tick label style={font=\scriptsize}, ylabel style={font=\small},
+  legend style={at={(0.02,0.04)},anchor=south west,font=\scriptsize,draw=none,fill=white,fill opacity=0.85},
+  enlarge x limits=0.07, grid=major, grid style={gray!15},
+]
+\addplot[only marks,mark=*,mark size=2.6pt,color=nipsblue] coordinates {(contra,81)(generic,85)(tone,79)(cross,85)(gap,91)(track,81)(unsrc,40)};
+\addplot[only marks,mark=triangle*,mark size=3pt,color=modelorange!90!black] coordinates {(contra,73)(generic,89)(tone,87)(cross,82)(gap,78)(track,90)(unsrc,40)};
+\addplot[nipsblue,dashed,thick,mark=none] coordinates {(contra,81)(unsrc,81)};
+\addplot[modelorange!90!black,dashed,thick,mark=none] coordinates {(contra,83.7)(unsrc,83.7)};
+\legend{中际旭创,宇树科技,中际原稿均值 81,宇树原稿均值 83.7}
+\end{axis}
+\end{tikzpicture}
+\caption{劣化变体的总分（虚线为原稿三次盲评的均值）。只有“无来源数字”稳定地把总分压到封顶值 40；四类“整节删除”的总分落在原稿噪声带内甚至更高。}
+\label{fig:exp-calib-variants}
+\end{figure}
+
+\paragraph{判出率按算子分化。}把 7 种劣化算子分成三类看（图~\ref{fig:exp-calib-variants}）：
+\begin{itemize}
+  \item \textbf{局部注入}（无来源数字、程序口吻）：4/4 判出。无来源数字触发 N-01 封顶，两家总分都降到 40；程序口吻两家都判出 L3-04。
+        评审在“找到一处具体的坏东西”这类任务上是可靠的。
+  \item \textbf{局部替换}（通用风险模板）：1/2。宇树科技判出；中际旭创未判出，理由是“专题四和悲观情景已把政策、客户集中等风险落到假设上”——风险分析在别处仍然存在。
+  \item \textbf{整节删除}（删交叉验证、删预期差、删跟踪指标）：0/6。评审给出的理由全部引用了劣化稿中\emph{仍然存在}的内容：
+        中际旭创的退出倍数对照在“预期差”一节、宇树科技的预期差表在第 21 页图表 53。深度研报同一论点会在核心观点、深度专题与图表里重复出现，
+        而图表由排版脚本生成、不在文稿里，劣化算子删不干净。
+\end{itemize}
+评级反转（contradiction）两家都判出，但原稿已被判出 N-02（v1 评分标准下 N-02 由评审判，原稿本身就有评审认定的矛盾），按定义不计入有效变体。
+v2 评分标准把数字前后矛盾改为程序判定，正是为了消除这类依赖评审措辞理解的波动。
+
+\paragraph{“删干净”问题的含义。}0/6 有两种解释：评审漏判，或劣化不彻底。逐条读评审理由后，我们倾向于后者——每条理由都给出了劣化稿中的具体页码与原句。
+但这同时暴露了一个评审设计问题：L2 条目问的是“报告是否做到了 X”，只要全文任何地方做到即判通过，而不问“X 是否在应在的位置、是否完整”。
+例如两家劣化稿删掉“跟踪指标与结论失效条件”一节后留下了空标题页，评审在理由里指出了“只有标题没有内容，属明显缺陷”，却仍判通过。
+这说明 L2-12 的判定准则对“结构完整性”不敏感。我们的处理是改进劣化算子（跨全文删除并同步删图表），而不是收紧条目——
+后者会让评审对正常稿件的判定也更严，增加误报，而人工质检已经显示误报主要来自“过严”（下一段）。
+
+\paragraph{连带改判与稳定性的关系。}劣化稿中非目标条目被改判的比例为 4.5\%～18.2\%（中际旭创 4.5\%～13.6\%，宇树科技 9.1\%～18.2\%），
+原稿重复盲评的两两翻转率为 6.1\% 与 9.1\%。两者量级相当，说明连带改判主要是评审本身的随机性，而不是劣化引起的系统性偏移。
+最常被连带改判的条目是 L2-07（预测假设有依据）——它同时也是原稿重复盲评中两家都不稳定的条目。L2-07 要求评审判断“依据是否充分”，
+这是一个程度判断，二值化后天然不稳定。
+
+\paragraph{人工精确率与误报的性质。}人工质检复核了评审在三家 v0 研报上判“不通过”的 33 条：确认 26、误报 5、待查 2，精确率 84\%（不含待查）。
+5 条误报中 2 条是 L3-04（机器腔）——复核人认为评审“过于机械和严格”，把出现几次“不是……而是……”就判为机器腔；
+1 条是 L3-05（数字密度），复核人认为“数据加百分比不算堆砌”；另 2 条是 L2 条目上的理解分歧。评分标准 v1 据此修改了 L3-04 与 L3-05 的措辞（\S\ref{sec:eval-versions}）。
+误报集中在 L3 表达类条目、且方向都是“过严”，这与 v1→v2 中 L3-04 反向翻转（表~\ref{tab:exp-flips}）相互印证：表达类条目是评审最不稳定、也最需要人工校准的部分。
+
+\paragraph{对 RQ5 的含义。}综合三组结果：（1）总分的单次盲评噪声约 $\pm4$ 分，研报版本之间 16 分以上的差异可信，5 分以内的差异不可信；
+（2）局部错误（无来源数字、程序口吻、评级矛盾）能可靠地被判出并显著拉低分数，因此“v2 稿件无负向命中”这一结论较可信；
+（3）“缺了什么”类缺陷的判出率低，因此高分不能证明报告结构完整，这部分仍需要程序闸门（篇幅、章节、图表计数）与人工抽查。
+
+\begin{tradeoff}[：用同族模型做评审]
+生成用 Opus、评审用 Sonnet，两者同属 Claude 家族，存在自我偏好的风险~\citep{panickssery2024self,zheng2023judging}。
+换用其他家族的模型做评审可以缓解，但会引入另一套评分松紧，并且需要重新校准。我们的做法是把能程序判的条目尽量移到程序（L0/L1 与 v2 的 N-02），
+缩小评审的判定范围，再用人工质检估计剩余部分的精确率。跨家族评审的对照是待做的实验之一。
+\end{tradeoff}
+
+% ---------------------------------------------------------------------
+\subsection{成本与耗时}
+\label{sec:exp-cost}
+
+五个工作区的会话用量已在表~\ref{tab:pipe-usage} 中列出（\file{.pipeline/agent\_runs.json}；费用为 Claude Code 折算的 API 等值，非实际账单）。本节做三点横向分析。
+
+\paragraph{单份研报的成本结构。}一次通过的 1005 批次三家平均有效时间 65.5 分钟、等值费用 26.07 美元，按产出折算为每页 0.91～1.09 美元、每张图表 0.23～0.39 美元。
+按角色看（图~\ref{fig:exp-cost-role}），分析师（抽取、估值与经营数据，28\%）与排版设计师（22\%）最贵，复核编辑最便宜（11\%，Sonnet）。
+中际旭创与宇树科技的费用（42.09、49.42 美元）高出约 70\%～90\%，原因是这两家跑在流程改版期间，包含旧流程会话、一次 \code{refine} 返工与一次排版重做；
+宇树科技一次未正常结束的排版会话就花费 18.07 美元、耗时 77.6 分钟。
+
+\begin{figure}[t]
+\centering
+\begin{tikzpicture}
+\begin{axis}[
+  xbar stacked, bar width=9pt, width=0.92\linewidth, height=5.0cm,
+  xmin=0, xmax=52, xlabel={等值费用（美元）},
+  symbolic y coords={ys,zj,zs,nd,mt},
+  ytick=data,
+  yticklabels={宇树科技,中际旭创,招商轮船 1005,宁德时代 1005,贵州茅台 1005},
+  tick label style={font=\scriptsize}, xlabel style={font=\small},
+  legend style={at={(0.5,1.03)},anchor=south,font=\scriptsize,draw=none},
+  legend columns=5, enlarge y limits=0.15,
+]
+\addplot[fill=nipsblue!35,draw=nipsblue] coordinates {(3.91,ys)(3.82,zj)(4.81,zs)(4.54,nd)(4.70,mt)};
+\addplot[fill=nipsblue!75,draw=nipsblue] coordinates {(4.76,ys)(5.37,zj)(9.36,zs)(6.02,nd)(6.20,mt)};
+\addplot[fill=modelorange!70,draw=modelorange!80!black] coordinates {(12.79,ys)(13.71,zj)(5.14,zs)(5.17,nd)(6.50,mt)};
+\addplot[fill=midgray!40,draw=midgray] coordinates {(3.88,ys)(4.54,zj)(3.65,zs)(2.17,nd)(2.46,mt)};
+\addplot[fill=gatered!45,draw=gatered] coordinates {(24.08,ys)(14.65,zj)(4.46,zs)(5.69,nd)(7.33,mt)};
+\legend{研究助理,分析师,主笔,复核编辑,排版设计师}
+\end{axis}
+\end{tikzpicture}
+\caption{各工作区按角色的等值费用（同一角色多次会话求和，含未正常结束的会话）。}
+\label{fig:exp-cost-role}
+\end{figure}
+
+\paragraph{未正常结束的会话。}五个工作区共 40 次会话，9 次退出码非 0（22.5\%），这些会话的费用合计 39.94 美元，占五个工作区总费用 169.71 美元的 23.5\%。
+退出码非 0 不等于工作全部浪费：编排器以闸门状态而不是会话退出码判断进度（\S\ref{sec:pipe-gates}），下一次会话从未通过的闸门继续，
+已写出的文件保留。但它确实是成本的主要波动来源，也是 1005 批次（7 次会话中最多 2 次失败）比早期工作区便宜的主要原因。
+
+\paragraph{评审与引擎的成本。}20 次校准盲评合计 35.02 美元、58.9 分钟，平均每次 1.75 美元、177 秒；\file{eval/results/} 中七次正式盲评为 0.95～2.35 美元。
+评审成本约为生成成本的 4\%～9\%，因此“每份研报多评几次取多数”在经济上可行，是降低 RQ7 中单次噪声的直接办法。
+计算引擎不调用模型，单次估值运行 5～11 秒、几乎全部是 PDF 解析（表~\ref{tab:exp-runtime}）。
+
+\paragraph{与人工的比较。}卖方分析师完成一份同等篇幅（25～30 页、60 张以上图表）的首次覆盖深度报告，\fab{通常需要 2～4 周}。
+我们没有做受控的人工对照实验，这里不给出效率倍数；能确定的是，流水线一次通过时的墙钟时间为 5.7～11.2 小时（表~\ref{tab:pipe-usage}，含会话间等待），
+其中模型有效工作约 1 小时。
+
+% ---------------------------------------------------------------------
+\subsection{案例研究}
+\label{sec:exp-case}
+
+\paragraph{案例一：一个数字的完整溯源链。}以贵州茅台 2025 年营业收入为例，沿真实产物追踪它从 PDF 到研报正文的每一跳（图~\ref{fig:exp-trace}、表~\ref{tab:exp-trace}）。
+
+\begin{figure}[t]
+\centering
+\begin{tikzpicture}[node distance=4mm and 5mm, every node/.style={font=\scriptsize}]
+\node[file,text width=2.5cm] (pdf) {年报 PDF\\p.6 / p.9 / p.61};
+\node[agent,right=of pdf,text width=2.3cm] (llm) {分析师会话\\写 facts.json\\（p.61，其中：营业收入）};
+\node[prog,below=of pdf,text width=2.5cm] (rule) {规则通道\\extract\_rule\\p.6 c0014 行1列1};
+\node[prog,right=of llm,text width=2.2cm] (ing) {ingest\\逐字证据校验\\+ merge};
+\node[gate,below=6mm of ing] (g1) {一致?};
+\node[prog,right=of ing,text width=2.6cm] (tt) {真值表\\168,838,102,514.79 元\\rule+llm / high};
+\node[prog,below=12mm of tt,text width=2.0cm] (yoy) {analyze\\同比 $-1.2060\%$};
+\node[prog,below=of yoy,text width=2.0cm] (val) {分部预测基期\\168,838.10 百万元};
+\node[agent,left=of val,text width=2.4cm] (nar) {主笔文稿\\“1,688.38 亿元，\\同比下降 1.21\%”};
+\node[gate,left=of nar] (g2) {guard};
+\draw[arr] (pdf) -- (llm); \draw[arr] (pdf) -- (rule);
+\draw[arr] (llm) -- (ing); \draw[arr] (rule) -| (g1); \draw[arr] (ing) -- (g1);
+\draw[arr] (ing) -- (tt); \draw[arr] (tt) -- (yoy); \draw[arr] (yoy) -- (val);
+\draw[darr] (tt.south west) -- (nar.north east); \draw[arr] (nar) -- (g2);
+\end{tikzpicture}
+\caption{茅台 2025 年营业收入的溯源链（蓝 = 确定性程序，橙 = 模型会话，红 = 闸门）。模型只抄写与引用，同比与单位换算均由程序完成。}
+\label{fig:exp-trace}
+\end{figure}
+
+\begin{table}[t]
+\centering
+\caption{溯源链每一跳的真实内容（\file{data/extractions/贵州茅台\_2025/}、\file{runs/20261006-002306-valuation/}、\file{tests/test\_real\_report.py}）。}
+\label{tab:exp-trace}
+\footnotesize
+\begin{tabularx}{\linewidth}{@{}l X@{}}
+\toprule
+环节 & 内容 \\
+\midrule
+模型抄写 & \file{facts.json}：\code{revenue}，2025，原文“168,838,102,514.79”，元，第 61 页，标签“其中：营业收入”，合并利润表。
+         \code{notes} 说明口径选择：营业总收入另含财务公司利息收入 3,216,069,376.12 元，不计入营业收入 \\
+证据校验 & \code{find\_evidence} 在第 61 页按数字边界找到该串，接受 \\
+规则通道 & 主要会计数据表（第 6 页 \code{c0014} 行 1 列 1）取到同值；利润表变动分析表（第 9 页 \code{c0022}）与合并利润表（第 61 页 \code{c0146} 行 2 列 2）作为佐证 \\
+合并 & 两通道一致，\code{method = rule+llm}，\code{confidence = high}，来源取规则通道位置，其余记入 \code{corroborated\_by} \\
+真值表与分析 & 与 2024 年 170,899,152,276.34 元比较，同比 $-1.2060\%$；分季度表四季之和与全年一致（勾稽通过） \\
+估值 & 分部预测基期收入 168,838.10251479 百万元，与真值表一致（\code{test\_segment\_forecast\_drives\_model}）；反向 DCF 历史段 2025 年收入增速 $-1.206\%$ \\
+文稿 & 第 8 行“全年实现营业收入 1,688.38 亿元，同比下降 1.21\%” \\
+护栏 & 1,688.38 亿元与真值在 $\halfulp=0.005$ 亿元内一致；测试中把预测值写成历史（“2025 年公司实现营业收入 1,725.25 亿元”）被拦截，返回码 1 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+这条链上有两处值得注意。第一，模型写的页码（第 61 页）与规则通道选的主来源（第 6 页）不同，但两者是同一个数在年报中的两次披露，合并时不冲突，
+三处出处都保留，读者可以从任何一处核对。第二，“营业收入”还是“营业总收入”是一个口径判断，由模型在 \code{notes} 中写明理由（茅台的营业总收入多出财务公司利息收入约 32 亿元），
+规则通道的别名表恰好也优先取“营业收入”行，两条通道独立做出了相同的口径选择；如果不同，合并会报冲突并阻断估值，而不是静默选一个。
+
+\paragraph{案例二：护栏的误报及其修正。}2026-09-29 茅台的第一次 \code{guard}（\file{runs/20260929-145719-valuation/}）拦截 9 个无出处数字与 28 条不符断言，
+第二次（\file{runs/20260929-145857-valuation/}）剩 3 条不符：
+\begin{itemize}
+  \item “收入 387.88 亿元”——判为期间错配，真值“1,688.38 亿元”。原句是“2025 年第二季度收入 387.88 亿元”，数字正确，护栏把它绑定到了年度期间；
+  \item “净利率 33.35\%”——判为数值错误，真值 50.53\%。原句是“茅台酒销售有限公司净利润 472.28 亿元，净利率 33.35\%”，说的是子公司，不是公司整体；
+  \item 第三条为真错误，主笔改正。
+\end{itemize}
+前两条是护栏把句中的指标绑定到了错误的主体或期间。对这类误报，主笔会话当时的做法是改写句子（第三次运行通过），这在功能上可行，但等于让文稿迁就护栏。
+之后的改进让护栏识别单季度表述与分部、子公司别名，按对应口径核对（\file{tests/test\_guard\_caliber.py}、\code{test\_guard\_valuation\_mm\_aliases\_and\_bridge}），
+1005 批次终稿中这两句以原样措辞通过（表~\ref{tab:exp-provenance} 中茅台“不符”为 0）。
+这个案例说明了第~\ref{sec:principles}~节“误报控制优先于召回”的另一面：护栏的误报不会造成错误输出，但会造成\emph{压力}——模型会倾向于删掉或模糊化正确但难以绑定的数字，
+长期看损害报告的信息量，因此护栏误报同样需要修。
+
+\paragraph{案例三：一次纠错的诊断过程。}样例 E1“归母净利润 6.46 亿元”（表~\ref{tab:exp-sample-errors}）的诊断过程：
+真值表中 \code{np\_parent}（2024）为 612,380,000 元，研报值 $6.46\times10^8$ 元，差 3,380 万元，远超 $\halfulp=50$ 万元，不正确；
+按诊断顺序，单位替代（万元、元、百万元）无一命中；同比取反不适用；期间替代（2023 年 518,210,000 元）不命中；
+口径组 \{\code{net\_profit}, \code{np\_parent}, \code{np\_parent\_deducted}, \code{total\_profit}, \code{operating\_profit}\} 中 \code{net\_profit} 为 646,102,000 元，
+与 6.46 亿元之差 10.2 万元，在 50 万元容差内，命中，判“口径错误”，建议“若指归属于上市公司股东的净利润，应为 6.12 亿元；若指净利润，请更正指标名称”。
+出处给到年报第 6 页 \code{c0006} 行 2 列 1。整个过程没有模型参与，结论与修改建议都由程序生成，可逐步复核。
+
+% ---------------------------------------------------------------------
+\subsection{测试套件}
+\label{sec:exp-tests}
+
+本章撰写时运行 \code{python -m pytest -q tests}：收集 173 个测试，167 个通过，6 个跳过，耗时 23.53 秒。跳过的 6 个都是研报 PDF 的实际打印回归测试
+（\file{tests/test\_report\_render.py}），需要设置 \code{FINAGENT\_BROWSER\_TESTS=1} 并安装 Chrome。
+项目文档“进展”一节记录的“164 个测试通过、本地无原插件时跳过 5 个”是更早的状态；本机存在参照插件副本，5 个逐项对照测试全部运行并通过。
+测试的模块分布见表~\ref{tab:arch-tests}。与本章实验直接相关的有：\file{test\_golden.py}（RQ4，4 个快照）、\file{test\_parity\_reference.py}（RQ4，5 个对照）、
+\file{test\_pdf\_tables.py}（RQ1，三项版式修复各有用真实版式构造的用例）、\file{test\_real\_report.py}（RQ1/RQ4/护栏，茅台真实年报端到端）、
+\file{test\_consistency.py} 与 \file{test\_calibrate.py}（RQ3/RQ7）。样例评测 \file{eval/run\_eval.py} 不属于 pytest，单独运行，指标见 RQ2。
+
+% ---------------------------------------------------------------------
+\subsection{有效性威胁}
+\label{sec:exp-threats}
+
+\paragraph{样本量。}真实文档只有五份，其中三份用于抽取开发，同时也是测试——规则通道的别名与版式修复是在这三份年报上调出来的，存在过拟合。
+RQ1 的 93.0\% 应视为开发集上的数字。评测集收集清单中的约 15 家年报（覆盖亏损、金融、北交所等版式）是外推的必要条件。
+
+\paragraph{注入集的理想化。}RQ3 的注入断言绕过了断言抽取，且每条只含一种错误。它证明的是核对与诊断步骤的正确性，不是端到端纠错能力（见失败案例框）。
+
+\paragraph{评审的噪声与同源。}RQ5 的每个数字都来自单次盲评，评审与生成同属一个模型家族；RQ7 显示单次噪声约 $\pm4$ 分，“缺了什么”类缺陷判出率低。
+因此 RQ5 只支持“v2 显著好于 v0/v1”这一粗粒度结论。
+
+\paragraph{混杂。}v0、v1、v2 使用不同的公司，流程改动与公司难度混杂；v1 与 v2 之间除流程外，skill 文本也有修改。RQ6 的组件消融是解开混杂的正确实验，目前尚未真实运行。
+
+\paragraph{编造数字。}本章 \fab{橙色} 数字集中在 RQ3 的模型基线与人工埋错、RQ5 的单会话基线、RQ6 的组件消融，以及少量开发期经验估计。它们不影响任何真实数字的结论，
+但在替换为真实运行之前，不能作为论据引用。
+
+% ---------------------------------------------------------------------
+\subsection{跨实验的错误谱系}
+\label{sec:exp-errors}
+
+把本章各实验中\emph{真实观察到}的错误放在一起（表~\ref{tab:exp-errors}），按“谁犯的错、在哪一环被拦下”归类，可以看出各道防线实际承担的工作。
+
+\begin{table}[t]
+\centering
+\caption{本章实验中真实观察到的错误及拦截位置（不含编造部分）。}
+\label{tab:exp-errors}
+\footnotesize
+\begin{tabularx}{\linewidth}{@{}l X l l@{}}
+\toprule
+来源 & 错误 & 拦截位置 & 出处 \\
+\midrule
+模型抄写 & 页码或数字与原文不符（宇树科技分析师会话迭代中 6 次） & 证据校验 & 会话事件流 \\
+模型抄写 & 金额末两位对调 & 证据校验 & \code{test\_extras\_verified\_and\_ratios\_computed} \\
+解析器 & 宁德时代表头与数字错列，规则通道取不到任何值 & 稀疏列合并 & 表~\ref{tab:exp-ext-ablation} \\
+解析器 & 续页无表头、续页列被劈开 & 续表链接 & 表~\ref{tab:exp-ext-ablation} \\
+主笔文稿 & 同比写错（30.45\% 对 $-1.21\%$）、资本开支数错（358.72 对 77.97 亿元）、无出处数字 & \code{guard} & \file{runs/2026092*}、\file{runs/20261001-*} \\
+护栏自身 & 单季度与子公司数字绑定到公司年度口径（误报） & 人工排查后改护栏 & 案例二 \\
+一致性检查 & 外部机构“买入”评级计数被当作本报告评级（误报） & 本章复测发现，已修复 & RQ3 \\
+核对器 & 派生指标 \code{da} 不在字典，口径错误降级为数值错误 & 注入实验发现，已修复 & RQ3 \\
+研报结构 & 删节后留下空标题页，评审仍判通过 & 评审校准发现 & RQ7 \\
+评审 & L3 表达类条目判定过严（5 条误报中 3 条） & 人工质检 & RQ7 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+三点观察。第一，\emph{模型的错误基本都在确定性防线上被拦下}：抄写错由证据校验拦，文稿数字错由护栏拦，没有一例进入最终交付物。
+第二，\emph{本章发现的新问题全部出在确定性组件自身的边界上}——护栏的口径绑定、一致性检查的外部引述排除、核对器的指标字典。
+这类问题一旦发现就可以写成测试、永久修复，这是把判断移到程序的另一个收益：错误是可积累的知识，而不是每次重新出现的随机事件。
+第三，\emph{评审层的问题不能用同样方式修复}：空标题页判通过、表达类条目过严，都只能通过改评分标准措辞、改劣化算子、增加人工校准来缓解，且改动的效果需要重新校准才能确认。
+
+% ---------------------------------------------------------------------
+\subsection{小结}
+\label{sec:exp-summary}
+
+表~\ref{tab:exp-summary} 汇总七个研究问题的回答与证据强度。
+
+\begin{table}[t]
+\centering
+\caption{研究问题的回答与证据强度。“强”= 可复现的确定性实验；“中”= 真实但样本小或单次评审；“弱”= 含编造或混杂。}
+\label{tab:exp-summary}
+\small
+\begin{tabularx}{\linewidth}{@{}l X c@{}}
+\toprule
+RQ & 回答 & 证据 \\
+\midrule
+RQ1 & 三家真实年报 301 个模型核验值，规则通道佐证 280 个（93.0\%），冲突 0；续表链接、稀疏列合并、折行合并的边际贡献分别为 118、105、32 个值，七种配置下错配均为 0 & 强（开发集） \\
+RQ2 & 样例 35/35、7/7、误报 0；真实文档勾稽 67/68 通过、1 项不可评估、0 失败 & 强 \\
+RQ3 & 注入集 754 条含错全部判出、580 条正确断言 0 误报、类型准确率 99.5\%；固定容差无法同时做到低误报与高召回；内部一致性检查发现 1 例真实误报 & 强（核对器）/ 弱（端到端） \\
+RQ4 & 1,712 个快照字段逐字段相等；对照测试全部通过；42 次估值运行三表勾稽全部成立；计算耗时 $<0.2$ 秒 & 强 \\
+RQ5 & 总分 46～49 → 67～74 → 88～90；v1→v2 的提升集中在 L2 的 6 条条目；终稿无出处数字为 0、事实类数字占约四分之三 & 中 \\
+RQ6 & 组件消融尚未真实运行；v0→v1 的相关证据支持“资料先搜集”减少无来源数字 & 弱 \\
+RQ7 & 逐条一致 86\%～91\%、总分极差 7～8、劣化判出 5/12、人工精确率 84\%；局部错误可靠判出，“缺了什么”判不出 & 中 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+贯穿各 RQ 的一个结论是：凡是能写成确定性规则的部分（抽取校验、核对、估值、勾稽、护栏），实验结果都是“强”证据，而且错误模式清楚、可以逐条修复；
+凡是依赖模型判断的部分（研报质量、评审），结论只能是“中”或“弱”，需要更多样本、重复评审与人工校准。这一分布本身支持本文的设计取向：
+把尽可能多的环节从“模型判断”移到“程序判定”，让模型只承担确实需要阅读与写作能力的部分（第~\ref{sec:discussion}~节进一步讨论）。

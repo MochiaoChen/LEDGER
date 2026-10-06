@@ -35,9 +35,9 @@
 
 | 流水线 | 步骤 | 主要产物 |
 |---|---|---|
-| financials（选题 2） | parse → extract → analyze → extras → earnings → report | `financials/analysis.json`（含 **truth_table**）、`report.md` |
-| valuation（选题 4） | three_statement → build_plan → dcf → reverse_dcf → scenarios → forecast_summary → comps → valuation_report | `valuation/model.xlsx`、`valuation.json`、`reverse_dcf.json`、`forecast_summary.json`（含程序评级） |
-| report_check（选题 5） | parse_report → claims → verify → consistency | `check/report.md`、`findings.json`、`consistency.json` |
+| financials（财报分析） | parse → extract → analyze → extras → earnings → report | `financials/analysis.json`（含 **truth_table**）、`report.md` |
+| valuation（自动化估值建模） | three_statement → build_plan → dcf → reverse_dcf → scenarios → forecast_summary → comps → valuation_report | `valuation/model.xlsx`、`valuation.json`、`reverse_dcf.json`、`forecast_summary.json`（含程序评级） |
+| report_check（研究报告纠错核查） | parse_report → claims → verify → consistency | `check/report.md`、`findings.json`、`consistency.json` |
 
 抽取有两个来源：带 `--facts` 时接入分析师会话写下的 `facts.json`（逐条证据校验后与规则通道合并，冲突阻断估值）；
 不带时只走规则通道（样例回归与测试用）。研报断言同理（`--claims`）。

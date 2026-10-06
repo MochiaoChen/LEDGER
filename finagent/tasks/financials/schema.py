@@ -94,6 +94,7 @@ METRICS: list[Metric] = [
     Metric("selling_ratio", "销售费用率", "derived", kind="pct", claim_aliases=("销售费用率",)),
     Metric("admin_ratio", "管理费用率", "derived", kind="pct", claim_aliases=("管理费用率",)),
     Metric("ocf_to_np", "经营现金流/归母净利润", "derived", kind="ratio", claim_aliases=("净现比",)),
+    Metric("da", "折旧摊销", "derived", claim_aliases=("折旧摊销", "折旧与摊销")),
 ]
 
 BY_ID = {m.id: m for m in METRICS}

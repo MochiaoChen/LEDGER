@@ -15,7 +15,7 @@ from typing import Callable
 
 from .core.config import PROJECT_ROOT
 
-# 选题 2/4/5 的计算、校验与护栏命令（原 python -m finagent <task>）
+# 财报分析、估值建模、纠错核查的计算、校验与护栏命令（原 python -m finagent <task>）
 RESEARCH_TASKS = ("financials", "valuation", "check", "all", "locate", "schema", "verify-facts",
                   "verify-extra", "guard", "verify-sources", "numlock")
 
@@ -115,7 +115,7 @@ _b, _dim, _green, _yellow, _cyan = _color("1"), _color("2"), _color("32"), _colo
 
 
 def usage() -> str:
-    lines = [_b("FinAgent") + " 金融投研智能体 · 财报分析（选题 2）· 估值建模（选题 4）· 研报纠错（选题 5）", "",
+    lines = [_b("FinAgent") + " 金融投研智能体 · 财报分析 · 自动化估值建模 · 研报纠错核查", "",
              _b("用法") + "  finagent <命令组> [参数]      " + _dim("各命令组 -h 查看参数"), ""]
     for name, (_, desc) in GROUPS.items():
         lines.append(f"  {_cyan(name.ljust(10))} {desc}")
