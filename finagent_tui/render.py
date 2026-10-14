@@ -21,7 +21,26 @@ def metric_order(metric_id: str) -> tuple[int, str]:
     base = metric_id.split(".")[0]
     return (_ORDER.get(base, len(_ORDER)), metric_id)
 
-OK, BAD, WARN, MUTED, ACCENT = "#9ece6a", "#f7768e", "#e0af68", "#565f89", "#7aa2f7"
+# 语义色由当前主题决定（themes.PALETTE），切换主题时调用 use_palette()；下面是默认主题的值。
+OK = BAD = WARN = MUTED = ACCENT = STRONG = FILE = TOOL = BADGE_FG = ROW_HL = ""
+_HEAT: tuple[tuple[int, int, int], ...] = ()
+EVENT_STYLE: dict[str, str] = {}
+
+
+def _rgb(h: str) -> tuple[int, int, int]:
+    return int(h[1:3], 16), int(h[3:5], 16), int(h[5:7], 16)
+
+
+def use_palette(theme: str) -> None:
+    """换成某个主题的语义色；Textual 自带主题沿用原来的配色。"""
+    from .themes import PALETTE
+    global OK, BAD, WARN, MUTED, ACCENT, STRONG, FILE, TOOL, BADGE_FG, ROW_HL, _HEAT, EVENT_STYLE
+    p = PALETTE.get(theme, PALETTE["_fallback"])
+    OK, BAD, WARN, MUTED, ACCENT = p["ok"], p["bad"], p["warn"], p["muted"], p["accent"]
+    STRONG, FILE, TOOL, BADGE_FG, ROW_HL = p["strong"], p["file"], p["tool"], p["badge_fg"], p["row_hl"]
+    _HEAT = (_rgb(p["heat_lo"]), _rgb(p["heat_mid"]), _rgb(p["heat_hi"]))
+    EVENT_STYLE = {"run_start": ACCENT, "run_end": ACCENT, "step_start": "bold", "step_end": MUTED, "file_read": FILE,
+                   "artifact": OK, "tool_start": TOOL, "tool_end": MUTED, "document_parsed": FILE, "llm_call": TOOL, "error": BAD, "warning": WARN}
 
 
 def fmt_fact(metric_id: str, value: float | None) -> str:
@@ -81,7 +100,7 @@ def value_bar(v: dict[str, Any], width: int = 56) -> Group | Text:
     a, b = pos(vr["low"]), pos(vr["high"])
     for i in range(a, b + 1):
         line[i], styles[i] = "━", ACCENT
-    marks = [(pos(vr["low"]), "▏", ACCENT), (pos(vr["base"]), "◆", "bold #c0caf5"), (pos(vr["high"]), "▕", ACCENT)]
+    marks = [(pos(vr["low"]), "▏", ACCENT), (pos(vr["base"]), "◆", f"bold {STRONG}"), (pos(vr["high"]), "▕", ACCENT)]
     if isinstance(price, (int, float)):
         marks.append((pos(price), "▼", WARN))
     for i, ch, st in marks:
@@ -91,8 +110,8 @@ def value_bar(v: dict[str, Any], width: int = 56) -> Group | Text:
         bar.append(ch, style=st)
     legend = Text()
     legend.append(f"悲观 {vr['low']:,.2f}", style=ACCENT)
-    legend.append("   ◆ 基准 ", style="bold #c0caf5")
-    legend.append(f"{vr['base']:,.2f}", style="bold #c0caf5")
+    legend.append("   ◆ 基准 ", style=f"bold {STRONG}")
+    legend.append(f"{vr['base']:,.2f}", style=f"bold {STRONG}")
     legend.append(f"   乐观 {vr['high']:,.2f}", style=ACCENT)
     if isinstance(price, (int, float)):
         legend.append(f"   ▼ 股价 {price:,.2f}", style=WARN)
@@ -105,7 +124,7 @@ def rating_badge(v: dict[str, Any]) -> Text:
     if not name:
         return Text("")
     color = {"买入": OK, "增持": OK, "中性": WARN, "减持": BAD, "卖出": BAD}.get(name, ACCENT)
-    t = Text(f" {name} ", style=f"bold #1a1b26 on {color}")
+    t = Text(f" {name} ", style=f"bold {BADGE_FG} on {color}")
     up = r.get("upside")
     if isinstance(up, (int, float)):
         t.append(f"  基准空间 {up:+.1%}", style=color)
@@ -141,16 +160,13 @@ def forecast_table(v: dict[str, Any]) -> Table:
 
 
 def _heat(x: float, lo: float, hi: float) -> str:
-    """红（低）→ 灰 → 绿（高）背景色。"""
+    """红（低）→ 底色 → 绿（高）背景色，三个锚点取自当前主题。"""
+    lo_c, mid, hi_c = _HEAT
     if hi == lo:
-        return "on #24283b"
+        return "on #{:02x}{:02x}{:02x}".format(*mid)
     k = (x - lo) / (hi - lo)
-    if k < 0.5:
-        a = 1 - k * 2
-        r, g, b = 0x24 + int((0x8c - 0x24) * a), 0x28 + int((0x2f - 0x28) * a), 0x3b + int((0x45 - 0x3b) * a)
-    else:
-        a = (k - 0.5) * 2
-        r, g, b = 0x24 + int((0x3d - 0x24) * a), 0x28 + int((0x6b - 0x28) * a), 0x3b + int((0x3a - 0x3b) * a)
+    end, a = (lo_c, 1 - k * 2) if k < 0.5 else (hi_c, (k - 0.5) * 2)
+    r, g, b = (round(m + (e - m) * a) for m, e in zip(mid, end))
     return f"on #{r:02x}{g:02x}{b:02x}"
 
 
@@ -219,8 +235,6 @@ def score_header(sc: dict[str, Any]) -> Group:
     return Group(*rows)
 
 
-EVENT_STYLE = {"run_start": ACCENT, "run_end": ACCENT, "step_start": "bold", "step_end": MUTED, "file_read": "#7dcfff",
-               "artifact": OK, "tool_start": "#bb9af7", "tool_end": MUTED, "document_parsed": "#7dcfff", "llm_call": "#bb9af7", "error": BAD, "warning": WARN}
 
 
 def event_summary(ev: dict[str, Any]) -> str:
@@ -240,3 +254,6 @@ def event_summary(ev: dict[str, Any]) -> str:
         return f"{ev.get('source', '')}  {ev.get('pages', '')} 页 · {ev.get('tables', '')} 张表 · {ev.get('chunks', '')} 个片段"
     rest = {k: v for k, v in ev.items() if k not in ("seq", "ts", "kind")}
     return ", ".join(f"{k}={v}" for k, v in list(rest.items())[:4])[:200]
+
+
+use_palette("ledger-graphite")

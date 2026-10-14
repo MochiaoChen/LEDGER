@@ -135,25 +135,48 @@ def agent_log(s: Subject, rel: str, limit: int = 400) -> list[str]:
 
 
 def scores(s: Subject) -> list[dict[str, Any]]:
-    """与该对象相关的评测结果（新的在后）：refine 各轮、eval/results 与 eval/calibration 中评的是它的那些。"""
-    found: list[tuple[str, Path]] = []
+    """与该对象相关的评测结果（新的在后）：refine 各轮、eval/results 与 eval/calibration 中评的是它的那些。
+
+    每条带 `kind`：`refine`（流水线质检轮次）、`result`（正式评测）、`repeat`（评审校准里对同一份交付物的重复盲评）、
+    `variant`（评审校准里人为劣化后的版本，用来测评审能不能判出来，不代表这份研报的质量）。
+    """
+    found: list[tuple[str, str, Path]] = []
     if s.workspace:
         for d in sorted((s.workspace / ".pipeline" / "rounds").glob("*")):
             if (d / "score.json").is_file():
-                found.append((f"refine 第 {d.name} 轮", d))
+                found.append(("refine", f"refine 第 {d.name} 轮", d))
     target = str(s.run) if s.run else None
     for base in (RESULTS, CALIBRATION):
         for score in sorted(base.rglob("score.json")) if base.is_dir() else []:
             b = load(score.parent / "bundle.json", {}) or {}
-            if target and b.get("run") == target:
-                found.append((str(score.parent.relative_to(PROJECT_ROOT)), score.parent))
+            if not (target and b.get("run") == target):
+                continue
+            if base == RESULTS:
+                found.append(("result", f"正式评测 {score.parent.name}", score.parent))
+                continue
+            v = load(score.parent / "variant.json", {}) or {}
+            if v.get("kind") in (None, "clean"):
+                found.append(("repeat", f"校准·重复盲评 {score.parent.name}", score.parent))
+            else:
+                found.append(("variant", f"校准·劣化 {v.get('kind')}（{v.get('desc', '')[:16]}）", score.parent))
     out = []
-    for label, d in found:
+    for kind, label, d in found:
         sc = load(d / "score.json")
         if isinstance(sc, dict):
             when = (load(d / "bundle.json", {}) or {}).get("evaluated_at") or ""
-            out.append({"label": label, "dir": d, "evaluated_at": when, **sc})
+            out.append({"label": label, "kind": kind, "dir": d, "evaluated_at": when, **sc})
     return sorted(out, key=lambda x: x["evaluated_at"])
+
+
+def primary_score(scs: list[dict[str, Any]]) -> dict[str, Any] | None:
+    """代表这份研报的分数：最近一次正式评测或 refine 轮次；校准里的重复盲评与劣化版本只作参照，不当成研报的分。"""
+    formal = [x for x in scs if x.get("kind") in ("result", "refine")]
+    return (formal or scs or [None])[-1]
+
+
+def repeat_totals(scs: list[dict[str, Any]]) -> list[float]:
+    """评审校准中对同一份交付物重复盲评的总分（按时间先后）。"""
+    return [x.get("total", 0) for x in scs if x.get("kind") == "repeat"]
 
 
 def pdf(s: Subject) -> Path | None:

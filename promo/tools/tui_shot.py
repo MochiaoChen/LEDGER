@@ -14,13 +14,20 @@ from finagent import catalog  # noqa: E402
 from finagent_tui.app import FinAgentApp  # noqa: E402
 from textual.widgets import Tree  # noqa: E402
 
-OUT = ROOT / "promo" / "public" / "tui"
+import argparse
+
+ap = argparse.ArgumentParser()
+ap.add_argument("--theme", default=None, help="界面主题，默认用 finagent_tui 的默认主题")
+ap.add_argument("--out", default=str(ROOT / "promo" / "public" / "tui"))
+ap.add_argument("--tabs", default="overview,facts,valuation,score,trace,agents")
+ARGS = ap.parse_args()
+OUT = Path(ARGS.out)
 TARGET = "中际旭创"
 
 
 async def main():
     OUT.mkdir(parents=True, exist_ok=True)
-    app = FinAgentApp()
+    app = FinAgentApp(theme=ARGS.theme)
     async with app.run_test(size=(124, 36)) as pilot:
         await pilot.pause(0.5)
         tree = app.query_one("#tree", Tree)
@@ -29,7 +36,7 @@ async def main():
         tree.select_node(node)
         app._select(node.data)
         await pilot.pause(0.5)
-        for tab in ("overview", "facts", "valuation", "score", "trace", "agents"):
+        for tab in ARGS.tabs.split(","):
             app.action_tab(tab)
             await pilot.pause(0.6)
             if tab == "agents":  # 光标移到最后一次会话（排版），日志区显示它的收尾信息

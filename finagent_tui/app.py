@@ -1,10 +1,11 @@
 """FinAgent 终端界面。
 
-  finagent tui [--samples ~/finagent-samples] [--runs runs/]
+  finagent tui [--samples ~/finagent-samples] [--runs runs/] [--theme ledger-ink|ledger-paper|ledger-graphite]
 
 左侧选研报工作区或运行目录，右侧七页：概览（闸门、估值区间、评级、质检分）、真值表（点数字看来源页码）、
 估值（三情景、预测、敏感性热力表）、质检（逐条判定与证据）、追溯（文件读写与步骤回放）、
 Agent（各会话用量与事件流）、命令（在界面里跑 finagent 任意命令）。只读产物，不改文件。
+主题默认 ledger-graphite，可用 --theme、环境变量 FINAGENT_TUI_THEME 或命令面板（ctrl+p → Change theme）切换。
 """
 
 from __future__ import annotations
@@ -32,6 +33,7 @@ from finagent.core.config import PROJECT_ROOT
 from finagent.report_pipeline import default_dest
 
 from . import render as R
+from .themes import DEFAULT as DEFAULT_THEME, THEMES
 
 MAX_PERIODS = 6
 
@@ -68,8 +70,11 @@ class FinAgentApp(App):
              ("agents", "Agent"), ("command", "命令")])],
     ]
 
-    def __init__(self, samples: Path | None = None, runs_root: Path | None = None) -> None:
+    def __init__(self, samples: Path | None = None, runs_root: Path | None = None, theme: str | None = None) -> None:
         super().__init__()
+        for t in THEMES.values():
+            self.register_theme(t)
+        self._theme_name = theme or os.environ.get("FINAGENT_TUI_THEME") or DEFAULT_THEME
         self.samples = samples or default_dest()
         self.runs_root = runs_root or catalog.RUNS
         self.subject: catalog.Subject | None = None
@@ -126,10 +131,16 @@ class FinAgentApp(App):
         yield Footer()
 
     def on_mount(self) -> None:
-        self.theme = "tokyo-night"
+        self.theme = self._theme_name if self._theme_name in self.available_themes else DEFAULT_THEME
         self.query_one("#score-detail").border_subtitle = "↑↓ 选条目"
         self.query_one("#facts-source").border_subtitle = "方向键移动到数字"
         self._build_tree()
+
+    def watch_theme(self, theme: str) -> None:
+        """换主题时把表格、图条里的语义色一起换掉，并按新颜色重画当前对象。"""
+        R.use_palette(theme)
+        if getattr(self, "subject", None) is not None:
+            self._select(self.subject)
 
     # ------------------------------------------------------------------ 侧栏
     def _build_tree(self) -> None:
@@ -175,7 +186,7 @@ class FinAgentApp(App):
         v = catalog.valuation(s)
         a = catalog.analysis(s)
         head = Text()
-        head.append(s.company or s.title, style="bold #c0caf5")
+        head.append(s.company or s.title, style=f"bold {R.STRONG}")
         head.append(f"   {s.run.name if s.run else '尚无估值运行'}", style=R.MUTED)
         head.append("   ")
         head.append_text(R.rating_badge(v))
@@ -185,8 +196,16 @@ class FinAgentApp(App):
             sub.append("   估值模型 model.xlsx（x 打开）", style=R.MUTED)
         self.query_one("#ov-head", Static).update(Group(head, sub))
         self.query_one("#ov-value", Card).update(R.value_bar(v) if v else Text("无估值产物", style=R.MUTED))
-        sc = catalog.scores(s)
-        self.query_one("#ov-score", Card).update(R.score_header(sc[-1]) if sc else Text("尚未评测", style=R.MUTED))
+        scs = catalog.scores(s)
+        main_sc = catalog.primary_score(scs)
+        if main_sc:
+            card = [R.score_header(main_sc), Text(main_sc["label"], style=R.MUTED)]
+            rep = catalog.repeat_totals(scs)
+            if rep:
+                card.append(Text(f"评审校准：重复盲评 {len(rep)} 次 " + " / ".join(f"{x:g}" for x in rep) + " 分", style=R.MUTED))
+            self.query_one("#ov-score", Card).update(Group(*card))
+        else:
+            self.query_one("#ov-score", Card).update(Text("尚未评测", style=R.MUTED))
         self.query_one("#ov-gates", Card).update(R.gates_table(catalog.gates(s)))
         fin = Text()
         if a:
@@ -283,9 +302,11 @@ class FinAgentApp(App):
         self._scores = catalog.scores(self.subject)
         sel = self.query_one("#score-select", Select)
         sel.set_options([(f"{sc['label']} · {sc.get('total', 0):g} 分", i) for i, sc in enumerate(self._scores)])
-        if self._scores:
-            sel.value = len(self._scores) - 1
-            self._show_score(len(self._scores) - 1)
+        if self._scores:   # 默认选代表这份研报的那次评测（正式评测或 refine 轮次），校准结果留在下拉框里
+            main_sc = catalog.primary_score(self._scores)
+            i = next(k for k, x in enumerate(self._scores) if x is main_sc)
+            sel.value = i
+            self._show_score(i)
         else:
             self.query_one("#score-head", Static).update(Text("尚未评测：finagent eval run --workspace <工作区>", style=R.MUTED))
             self.query_one("#score-table", DataTable).clear(columns=True)
@@ -466,9 +487,10 @@ def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(prog="finagent tui", description="FinAgent 终端界面")
     ap.add_argument("--samples", help="研报工作区目录，默认 ~/finagent-samples（FINAGENT_SAMPLES_DIR）")
     ap.add_argument("--runs", help="运行目录，默认仓库 runs/")
+    ap.add_argument("--theme", help=f"界面主题：{', '.join(THEMES)}，或 Textual 自带主题（默认 {DEFAULT_THEME}，也读 FINAGENT_TUI_THEME）")
     args = ap.parse_args(argv)
     FinAgentApp(Path(args.samples).expanduser() if args.samples else None,
-                Path(args.runs).expanduser() if args.runs else None).run()
+                Path(args.runs).expanduser() if args.runs else None, theme=args.theme).run()
     return 0
 
 
