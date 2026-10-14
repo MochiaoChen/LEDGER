@@ -83,8 +83,8 @@ def _ls(argv: list[str]) -> int:
         g = catalog.gates(s) or {}
         stages = g.get("stages", [])
         passed = sum(st["ok"] for st in stages)
-        sc = catalog.scores(s)
-        last = f"  质检 {sc[-1]['total']:g} 分" if sc else ""
+        sc = catalog.primary_score(catalog.scores(s))
+        last = f"  质检 {sc['total']:g} 分" if sc else ""
         state = _green("✓ 全部闸门通过") if g.get("done") else _yellow(f"{passed}/{len(stages)} 闸门 · 下一步：{g.get('next', '—')}")
         print(f"  {s.title:<14} {state}{last}")
     print(_b("\n仓库运行目录") + _dim("  runs/（最近 10 个含财务分析的）"))

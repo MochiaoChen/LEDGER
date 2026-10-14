@@ -27,13 +27,18 @@ def fix(m):
     return f'{head}textLength="{length / len(text) * cells(text):.1f}"{rest}>{body}</text>'
 
 
-out = {}
-for tab in TABS:
-    svg = (ROOT / "public" / "tui" / f"{tab}.svg").read_text(encoding="utf-8")
-    svg = re.sub(r"@font-face\s*\{[^}]*\}", "", svg)
-    svg = svg.replace("Fira Code, monospace", '"Maple Mono", monospace').replace("font-family: arial", 'font-family: "Maple Mono"')
-    svg = re.sub(r'(<text [^>]*?)textLength="([\d.]+)"([^>]*)>([^<]*)</text>', fix, svg)
-    m = re.search(r'viewBox="0 0 ([\d.]+) ([\d.]+)"', svg)
-    out[tab] = {"w": float(m.group(1)), "h": float(m.group(2)), "svg": svg}
-(ROOT / "src" / "data" / "tui.json").write_text(json.dumps(out, ensure_ascii=False), encoding="utf-8")
-print({k: (v["w"], v["h"], len(v["svg"])) for k, v in out.items()})
+def main():
+    out = {}
+    for tab in TABS:
+        svg = (ROOT / "public" / "tui" / f"{tab}.svg").read_text(encoding="utf-8")
+        svg = re.sub(r"@font-face\s*\{[^}]*\}", "", svg)
+        svg = svg.replace("Fira Code, monospace", '"Maple Mono", monospace').replace("font-family: arial", 'font-family: "Maple Mono"')
+        svg = re.sub(r'(<text [^>]*?)textLength="([\d.]+)"([^>]*)>([^<]*)</text>', fix, svg)
+        m = re.search(r'viewBox="0 0 ([\d.]+) ([\d.]+)"', svg)
+        out[tab] = {"w": float(m.group(1)), "h": float(m.group(2)), "svg": svg}
+    (ROOT / "src" / "data" / "tui.json").write_text(json.dumps(out, ensure_ascii=False), encoding="utf-8")
+    print({k: (v["w"], v["h"], len(v["svg"])) for k, v in out.items()})
+
+
+if __name__ == "__main__":
+    main()

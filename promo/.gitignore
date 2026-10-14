@@ -18,3 +18,4 @@ public/pages/
 evidence/review/
 evidence/vo-voices*.json
 tools/__pycache__/
+evidence/tui-themes/

@@ -5,7 +5,7 @@ Screen {
 #sidebar {
     width: 34;
     background: $panel;
-    border-right: tall $primary-background;
+    border-right: tall $border-blurred;
     padding: 0 1;
 }
 
@@ -37,7 +37,7 @@ TabPane {
 }
 
 Card {
-    border: round $primary-background-lighten-2;
+    border: round $border-blurred;
     border-title-color: $accent;
     border-title-style: bold;
     border-subtitle-color: $text-muted;
@@ -107,7 +107,7 @@ Card {
 
 #agent-log {
     height: 1fr;
-    border: round $primary-background-lighten-2;
+    border: round $border-blurred;
     margin-bottom: 1;
 }
 
@@ -138,6 +138,6 @@ Card {
 
 #cmd-log {
     height: 1fr;
-    border: round $primary-background-lighten-2;
+    border: round $border-blurred;
     margin-bottom: 1;
 }
