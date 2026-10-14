@@ -4,7 +4,7 @@ import {useLocal, p, rise, fade, act, ease, lerp, count} from '../kit/time.js';
 import {Title, GateLine, Seal} from '../kit/ui.jsx';
 // 12 排版交付：30 页真实研报页面（中际旭创1003.pdf 逐页渲染）平铺成看板，镜头抬起；首页抬到前景。
 const PAGES = data.report.page_files, COLS = 10;
-const g10 = {...data.gates[9], detail: '…/report/' + data.gates[9].detail.split('/report/')[1]};
+const g10 = {...data.gates[9], detail: '…/report/' + data.gates[9].detail.split('/report/')[1].split('（')[0]};   // 省略路径前缀和括号里的检查说明，免得压到首页
 export function LayoutView() {
   const l = useLocal(), A = {pg: act('layout-pages'), cv: act('layout-cover'), g10: act('gate-10'), g11: act('gate-11')};
   const lift = p(l, A.pg, 5.4, ease.io), side = p(l, A.cv - 0.4, 1.0, ease.io3);

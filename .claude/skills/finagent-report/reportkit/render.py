@@ -53,7 +53,8 @@ def browser_run(browser: str, url: str, *options: str) -> str:
                 if os.name == "posix":
                     try:
                         os.killpg(proc.pid, signal.SIGTERM)
-                    except ProcessLookupError:
+                    except (ProcessLookupError, PermissionError):
+                        # macOS：Chrome 输出完就退出，组长成了未回收的僵尸进程时 killpg 报 EPERM，说明进程组已经结束
                         pass
                 elif proc.poll() is None:
                     subprocess.run(["taskkill", "/PID", str(proc.pid), "/T", "/F"], capture_output=True)
@@ -61,7 +62,10 @@ def browser_run(browser: str, url: str, *options: str) -> str:
                     proc.wait(timeout=5)
                 except subprocess.TimeoutExpired:
                     if os.name == "posix":
-                        os.killpg(proc.pid, signal.SIGKILL)
+                        try:
+                            os.killpg(proc.pid, signal.SIGKILL)
+                        except (ProcessLookupError, PermissionError):
+                            proc.kill()
                     else:
                         proc.kill()
                     proc.wait()
