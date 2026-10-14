@@ -1,0 +1,754 @@
+{
+ "model": "eleven_v4",
+ "voice": "nPczCjzI2devNBz1zQrb",
+ "direction": "",
+ "stability": 0.6,
+ "lines": [
+  {
+   "line": 1,
+   "at": 0.5,
+   "window": 6.4,
+   "text": "这是一份 AI 写的研报，带单位的数字有六百五十个。",
+   "best": 0,
+   "best_take": 0,
+   "speed": 1.0,
+   "overrun": 0,
+   "takes": [
+    {
+     "take": 0,
+     "duration": 4.44,
+     "cer": 0.0,
+     "spoken_tag": false,
+     "hyp": "这是一份AI写的研报，带单位的数字有六百五十个",
+     "score": 0.0
+    },
+    {
+     "take": 1,
+     "duration": 4.44,
+     "cer": 0.0,
+     "spoken_tag": false,
+     "hyp": "这是一份AI写的研报，带单位的数字有六百五十个。",
+     "score": 0.0
+    }
+   ]
+  },
+  {
+   "line": 2,
+   "at": 7.4,
+   "window": 3.5,
+   "text": "哪一个，是模型编的？",
+   "best": 0,
+   "best_take": 0,
+   "speed": 1.0,
+   "overrun": 0,
+   "takes": [
+    {
+     "take": 0,
+     "duration": 1.72,
+     "cer": 0.0,
+     "spoken_tag": false,
+     "hyp": "哪一个是模型编的？",
+     "score": 0.0
+    },
+    {
+     "take": 1,
+     "duration": 2.46,
+     "cer": 0.0,
+     "spoken_tag": false,
+     "hyp": "哪一个是模型编的？",
+     "score": 0.0
+    }
+   ]
+  },
+  {
+   "line": 3,
+   "at": 11.6,
+   "window": 2.6,
+   "text": "在 Ledger 里，答案必须是：零。",
+   "best": 0,
+   "best_take": 0,
+   "speed": 1.073,
+   "overrun": 0,
+   "takes": [
+    {
+     "take": 0,
+     "duration": 2.79,
+     "cer": 0.0,
+     "spoken_tag": false,
+     "hyp": "在 ledger 里，答案必须是零",
+     "score": 0.0
+    },
+    {
+     "take": 1,
+     "duration": 3.66,
+     "cer": 0.0,
+     "spoken_tag": false,
+     "hyp": "在 Ledger 里，答案必须是零。",
+     "score": 0.157
+    }
+   ]
+  },
+  {
+   "line": 4,
+   "at": 15.0,
+   "window": 11.2,
+   "text": "Ledger，一个金融投研多 Agent 系统。模型负责读和写，程序负责算和查，每个数字都能追到原文页码。",
+   "best": 0,
+   "best_take": 0,
+   "speed": 1.0,
+   "overrun": 0,
+   "takes": [
+    {
+     "take": 0,
+     "duration": 9.62,
+     "cer": 0.0,
+     "spoken_tag": false,
+     "hyp": "Ledger，一个金融投研多agent系统，模型负责读和写，程序负责算和查，每个数字都能追到原文页码。",
+     "score": 0.0
+    },
+    {
+     "take": 1,
+     "duration": 9.62,
+     "cer": 0.0,
+     "spoken_tag": false,
+     "hyp": "Ledger，一个金融投研多agent系统，模型负责读和写，程序负责算和查，每个数字都能追到原文页码。",
+     "score": 0.0
+    }
+   ]
+  },
+  {
+   "line": 5,
+   "at": 27.2,
+   "window": 13.2,
+   "text": "规矩只有一条：模型不做算术。模型抄下的数，必须在原文里找到才能入账；连“约三倍”这种约数，也得交给程序去算。",
+   "best": 0,
+   "best_take": 0,
+   "speed": 1.0,
+   "overrun": 0,
+   "takes": [
+    {
+     "take": 0,
+     "duration": 10.74,
+     "cer": 0.022,
+     "spoken_tag": false,
+     "hyp": "规矩只有一条，模型不做算术。模型抄下的数必须在原文里找到才能入账，连约三倍这种约束也得交给程序去算。",
+     "score": 0.022
+    },
+    {
+     "take": 1,
+     "duration": 11.04,
+     "cer": 0.022,
+     "spoken_tag": false,
+     "hyp": "规矩只有一条，模型不做算术，模型抄下的数必须在原文里找到才能入账。连约三倍这种约束也得交给程序去算。",
+     "score": 0.022
+    }
+   ]
+  },
+  {
+   "line": 6,
+   "at": 41.6,
+   "window": 11.0,
+   "text": "一条命令，编排器在仓库之外搭好工作区，依次启动五个 Claude Code 会话。它们不共享上下文，只靠文件交接。",
+   "best": 0,
+   "best_take": 0,
+   "speed": 1.0,
+   "overrun": 0,
+   "takes": [
+    {
+     "take": 0,
+     "duration": 10.2,
+     "cer": 0.0,
+     "spoken_tag": false,
+     "hyp": "一条命令，编排器在仓库之外搭好工作区，依次启动五个Claude Code会话，它们不共享上下文，只靠文件交接。",
+     "score": 0.0
+    },
+    {
+     "take": 1,
+     "duration": 10.04,
+     "cer": 0.0,
+     "spoken_tag": false,
+     "hyp": "一条命令，编排器在仓库之外搭好工作区，依次启动五个Claude Code会话。它们不共享上下文，只靠文件交接。",
+     "score": 0.0
+    }
+   ]
+  },
+  {
+   "line": 7,
+   "at": 54.0,
+   "window": 14.4,
+   "text": "第一个上场的是研究助理。你看到的是它真实的运行记录：一边检索，一边打开原文核对数字，前后检索二十九次，抓取四十一个网页。",
+   "best": 1,
+   "best_take": 1,
+   "speed": 1.0,
+   "overrun": 0,
+   "takes": [
+    {
+     "take": 0,
+     "duration": 12.92,
+     "cer": 0.13,
+     "spoken_tag": false,
+     "hyp": "第一个上场的是研究助理，你看到的是他真实的运行记录，一边检索一边打开原文核对数字，前后检索29次，抓取41个网页。",
+     "score": 0.13
+    },
+    {
+     "take": 1,
+     "duration": 12.31,
+     "cer": 0.019,
+     "spoken_tag": false,
+     "hyp": "第一个上场的是研究助理，你看到的是他真实的运行记录，一边检索一边打开原文核对数字，前后检索二十九次，抓取四十一个网页。",
+     "score": 0.019
+    }
+   ]
+  },
+  {
+   "line": 8,
+   "at": 69.2,
+   "window": 9.0,
+   "text": "每个外部数字都要登记出处和摘句。程序会检查摘句里有没有这个数，没有，就拒收。",
+   "best": 0,
+   "best_take": 0,
+   "speed": 1.0,
+   "overrun": 0,
+   "takes": [
+    {
+     "take": 0,
+     "duration": 7.57,
+     "cer": 0.029,
+     "spoken_tag": false,
+     "hyp": "一个外部数字都要登记出处和摘句，程序会检查摘句里有没有这个数，没有就拒收。",
+     "score": 0.029
+    },
+    {
+     "take": 1,
+     "duration": 7.79,
+     "cer": 0.059,
+     "spoken_tag": false,
+     "hyp": "你一个外部数字都要登记出处和摘句，程序会检查摘句里有没有这个数，没有就拒收。",
+     "score": 0.059
+    }
+   ]
+  },
+  {
+   "line": 9,
+   "at": 78.7,
+   "window": 2.7,
+   "text": "五十一个来源，全部通过。",
+   "best": 0,
+   "best_take": 0,
+   "speed": 1.0,
+   "overrun": 0,
+   "takes": [
+    {
+     "take": 0,
+     "duration": 2.17,
+     "cer": 0.0,
+     "spoken_tag": false,
+     "hyp": "五十一个来源全部通过",
+     "score": 0.0
+    },
+    {
+     "take": 1,
+     "duration": 2.01,
+     "cer": 0.0,
+     "spoken_tag": false,
+     "hyp": "五十一个来源全部通过",
+     "score": 0.0
+    }
+   ]
+  },
+  {
+   "line": 10,
+   "at": 82.2,
+   "window": 15.8,
+   "text": "接着，分析师直接读年报。它只抄数：指标、期间、原文数字、页码，一个字符都不改，也不做任何计算。这份年报抄出九十八条。",
+   "best": 1,
+   "best_take": 1,
+   "speed": 1.0,
+   "overrun": 0,
+   "takes": [
+    {
+     "take": 0,
+     "duration": 13.22,
+     "cer": 0.042,
+     "spoken_tag": false,
+     "hyp": "接着，分析师直接读年报，他只抄数、指标、期间、原文数字、页码，一个字符都不改，也不做任何计算。这份年报超出九十八条",
+     "score": 0.042
+    },
+    {
+     "take": 1,
+     "duration": 13.27,
+     "cer": 0.021,
+     "spoken_tag": false,
+     "hyp": "接着，分析师直接读年报，他只抄数、指标、期间、原文数字、页码，一个字符都不改，也不做任何计算。这份年报抄出九十八条",
+     "score": 0.021
+    }
+   ]
+  },
+  {
+   "line": 11,
+   "at": 99.0,
+   "window": 11.2,
+   "text": "抄下来的数，程序并不相信。这段代码会回到模型写的那一页，按数字边界逐字查找。",
+   "best": 0,
+   "best_take": 0,
+   "speed": 1.0,
+   "overrun": 0,
+   "takes": [
+    {
+     "take": 0,
+     "duration": 8.13,
+     "cer": 0.0,
+     "spoken_tag": false,
+     "hyp": "抄下来的数，程序并不相信。这段代码会回到模型写的那一页，按数字边界逐字查找。",
+     "score": 0.0
+    },
+    {
+     "take": 1,
+     "duration": 7.98,
+     "cer": 0.0,
+     "spoken_tag": false,
+     "hyp": "抄下来的数，程序并不相信。这段代码会回到模型写的那一页，按数字边界逐字查找",
+     "score": 0.0
+    }
+   ]
+  },
+  {
+   "line": 12,
+   "at": 111.0,
+   "window": 6.2,
+   "text": "原样的营业收入，在第九十四页的合并利润表里找到，收下。",
+   "best": 0,
+   "best_take": 0,
+   "speed": 1.0,
+   "overrun": 0,
+   "takes": [
+    {
+     "take": 0,
+     "duration": 5.08,
+     "cer": 0.125,
+     "spoken_tag": false,
+     "hyp": "原样的营业收入在第94页的合并利润表里找到，收下。",
+     "score": 0.125
+    },
+    {
+     "take": 1,
+     "duration": 5.1,
+     "cer": 0.167,
+     "spoken_tag": false,
+     "hyp": "原样的营械收入在第94页的合并利润表里找到。收下。",
+     "score": 0.167
+    }
+   ]
+  },
+  {
+   "line": 13,
+   "at": 117.6,
+   "window": 2.8,
+   "text": "改一位，再跑一次——",
+   "best": 0,
+   "best_take": 0,
+   "speed": 1.0,
+   "overrun": 0,
+   "takes": [
+    {
+     "take": 0,
+     "duration": 1.63,
+     "cer": 0.0,
+     "spoken_tag": false,
+     "hyp": "改一位，再跑一次。",
+     "score": 0.0
+    },
+    {
+     "take": 1,
+     "duration": 2.24,
+     "cer": 0.0,
+     "spoken_tag": false,
+     "hyp": "改一位，再跑一次。",
+     "score": 0.0
+    }
+   ]
+  },
+  {
+   "line": 14,
+   "at": 120.7,
+   "window": 6.1,
+   "text": "找不到，拒收。只给整数部分，也一样拒收。",
+   "best": 0,
+   "best_take": 0,
+   "speed": 1.0,
+   "overrun": 0,
+   "takes": [
+    {
+     "take": 0,
+     "duration": 4.35,
+     "cer": 0.0,
+     "spoken_tag": false,
+     "hyp": "找不到，拒收。只给整数部分，也一样拒收。",
+     "score": 0.0
+    },
+    {
+     "take": 1,
+     "duration": 4.49,
+     "cer": 0.0,
+     "spoken_tag": false,
+     "hyp": "找不到，拒收。只给整数部分，也一样拒收。",
+     "score": 0.0
+    }
+   ]
+  },
+  {
+   "line": 15,
+   "at": 127.8,
+   "window": 15.8,
+   "text": "通过校验的数字进入一张真值表。同比由程序计算，勾稽全部通过；异常信号把事实和推论分开写。估值和纠错，都只从这张表取数。",
+   "best": 0,
+   "best_take": 0,
+   "speed": 1.0,
+   "overrun": 0,
+   "takes": [
+    {
+     "take": 0,
+     "duration": 13.81,
+     "cer": 0.019,
+     "spoken_tag": false,
+     "hyp": "通过校验的数字进入一张真值表，同比由程序计算，勾机全部通过。异常信号把事实和推论分开写，估值和纠错都只从这张表取数。",
+     "score": 0.019
+    },
+    {
+     "take": 1,
+     "duration": 13.97,
+     "cer": 0.019,
+     "spoken_tag": false,
+     "hyp": "通过校验的数字进入一张真值表，同比由程序计算，勾机全部通过。异常信号把事实和推论分开写，估值和纠错都只从这张表取数。",
+     "score": 0.019
+    }
+   ]
+  },
+  {
+   "line": 16,
+   "at": 144.8,
+   "window": 18.0,
+   "text": "行业怎么分析，我们不预设框架。分析师从年报和资料里自己推出驱动清单和产业链，再提出四个深度专题，带着问题去补充调研。",
+   "best": 0,
+   "best_take": 0,
+   "speed": 1.0,
+   "overrun": 0,
+   "takes": [
+    {
+     "take": 0,
+     "duration": 11.9,
+     "cer": 0.0,
+     "spoken_tag": false,
+     "hyp": "行业怎么分析？我们不预设框架。分析师从年报和资料里自己推出驱动清单和产业链，再提出四个深度专题，带着问题去补充调研。",
+     "score": 0.0
+    },
+    {
+     "take": 1,
+     "duration": 12.02,
+     "cer": 0.0,
+     "spoken_tag": false,
+     "hyp": "行业怎么分析？我们不预设框架。分析师从年报和资料里自己推出驱动清单和产业链，再提出四个深度专题，带着问题去补充调研。",
+     "score": 0.0
+    }
+   ]
+  },
+  {
+   "line": 17,
+   "at": 163.8,
+   "window": 20.6,
+   "text": "然后是估值。三表联动、三情景 DCF、WACC 和永续增长率的敏感性矩阵，全部由确定性 Python 计算，连同八百六十五条公式写进工作簿，每一格都能审计。模型，一个数都没算。",
+   "best": 0,
+   "best_take": 0,
+   "speed": 1.0,
+   "overrun": 0,
+   "takes": [
+    {
+     "take": 0,
+     "duration": 18.73,
+     "cer": 0.027,
+     "spoken_tag": false,
+     "hyp": "行又是估值。三表联动，三情景。DCF、WACC和永续增长率的敏感性矩阵，全部由确定性Python计算，连同八百六十五条公式写进工作簿，每一格都能审计。模型一个数都没算",
+     "score": 0.027
+    },
+    {
+     "take": 1,
+     "duration": 19.03,
+     "cer": 0.04,
+     "spoken_tag": false,
+     "hyp": "行又是估值。三表联动，三情景，DCF、WACC和永续增长率的敏感性矩阵，全部由确定性Python计算，连同八百六十五条公式写进工作簿，每一格都能审计。模型一个数都没错。",
+     "score": 0.04
+    }
+   ]
+  },
+  {
+   "line": 18,
+   "at": 185.4,
+   "window": 15.8,
+   "text": "主笔开始写稿。护栏逐个检查数字：要么来自真值表，要么带来源编号。没有出处的数字、对错期间的指标、缺引用的外部数字，都必须是零。",
+   "best": 0,
+   "best_take": 0,
+   "speed": 1.0,
+   "overrun": 0,
+   "takes": [
+    {
+     "take": 0,
+     "duration": 13.11,
+     "cer": 0.018,
+     "spoken_tag": false,
+     "hyp": "逐笔开始写稿，护栏逐个检查数字，要么来自真值表，要么带来源编号，没有出处的数字，对错期间的指标，缺引用的外部数字都必须是零。",
+     "score": 0.018
+    },
+    {
+     "take": 1,
+     "duration": 14.07,
+     "cer": 0.055,
+     "spoken_tag": false,
+     "hyp": "逐笔开始写稿，护栏逐个检查数字，要么来自真值表，要么带了原编号，没有出处的数字，对错期间的指标，缺引用的外部数字都必须是零。",
+     "score": 0.055
+    }
+   ]
+  },
+  {
+   "line": 19,
+   "at": 202.2,
+   "window": 13.4,
+   "text": "复核编辑换一个模型通读改写，只改措辞和结构。数字锁会核对：改写稿里不许出现任何新数字。",
+   "best": 0,
+   "best_take": 0,
+   "speed": 1.0,
+   "overrun": 0,
+   "takes": [
+    {
+     "take": 0,
+     "duration": 9.25,
+     "cer": 0.026,
+     "spoken_tag": false,
+     "hyp": "复合编辑，换一个模型通读改写，只改措辞和结构。数字锁会核对，改写稿里不许出现任何新数字。",
+     "score": 0.026
+    },
+    {
+     "take": 1,
+     "duration": 9.92,
+     "cer": 0.026,
+     "spoken_tag": false,
+     "hyp": "复合编辑，换一个模型通读改写，只改措辞和结构。数字锁会核对，改写稿里不许出现任何新数字。",
+     "score": 0.026
+    }
+   ]
+  },
+  {
+   "line": 20,
+   "at": 216.6,
+   "window": 9.3,
+   "text": "最后，排版设计师交出三十页、六十八个图表的研报，外加一份公式联动的估值工作簿。",
+   "best": 1,
+   "best_take": 1,
+   "speed": 1.0,
+   "overrun": 0,
+   "takes": [
+    {
+     "take": 0,
+     "duration": 8.45,
+     "cer": 0.029,
+     "spoken_tag": false,
+     "hyp": "最后，排版设计师交出三十页六十八个图表的研报，外加一份公私联动的估值工作簿。",
+     "score": 0.029
+    },
+    {
+     "take": 1,
+     "duration": 8.38,
+     "cer": 0.0,
+     "spoken_tag": false,
+     "hyp": "最后，排版设计师交出三十页六十八个图表的研报，外加一份公式联动的估值工作簿。",
+     "score": 0.0
+    }
+   ]
+  },
+  {
+   "line": 21,
+   "at": 226.2,
+   "window": 4.0,
+   "text": "十一道闸门，全部通过。",
+   "best": 0,
+   "best_take": 0,
+   "speed": 1.0,
+   "overrun": 0,
+   "takes": [
+    {
+     "take": 0,
+     "duration": 2.16,
+     "cer": 0.0,
+     "spoken_tag": false,
+     "hyp": "十一道闸门全部通过",
+     "score": 0.0
+    },
+    {
+     "take": 1,
+     "duration": 2.04,
+     "cer": 0.0,
+     "spoken_tag": false,
+     "hyp": "十一道闸门全部通过",
+     "score": 0.0
+    }
+   ]
+  },
+  {
+   "line": 22,
+   "at": 231.2,
+   "window": 18.0,
+   "text": "交付之后是盲评。评分标准对生成方保密，质检员也只看交付物。四层四十条标准，这份研报九十分；同一套标准下，三个版本从四十多分提到了九十分左右。",
+   "best": 0,
+   "best_take": 0,
+   "speed": 1.0,
+   "overrun": 0,
+   "takes": [
+    {
+     "take": 0,
+     "duration": 15.31,
+     "cer": 0.0,
+     "spoken_tag": false,
+     "hyp": "交付之后是盲评，评分标准对生成方保密，质检员也只看交付物。四层四十条标准，这份研报九十分。同一套标准下，三个版本从四十多分提到了九十分左右。",
+     "score": 0.0
+    },
+    {
+     "take": 1,
+     "duration": 14.97,
+     "cer": 0.0,
+     "spoken_tag": false,
+     "hyp": "交付之后是盲评，评分标准对生成方保密，质检员也只看交付物。四层四十条标准，这份研报九十分。同一套标准下，三个版本从四十多分提到了九十分左右。",
+     "score": 0.0
+    }
+   ]
+  },
+  {
+   "line": 23,
+   "at": 250.2,
+   "window": 13.4,
+   "text": "别人的研报，也能逐条核对，并指出错在数值、单位、期间还是口径。注入实验里，含错的断言全部查出，零误报。",
+   "best": 3,
+   "best_take": 11,
+   "speed": 1.0,
+   "overrun": 0,
+   "takes": [
+    {
+     "take": 0,
+     "duration": 15.46,
+     "cer": 1.372,
+     "spoken_tag": false,
+     "hyp": "交付之后是盲评，评分标准对生成方保密，质检员也只看交付物。四层四十条标准，这份标准从四十多分提到了九十分左右，别人的研报也能逐条核对。",
+     "score": 1.556
+    },
+    {
+     "take": 1,
+     "duration": 17.47,
+     "cer": 1.512,
+     "spoken_tag": false,
+     "hyp": "交付之后是盲评，评分标准对生成方保密，质检员也只看交付物。四层四十条标准，这份研报九十分。同一套标准下，三个版本从四十多分提到了九十分左右。别人的研报",
+     "score": 2.067
+    },
+    {
+     "take": 10,
+     "duration": 10.85,
+     "cer": 0.023,
+     "spoken_tag": false,
+     "hyp": "别人的言报也能逐条核对，并指出错在数值、单位、期间还是口径。注入实验里，含错的断言全部查出，零误报。",
+     "context": false,
+     "score": 0.023
+    },
+    {
+     "take": 11,
+     "duration": 10.61,
+     "cer": 0.0,
+     "spoken_tag": false,
+     "hyp": "别人的研报也能逐条核对，并指出错在数值、单位、期间还是口径。注入实验里，含错的断言全部查出，零误报。",
+     "context": false,
+     "score": 0.0
+    }
+   ]
+  },
+  {
+   "line": 24,
+   "at": 264.6,
+   "window": 13.4,
+   "text": "每一次文件读取、工具调用和会话事件都有记录，评审可以在终端里回看，也可以原样复现。",
+   "best": 0,
+   "best_take": 0,
+   "speed": 1.0,
+   "overrun": 0,
+   "takes": [
+    {
+     "take": 0,
+     "duration": 8.61,
+     "cer": 0.054,
+     "spoken_tag": false,
+     "hyp": "每一次文件读取、工具调用和绘画事件都有记录，评审可以在终端里回看，也可以原样复现。",
+     "score": 0.054
+    },
+    {
+     "take": 1,
+     "duration": 7.88,
+     "cer": 0.054,
+     "spoken_tag": false,
+     "hyp": "每一次文件读取、工具调用和绘画事件都有记录，评审可以在终端里回看，也可以原样复现。",
+     "score": 0.054
+    }
+   ]
+  },
+  {
+   "line": 25,
+   "at": 279.2,
+   "window": 3.6,
+   "text": "Ledger，让每个数字都对得上原文。",
+   "best": 0,
+   "best_take": 0,
+   "speed": 1.0,
+   "overrun": 0,
+   "takes": [
+    {
+     "take": 0,
+     "duration": 3.09,
+     "cer": 0.0,
+     "spoken_tag": false,
+     "hyp": "Ledger，让每个数字都对得上原文。",
+     "score": 0.0
+    },
+    {
+     "take": 1,
+     "duration": 3.04,
+     "cer": 0.0,
+     "spoken_tag": false,
+     "hyp": "Ledger，让每个数字都对得上原文。",
+     "score": 0.0
+    }
+   ]
+  },
+  {
+   "line": 26,
+   "at": 283.2,
+   "window": 4.6,
+   "text": "片中研报为系统生成的样例，不构成投资建议。",
+   "best": 0,
+   "best_take": 0,
+   "speed": 1.0,
+   "overrun": 0,
+   "takes": [
+    {
+     "take": 0,
+     "duration": 3.93,
+     "cer": 0.0,
+     "spoken_tag": false,
+     "hyp": "片中研报为系统生成的样例，不构成投资建议。",
+     "score": 0.0
+    },
+    {
+     "take": 1,
+     "duration": 4.14,
+     "cer": 0.0,
+     "spoken_tag": false,
+     "hyp": "片中研报为系统生成的样例，不构成投资建议。",
+     "score": 0.0
+    }
+   ]
+  }
+ ]
+}

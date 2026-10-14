@@ -1,0 +1,1325 @@
+{
+  "demo": false,
+  "product": "LEDGER",
+  "style": "repo",
+  "width": 1920,
+  "height": 1080,
+  "fps": 30,
+  "duration": 288,
+  "repo": "..",
+  "scope": {
+    "versions": "全量产品（截至 2026-10-13 main 分支）",
+    "platforms": [
+      "cli-tui",
+      "流水线产物（PDF 研报 / 估值工作簿）"
+    ],
+    "notCovered": [
+      "网页前端（由其他成员开发，本片未涉及）"
+    ]
+  },
+  "audioRequired": true,
+  "sfxRequired": true,
+  "typography": {
+    "mode": "bilingual",
+    "zhFont": "Noto Sans SC",
+    "enFont": "Maple Mono NF CN",
+    "zhStyle": "sans-serif"
+  },
+  "audio": {
+    "beatGrid": {
+      "bpm": 100,
+      "offset": 0
+    },
+    "ducking": {
+      "enabled": true
+    },
+    "music": {
+      "file": "assets/music.wav",
+      "gain": 0.7
+    },
+    "cues": [
+      {
+        "at": 0.9,
+        "actionId": "hook-count",
+        "file": "assets/sfx/typing-hook-count.wav",
+        "gain": 0.9,
+        "role": "sfx",
+        "kind": "typing",
+        "syncOffset": 0
+      },
+      {
+        "at": 6.998,
+        "actionId": "hook-question",
+        "file": "assets/sfx/whoosh.wav",
+        "gain": 3,
+        "role": "sfx",
+        "kind": "whoosh",
+        "syncOffset": 0.202
+      },
+      {
+        "at": 11.397,
+        "actionId": "hook-zero",
+        "file": "assets/sfx/resolve.wav",
+        "gain": 1.5,
+        "role": "sfx",
+        "kind": "resolve",
+        "syncOffset": 0.003
+      },
+      {
+        "at": 14.699,
+        "actionId": "brand-stamp",
+        "file": "assets/sfx/pop.wav",
+        "gain": 2,
+        "role": "sfx",
+        "kind": "pop",
+        "syncOffset": 0.001
+      },
+      {
+        "at": 19.797,
+        "actionId": "brand-seal",
+        "file": "assets/sfx/resolve.wav",
+        "gain": 1.5,
+        "role": "sfx",
+        "kind": "resolve",
+        "syncOffset": 0.003
+      },
+      {
+        "at": 22.199,
+        "actionId": "brand-tracks",
+        "file": "assets/sfx/toggle.wav",
+        "gain": 2.8,
+        "role": "sfx",
+        "kind": "toggle",
+        "syncOffset": 0.001
+      },
+      {
+        "at": 27.258,
+        "actionId": "rule-split",
+        "file": "assets/sfx/sweep.wav",
+        "gain": 2.6,
+        "role": "sfx",
+        "kind": "sweep",
+        "syncOffset": 0.342
+      },
+      {
+        "at": 32.997,
+        "actionId": "rule-pass",
+        "file": "assets/sfx/success.wav",
+        "gain": 1.8,
+        "role": "sfx",
+        "kind": "success",
+        "syncOffset": 0.003
+      },
+      {
+        "at": 36.598,
+        "actionId": "rule-reject",
+        "file": "assets/sfx/error.wav",
+        "gain": 1.7,
+        "role": "sfx",
+        "kind": "error",
+        "syncOffset": 0.002
+      },
+      {
+        "at": 41.4,
+        "actionId": "cmd-type",
+        "file": "assets/sfx/typing-cmd-type.wav",
+        "gain": 0.9,
+        "role": "sfx",
+        "kind": "typing",
+        "syncOffset": 0
+      },
+      {
+        "at": 44.999,
+        "actionId": "cmd-run",
+        "file": "assets/sfx/click.wav",
+        "gain": 3,
+        "role": "sfx",
+        "kind": "click",
+        "syncOffset": 0.001
+      },
+      {
+        "at": 46.799,
+        "actionId": "cmd-sessions",
+        "file": "assets/sfx/pop.wav",
+        "gain": 2,
+        "role": "sfx",
+        "kind": "pop",
+        "syncOffset": 0.001
+      },
+      {
+        "at": 50.399,
+        "actionId": "cmd-gates",
+        "file": "assets/sfx/toggle.wav",
+        "gain": 2.8,
+        "role": "sfx",
+        "kind": "toggle",
+        "syncOffset": 0.001
+      },
+      {
+        "at": 54.599,
+        "actionId": "search-first",
+        "file": "assets/sfx/click.wav",
+        "gain": 3,
+        "role": "sfx",
+        "kind": "click",
+        "syncOffset": 0.001
+      },
+      {
+        "at": 55.799,
+        "actionId": "search-stream",
+        "file": "assets/sfx/typing-search-stream.wav",
+        "gain": 0.9,
+        "role": "sfx",
+        "kind": "typing",
+        "syncOffset": 0.001
+      },
+      {
+        "at": 68.999,
+        "actionId": "search-card",
+        "file": "assets/sfx/pop.wav",
+        "gain": 2,
+        "role": "sfx",
+        "kind": "pop",
+        "syncOffset": 0.001
+      },
+      {
+        "at": 71.997,
+        "actionId": "search-verify",
+        "file": "assets/sfx/success.wav",
+        "gain": 1.8,
+        "role": "sfx",
+        "kind": "success",
+        "syncOffset": 0.003
+      },
+      {
+        "at": 78.598,
+        "actionId": "gate-1",
+        "file": "assets/sfx/ding-dong.wav",
+        "gain": 1.5,
+        "role": "sfx",
+        "kind": "ding-dong",
+        "syncOffset": 0.002
+      },
+      {
+        "at": 83.658,
+        "actionId": "read-scan",
+        "file": "assets/sfx/sweep.wav",
+        "gain": 2.6,
+        "role": "sfx",
+        "kind": "sweep",
+        "syncOffset": 0.342
+      },
+      {
+        "at": 86.4,
+        "actionId": "read-type",
+        "file": "assets/sfx/typing-read-type.wav",
+        "gain": 0.9,
+        "role": "sfx",
+        "kind": "typing",
+        "syncOffset": 0
+      },
+      {
+        "at": 94.799,
+        "actionId": "read-count",
+        "file": "assets/sfx/pop.wav",
+        "gain": 2,
+        "role": "sfx",
+        "kind": "pop",
+        "syncOffset": 0.001
+      },
+      {
+        "at": 99,
+        "actionId": "code-type",
+        "file": "assets/sfx/typing-code-type.wav",
+        "gain": 0.9,
+        "role": "sfx",
+        "kind": "typing",
+        "syncOffset": 0
+      },
+      {
+        "at": 110.999,
+        "actionId": "code-run",
+        "file": "assets/sfx/click.wav",
+        "gain": 3,
+        "role": "sfx",
+        "kind": "click",
+        "syncOffset": 0.001
+      },
+      {
+        "at": 114.597,
+        "actionId": "code-hit",
+        "file": "assets/sfx/success.wav",
+        "gain": 1.8,
+        "role": "sfx",
+        "kind": "success",
+        "syncOffset": 0.003
+      },
+      {
+        "at": 117.599,
+        "actionId": "code-tamper",
+        "file": "assets/sfx/click.wav",
+        "gain": 3,
+        "role": "sfx",
+        "kind": "click",
+        "syncOffset": 0.001
+      },
+      {
+        "at": 120.598,
+        "actionId": "code-reject",
+        "file": "assets/sfx/error.wav",
+        "gain": 1.7,
+        "role": "sfx",
+        "kind": "error",
+        "syncOffset": 0.002
+      },
+      {
+        "at": 128.1,
+        "actionId": "truth-rows",
+        "file": "assets/sfx/typing-truth-rows.wav",
+        "gain": 0.9,
+        "role": "sfx",
+        "kind": "typing",
+        "syncOffset": 0
+      },
+      {
+        "at": 133.199,
+        "actionId": "truth-yoy",
+        "file": "assets/sfx/toggle.wav",
+        "gain": 2.8,
+        "role": "sfx",
+        "kind": "toggle",
+        "syncOffset": 0.001
+      },
+      {
+        "at": 136.799,
+        "actionId": "truth-signal",
+        "file": "assets/sfx/pop.wav",
+        "gain": 2,
+        "role": "sfx",
+        "kind": "pop",
+        "syncOffset": 0.001
+      },
+      {
+        "at": 140.398,
+        "actionId": "gate-2",
+        "file": "assets/sfx/ding-dong.wav",
+        "gain": 1.5,
+        "role": "sfx",
+        "kind": "ding-dong",
+        "syncOffset": 0.002
+      },
+      {
+        "at": 144.858,
+        "actionId": "depth-chain",
+        "file": "assets/sfx/sweep.wav",
+        "gain": 2.6,
+        "role": "sfx",
+        "kind": "sweep",
+        "syncOffset": 0.342
+      },
+      {
+        "at": 149.399,
+        "actionId": "gate-3",
+        "file": "assets/sfx/toggle.wav",
+        "gain": 2.8,
+        "role": "sfx",
+        "kind": "toggle",
+        "syncOffset": 0.001
+      },
+      {
+        "at": 150.599,
+        "actionId": "depth-topics",
+        "file": "assets/sfx/pop.wav",
+        "gain": 2,
+        "role": "sfx",
+        "kind": "pop",
+        "syncOffset": 0.001
+      },
+      {
+        "at": 157.799,
+        "actionId": "gate-4",
+        "file": "assets/sfx/toggle.wav",
+        "gain": 2.8,
+        "role": "sfx",
+        "kind": "toggle",
+        "syncOffset": 0.001
+      },
+      {
+        "at": 164.399,
+        "actionId": "gate-5",
+        "file": "assets/sfx/toggle.wav",
+        "gain": 2.8,
+        "role": "sfx",
+        "kind": "toggle",
+        "syncOffset": 0.001
+      },
+      {
+        "at": 164.999,
+        "actionId": "gate-6",
+        "file": "assets/sfx/toggle.wav",
+        "gain": 2.8,
+        "role": "sfx",
+        "kind": "toggle",
+        "syncOffset": 0.001
+      },
+      {
+        "at": 166.2,
+        "actionId": "compute-matrix",
+        "file": "assets/sfx/typing-compute-matrix.wav",
+        "gain": 0.9,
+        "role": "sfx",
+        "kind": "typing",
+        "syncOffset": 0
+      },
+      {
+        "at": 171.599,
+        "actionId": "compute-bars",
+        "file": "assets/sfx/pop.wav",
+        "gain": 2,
+        "role": "sfx",
+        "kind": "pop",
+        "syncOffset": 0.001
+      },
+      {
+        "at": 175.458,
+        "actionId": "compute-formula",
+        "file": "assets/sfx/sweep.wav",
+        "gain": 2.6,
+        "role": "sfx",
+        "kind": "sweep",
+        "syncOffset": 0.342
+      },
+      {
+        "at": 181.198,
+        "actionId": "gate-7",
+        "file": "assets/sfx/ding-dong.wav",
+        "gain": 1.5,
+        "role": "sfx",
+        "kind": "ding-dong",
+        "syncOffset": 0.002
+      },
+      {
+        "at": 185.4,
+        "actionId": "write-type",
+        "file": "assets/sfx/typing-write-type.wav",
+        "gain": 0.9,
+        "role": "sfx",
+        "kind": "typing",
+        "syncOffset": 0
+      },
+      {
+        "at": 193.197,
+        "actionId": "write-guard",
+        "file": "assets/sfx/success.wav",
+        "gain": 1.8,
+        "role": "sfx",
+        "kind": "success",
+        "syncOffset": 0.003
+      },
+      {
+        "at": 197.998,
+        "actionId": "gate-8",
+        "file": "assets/sfx/ding-dong.wav",
+        "gain": 1.5,
+        "role": "sfx",
+        "kind": "ding-dong",
+        "syncOffset": 0.002
+      },
+      {
+        "at": 202.458,
+        "actionId": "review-rewrite",
+        "file": "assets/sfx/sweep.wav",
+        "gain": 2.6,
+        "role": "sfx",
+        "kind": "sweep",
+        "syncOffset": 0.342
+      },
+      {
+        "at": 205.799,
+        "actionId": "review-lock",
+        "file": "assets/sfx/toggle.wav",
+        "gain": 2.8,
+        "role": "sfx",
+        "kind": "toggle",
+        "syncOffset": 0.001
+      },
+      {
+        "at": 212.998,
+        "actionId": "gate-9",
+        "file": "assets/sfx/ding-dong.wav",
+        "gain": 1.5,
+        "role": "sfx",
+        "kind": "ding-dong",
+        "syncOffset": 0.002
+      },
+      {
+        "at": 215.958,
+        "actionId": "layout-pages",
+        "file": "assets/sfx/sweep.wav",
+        "gain": 2.6,
+        "role": "sfx",
+        "kind": "sweep",
+        "syncOffset": 0.342
+      },
+      {
+        "at": 221.798,
+        "actionId": "layout-cover",
+        "file": "assets/sfx/whoosh.wav",
+        "gain": 3,
+        "role": "sfx",
+        "kind": "whoosh",
+        "syncOffset": 0.202
+      },
+      {
+        "at": 224.999,
+        "actionId": "gate-10",
+        "file": "assets/sfx/toggle.wav",
+        "gain": 2.8,
+        "role": "sfx",
+        "kind": "toggle",
+        "syncOffset": 0.001
+      },
+      {
+        "at": 226.197,
+        "actionId": "gate-11",
+        "file": "assets/sfx/success.wav",
+        "gain": 1.8,
+        "role": "sfx",
+        "kind": "success",
+        "syncOffset": 0.003
+      },
+      {
+        "at": 231.398,
+        "actionId": "qc-room",
+        "file": "assets/sfx/whoosh.wav",
+        "gain": 3,
+        "role": "sfx",
+        "kind": "whoosh",
+        "syncOffset": 0.202
+      },
+      {
+        "at": 234.599,
+        "actionId": "qc-layers",
+        "file": "assets/sfx/toggle.wav",
+        "gain": 2.8,
+        "role": "sfx",
+        "kind": "toggle",
+        "syncOffset": 0.001
+      },
+      {
+        "at": 238.797,
+        "actionId": "qc-total",
+        "file": "assets/sfx/success.wav",
+        "gain": 1.8,
+        "role": "sfx",
+        "kind": "success",
+        "syncOffset": 0.003
+      },
+      {
+        "at": 241.799,
+        "actionId": "qc-versions",
+        "file": "assets/sfx/pop.wav",
+        "gain": 2,
+        "role": "sfx",
+        "kind": "pop",
+        "syncOffset": 0.001
+      },
+      {
+        "at": 250.8,
+        "actionId": "check-underline",
+        "file": "assets/sfx/typing-check-underline.wav",
+        "gain": 0.9,
+        "role": "sfx",
+        "kind": "typing",
+        "syncOffset": 0
+      },
+      {
+        "at": 254.398,
+        "actionId": "check-verdict",
+        "file": "assets/sfx/error.wav",
+        "gain": 1.7,
+        "role": "sfx",
+        "kind": "error",
+        "syncOffset": 0.002
+      },
+      {
+        "at": 259.199,
+        "actionId": "check-stats",
+        "file": "assets/sfx/pop.wav",
+        "gain": 2,
+        "role": "sfx",
+        "kind": "pop",
+        "syncOffset": 0.001
+      },
+      {
+        "at": 264.398,
+        "actionId": "trace-open",
+        "file": "assets/sfx/whoosh.wav",
+        "gain": 3,
+        "role": "sfx",
+        "kind": "whoosh",
+        "syncOffset": 0.202
+      },
+      {
+        "at": 269.399,
+        "actionId": "trace-tab",
+        "file": "assets/sfx/click.wav",
+        "gain": 3,
+        "role": "sfx",
+        "kind": "click",
+        "syncOffset": 0.001
+      },
+      {
+        "at": 273.599,
+        "actionId": "trace-tab2",
+        "file": "assets/sfx/click-alt.wav",
+        "gain": 3.2,
+        "role": "sfx",
+        "kind": "click-alt",
+        "syncOffset": 0.001
+      },
+      {
+        "at": 278.997,
+        "actionId": "end-mark",
+        "file": "assets/sfx/resolve.wav",
+        "gain": 1.5,
+        "role": "sfx",
+        "kind": "resolve",
+        "syncOffset": 0.003
+      },
+      {
+        "at": 281.999,
+        "actionId": "end-seal",
+        "file": "assets/sfx/pop.wav",
+        "gain": 2,
+        "role": "sfx",
+        "kind": "pop",
+        "syncOffset": 0.001
+      }
+    ]
+  },
+  "shots": [
+    {
+      "id": "hook",
+      "start": 0,
+      "end": 14.4,
+      "bars": 6,
+      "tone": "dark",
+      "type": "title",
+      "headlineEn": "Which number is made up?",
+      "headline": "一份研报，650 个数字",
+      "description": "模型写出来的研报，哪一个数字是它自己编的？",
+      "plainExplanation": "系统生成的中际旭创深度研报正文约 2 万字，数字锁统计到 650 个带单位的数字；读者没法逐个分辨真假。",
+      "descriptionAt": 0.8,
+      "claim": false,
+      "source": [],
+      "component": null,
+      "actions": [
+        {
+          "id": "hook-count",
+          "at": 0.9,
+          "action": "数字计数开始滚动",
+          "soundRequired": true
+        },
+        {
+          "id": "hook-question",
+          "at": 7.2,
+          "action": "问题大字出现",
+          "soundRequired": true
+        },
+        {
+          "id": "hook-zero",
+          "at": 11.4,
+          "action": "答案“零”落下",
+          "soundRequired": true
+        }
+      ]
+    },
+    {
+      "id": "brand",
+      "start": 14.4,
+      "end": 26.4,
+      "bars": 5,
+      "tone": "paper",
+      "type": "title",
+      "headlineEn": "LEDGER",
+      "headline": "金融投研多 Agent 系统",
+      "description": "模型负责读和写，程序负责算和查，每个数字都能追到原文页码。",
+      "plainExplanation": "LEDGER 是多 Agent 投研系统：模型会话只读、抄、写、判断，全部计算和校验由确定性 Python 完成，抽取结果带页码出处。",
+      "descriptionAt": 0.8,
+      "claim": true,
+      "source": [
+        "repo:CLAUDE.md",
+        "repo:docs/architecture.md"
+      ],
+      "component": null,
+      "actions": [
+        {
+          "id": "brand-stamp",
+          "at": 0.3,
+          "action": "字标逐字落下",
+          "soundRequired": true
+        },
+        {
+          "id": "brand-seal",
+          "at": 5.4,
+          "action": "印章盖下",
+          "soundRequired": true
+        },
+        {
+          "id": "brand-tracks",
+          "at": 7.8,
+          "action": "六个选题列出",
+          "soundRequired": true
+        }
+      ]
+    },
+    {
+      "id": "rule",
+      "start": 26.4,
+      "end": 40.8,
+      "bars": 6,
+      "tone": "split",
+      "type": "title",
+      "headlineEn": "Models read. Code computes.",
+      "headline": "模型不做算术",
+      "description": "模型抄下的数要过校验才能入账；连“约三倍”这样的约数，也不许心算。",
+      "plainExplanation": "设计规范第 1 条：LLM 只负责读、抄、写、判断，所有数值计算由确定性 Python 完成，连约数也不许心算。",
+      "descriptionAt": 0.8,
+      "claim": true,
+      "source": [
+        "repo:CLAUDE.md"
+      ],
+      "component": null,
+      "actions": [
+        {
+          "id": "rule-split",
+          "at": 1.2,
+          "action": "明暗两栏展开",
+          "soundRequired": true
+        },
+        {
+          "id": "rule-pass",
+          "at": 6.6,
+          "action": "原文数字过闸入账",
+          "soundRequired": true
+        },
+        {
+          "id": "rule-reject",
+          "at": 10.2,
+          "action": "心算约数被挡回",
+          "soundRequired": true
+        }
+      ]
+    },
+    {
+      "id": "cmd",
+      "start": 40.8,
+      "end": 52.8,
+      "bars": 5,
+      "tone": "dark",
+      "type": "workspace",
+      "headlineEn": "One command, five sessions",
+      "headline": "一条命令，起五个会话",
+      "description": "编排器在仓库之外搭好隔离工作区，依次启动五个无头 Claude Code 会话，彼此只靠文件交接。",
+      "plainExplanation": "report_pipeline build 在仓库目录树之外建工作区，run 依次启动研究助理、分析师、主笔、复核编辑、排版设计师五个无头会话。",
+      "descriptionAt": 0.8,
+      "claim": true,
+      "source": [
+        "repo:finagent/report_pipeline.py"
+      ],
+      "component": "repo:finagent/report_pipeline.py",
+      "actions": [
+        {
+          "id": "cmd-type",
+          "at": 0.6,
+          "action": "键入 build 命令",
+          "soundRequired": true
+        },
+        {
+          "id": "cmd-run",
+          "at": 4.2,
+          "action": "回车运行",
+          "soundRequired": true
+        },
+        {
+          "id": "cmd-sessions",
+          "at": 6,
+          "action": "五个会话依次列出",
+          "soundRequired": true
+        },
+        {
+          "id": "cmd-gates",
+          "at": 9.6,
+          "action": "11 道闸门刻度出现",
+          "soundRequired": true
+        }
+      ]
+    },
+    {
+      "id": "search",
+      "start": 52.8,
+      "end": 81.6,
+      "bars": 12,
+      "tone": "dark",
+      "type": "workspace",
+      "headlineEn": "Agent runtime: search",
+      "headline": "研究助理先上网搜集资料",
+      "description": "29 次检索、41 次抓取，登记 51 个来源；摘句里找不到所登记的数字，程序就拒收。",
+      "plainExplanation": "研究助理会话（Opus）真实运行记录：29 次 WebSearch、41 次 WebFetch、506 秒；sources.json 登记 51 个来源 184 条带数字摘句，verify-sources 逐条核对摘句包含该数字。",
+      "descriptionAt": 0.8,
+      "claim": true,
+      "source": [
+        "file:evidence/session-research.md",
+        "repo:finagent/output/sources.py"
+      ],
+      "component": "file:src/shots/search.jsx",
+      "actions": [
+        {
+          "id": "search-first",
+          "at": 1.8,
+          "action": "第一条检索发出",
+          "soundRequired": true
+        },
+        {
+          "id": "search-stream",
+          "at": 3,
+          "action": "事件流滚动",
+          "soundRequired": true
+        },
+        {
+          "id": "search-card",
+          "at": 16.2,
+          "action": "来源卡片登记",
+          "soundRequired": true
+        },
+        {
+          "id": "search-verify",
+          "at": 19.2,
+          "action": "摘句数字核对通过",
+          "soundRequired": true
+        },
+        {
+          "id": "gate-1",
+          "at": 25.8,
+          "action": "闸门 1 资料搜集盖章",
+          "soundRequired": true
+        }
+      ]
+    },
+    {
+      "id": "read",
+      "start": 81.6,
+      "end": 98.4,
+      "bars": 7,
+      "tone": "dark",
+      "type": "detail",
+      "headlineEn": "Read and transcribe",
+      "headline": "分析师读年报，只抄数，不计算",
+      "description": "每条记录写清指标、期间、原文数字和页码，一个字符都不改。",
+      "plainExplanation": "分析师会话直接读年报 PDF，把数字原样抄进 facts.json，带 metric_id、period、raw_value、page；本次抽取 98 条。",
+      "descriptionAt": 0.8,
+      "claim": true,
+      "source": [
+        "repo:finagent/tasks/financials/external.py",
+        "file:evidence/feature-evidence.md"
+      ],
+      "component": "file:src/shots/read.jsx",
+      "actions": [
+        {
+          "id": "read-scan",
+          "at": 2.4,
+          "action": "扫描线停在营业收入一行",
+          "soundRequired": true
+        },
+        {
+          "id": "read-type",
+          "at": 4.8,
+          "action": "写入 facts.json",
+          "soundRequired": true
+        },
+        {
+          "id": "read-count",
+          "at": 13.2,
+          "action": "98 条事实计数",
+          "soundRequired": true
+        }
+      ]
+    },
+    {
+      "id": "code",
+      "start": 98.4,
+      "end": 127.2,
+      "bars": 12,
+      "tone": "dark",
+      "type": "detail",
+      "headlineEn": "Verify, do not trust",
+      "headline": "抄下的每个数，回原文逐字核对",
+      "description": "程序到模型写的那一页，按数字边界查找；找不到就拒收，改一位也不行。",
+      "plainExplanation": "external.find_evidence 在所写页码的原文块里按数字边界正则查找模型抄的数字；真实数字命中 c0351 表格块，改动一位或只给整数部分都返回 None 并拒收。",
+      "descriptionAt": 0.8,
+      "claim": true,
+      "source": [
+        "repo:finagent/tasks/financials/external.py:56",
+        "file:evidence/feature-evidence.md"
+      ],
+      "component": "repo:finagent/tasks/financials/external.py",
+      "actions": [
+        {
+          "id": "code-type",
+          "at": 0.6,
+          "action": "源码逐行出现",
+          "soundRequired": true
+        },
+        {
+          "id": "code-run",
+          "at": 12.6,
+          "action": "对真实数字运行",
+          "soundRequired": true
+        },
+        {
+          "id": "code-hit",
+          "at": 16.2,
+          "action": "第 94 页命中",
+          "soundRequired": true
+        },
+        {
+          "id": "code-tamper",
+          "at": 19.2,
+          "action": "改动一位再跑",
+          "soundRequired": true
+        },
+        {
+          "id": "code-reject",
+          "at": 22.2,
+          "action": "未找到，拒收",
+          "soundRequired": true
+        }
+      ]
+    },
+    {
+      "id": "truth",
+      "start": 127.2,
+      "end": 144,
+      "bars": 7,
+      "tone": "paper",
+      "type": "detail",
+      "headlineEn": "One truth table",
+      "headline": "一张真值表，下游只认它",
+      "description": "估值和纠错都从这张表取数；同比由程序计算，异常信号把事实和推论分开写。",
+      "plainExplanation": "analyze() 产出的 truth_table 是估值和纠错的唯一数据来源；本次 98 条事实拒收 0、冲突 0，8 项勾稽通过，同比由程序计算。",
+      "descriptionAt": 0.8,
+      "claim": true,
+      "source": [
+        "repo:finagent/tasks/financials/analyze.py",
+        "file:evidence/feature-evidence.md"
+      ],
+      "component": "file:src/shots/truth.jsx",
+      "actions": [
+        {
+          "id": "truth-rows",
+          "at": 0.9,
+          "action": "账页逐行写入",
+          "soundRequired": true
+        },
+        {
+          "id": "truth-yoy",
+          "at": 6,
+          "action": "同比列由程序算出",
+          "soundRequired": true
+        },
+        {
+          "id": "truth-signal",
+          "at": 9.6,
+          "action": "异常信号：事实与推论分开",
+          "soundRequired": true
+        },
+        {
+          "id": "gate-2",
+          "at": 13.2,
+          "action": "闸门 2 财务抽取盖章",
+          "soundRequired": true
+        }
+      ]
+    },
+    {
+      "id": "depth",
+      "start": 144,
+      "end": 163.2,
+      "bars": 8,
+      "tone": "dark",
+      "type": "detail",
+      "headlineEn": "Drivers and supply chain",
+      "headline": "产业链和深度专题，由模型从资料里推出来",
+      "description": "系统不预设行业框架：驱动清单、产业链图和四个专题，都由分析师会话从年报与资料包推导。",
+      "plainExplanation": "skill 只给方法与约束；本次分析框架列出 15 个驱动、4 个深度专题，研报里的产业链图由 reportkit 的 flow 原语生成，专题调研补充 16 个问题、共 51 个来源。",
+      "descriptionAt": 0.8,
+      "claim": true,
+      "source": [
+        "repo:CLAUDE.md",
+        "file:evidence/feature-evidence.md"
+      ],
+      "component": "file:src/shots/depth.jsx",
+      "actions": [
+        {
+          "id": "depth-chain",
+          "at": 1.2,
+          "action": "产业链图从上游画到下游",
+          "soundRequired": true
+        },
+        {
+          "id": "gate-3",
+          "at": 5.4,
+          "action": "闸门 3 分析框架盖章",
+          "soundRequired": true
+        },
+        {
+          "id": "depth-topics",
+          "at": 6.6,
+          "action": "四个深度专题列出",
+          "soundRequired": true
+        },
+        {
+          "id": "gate-4",
+          "at": 13.8,
+          "action": "闸门 4 深度调研盖章",
+          "soundRequired": true
+        }
+      ]
+    },
+    {
+      "id": "compute",
+      "start": 163.2,
+      "end": 184.8,
+      "bars": 9,
+      "tone": "paper",
+      "type": "detail",
+      "headlineEn": "Code does the math",
+      "headline": "所有计算，交给确定性 Python",
+      "description": "三表联动、三情景 DCF 和敏感性，连同 865 条公式写进工作簿，可以逐格审计。",
+      "plainExplanation": "估值引擎不调用模型：分部预测、三表联动、FCFF DCF 三情景与敏感性全部由 Python 计算，model.xlsx 15 张表共 865 条公式。",
+      "descriptionAt": 0.8,
+      "claim": true,
+      "source": [
+        "repo:finagent/tasks/valuation/dcf.py",
+        "repo:finagent/tasks/valuation/ts_engine.py",
+        "file:evidence/feature-evidence.md"
+      ],
+      "component": "file:src/shots/compute.jsx",
+      "actions": [
+        {
+          "id": "gate-5",
+          "at": 1.2,
+          "action": "闸门 5 经营数据盖章",
+          "soundRequired": true
+        },
+        {
+          "id": "gate-6",
+          "at": 1.8,
+          "action": "闸门 6 估值假设盖章",
+          "soundRequired": true
+        },
+        {
+          "id": "compute-matrix",
+          "at": 3,
+          "action": "敏感性矩阵逐格算出",
+          "soundRequired": true
+        },
+        {
+          "id": "compute-bars",
+          "at": 8.4,
+          "action": "三情景每股价值",
+          "soundRequired": true
+        },
+        {
+          "id": "compute-formula",
+          "at": 12.6,
+          "action": "工作簿公式流",
+          "soundRequired": true
+        },
+        {
+          "id": "gate-7",
+          "at": 18,
+          "action": "闸门 7 估值运行盖章",
+          "soundRequired": true
+        }
+      ]
+    },
+    {
+      "id": "write",
+      "start": 184.8,
+      "end": 201.6,
+      "bars": 7,
+      "tone": "dark",
+      "type": "detail",
+      "headlineEn": "Every number cited",
+      "headline": "主笔写稿，护栏逐个数字查出处",
+      "description": "文稿里的数字，要么来自真值表，要么带来源编号；查不到出处就过不了闸门。",
+      "plainExplanation": "主笔会话写 narrative.md，guard 核对出处、指标绑定和外部数字的 [S编号]；本次无出处数字 0、指标期间不符 0、外部数字缺引用 0。",
+      "descriptionAt": 0.8,
+      "claim": true,
+      "source": [
+        "repo:finagent/output/guard.py",
+        "file:evidence/feature-evidence.md"
+      ],
+      "component": "file:src/shots/write.jsx",
+      "actions": [
+        {
+          "id": "write-type",
+          "at": 0.6,
+          "action": "文稿流式写出",
+          "soundRequired": true
+        },
+        {
+          "id": "write-guard",
+          "at": 8.4,
+          "action": "护栏逐项归零",
+          "soundRequired": true
+        },
+        {
+          "id": "gate-8",
+          "at": 13.2,
+          "action": "闸门 8 文稿盖章",
+          "soundRequired": true
+        }
+      ]
+    },
+    {
+      "id": "review",
+      "start": 201.6,
+      "end": 216,
+      "bars": 6,
+      "tone": "dark",
+      "type": "detail",
+      "headlineEn": "Numbers locked",
+      "headline": "复核编辑只改措辞，数字被锁住",
+      "description": "改写稿里出现任何新数字或新来源编号，数字锁都会拒绝。",
+      "plainExplanation": "复核编辑会话（Sonnet）只改措辞与结构；numlock 要求改写稿里每个“数字+单位”都原样出现在改写前文稿中，本次 665 → 650，新增 0。",
+      "descriptionAt": 0.8,
+      "claim": true,
+      "source": [
+        "repo:finagent/output/numlock.py:29",
+        "file:evidence/feature-evidence.md"
+      ],
+      "component": "repo:finagent/output/numlock.py",
+      "actions": [
+        {
+          "id": "review-rewrite",
+          "at": 1.2,
+          "action": "句子被改写",
+          "soundRequired": true
+        },
+        {
+          "id": "review-lock",
+          "at": 4.2,
+          "action": "数字逐个上锁",
+          "soundRequired": true
+        },
+        {
+          "id": "gate-9",
+          "at": 11.4,
+          "action": "闸门 9 复核改写盖章",
+          "soundRequired": true
+        }
+      ]
+    },
+    {
+      "id": "layout",
+      "start": 216,
+      "end": 230.4,
+      "bars": 6,
+      "tone": "dark",
+      "type": "workspace",
+      "headlineEn": "Typeset and deliver",
+      "headline": "排版设计师交出 30 页研报",
+      "description": "68 个图表、带目录和免责声明的 PDF，加一份公式联动的估值工作簿。",
+      "plainExplanation": "排版会话用 reportkit 生成 30 页、68 个图表的 PDF（中际旭创1003.pdf）并写交付说明；11 道闸门全部通过。",
+      "descriptionAt": 0.8,
+      "claim": true,
+      "source": [
+        "file:evidence/feature-evidence.md"
+      ],
+      "component": "file:src/shots/layout.jsx",
+      "actions": [
+        {
+          "id": "layout-pages",
+          "at": 0.3,
+          "action": "30 页铺开",
+          "soundRequired": true
+        },
+        {
+          "id": "layout-cover",
+          "at": 6,
+          "action": "首页抬起",
+          "soundRequired": true
+        },
+        {
+          "id": "gate-10",
+          "at": 9,
+          "action": "闸门 10 排版盖章",
+          "soundRequired": true
+        },
+        {
+          "id": "gate-11",
+          "at": 10.2,
+          "action": "闸门 11 交付说明盖章，全部通过",
+          "soundRequired": true
+        }
+      ]
+    },
+    {
+      "id": "qc",
+      "start": 230.4,
+      "end": 249.6,
+      "bars": 8,
+      "tone": "dark",
+      "type": "detail",
+      "headlineEn": "Blind review",
+      "headline": "盲评质检：评分标准对生成方不可见",
+      "description": "质检员只拿到交付物，按四层 40 条标准打分；问题单只带理由与证据，回到对应会话返工。",
+      "plainExplanation": "质检在仓库与工作区之外评审：L0 硬闸门与 L1 数据闭合由程序判，L2/L3 由盲评判，程序计分；三个版本同一标准 46～49 → 74/67 → 90/88，重复盲评逐条一致 86%～91%。",
+      "descriptionAt": 0.8,
+      "claim": true,
+      "source": [
+        "repo:finagent/evaluation/rubric.py",
+        "repo:eval/results/v2_中际旭创/score.json",
+        "repo:eval/calibration/summary.json"
+      ],
+      "component": "file:src/shots/qc.jsx",
+      "actions": [
+        {
+          "id": "qc-room",
+          "at": 1.2,
+          "action": "交付物进入评审间",
+          "soundRequired": true
+        },
+        {
+          "id": "qc-layers",
+          "at": 4.2,
+          "action": "四层评分逐层出分",
+          "soundRequired": true
+        },
+        {
+          "id": "qc-total",
+          "at": 8.4,
+          "action": "总分 90",
+          "soundRequired": true
+        },
+        {
+          "id": "qc-versions",
+          "at": 11.4,
+          "action": "三个版本的分数",
+          "soundRequired": true
+        }
+      ]
+    },
+    {
+      "id": "check",
+      "start": 249.6,
+      "end": 264,
+      "bars": 6,
+      "tone": "paper",
+      "type": "detail",
+      "headlineEn": "Check their numbers too",
+      "headline": "别人的研报，也逐条核对",
+      "description": "抽出研报里的数字断言，与财报真值比对，判断错在数值、单位、期间还是口径。",
+      "plainExplanation": "纠错核查把研报数字断言与真值表逐条核对并判断错误类型；注入实验 1,334 条断言、754 条含错，按展示精度容差召回 100%、误报 0。",
+      "descriptionAt": 0.8,
+      "claim": true,
+      "source": [
+        "repo:finagent/tasks/report_check/verify.py",
+        "repo:paper/techreport/sections/13_experiments.tex"
+      ],
+      "component": "file:src/shots/check.jsx",
+      "actions": [
+        {
+          "id": "check-underline",
+          "at": 1.2,
+          "action": "断言逐个划出",
+          "soundRequired": true
+        },
+        {
+          "id": "check-verdict",
+          "at": 4.8,
+          "action": "判定结论弹出",
+          "soundRequired": true
+        },
+        {
+          "id": "check-stats",
+          "at": 9.6,
+          "action": "注入实验结果",
+          "soundRequired": true
+        }
+      ]
+    },
+    {
+      "id": "trace",
+      "start": 264,
+      "end": 278.4,
+      "bars": 6,
+      "tone": "dark",
+      "type": "workspace",
+      "headlineEn": "Trace everything",
+      "headline": "全程留痕，在终端里随时回看",
+      "description": "文件哈希、工具调用、会话事件流都有记录，评审可以原样复现。",
+      "plainExplanation": "终端界面 finagent tui 读取工作区产物，展示闸门、真值表、估值、质检、追溯与 Agent 会话；本片画面为该界面导出的原始 SVG。",
+      "descriptionAt": 0.8,
+      "claim": true,
+      "source": [
+        "repo:finagent_tui/app.py",
+        "repo:finagent/core/tracing.py"
+      ],
+      "component": "repo:finagent_tui/app.py",
+      "actions": [
+        {
+          "id": "trace-open",
+          "at": 0.6,
+          "action": "终端界面打开",
+          "soundRequired": true
+        },
+        {
+          "id": "trace-tab",
+          "at": 5.4,
+          "action": "从真值表切到追溯页",
+          "soundRequired": true
+        },
+        {
+          "id": "trace-tab2",
+          "at": 9.6,
+          "action": "切到 Agent 页",
+          "soundRequired": true
+        }
+      ]
+    },
+    {
+      "id": "end",
+      "start": 278.4,
+      "end": 288,
+      "bars": 4,
+      "tone": "paper",
+      "type": "end",
+      "headlineEn": "LEDGER",
+      "headline": "每个数字，都对得上原文",
+      "description": "研报内容用于展示系统能力，不构成投资建议。",
+      "plainExplanation": "片尾落版：系统名、一句收束和免责声明。",
+      "descriptionAt": 0.8,
+      "claim": false,
+      "source": [],
+      "component": null,
+      "actions": [
+        {
+          "id": "end-mark",
+          "at": 0.6,
+          "action": "字标落版",
+          "soundRequired": true
+        },
+        {
+          "id": "end-seal",
+          "at": 3.6,
+          "action": "印章盖下",
+          "soundRequired": true
+        }
+      ]
+    }
+  ]
+}
