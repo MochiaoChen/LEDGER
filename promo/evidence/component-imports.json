@@ -232,7 +232,7 @@
       "format": "esm"
     },
     "src/data/data.json": {
-      "bytes": 133515,
+      "bytes": 133593,
       "imports": []
     },
     "src/kit/time.js": {
@@ -763,7 +763,7 @@
       "format": "esm"
     },
     "src/shots/layout.jsx": {
-      "bytes": 2836,
+      "bytes": 2924,
       "imports": [
         {
           "path": "node_modules/react/index.js",
@@ -871,7 +871,7 @@
       "format": "esm"
     },
     "src/data/tui.json": {
-      "bytes": 761237,
+      "bytes": 758164,
       "imports": []
     },
     "src/shots/trace.jsx": {
@@ -1246,7 +1246,7 @@
           "bytesInOutput": 3229
         },
         "src/data/data.json": {
-          "bytesInOutput": 148369
+          "bytesInOutput": 148525
         },
         "src/kit/time.js": {
           "bytesInOutput": 1489
@@ -1291,7 +1291,7 @@
           "bytesInOutput": 5463
         },
         "src/shots/layout.jsx": {
-          "bytesInOutput": 2521
+          "bytesInOutput": 2540
         },
         "src/shots/qc.jsx": {
           "bytesInOutput": 5194
@@ -1303,7 +1303,7 @@
           "bytesInOutput": 1723
         },
         "src/data/tui.json": {
-          "bytesInOutput": 708020
+          "bytesInOutput": 705254
         },
         "src/shots/end.jsx": {
           "bytesInOutput": 1702
@@ -1312,7 +1312,7 @@
           "bytesInOutput": 1041
         }
       },
-      "bytes": 1220614
+      "bytes": 1218023
     }
   }
 }

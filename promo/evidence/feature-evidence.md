@@ -16,7 +16,7 @@
 | compute | 三情景 DCF、敏感性、WACC；工作簿 15 张表 865 条公式 | 已实现 | `valuation/valuation.json`；`valuation/model.xlsx`（公式由脚本从 xlsx 的 XML 里数出） | 估值是系统输出示例，画面标“不构成投资建议”；不展示评级 |
 | write | guard 核对出处：无出处数字 0、指标期间不符 0、外部数字缺引用 0 | 已实现 | `commentary_guard.json`；`narrative.md` 两段原文；`sources.json` 的来源信息 | 右栏“数字 → 来源编号”的配对规则是“数字后面最近的编号”，是为画面做的简化 |
 | review | 数字锁：665 → 650，新增 0 | 已实现 | `finagent/output/numlock.py:29`；`numlock(draft, final)` 的返回值；改写前后真实句对 | 句对是从两稿里按“数字相同、措辞不同”筛出来的一对 |
-| layout | 30 页、68 个图表；11 道闸门全部通过 | 已实现 | `中际旭创1003.pdf` 逐页渲染；`status` 原文 | 页面缩略图看不清正文，只交代规模 |
+| layout | 30 页、68 个图表；11 道闸门全部通过 | 已实现 | `中际旭创1003.pdf` 逐页渲染；`status` 原文（仓库当前代码） | 页面缩略图看不清正文，只交代规模。2026-10-14 用 `report_pipeline sync-renderer` 升级工作区排版设施后重新渲染：首页投资要点字号 10pt → 10.5pt（新规范），生成 render_check.json，页数与图表数不变，闸门 10、11 按仓库当前代码通过；原 PDF 与脚本备份在工作区 `.pipeline/backup-20261014-render/` |
 | qc | 四层 40 条评分项（程序判 18、盲评 22），总分 90；三个版本 46～49 → 74/67 → 90/88；重复盲评逐条一致 86%～91%、总分极差 7～8 | 已实现 | `eval/results/*/score.json`；`eval/calibration/summary.json` | 版本对比是单次盲评，评分标准 v0；重复盲评的三次总分是 85/80/78 与 80/88/83，和单次的 90/88 不是同一次 |
 | check | 纠错核查判断错误类型；注入实验 1,334 条断言、754 条含错，召回 100%、误报 0、类型判对 99.5% | 已实现 | `runs/20261013-160800-all/check/findings.json`；`paper/techreport/sections/13_experiments.tex` 表 exp-tol | 草稿是仓库里的虚构公司样例；注入实验只衡量核对与诊断，不含从文本里抽断言 |
 | trace | 终端界面可回看闸门、真值表、追溯、会话 | 已实现 | `finagent_tui/app.py`；`tools/tui_shot.py` 导出的 SVG | 10 次会话、144 分钟、825 轮含返工与失败的会话 |

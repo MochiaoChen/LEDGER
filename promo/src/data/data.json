@@ -190,7 +190,7 @@
    "ok": true,
    "n": 10,
    "name": "排版",
-   "detail": "runs/20261003-213324-valuation/report/中际旭创1003.pdf：30 页、68 个图表"
+   "detail": "runs/20261003-213324-valuation/report/中际旭创1003.pdf：30 页、68 个图表（宽度与正文实测字号通过）"
   },
   {
    "ok": true,
@@ -199,7 +199,7 @@
    "detail": "delivery.md 已写"
   }
  ],
- "status_text": "中际旭创 2025  工作区 /Users/mochiaochen/finagent-samples/中际旭创_2025\n  [✓] 1 资料搜集   15 个问题、31 次检索、近 90 天来源 39 个\n  [✓] 2 财务抽取   rejected 0，conflicts 0，勾稽失败 0\n  [✓] 3 分析框架   framework.md 已写，深度专题 4 个\n  [✓] 4 深度调研   专题笔记 4 份，补充问题 16 个，共 51 个来源\n  [✓] 5 经营数据   19 张表，拒收 0 格\n  [✓] 6 估值假设   已起草，依据引用了资料包\n  [✓] 7 估值运行   runs/20261003-213324-valuation\n  [✓] 8 文稿     guard 通过；正文 19450 字，深度研究占 60%\n  [✓] 9 复核改写   数字锁通过，删去数字 15 个\n  [✓] 10 排版    runs/20261003-213324-valuation/report/中际旭创1003.pdf：30 页、68 个图表\n  [✓] 11 交付说明  delivery.md 已写\n运行目录：runs/20261003-213324-valuation\n下一步：全部闸门通过",
+ "status_text": "中际旭创 2025  工作区 /Users/mochiaochen/finagent-samples/中际旭创_2025\n  [✓] 1 资料搜集   15 个问题、31 次检索、近 90 天来源 39 个\n  [✓] 2 财务抽取   rejected 0，conflicts 0，勾稽失败 0\n  [✓] 3 分析框架   framework.md 已写，深度专题 4 个\n  [✓] 4 深度调研   专题笔记 4 份，补充问题 16 个，共 51 个来源\n  [✓] 5 经营数据   19 张表，拒收 0 格\n  [✓] 6 估值假设   已起草，依据引用了资料包\n  [✓] 7 估值运行   runs/20261003-213324-valuation\n  [✓] 8 文稿     guard 通过；正文 19450 字，深度研究占 60%\n  [✓] 9 复核改写   数字锁通过，删去数字 15 个\n  [✓] 10 排版    runs/20261003-213324-valuation/report/中际旭创1003.pdf：30 页、68 个图表（宽度与正文实测字号通过）\n  [✓] 11 交付说明  delivery.md 已写\n运行目录：runs/20261003-213324-valuation\n下一步：全部闸门通过",
  "research": {
   "model": "claude-opus-5-5",
   "elapsed_sec": 506.5,
@@ -2758,8 +2758,8 @@
  },
  "repo": {
   "engine_files": 57,
-  "engine_lines": 12064,
-  "tests": 166
+  "engine_lines": 12087,
+  "tests": 169
  },
  "truth": {
   "n": 134,
