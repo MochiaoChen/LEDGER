@@ -1,0 +1,20 @@
+node_modules/
+.build/
+dist/
+renders/
+.venv/
+public/fonts/*.ttf
+public/fonts/*.woff
+assets/music.wav
+assets/master.wav
+assets/sfx-stem.wav
+assets/music-ducked.wav
+*.mp4
+# 可由 tools/ 脚本重新生成的大文件
+assets/vo/
+assets/master-vo-*.wav
+assets/sfx/typing-*.wav
+public/pages/
+evidence/review/
+evidence/vo-voices*.json
+tools/__pycache__/

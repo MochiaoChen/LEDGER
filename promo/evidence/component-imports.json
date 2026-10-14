@@ -1,0 +1,1318 @@
+{
+  "inputs": {
+    "<define:process.env>": {
+      "bytes": 2,
+      "imports": []
+    },
+    "node_modules/react/cjs/react.production.js": {
+      "bytes": 17217,
+      "imports": [
+        {
+          "path": "<define:process.env>",
+          "kind": "import-statement",
+          "external": true
+        }
+      ],
+      "format": "cjs"
+    },
+    "node_modules/react/index.js": {
+      "bytes": 186,
+      "imports": [
+        {
+          "path": "<define:process.env>",
+          "kind": "import-statement",
+          "external": true
+        },
+        {
+          "path": "node_modules/react/cjs/react.production.js",
+          "kind": "require-call",
+          "original": "./cjs/react.production.js"
+        }
+      ],
+      "format": "cjs"
+    },
+    "node_modules/scheduler/cjs/scheduler.production.js": {
+      "bytes": 10181,
+      "imports": [
+        {
+          "path": "<define:process.env>",
+          "kind": "import-statement",
+          "external": true
+        }
+      ],
+      "format": "cjs"
+    },
+    "node_modules/scheduler/index.js": {
+      "bytes": 194,
+      "imports": [
+        {
+          "path": "<define:process.env>",
+          "kind": "import-statement",
+          "external": true
+        },
+        {
+          "path": "node_modules/scheduler/cjs/scheduler.production.js",
+          "kind": "require-call",
+          "original": "./cjs/scheduler.production.js"
+        }
+      ],
+      "format": "cjs"
+    },
+    "node_modules/react-dom/cjs/react-dom.production.js": {
+      "bytes": 6655,
+      "imports": [
+        {
+          "path": "<define:process.env>",
+          "kind": "import-statement",
+          "external": true
+        },
+        {
+          "path": "node_modules/react/index.js",
+          "kind": "require-call",
+          "original": "react"
+        }
+      ],
+      "format": "cjs"
+    },
+    "node_modules/react-dom/index.js": {
+      "bytes": 1359,
+      "imports": [
+        {
+          "path": "<define:process.env>",
+          "kind": "import-statement",
+          "external": true
+        },
+        {
+          "path": "node_modules/react-dom/cjs/react-dom.production.js",
+          "kind": "require-call",
+          "original": "./cjs/react-dom.production.js"
+        }
+      ],
+      "format": "cjs"
+    },
+    "node_modules/react-dom/cjs/react-dom-client.production.js": {
+      "bytes": 536016,
+      "imports": [
+        {
+          "path": "<define:process.env>",
+          "kind": "import-statement",
+          "external": true
+        },
+        {
+          "path": "node_modules/scheduler/index.js",
+          "kind": "require-call",
+          "original": "scheduler"
+        },
+        {
+          "path": "node_modules/react/index.js",
+          "kind": "require-call",
+          "original": "react"
+        },
+        {
+          "path": "node_modules/react-dom/index.js",
+          "kind": "require-call",
+          "original": "react-dom"
+        }
+      ],
+      "format": "cjs"
+    },
+    "node_modules/react-dom/client.js": {
+      "bytes": 1373,
+      "imports": [
+        {
+          "path": "<define:process.env>",
+          "kind": "import-statement",
+          "external": true
+        },
+        {
+          "path": "node_modules/react-dom/cjs/react-dom-client.production.js",
+          "kind": "require-call",
+          "original": "./cjs/react-dom-client.production.js"
+        }
+      ],
+      "format": "cjs"
+    },
+    "src/film-store.js": {
+      "bytes": 907,
+      "imports": [
+        {
+          "path": "node_modules/react/index.js",
+          "kind": "import-statement",
+          "original": "react"
+        },
+        {
+          "path": "<define:process.env>",
+          "kind": "import-statement",
+          "external": true
+        }
+      ],
+      "format": "esm"
+    },
+    "node_modules/gsap/gsap-core.js": {
+      "bytes": 171676,
+      "imports": [
+        {
+          "path": "<define:process.env>",
+          "kind": "import-statement",
+          "external": true
+        }
+      ],
+      "format": "esm"
+    },
+    "node_modules/gsap/CSSPlugin.js": {
+      "bytes": 65156,
+      "imports": [
+        {
+          "path": "node_modules/gsap/gsap-core.js",
+          "kind": "import-statement",
+          "original": "./gsap-core.js"
+        },
+        {
+          "path": "<define:process.env>",
+          "kind": "import-statement",
+          "external": true
+        }
+      ],
+      "format": "esm"
+    },
+    "node_modules/gsap/index.js": {
+      "bytes": 664,
+      "imports": [
+        {
+          "path": "node_modules/gsap/gsap-core.js",
+          "kind": "import-statement",
+          "original": "./gsap-core.js"
+        },
+        {
+          "path": "node_modules/gsap/CSSPlugin.js",
+          "kind": "import-statement",
+          "original": "./CSSPlugin.js"
+        },
+        {
+          "path": "<define:process.env>",
+          "kind": "import-statement",
+          "external": true
+        }
+      ],
+      "format": "esm"
+    },
+    "plan.json": {
+      "bytes": 36369,
+      "imports": []
+    },
+    "src/engine.js": {
+      "bytes": 1945,
+      "imports": [
+        {
+          "path": "node_modules/gsap/index.js",
+          "kind": "import-statement",
+          "original": "gsap"
+        },
+        {
+          "path": "node_modules/react-dom/index.js",
+          "kind": "import-statement",
+          "original": "react-dom"
+        },
+        {
+          "path": "plan.json",
+          "kind": "import-statement",
+          "original": "../plan.json"
+        },
+        {
+          "path": "src/film-store.js",
+          "kind": "import-statement",
+          "original": "./film-store.js"
+        },
+        {
+          "path": "<define:process.env>",
+          "kind": "import-statement",
+          "external": true
+        }
+      ],
+      "format": "esm"
+    },
+    "src/data/data.json": {
+      "bytes": 133515,
+      "imports": []
+    },
+    "src/kit/time.js": {
+      "bytes": 2976,
+      "imports": [
+        {
+          "path": "node_modules/gsap/index.js",
+          "kind": "import-statement",
+          "original": "gsap"
+        },
+        {
+          "path": "node_modules/react/index.js",
+          "kind": "import-statement",
+          "original": "react"
+        },
+        {
+          "path": "src/film-store.js",
+          "kind": "import-statement",
+          "original": "../film-store.js"
+        },
+        {
+          "path": "plan.json",
+          "kind": "import-statement",
+          "original": "../../plan.json"
+        },
+        {
+          "path": "<define:process.env>",
+          "kind": "import-statement",
+          "external": true
+        }
+      ],
+      "format": "esm"
+    },
+    "node_modules/react/cjs/react-jsx-runtime.production.js": {
+      "bytes": 976,
+      "imports": [
+        {
+          "path": "<define:process.env>",
+          "kind": "import-statement",
+          "external": true
+        }
+      ],
+      "format": "cjs"
+    },
+    "node_modules/react/jsx-runtime.js": {
+      "bytes": 210,
+      "imports": [
+        {
+          "path": "<define:process.env>",
+          "kind": "import-statement",
+          "external": true
+        },
+        {
+          "path": "node_modules/react/cjs/react-jsx-runtime.production.js",
+          "kind": "require-call",
+          "original": "./cjs/react-jsx-runtime.production.js"
+        }
+      ],
+      "format": "cjs"
+    },
+    "src/shots/hook.jsx": {
+      "bytes": 3800,
+      "imports": [
+        {
+          "path": "node_modules/react/index.js",
+          "kind": "import-statement",
+          "original": "react"
+        },
+        {
+          "path": "src/data/data.json",
+          "kind": "import-statement",
+          "original": "../data/data.json"
+        },
+        {
+          "path": "src/film-store.js",
+          "kind": "import-statement",
+          "original": "../film-store.js"
+        },
+        {
+          "path": "src/kit/time.js",
+          "kind": "import-statement",
+          "original": "../kit/time.js"
+        },
+        {
+          "path": "<define:process.env>",
+          "kind": "import-statement",
+          "external": true
+        },
+        {
+          "path": "node_modules/react/jsx-runtime.js",
+          "kind": "import-statement",
+          "original": "react/jsx-runtime"
+        }
+      ],
+      "format": "esm"
+    },
+    "src/kit/ui.jsx": {
+      "bytes": 2511,
+      "imports": [
+        {
+          "path": "node_modules/react/index.js",
+          "kind": "import-statement",
+          "original": "react"
+        },
+        {
+          "path": "src/kit/time.js",
+          "kind": "import-statement",
+          "original": "./time.js"
+        },
+        {
+          "path": "<define:process.env>",
+          "kind": "import-statement",
+          "external": true
+        },
+        {
+          "path": "node_modules/react/jsx-runtime.js",
+          "kind": "import-statement",
+          "original": "react/jsx-runtime"
+        }
+      ],
+      "format": "esm"
+    },
+    "src/shots/brand.jsx": {
+      "bytes": 3067,
+      "imports": [
+        {
+          "path": "node_modules/react/index.js",
+          "kind": "import-statement",
+          "original": "react"
+        },
+        {
+          "path": "src/kit/time.js",
+          "kind": "import-statement",
+          "original": "../kit/time.js"
+        },
+        {
+          "path": "src/kit/ui.jsx",
+          "kind": "import-statement",
+          "original": "../kit/ui.jsx"
+        },
+        {
+          "path": "<define:process.env>",
+          "kind": "import-statement",
+          "external": true
+        },
+        {
+          "path": "node_modules/react/jsx-runtime.js",
+          "kind": "import-statement",
+          "original": "react/jsx-runtime"
+        }
+      ],
+      "format": "esm"
+    },
+    "src/shots/rule.jsx": {
+      "bytes": 4099,
+      "imports": [
+        {
+          "path": "node_modules/react/index.js",
+          "kind": "import-statement",
+          "original": "react"
+        },
+        {
+          "path": "src/data/data.json",
+          "kind": "import-statement",
+          "original": "../data/data.json"
+        },
+        {
+          "path": "src/kit/time.js",
+          "kind": "import-statement",
+          "original": "../kit/time.js"
+        },
+        {
+          "path": "<define:process.env>",
+          "kind": "import-statement",
+          "external": true
+        },
+        {
+          "path": "node_modules/react/jsx-runtime.js",
+          "kind": "import-statement",
+          "original": "react/jsx-runtime"
+        }
+      ],
+      "format": "esm"
+    },
+    "src/shots/cmd.jsx": {
+      "bytes": 3126,
+      "imports": [
+        {
+          "path": "node_modules/react/index.js",
+          "kind": "import-statement",
+          "original": "react"
+        },
+        {
+          "path": "src/data/data.json",
+          "kind": "import-statement",
+          "original": "../data/data.json"
+        },
+        {
+          "path": "src/kit/time.js",
+          "kind": "import-statement",
+          "original": "../kit/time.js"
+        },
+        {
+          "path": "src/kit/ui.jsx",
+          "kind": "import-statement",
+          "original": "../kit/ui.jsx"
+        },
+        {
+          "path": "<define:process.env>",
+          "kind": "import-statement",
+          "external": true
+        },
+        {
+          "path": "node_modules/react/jsx-runtime.js",
+          "kind": "import-statement",
+          "original": "react/jsx-runtime"
+        }
+      ],
+      "format": "esm"
+    },
+    "src/shots/search.jsx": {
+      "bytes": 7897,
+      "imports": [
+        {
+          "path": "node_modules/react/index.js",
+          "kind": "import-statement",
+          "original": "react"
+        },
+        {
+          "path": "src/data/data.json",
+          "kind": "import-statement",
+          "original": "../data/data.json"
+        },
+        {
+          "path": "src/kit/time.js",
+          "kind": "import-statement",
+          "original": "../kit/time.js"
+        },
+        {
+          "path": "src/kit/ui.jsx",
+          "kind": "import-statement",
+          "original": "../kit/ui.jsx"
+        },
+        {
+          "path": "<define:process.env>",
+          "kind": "import-statement",
+          "external": true
+        },
+        {
+          "path": "node_modules/react/jsx-runtime.js",
+          "kind": "import-statement",
+          "original": "react/jsx-runtime"
+        }
+      ],
+      "format": "esm"
+    },
+    "src/shots/read.jsx": {
+      "bytes": 4201,
+      "imports": [
+        {
+          "path": "node_modules/react/index.js",
+          "kind": "import-statement",
+          "original": "react"
+        },
+        {
+          "path": "src/data/data.json",
+          "kind": "import-statement",
+          "original": "../data/data.json"
+        },
+        {
+          "path": "src/kit/time.js",
+          "kind": "import-statement",
+          "original": "../kit/time.js"
+        },
+        {
+          "path": "src/kit/ui.jsx",
+          "kind": "import-statement",
+          "original": "../kit/ui.jsx"
+        },
+        {
+          "path": "<define:process.env>",
+          "kind": "import-statement",
+          "external": true
+        },
+        {
+          "path": "node_modules/react/jsx-runtime.js",
+          "kind": "import-statement",
+          "original": "react/jsx-runtime"
+        }
+      ],
+      "format": "esm"
+    },
+    "src/kit/py.js": {
+      "bytes": 1026,
+      "imports": [
+        {
+          "path": "<define:process.env>",
+          "kind": "import-statement",
+          "external": true
+        }
+      ],
+      "format": "esm"
+    },
+    "src/shots/code.jsx": {
+      "bytes": 8205,
+      "imports": [
+        {
+          "path": "node_modules/react/index.js",
+          "kind": "import-statement",
+          "original": "react"
+        },
+        {
+          "path": "src/data/data.json",
+          "kind": "import-statement",
+          "original": "../data/data.json"
+        },
+        {
+          "path": "src/kit/time.js",
+          "kind": "import-statement",
+          "original": "../kit/time.js"
+        },
+        {
+          "path": "src/kit/ui.jsx",
+          "kind": "import-statement",
+          "original": "../kit/ui.jsx"
+        },
+        {
+          "path": "src/kit/py.js",
+          "kind": "import-statement",
+          "original": "../kit/py.js"
+        },
+        {
+          "path": "<define:process.env>",
+          "kind": "import-statement",
+          "external": true
+        },
+        {
+          "path": "node_modules/react/jsx-runtime.js",
+          "kind": "import-statement",
+          "original": "react/jsx-runtime"
+        }
+      ],
+      "format": "esm"
+    },
+    "src/shots/truth.jsx": {
+      "bytes": 3731,
+      "imports": [
+        {
+          "path": "node_modules/react/index.js",
+          "kind": "import-statement",
+          "original": "react"
+        },
+        {
+          "path": "src/data/data.json",
+          "kind": "import-statement",
+          "original": "../data/data.json"
+        },
+        {
+          "path": "src/kit/time.js",
+          "kind": "import-statement",
+          "original": "../kit/time.js"
+        },
+        {
+          "path": "src/kit/ui.jsx",
+          "kind": "import-statement",
+          "original": "../kit/ui.jsx"
+        },
+        {
+          "path": "<define:process.env>",
+          "kind": "import-statement",
+          "external": true
+        },
+        {
+          "path": "node_modules/react/jsx-runtime.js",
+          "kind": "import-statement",
+          "original": "react/jsx-runtime"
+        }
+      ],
+      "format": "esm"
+    },
+    "src/shots/compute.jsx": {
+      "bytes": 4331,
+      "imports": [
+        {
+          "path": "node_modules/react/index.js",
+          "kind": "import-statement",
+          "original": "react"
+        },
+        {
+          "path": "src/data/data.json",
+          "kind": "import-statement",
+          "original": "../data/data.json"
+        },
+        {
+          "path": "src/kit/time.js",
+          "kind": "import-statement",
+          "original": "../kit/time.js"
+        },
+        {
+          "path": "src/kit/ui.jsx",
+          "kind": "import-statement",
+          "original": "../kit/ui.jsx"
+        },
+        {
+          "path": "<define:process.env>",
+          "kind": "import-statement",
+          "external": true
+        },
+        {
+          "path": "node_modules/react/jsx-runtime.js",
+          "kind": "import-statement",
+          "original": "react/jsx-runtime"
+        }
+      ],
+      "format": "esm"
+    },
+    "src/shots/depth.jsx": {
+      "bytes": 2313,
+      "imports": [
+        {
+          "path": "node_modules/react/index.js",
+          "kind": "import-statement",
+          "original": "react"
+        },
+        {
+          "path": "src/data/data.json",
+          "kind": "import-statement",
+          "original": "../data/data.json"
+        },
+        {
+          "path": "src/kit/time.js",
+          "kind": "import-statement",
+          "original": "../kit/time.js"
+        },
+        {
+          "path": "src/kit/ui.jsx",
+          "kind": "import-statement",
+          "original": "../kit/ui.jsx"
+        },
+        {
+          "path": "<define:process.env>",
+          "kind": "import-statement",
+          "external": true
+        },
+        {
+          "path": "node_modules/react/jsx-runtime.js",
+          "kind": "import-statement",
+          "original": "react/jsx-runtime"
+        }
+      ],
+      "format": "esm"
+    },
+    "src/shots/write.jsx": {
+      "bytes": 4177,
+      "imports": [
+        {
+          "path": "node_modules/react/index.js",
+          "kind": "import-statement",
+          "original": "react"
+        },
+        {
+          "path": "src/data/data.json",
+          "kind": "import-statement",
+          "original": "../data/data.json"
+        },
+        {
+          "path": "src/kit/time.js",
+          "kind": "import-statement",
+          "original": "../kit/time.js"
+        },
+        {
+          "path": "src/kit/ui.jsx",
+          "kind": "import-statement",
+          "original": "../kit/ui.jsx"
+        },
+        {
+          "path": "<define:process.env>",
+          "kind": "import-statement",
+          "external": true
+        },
+        {
+          "path": "node_modules/react/jsx-runtime.js",
+          "kind": "import-statement",
+          "original": "react/jsx-runtime"
+        }
+      ],
+      "format": "esm"
+    },
+    "src/shots/review.jsx": {
+      "bytes": 5852,
+      "imports": [
+        {
+          "path": "node_modules/react/index.js",
+          "kind": "import-statement",
+          "original": "react"
+        },
+        {
+          "path": "src/data/data.json",
+          "kind": "import-statement",
+          "original": "../data/data.json"
+        },
+        {
+          "path": "src/kit/time.js",
+          "kind": "import-statement",
+          "original": "../kit/time.js"
+        },
+        {
+          "path": "src/kit/ui.jsx",
+          "kind": "import-statement",
+          "original": "../kit/ui.jsx"
+        },
+        {
+          "path": "src/kit/py.js",
+          "kind": "import-statement",
+          "original": "../kit/py.js"
+        },
+        {
+          "path": "<define:process.env>",
+          "kind": "import-statement",
+          "external": true
+        },
+        {
+          "path": "node_modules/react/jsx-runtime.js",
+          "kind": "import-statement",
+          "original": "react/jsx-runtime"
+        }
+      ],
+      "format": "esm"
+    },
+    "src/shots/layout.jsx": {
+      "bytes": 2836,
+      "imports": [
+        {
+          "path": "node_modules/react/index.js",
+          "kind": "import-statement",
+          "original": "react"
+        },
+        {
+          "path": "src/data/data.json",
+          "kind": "import-statement",
+          "original": "../data/data.json"
+        },
+        {
+          "path": "src/kit/time.js",
+          "kind": "import-statement",
+          "original": "../kit/time.js"
+        },
+        {
+          "path": "src/kit/ui.jsx",
+          "kind": "import-statement",
+          "original": "../kit/ui.jsx"
+        },
+        {
+          "path": "<define:process.env>",
+          "kind": "import-statement",
+          "external": true
+        },
+        {
+          "path": "node_modules/react/jsx-runtime.js",
+          "kind": "import-statement",
+          "original": "react/jsx-runtime"
+        }
+      ],
+      "format": "esm"
+    },
+    "src/shots/qc.jsx": {
+      "bytes": 5132,
+      "imports": [
+        {
+          "path": "node_modules/react/index.js",
+          "kind": "import-statement",
+          "original": "react"
+        },
+        {
+          "path": "src/data/data.json",
+          "kind": "import-statement",
+          "original": "../data/data.json"
+        },
+        {
+          "path": "src/kit/time.js",
+          "kind": "import-statement",
+          "original": "../kit/time.js"
+        },
+        {
+          "path": "src/kit/ui.jsx",
+          "kind": "import-statement",
+          "original": "../kit/ui.jsx"
+        },
+        {
+          "path": "<define:process.env>",
+          "kind": "import-statement",
+          "external": true
+        },
+        {
+          "path": "node_modules/react/jsx-runtime.js",
+          "kind": "import-statement",
+          "original": "react/jsx-runtime"
+        }
+      ],
+      "format": "esm"
+    },
+    "src/shots/check.jsx": {
+      "bytes": 4120,
+      "imports": [
+        {
+          "path": "node_modules/react/index.js",
+          "kind": "import-statement",
+          "original": "react"
+        },
+        {
+          "path": "src/data/data.json",
+          "kind": "import-statement",
+          "original": "../data/data.json"
+        },
+        {
+          "path": "src/kit/time.js",
+          "kind": "import-statement",
+          "original": "../kit/time.js"
+        },
+        {
+          "path": "src/kit/ui.jsx",
+          "kind": "import-statement",
+          "original": "../kit/ui.jsx"
+        },
+        {
+          "path": "<define:process.env>",
+          "kind": "import-statement",
+          "external": true
+        },
+        {
+          "path": "node_modules/react/jsx-runtime.js",
+          "kind": "import-statement",
+          "original": "react/jsx-runtime"
+        }
+      ],
+      "format": "esm"
+    },
+    "src/data/tui.json": {
+      "bytes": 761237,
+      "imports": []
+    },
+    "src/shots/trace.jsx": {
+      "bytes": 1998,
+      "imports": [
+        {
+          "path": "node_modules/react/index.js",
+          "kind": "import-statement",
+          "original": "react"
+        },
+        {
+          "path": "src/data/data.json",
+          "kind": "import-statement",
+          "original": "../data/data.json"
+        },
+        {
+          "path": "src/data/tui.json",
+          "kind": "import-statement",
+          "original": "../data/tui.json"
+        },
+        {
+          "path": "src/kit/time.js",
+          "kind": "import-statement",
+          "original": "../kit/time.js"
+        },
+        {
+          "path": "src/kit/ui.jsx",
+          "kind": "import-statement",
+          "original": "../kit/ui.jsx"
+        },
+        {
+          "path": "<define:process.env>",
+          "kind": "import-statement",
+          "external": true
+        },
+        {
+          "path": "node_modules/react/jsx-runtime.js",
+          "kind": "import-statement",
+          "original": "react/jsx-runtime"
+        }
+      ],
+      "format": "esm"
+    },
+    "src/shots/end.jsx": {
+      "bytes": 1520,
+      "imports": [
+        {
+          "path": "node_modules/react/index.js",
+          "kind": "import-statement",
+          "original": "react"
+        },
+        {
+          "path": "src/kit/time.js",
+          "kind": "import-statement",
+          "original": "../kit/time.js"
+        },
+        {
+          "path": "src/kit/ui.jsx",
+          "kind": "import-statement",
+          "original": "../kit/ui.jsx"
+        },
+        {
+          "path": "<define:process.env>",
+          "kind": "import-statement",
+          "external": true
+        },
+        {
+          "path": "node_modules/react/jsx-runtime.js",
+          "kind": "import-statement",
+          "original": "react/jsx-runtime"
+        }
+      ],
+      "format": "esm"
+    },
+    "src/shots/index.js": {
+      "bytes": 1143,
+      "imports": [
+        {
+          "path": "src/shots/hook.jsx",
+          "kind": "import-statement",
+          "original": "./hook.jsx"
+        },
+        {
+          "path": "src/shots/brand.jsx",
+          "kind": "import-statement",
+          "original": "./brand.jsx"
+        },
+        {
+          "path": "src/shots/rule.jsx",
+          "kind": "import-statement",
+          "original": "./rule.jsx"
+        },
+        {
+          "path": "src/shots/cmd.jsx",
+          "kind": "import-statement",
+          "original": "./cmd.jsx"
+        },
+        {
+          "path": "src/shots/search.jsx",
+          "kind": "import-statement",
+          "original": "./search.jsx"
+        },
+        {
+          "path": "src/shots/read.jsx",
+          "kind": "import-statement",
+          "original": "./read.jsx"
+        },
+        {
+          "path": "src/shots/code.jsx",
+          "kind": "import-statement",
+          "original": "./code.jsx"
+        },
+        {
+          "path": "src/shots/truth.jsx",
+          "kind": "import-statement",
+          "original": "./truth.jsx"
+        },
+        {
+          "path": "src/shots/compute.jsx",
+          "kind": "import-statement",
+          "original": "./compute.jsx"
+        },
+        {
+          "path": "src/shots/depth.jsx",
+          "kind": "import-statement",
+          "original": "./depth.jsx"
+        },
+        {
+          "path": "src/shots/write.jsx",
+          "kind": "import-statement",
+          "original": "./write.jsx"
+        },
+        {
+          "path": "src/shots/review.jsx",
+          "kind": "import-statement",
+          "original": "./review.jsx"
+        },
+        {
+          "path": "src/shots/layout.jsx",
+          "kind": "import-statement",
+          "original": "./layout.jsx"
+        },
+        {
+          "path": "src/shots/qc.jsx",
+          "kind": "import-statement",
+          "original": "./qc.jsx"
+        },
+        {
+          "path": "src/shots/check.jsx",
+          "kind": "import-statement",
+          "original": "./check.jsx"
+        },
+        {
+          "path": "src/shots/trace.jsx",
+          "kind": "import-statement",
+          "original": "./trace.jsx"
+        },
+        {
+          "path": "src/shots/end.jsx",
+          "kind": "import-statement",
+          "original": "./end.jsx"
+        },
+        {
+          "path": "<define:process.env>",
+          "kind": "import-statement",
+          "external": true
+        }
+      ],
+      "format": "esm"
+    },
+    "src/hud.jsx": {
+      "bytes": 1743,
+      "imports": [
+        {
+          "path": "node_modules/react/index.js",
+          "kind": "import-statement",
+          "original": "react"
+        },
+        {
+          "path": "src/film-store.js",
+          "kind": "import-statement",
+          "original": "./film-store.js"
+        },
+        {
+          "path": "plan.json",
+          "kind": "import-statement",
+          "original": "../plan.json"
+        },
+        {
+          "path": "src/data/data.json",
+          "kind": "import-statement",
+          "original": "./data/data.json"
+        },
+        {
+          "path": "src/kit/time.js",
+          "kind": "import-statement",
+          "original": "./kit/time.js"
+        },
+        {
+          "path": "<define:process.env>",
+          "kind": "import-statement",
+          "external": true
+        },
+        {
+          "path": "node_modules/react/jsx-runtime.js",
+          "kind": "import-statement",
+          "original": "react/jsx-runtime"
+        }
+      ],
+      "format": "esm"
+    },
+    "src/film.jsx": {
+      "bytes": 1068,
+      "imports": [
+        {
+          "path": "node_modules/react/index.js",
+          "kind": "import-statement",
+          "original": "react"
+        },
+        {
+          "path": "src/film-store.js",
+          "kind": "import-statement",
+          "original": "./film-store.js"
+        },
+        {
+          "path": "src/engine.js",
+          "kind": "import-statement",
+          "original": "./engine.js"
+        },
+        {
+          "path": "src/shots/index.js",
+          "kind": "import-statement",
+          "original": "./shots/index.js"
+        },
+        {
+          "path": "src/hud.jsx",
+          "kind": "import-statement",
+          "original": "./hud.jsx"
+        },
+        {
+          "path": "src/shots/hook.jsx",
+          "kind": "import-statement",
+          "original": "./shots/hook.jsx"
+        },
+        {
+          "path": "<define:process.env>",
+          "kind": "import-statement",
+          "external": true
+        },
+        {
+          "path": "node_modules/react/jsx-runtime.js",
+          "kind": "import-statement",
+          "original": "react/jsx-runtime"
+        }
+      ],
+      "format": "esm"
+    },
+    "src/client.jsx": {
+      "bytes": 1231,
+      "imports": [
+        {
+          "path": "node_modules/react/index.js",
+          "kind": "import-statement",
+          "original": "react"
+        },
+        {
+          "path": "node_modules/react-dom/client.js",
+          "kind": "import-statement",
+          "original": "react-dom/client"
+        },
+        {
+          "path": "node_modules/react-dom/index.js",
+          "kind": "import-statement",
+          "original": "react-dom"
+        },
+        {
+          "path": "src/film.jsx",
+          "kind": "import-statement",
+          "original": "./film.jsx"
+        },
+        {
+          "path": "src/engine.js",
+          "kind": "import-statement",
+          "original": "./engine.js"
+        },
+        {
+          "path": "src/shots/index.js",
+          "kind": "import-statement",
+          "original": "./shots/index.js"
+        },
+        {
+          "path": "<define:process.env>",
+          "kind": "import-statement",
+          "external": true
+        },
+        {
+          "path": "node_modules/react/jsx-runtime.js",
+          "kind": "import-statement",
+          "original": "react/jsx-runtime"
+        }
+      ],
+      "format": "esm"
+    }
+  },
+  "outputs": {
+    ".build/client.js": {
+      "imports": [],
+      "exports": [],
+      "entryPoint": "src/client.jsx",
+      "inputs": {
+        "<define:process.env>": {
+          "bytesInOutput": 17
+        },
+        "node_modules/react/cjs/react.production.js": {
+          "bytesInOutput": 7620
+        },
+        "node_modules/react/index.js": {
+          "bytesInOutput": 55
+        },
+        "node_modules/scheduler/cjs/scheduler.production.js": {
+          "bytesInOutput": 3666
+        },
+        "node_modules/scheduler/index.js": {
+          "bytesInOutput": 55
+        },
+        "node_modules/react-dom/cjs/react-dom.production.js": {
+          "bytesInOutput": 3347
+        },
+        "node_modules/react-dom/index.js": {
+          "bytesInOutput": 257
+        },
+        "node_modules/react-dom/cjs/react-dom-client.production.js": {
+          "bytesInOutput": 176655
+        },
+        "node_modules/react-dom/client.js": {
+          "bytesInOutput": 257
+        },
+        "node_modules/react/cjs/react-jsx-runtime.production.js": {
+          "bytesInOutput": 368
+        },
+        "node_modules/react/jsx-runtime.js": {
+          "bytesInOutput": 54
+        },
+        "src/client.jsx": {
+          "bytesInOutput": 888
+        },
+        "src/film.jsx": {
+          "bytesInOutput": 625
+        },
+        "src/film-store.js": {
+          "bytesInOutput": 293
+        },
+        "src/engine.js": {
+          "bytesInOutput": 634
+        },
+        "node_modules/gsap/index.js": {
+          "bytesInOutput": 54
+        },
+        "node_modules/gsap/gsap-core.js": {
+          "bytesInOutput": 51693
+        },
+        "node_modules/gsap/CSSPlugin.js": {
+          "bytesInOutput": 18941
+        },
+        "plan.json": {
+          "bytesInOutput": 27784
+        },
+        "src/shots/index.js": {
+          "bytesInOutput": 166
+        },
+        "src/shots/hook.jsx": {
+          "bytesInOutput": 3229
+        },
+        "src/data/data.json": {
+          "bytesInOutput": 148369
+        },
+        "src/kit/time.js": {
+          "bytesInOutput": 1489
+        },
+        "src/shots/brand.jsx": {
+          "bytesInOutput": 2877
+        },
+        "src/kit/ui.jsx": {
+          "bytesInOutput": 1886
+        },
+        "src/shots/rule.jsx": {
+          "bytesInOutput": 3739
+        },
+        "src/shots/cmd.jsx": {
+          "bytesInOutput": 3196
+        },
+        "src/shots/search.jsx": {
+          "bytesInOutput": 7112
+        },
+        "src/shots/read.jsx": {
+          "bytesInOutput": 3525
+        },
+        "src/shots/code.jsx": {
+          "bytesInOutput": 7404
+        },
+        "src/kit/py.js": {
+          "bytesInOutput": 647
+        },
+        "src/shots/truth.jsx": {
+          "bytesInOutput": 3581
+        },
+        "src/shots/compute.jsx": {
+          "bytesInOutput": 4047
+        },
+        "src/shots/depth.jsx": {
+          "bytesInOutput": 2162
+        },
+        "src/shots/write.jsx": {
+          "bytesInOutput": 3644
+        },
+        "src/shots/review.jsx": {
+          "bytesInOutput": 5463
+        },
+        "src/shots/layout.jsx": {
+          "bytesInOutput": 2521
+        },
+        "src/shots/qc.jsx": {
+          "bytesInOutput": 5194
+        },
+        "src/shots/check.jsx": {
+          "bytesInOutput": 4029
+        },
+        "src/shots/trace.jsx": {
+          "bytesInOutput": 1723
+        },
+        "src/data/tui.json": {
+          "bytesInOutput": 708020
+        },
+        "src/shots/end.jsx": {
+          "bytesInOutput": 1702
+        },
+        "src/hud.jsx": {
+          "bytesInOutput": 1041
+        }
+      },
+      "bytes": 1220614
+    }
+  }
+}

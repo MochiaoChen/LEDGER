@@ -39,6 +39,23 @@
 | Textual | ≥1.0（开发时 8.2.8） | MIT | 仅终端界面 `finagent_tui/`（`finagent tui`），可选；`finagent/` 引擎不依赖 |
 | Rich | 随 Textual 安装（开发时 15.0.0） | MIT | 终端界面中的表格、文本渲染 |
 
+宣传片工程 `promo/`（与 `video/` 是两套独立的宣传片工程，互不依赖）：
+
+| 名称 | 版本 | 许可证 | 来源 | 使用范围 |
+|---|---|---|---|---|
+| 归藏 product video skill 起步工程 | 提交 18842e0 | AGPL-3.0 | https://github.com/op7418/guizang-product-video-skill | `promo/` 的构建与逐帧渲染脚本（`build.mjs`、`render.mjs`、`stills.mjs`、`server.mjs`、`cover.mjs`、`src/engine.js`、`src/film-store.js`、`src/kit/` 中的 cursor / interact / measure / text）与 11 个内置音效 `promo/assets/sfx/*.wav`；混音与交付检查脚本（`mix_audio.py`、`check_delivery.py`、`sfx_landmarks.py`）运行时从该仓库调用，不随源码分发。许可证与说明见 `promo/LICENSE`、`promo/NOTICE.md` |
+| React / ReactDOM | 19.2.3 | MIT | npm | 宣传片画面组件 |
+| GSAP | 3.15.0 | GSAP Standard License（免费使用） | npm | 缓动函数 |
+| esbuild | 0.27.3 | MIT | npm | 打包画面代码 |
+| Playwright | 1.58.1 | Apache-2.0 | npm | 无头浏览器逐帧截图 |
+| Three.js | 0.186.1 | MIT | npm | 起步工程自带依赖，本片未使用 |
+| NumPy / SciPy | `uv run --with` 临时安装 | BSD-3-Clause | PyPI | 配乐与键入声合成（`tools/score.py`、`tools/make_typing.py`） |
+| Maple Mono NF CN | 7.9 | SIL OFL 1.1 | https://github.com/subframe7536/maple-font | 英文与代码字体；文件不入库 |
+| ElevenLabs TTS / 语音转写 | eleven_v4、scribe_v1（2026-10） | ElevenLabs 服务条款（免费套餐） | API | 旁白试听版（自带音色 Brian）；生成的音频不入库 |
+
+`promo/` 的画面与配乐由 `promo/src/`、`promo/tools/` 下的代码生成；`typing-*.wav` 由 `tools/make_typing.py` 合成；中文字体 Noto Sans SC 取自 `video/film/fonts/`（OFL 1.1）。
+片中出现的年报页面、研报页面与终端界面截图，均来自本仓库与工作区的真实产物（中际旭创 2025 年年度报告为公开披露文件）。
+
 样例 PDF（`data/samples/annual_report_2024.pdf`）内嵌 macOS 系统字体 Arial Unicode 的字形子集，仅用于显示样例数据。
 
 `finagent/` 其余部分仅使用 Python 标准库（含 xlsx 写出）；终端界面单独成包 `finagent_tui/`。

@@ -1,0 +1,78 @@
+{
+  "ready": false,
+  "cached": false,
+  "engine": "browser",
+  "missing": [
+    "browser-launch"
+  ],
+  "warnings": [
+    "browserType.launch: Executable doesn't exist at /Users/mochiaochen/Library/Caches/ms-playwright/chromium_headless_shell-1208/chrome-headless-shell-mac-arm64/chrome-headless-shell\n╔═════════════════════════════════════════════════════════════════════════╗\n║ Looks like Playwright Test or Playwright was just installed or updated. ║\n║ Please run the following command to download new browsers:              ║\n║                                                                         ║\n║     npx playwright install                                              ║\n║                                                                         ║\n║ <3 Playwright Team                                                      ║\n╚═════════════════════════════════════════════════════════════════════════╝"
+  ],
+  "fingerprint": "2218d24a4d706c34645cd0a3589555895c4c1cbf2b07a537ac44fb3e409ed9ea",
+  "details": {
+    "schema": 2,
+    "engine": "browser",
+    "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+    "versions": {
+      "python": {
+        "path": "/opt/homebrew/opt/python@3.14/bin/python3.14",
+        "version": "3.14.7"
+      },
+      "node": {
+        "path": "/opt/homebrew/bin/node",
+        "version": "v26.8.1"
+      },
+      "npm": {
+        "path": "/opt/homebrew/bin/npm",
+        "version": "11.19.0"
+      },
+      "ffmpeg": {
+        "path": "/opt/homebrew/bin/ffmpeg",
+        "version": "ffmpeg version 9.0.2 Copyright (c) 2000-2026 the FFmpeg developers"
+      },
+      "ffprobe": {
+        "path": "/opt/homebrew/bin/ffprobe",
+        "version": "ffprobe version 9.0.2 Copyright (c) 2007-2026 the FFmpeg developers"
+      }
+    },
+    "packages": {
+      "playwright": {
+        "version": "1.58.1",
+        "path": "/Users/mochiaochen/Desktop/OpenAI fin/public-equity-investing/contest/promo/node_modules/playwright/package.json"
+      },
+      "esbuild": {
+        "version": "0.27.3",
+        "path": "/Users/mochiaochen/Desktop/OpenAI fin/public-equity-investing/contest/promo/node_modules/esbuild/package.json"
+      },
+      "react": {
+        "version": "19.2.3",
+        "path": "/Users/mochiaochen/Desktop/OpenAI fin/public-equity-investing/contest/promo/node_modules/react/package.json"
+      },
+      "react-dom": {
+        "version": "19.2.3",
+        "path": "/Users/mochiaochen/Desktop/OpenAI fin/public-equity-investing/contest/promo/node_modules/react-dom/package.json"
+      },
+      "gsap": {
+        "version": "3.15.0",
+        "path": "/Users/mochiaochen/Desktop/OpenAI fin/public-equity-investing/contest/promo/node_modules/gsap/package.json"
+      },
+      "three": {
+        "version": "0.186.1",
+        "path": "/Users/mochiaochen/Desktop/OpenAI fin/public-equity-investing/contest/promo/node_modules/three/package.json"
+      }
+    },
+    "manifests": {
+      "package.json": "9561a9f8fcda1824400bafde09e8e58a1a56da2c0be4ff7016ce516d5136108e",
+      "package-lock.json": "7195932060939d9e2c002de27f5538dc38e51f6d51e5f2950bb3ac857248c867"
+    },
+    "browserEnv": {
+      "PLAYWRIGHT_BROWSERS_PATH": null,
+      "HYPERFRAMES_CHROME_PATH": null
+    }
+  },
+  "browser": {
+    "launched": false,
+    "playwrightVersion": "1.58.1"
+  },
+  "next": "Read references/onboarding.md for only the reported engine/platform gaps, install them, then rerun with --force."
+}

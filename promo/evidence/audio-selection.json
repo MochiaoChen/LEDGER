@@ -1,0 +1,99 @@
+{
+ "music": {
+  "source": "code-original",
+  "script": "tools/score.py",
+  "seed": 20261018,
+  "duration": 288,
+  "bpm": 100,
+  "key": "D 小调（暗场 Dm–Bb–F–C）/ F 大调（纸面 F–C–Dm–Bb）",
+  "sections": {
+   "hook": [
+    0,
+    14.4
+   ],
+   "brand": [
+    14.4,
+    26.4
+   ],
+   "rule": [
+    26.4,
+    40.8
+   ],
+   "cmd": [
+    40.8,
+    52.8
+   ],
+   "search": [
+    52.8,
+    81.6
+   ],
+   "read": [
+    81.6,
+    98.4
+   ],
+   "code": [
+    98.4,
+    127.2
+   ],
+   "truth": [
+    127.2,
+    144
+   ],
+   "depth": [
+    144,
+    163.2
+   ],
+   "compute": [
+    163.2,
+    184.8
+   ],
+   "write": [
+    184.8,
+    201.6
+   ],
+   "review": [
+    201.6,
+    216
+   ],
+   "layout": [
+    216,
+    230.4
+   ],
+   "qc": [
+    230.4,
+    249.6
+   ],
+   "check": [
+    249.6,
+    264
+   ],
+   "trace": [
+    264,
+    278.4
+   ],
+   "end": [
+    278.4,
+    288
+   ]
+  },
+  "arrangement": "暗场：supersaw 铺底、十六分琶音、八分低音、底鼓与踩镲；纸面：键盘动机 + 铺底；读字与看代码的段落抽掉底鼓；闸门、提问、落版放冲击与上升音",
+  "externalSamples": "无"
+ },
+ "sfx": [
+  {
+   "files": "assets/sfx/{click,click-alt,pop,toggle,ding-dong,success,error,resolve,whoosh,sweep}.wav",
+   "role": "点击、弹出、盖章、通过、拒收、转场",
+   "source": "guizang-product-video-skill 内置原创音效（scripts/make_sfx.py 生成）",
+   "license": "随 skill 提供（AGPL-3.0 的 skill 自带素材）",
+   "fallbackReason": "用户没有提供素材库，本机没有装录音素材库；素材站需要交互式下载，这次没有去取"
+  },
+  {
+   "files": "assets/sfx/typing-*.wav",
+   "role": "连续键入",
+   "source": "本工程 tools/make_typing.py 合成（固定种子）",
+   "license": "原创",
+   "fallbackReason": "内置 typing.wav 只有 0.65 秒，盖不住 3～14 秒的键入"
+  }
+ ],
+ "listening": "由模型制作，没有人工试听；只看了频谱图和逐段响度"
+}

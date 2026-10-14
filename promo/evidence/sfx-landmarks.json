@@ -1,0 +1,122 @@
+{
+ "click-alt": {
+  "dur": 0.12,
+  "onset": 0.001,
+  "peak": 0.007,
+  "peakDb": -21.4
+ },
+ "click": {
+  "dur": 0.16,
+  "onset": 0.001,
+  "peak": 0.008,
+  "peakDb": -19.9
+ },
+ "ding-dong": {
+  "dur": 1.15,
+  "onset": 0.002,
+  "peak": 0.206,
+  "peakDb": -11.8
+ },
+ "error": {
+  "dur": 0.7,
+  "onset": 0.002,
+  "peak": 0.111,
+  "peakDb": -14.6
+ },
+ "pop": {
+  "dur": 0.22,
+  "onset": 0.001,
+  "peak": 0.006,
+  "peakDb": -15.1
+ },
+ "resolve": {
+  "dur": 1.55,
+  "onset": 0.003,
+  "peak": 0.232,
+  "peakDb": -11.5
+ },
+ "success": {
+  "dur": 0.85,
+  "onset": 0.003,
+  "peak": 0.213,
+  "peakDb": -13.9
+ },
+ "sweep": {
+  "dur": 0.65,
+  "onset": 0.135,
+  "peak": 0.342,
+  "peakDb": -17.5
+ },
+ "toggle": {
+  "dur": 0.25,
+  "onset": 0.001,
+  "peak": 0.08,
+  "peakDb": -18.9
+ },
+ "typing-check-underline": {
+  "dur": 3.55,
+  "onset": 0.0,
+  "peak": 2.18,
+  "peakDb": -13.0
+ },
+ "typing-cmd-type": {
+  "dur": 3.55,
+  "onset": 0.0,
+  "peak": 3.297,
+  "peakDb": -13.0
+ },
+ "typing-code-type": {
+  "dur": 9.45,
+  "onset": 0.0,
+  "peak": 0.535,
+  "peakDb": -13.0
+ },
+ "typing-compute-matrix": {
+  "dur": 3.35,
+  "onset": 0.0,
+  "peak": 2.574,
+  "peakDb": -13.0
+ },
+ "typing-hook-count": {
+  "dur": 5.75,
+  "onset": 0.0,
+  "peak": 2.84,
+  "peakDb": -13.0
+ },
+ "typing-read-type": {
+  "dur": 7.75,
+  "onset": 0.0,
+  "peak": 6.478,
+  "peakDb": -13.0
+ },
+ "typing-search-stream": {
+  "dur": 11.95,
+  "onset": 0.001,
+  "peak": 5.38,
+  "peakDb": -13.0
+ },
+ "typing-truth-rows": {
+  "dur": 3.75,
+  "onset": 0.0,
+  "peak": 3.249,
+  "peakDb": -13.0
+ },
+ "typing-write-type": {
+  "dur": 9.75,
+  "onset": 0.0,
+  "peak": 6.548,
+  "peakDb": -13.0
+ },
+ "typing": {
+  "dur": 0.65,
+  "onset": 0.001,
+  "peak": 0.496,
+  "peakDb": -26.4
+ },
+ "whoosh": {
+  "dur": 0.38,
+  "onset": 0.071,
+  "peak": 0.202,
+  "peakDb": -19.1
+ }
+}

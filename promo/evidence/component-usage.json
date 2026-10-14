@@ -1,0 +1,209 @@
+[
+ {
+  "shotId": "cmd",
+  "featureEntry": "finagent/report_pipeline.py（build / run）",
+  "components": [
+   "终端窗口（本片排版）"
+  ],
+  "styleEntries": [
+   "src/film.css .term"
+  ],
+  "stateDriver": "镜头时间 → 键入字符数",
+  "adapters": [],
+  "reuseMode": "重建：命令行没有可导入的界面组件，按命令模板与 agent_runs.json 的事实排版",
+  "exceptions": "不是原始终端回显"
+ },
+ {
+  "shotId": "search",
+  "featureEntry": ".pipeline/agents/*-claude-research.jsonl",
+  "components": [
+   "事件流面板",
+   "来源卡片"
+  ],
+  "styleEntries": [
+   "src/film.css 05 search"
+  ],
+  "stateDriver": "镜头时间 → 已显示事件数",
+  "adapters": [
+   "tools/gen_data.py 第 2 节"
+  ],
+  "reuseMode": "重建：无头会话没有界面，画面是对真实事件记录的可视化",
+  "exceptions": "时间压缩、长行截断"
+ },
+ {
+  "shotId": "read",
+  "featureEntry": "年报 PDF 第 94 页 + data/extractions/中际旭创_2025/facts.json",
+  "components": [
+   "public/pages/ar-094.jpg（pdftoppm 渲染的原页）"
+  ],
+  "styleEntries": [],
+  "stateDriver": "镜头时间 → 取景与键入",
+  "adapters": [
+   "pdfplumber 取单元格位置"
+  ],
+  "reuseMode": "原件上镜（位图）+ JSON 重排",
+  "exceptions": ""
+ },
+ {
+  "shotId": "code",
+  "featureEntry": "finagent/tasks/financials/external.py:40-65",
+  "components": [
+   "源码原文（带真实行号）"
+  ],
+  "styleEntries": [
+   "src/kit/py.js 着色"
+  ],
+  "stateDriver": "镜头时间 → 键入字符数与执行指针",
+  "adapters": [
+   "tools/gen_data.py 第 3 节调用 find_evidence"
+  ],
+  "reuseMode": "原文上镜；运行结果来自真实调用",
+  "exceptions": "执行指针与逐块匹配的动画是对函数逻辑的示意"
+ },
+ {
+  "shotId": "truth",
+  "featureEntry": "runs/…/financials/analysis.json",
+  "components": [
+   "账页表格（本片排版）"
+  ],
+  "styleEntries": [
+   "src/film.css 08 truth"
+  ],
+  "stateDriver": "镜头时间",
+  "adapters": [],
+  "reuseMode": "数据原样、版式为本片设计",
+  "exceptions": ""
+ },
+ {
+  "shotId": "depth",
+  "featureEntry": "report/framework.md、runs/…/report/charts/chain.svg",
+  "components": [
+   "public/charts/chain.svg（研报里的产业链图原件）",
+   "驱动标签",
+   "专题列表"
+  ],
+  "styleEntries": [
+   "src/film.css 08b depth"
+  ],
+  "stateDriver": "镜头时间",
+  "adapters": [
+   "gen_data.py 读 framework.md 的两节"
+  ],
+  "reuseMode": "图表原件上镜；文字取自 framework.md",
+  "exceptions": "驱动标签去掉了括号说明"
+ },
+ {
+  "shotId": "compute",
+  "featureEntry": "runs/…/valuation/valuation.json、model.xlsx",
+  "components": [
+   "敏感性矩阵",
+   "情景条形",
+   "公式条"
+  ],
+  "styleEntries": [
+   "src/film.css 09 compute"
+  ],
+  "stateDriver": "镜头时间",
+  "adapters": [
+   "gen_data.py 第 6 节读 xlsx 的 XML"
+  ],
+  "reuseMode": "数据原样、版式为本片设计",
+  "exceptions": "不是 Excel 界面截图"
+ },
+ {
+  "shotId": "write",
+  "featureEntry": "report/narrative.md、commentary_guard.json",
+  "components": [
+   "文稿面板",
+   "来源配对列表"
+  ],
+  "styleEntries": [
+   "src/film.css 10 write"
+  ],
+  "stateDriver": "镜头时间 → 键入字符数",
+  "adapters": [],
+  "reuseMode": "原文上镜",
+  "exceptions": "数字与来源的配对规则做了简化"
+ },
+ {
+  "shotId": "review",
+  "featureEntry": "finagent/output/numlock.py:29",
+  "components": [
+   "改写前后句对",
+   "源码原文"
+  ],
+  "styleEntries": [
+   "src/film.css 11 review"
+  ],
+  "stateDriver": "镜头时间",
+  "adapters": [
+   "gen_data.py 第 7 节调用 numlock"
+  ],
+  "reuseMode": "原文上镜；返回值来自真实调用",
+  "exceptions": ""
+ },
+ {
+  "shotId": "layout",
+  "featureEntry": "runs/…/report/中际旭创1003.pdf",
+  "components": [
+   "public/pages/r-01…30.jpg",
+   "cover-01.jpg"
+  ],
+  "styleEntries": [],
+  "stateDriver": "镜头时间 → 3D 看板",
+  "adapters": [
+   "pdftoppm"
+  ],
+  "reuseMode": "原件上镜（位图）",
+  "exceptions": ""
+ },
+ {
+  "shotId": "qc",
+  "featureEntry": "eval/results/*/score.json、eval/calibration/summary.json",
+  "components": [
+   "分层得分",
+   "版本柱状图"
+  ],
+  "styleEntries": [
+   "src/film.css 13 qc"
+  ],
+  "stateDriver": "镜头时间",
+  "adapters": [],
+  "reuseMode": "数据原样、版式为本片设计",
+  "exceptions": "评审间是示意图"
+ },
+ {
+  "shotId": "check",
+  "featureEntry": "runs/20261013-160800-all/check/findings.json",
+  "components": [
+   "研报草稿",
+   "判定列表"
+  ],
+  "styleEntries": [
+   "src/film.css 14 check"
+  ],
+  "stateDriver": "镜头时间",
+  "adapters": [],
+  "reuseMode": "数据原样、版式为本片设计",
+  "exceptions": "虚构公司样例"
+ },
+ {
+  "shotId": "trace",
+  "featureEntry": "finagent_tui/app.py（FinAgentApp）",
+  "components": [
+   "public/tui/facts.svg",
+   "trace.svg",
+   "agents.svg"
+  ],
+  "styleEntries": [
+   "finagent_tui/app.tcss（tokyo-night）"
+  ],
+  "stateDriver": "镜头时间 → 切换页签与平移",
+  "adapters": [
+   "tools/tui_shot.py（Textual run_test + export_screenshot）",
+   "tools/tui_inline.py（去掉外链字体、修正全角字符宽度）"
+  ],
+  "reuseMode": "真实界面：应用无头运行后导出的原始 SVG",
+  "exceptions": "静态截图，不是实时操作；Agent 页的光标由脚本移到最后一行"
+ }
+]
