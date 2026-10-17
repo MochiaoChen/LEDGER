@@ -1,0 +1,38 @@
+% LEDGER 项目计划书
+% 编译：cd paper/proposal && latexmk -xelatex main.tex   （或 bash build.sh）
+\documentclass[fontset=none,zihao=5,oneside,openany]{ctexbook}
+\usepackage{ledger}
+\renewcommand{\chaptermark}[1]{\markboth{#1}{}}
+
+\begin{document}
+\frontmatter
+\input{chapters/00_cover}
+\input{chapters/00_summary}
+
+{\renewcommand{\ledgerkicker}{CONTENTS}
+ \renewcommand{\leftmark}{目录}
+ \tableofcontents}
+
+\mainmatter
+\pagestyle{fancy}
+\makeatletter\renewcommand{\ledgerkicker}{CHAPTER\ \two@digits{\value{chapter}}}\makeatother
+\input{chapters/01_overview}
+\input{chapters/02_principles}
+\input{chapters/03_architecture}
+\input{chapters/04_financials}
+\input{chapters/05_valuation}
+\input{chapters/06_research}
+\input{chapters/07_writing}
+\input{chapters/08_reportcheck}
+\input{chapters/09_evaluation}
+\input{chapters/10_practice}
+\input{chapters/11_repro}
+\input{chapters/12_value}
+\input{chapters/13_plan}
+
+\appendix
+\ctexset{chapter/name={,},chapter/number=\Alph{chapter}}
+\renewcommand{\ledgerkicker}{APPENDIX\ \Alph{chapter}}
+\input{chapters/a1_appendix}
+
+\end{document}

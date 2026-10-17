@@ -1,0 +1,185 @@
+\chapter{研究报告质量评估}
+\chapterlead{对应主选题“研究报告质量评估”。没有可复核的评价，就分不清一次改动是在改进还是在退步。}
+
+\section{思路}
+
+评价一份研报，有些事情程序能判，有些只能靠人或模型读。三张表是否勾稽、正文的每股价值与估值产物是否一致、外部数字是否都有来源，
+这些是确定的，交给程序；预期差有没有说清、驱动拆解是否到位、结论是否先行，这些需要阅读理解，交给一个盲评模型。
+我们的原则是能程序判的尽量程序判，缩小模型评审的范围，再用重复评审、人为制造缺陷和人工复核三组证据，估计模型评审本身靠不靠得住。
+
+评分标准对生成方完全不可见：它不在工作区里，生成会话的技能说明里也没有它的条目。返工时回传给生成方的问题单只有理由和证据，
+不含条目原文和分值。这样做是为了防止生成方“应试”，去满足条目字面而不是把报告写好。
+
+\section{四层评分标准}
+
+评分标准目前是第 2 版（表~\ref{tab:ev-rubric}），共 41 个条目，分为四层加负向条目。
+
+\begin{table}[htbp]
+\centering
+\caption{评分标准 v2 的结构}
+\label{tab:ev-rubric}
+\small
+\begin{tabularx}{\linewidth}{@{}l c c c L@{}}
+\toprule
+\hd{层} & \hd{条目} & \hd{分值} & \hd{谁判} & \hd{内容} \\
+\midrule
+L0 硬闸门 & 5 & 不计分 & 程序 & 数字护栏、三表勾稽、DCF 与三表同口径、免责声明、评级与估值一致；任一不过，总分封顶 40 \\
+\rowband
+L1 数据闭合 & 13 & 35 & 程序 & 抽取校验、分部基期闭合、价值桥加总、每股价值复算、情景排序、敏感性方向、终值占比、预测衔接、正文估值一致、外部信息可追溯、股价来源、数字锁、复核清单 \\
+L2 分析质量 & 12 & 45 & 盲评 & 核心结论、预期差、商业模式、驱动拆解、业绩归因、行业竞争、预测依据、估值方法、交叉验证、情景敏感性、风险落到假设、跟踪与失效条件 \\
+\rowband
+L3 表达合规 & 7 & 20 & 盲评 & 故事线、事实/推论/观点可区分、结论先行、无机器腔、数字密度、图表服务论点、假设与局限透明 \\
+N 负向 & 4 & $-30$ & 程序/盲评 & 无来源的外部数据（$-8$，并封顶 70）、数字前后矛盾（$-8$，程序判）、聚合数构成描述错误（$-6$）、结论前后冲突（$-8$） \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+交付标准是：总分不低于 75，L1 得分率不低于 80\%，L2、L3 得分率不低于 60\%，且不命中任何负向条目。
+
+L2 的条目写得很具体。以“预期差”为例，判定标准要求报告指出市场的主流看法（最好有一致预期或目标价作为依据），说明本报告与之不同在哪里、
+分歧落在哪个可以观察的变量上；只说“市场低估了公司”判不通过。每个条目都附有反例，帮助评审判断边界。
+
+\section{盲评}
+
+盲评在仓库和工作区之外单独建立的目录里进行，目录里只有交付物：PDF、文稿、估值产物、来源登记表、复核清单，以及评审条目（只含编号、标题、判定标准和反例，不含分值）。
+评审会话只能读这个目录、写一个 \file{judgments.json}，不能联网。规则是“拿不准判不通过”，每条判定都要给出理由和引自报告的证据（含页码）。
+计分由程序完成，改权重或门槛之后可以直接重算，不必重跑评审。
+
+\section{返工循环}
+
+\code{refine} 把生成、评审和返工串成一个循环（图~\ref{fig:ev-loop}）。评审不达标时，问题单按类型路由：数据或假设问题交给一个修订会话（Opus），
+修订后复核与排版重做；措辞或结构问题交给复核编辑（Sonnet），数字锁照常生效；版面问题交给排版设计师。
+循环在以下任一条件满足时停止：达标；满 3 轮；连续两轮提升不到 2 分；没有可回传的问题。结束时回滚到得分最高的一轮，仍未达标的问题追加进人工复核清单。
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[node distance=5mm and 7mm]
+  \node[prog,minimum width=2.0cm] (run) {生成\\ \scriptsize 五会话 + 11 闸门};
+  \node[gate,right=of run] (g) {闸门\\全过?};
+  \node[prog,right=of g,minimum width=2.6cm] (judge) {程序检查 L0/L1\\ + 盲评 L2/L3/N};
+  \node[prog,right=of judge,minimum width=1.6cm] (score) {程序计分};
+  \node[gate,right=of score] (d) {达标?};
+  \node[doc,above=6mm of d,minimum width=1.5cm] (end) {结束};
+  \node[doc,below=6mm of g,minimum width=1.6cm] (human) {停下，交给人};
+  \node[agent,below=12mm of judge,minimum width=2.3cm] (fix1) {修订会话\\ \scriptsize 数据 / 假设};
+  \node[agent,right=of fix1,minimum width=2.3cm] (fix2) {复核编辑\\ \scriptsize 措辞 / 结构};
+  \node[agent,right=of fix2,minimum width=2.1cm] (fix3) {排版设计师\\ \scriptsize 版面};
+  \draw[arr] (run) -- (g); \draw[arr] (g) -- node[above,font=\scriptsize]{是} (judge); \draw[arr] (judge) -- (score); \draw[arr] (score) -- (d);
+  \draw[arr] (d) -- node[right,font=\scriptsize]{是} (end); \draw[arr] (g) -- node[right,font=\scriptsize]{否} (human);
+  \draw[arr] (d) |- node[pos=0.25,right,font=\scriptsize]{否：问题单} ([yshift=5mm]fix3.north) -- (fix3.north);
+  \draw[arr] ([yshift=5mm]fix3.north) -| (fix2.north); \draw[arr] ([yshift=5mm]fix2.north) -| (fix1.north);
+  \draw[darr] (fix1.west) -| (run.south);
+\end{tikzpicture}
+\caption{质检返工循环。问题单只含理由与证据；结束时回滚到得分最高的一轮。}
+\label{fig:ev-loop}
+\end{figure}
+
+\section{三个流程版本的得分}
+
+表~\ref{tab:ev-versions} 是七份研报的盲评结果，全部按评分标准 v0、各评审一次。v0、v1、v2 指流水线版本：v0 没有独立的资料搜集；
+v1 增加了“先搜集、后分析”与独立复核会话；v2 增加了深度专题调研、篇幅闸门和独立的排版会话。
+
+\begin{table}[htbp]
+\centering
+\caption{三个流程版本的研报得分（评分标准 v0，单次盲评）}
+\label{tab:ev-versions}
+\small
+\begin{tabular}{@{}llrrrrrc@{}}
+\toprule
+\hd{版本} & \hd{公司} & \hd{L1（35）} & \hd{L2（45）} & \hd{L3（20）} & \hd{负向} & \hd{总分} & \hd{达标} \\
+\midrule
+v0 & 贵州茅台 & 26 & 19 & 11 & $-8$ & 48 & \xmark \\
+\rowband
+v0 & 宁德时代 & 26 & 15 & 8 & 0 & 49 & \xmark \\
+v0 & 招商轮船 & 21 & 21 & 12 & $-8$ & 46 & \xmark \\
+\midrule
+\rowband
+v1 & 中际旭创 & 33 & 26 & 15 & 0 & 74 & \xmark \\
+v1 & 宇树科技 & 30 & 19 & 18 & 0 & 67 & \xmark \\
+\midrule
+\rowband
+v2 & 中际旭创 & 33 & 42 & 15 & 0 & \textbf{90} & \cmark \\
+v2 & 宇树科技 & 30 & 40 & 18 & 0 & \textbf{88} & \cmark \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+\begin{axis}[ybar stacked, bar width=17pt, width=0.92\linewidth, height=5.6cm, ymin=0, ymax=100, ylabel={得分},
+  symbolic x coords={a,b,c,d,e,f,g}, xtick=data,
+  xticklabels={{v0 茅台},{v0 宁德},{v0 招商},{v1 中际},{v1 宇树},{v2 中际},{v2 宇树}},
+  x tick label style={font=\scriptsize\heiti}, legend style={at={(0.02,0.98)},anchor=north west}, legend columns=3,
+  axis x line*=bottom, axis y line*=left, ymajorgrids, grid style={rule!50}]
+\addplot[fill=ink!80,draw=ink] coordinates {(a,26)(b,26)(c,21)(d,33)(e,30)(f,33)(g,30)};
+\addplot[fill=seal!75,draw=seal] coordinates {(a,19)(b,15)(c,21)(d,26)(e,19)(f,42)(g,40)};
+\addplot[fill=gold!75,draw=gold] coordinates {(a,11)(b,8)(c,12)(d,15)(e,18)(f,15)(g,18)};
+\legend{L1 数据闭合,L2 分析质量,L3 表达合规}
+\draw[seal,dashed,thick] (axis cs:a,75) -- (axis cs:g,75);
+\node[font=\scriptsize,text=seal,anchor=south east] at (axis cs:g,75) {交付线 75};
+\end{axis}
+\end{tikzpicture}
+\caption{各层得分（未计负向扣分）。v0→v1 主要补上了数据闭合，v1→v2 的提升几乎全部来自分析质量。}
+\label{fig:ev-versions}
+\end{figure}
+
+提升分两段，性质不同。v0 到 v1 主要是 L1：v0 三家的“外部信息可追溯”“复核改写过数字锁”“人工复核清单”三项全部没过，v1 补上了来源登记与独立复核，
+这些程序检查项随之通过。这一段是“补齐流程产物”，不难，也不说明分析变好了。v1 到 v2 几乎全部是 L2：中际旭创 L2 从 26 升到 42，宇树科技从 19 升到 40。
+逐条看，翻转的是核心结论、预期差、驱动拆解、预测依据、估值交叉验证、情景与敏感性、跟踪指标，正是深度专题和篇幅闸门要求补的内容。
+也有一条反向：中际旭创的“无机器腔”在 v2 由通过变为不通过，篇幅加倍之后程序口吻又冒了出来。
+
+这些差异是否超出评审本身的波动？同一份稿件重复盲评，总分极差是 7～8 分（下一节）；v1 到 v2 的 16 分和 21 分超出这个范围，
+而且被翻转的 L2 条目里只有一条属于评审不稳定的条目。我们因此认为这一段提升是真实的。但每个版本只有一到三家公司，v1 和 v2 也不是同一份稿件只改一处，
+流程改动与公司特性不能完全分开，这需要第 13 章计划的消融实验来回答。
+
+\section{评审靠不靠得住}
+
+模型评审本身需要被评估。我们做了三组校准（表~\ref{tab:ev-calib}），结果有好有坏，如实列出。
+
+\begin{table}[htbp]
+\centering
+\caption{评审校准：目标与实测（评分标准 v1）}
+\label{tab:ev-calib}
+\small
+\begin{tabularx}{\linewidth}{@{}l l L c@{}}
+\toprule
+\hd{指标} & \hd{目标} & \hd{实测} & \hd{达标} \\
+\midrule
+重复评审逐条全一致率 & $\ge 90\%$ & 中际旭创 20/22（91\%），宇树科技 19/22（86\%） & 一家 \\
+\rowband
+重复评审总分极差 & $\le 5$ 分 & 7 分（85/80/78），8 分（80/88/83） & \xmark \\
+人为缺陷的判出率 & $\ge 80\%$ & 5/12（42\%）：中际旭创 2/6，宇树科技 3/6 & \xmark \\
+\rowband
+判出问题的人工精确率 & -- & 26/31（84\%），另有 2 条待查 & -- \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\paragraph{稳定性。}同一份稿件盲评三次，22 个条目中 19～20 个三次判定完全一致。不稳定的条目集中在“预测假设有依据”和“假设与局限透明”，
+它们要求评审判断“依据是否充分”，是程度判断，二值化之后天然不稳定。总分极差 7～8 分，意味着单次盲评的噪声约 $\pm4$ 分：
+版本之间 16 分以上的差异可信，5 分以内的不可信。评审成本只有生成成本的 4\%～9\%（每次约 1.75 美元），每份研报多评几次取多数是可行的。
+
+\paragraph{灵敏度。}我们用程序在原稿上制造七种已知缺陷：评级在摘要里改成相反方向、风险提示换成通用模板、注入程序口吻、删掉交叉验证、删掉预期差、
+删掉跟踪指标、插入一段无来源的市场规模数字。局部缺陷判得很准：无来源数字两家都判出，总分直接被压到封顶的 40 分；程序口吻两家都判出。
+“整节删除”类缺陷几乎都没判出。逐条读评审理由后我们发现，多数是劣化没删干净：同一个论点在核心观点、深度专题和图表里重复出现，
+图表由排版脚本生成、不在文稿里，删掉一节，内容在别处仍在。但这也暴露了一个评审设计问题：两家劣化稿删掉“跟踪指标与结论失效条件”一节后留下空标题页，
+评审在理由里明确写了“只有标题没有内容，属明显缺陷”，却仍判通过，因为全文别处有跟踪指标。L2 条目问的是“报告是否做到了 X”，
+对“X 是否在应在的位置、是否完整”不敏感。
+
+\paragraph{人工精确率。}团队成员人工复核了评审在三家 v0 研报上判“不通过”的 33 条：确认 26 条、误报 5 条、待查 2 条，精确率 84\%。
+5 条误报中有 2 条是“无机器腔”。复核人的批注写得很直接：评审看到报告出现几次“不是……而是……”就判机器味太重，“这个判断过于严格”；
+另一位复核人认为“数据加百分比不算数据堆砌”。误报集中在表达类条目，方向都是过严。评分标准 v1 据此修改了这两个条目的措辞，
+只检查正文中重复、无意义的程序口吻。
+
+\begin{note}[评分标准的版本]
+v0 是初版；v1 根据人工质检调整了表达类条目的措辞；v2 把“数字前后矛盾”从模型判改为程序判，原因是校准中发现评审对这一条的判定依赖它对措辞的理解，
+同一份稿件时判时不判。三个版本的条目文件都保存在 \file{eval/rubrics/}，计分可以在任意版本上重算。
+\end{note}
+
+\section{对评审的使用原则}
+
+综合三组结果，我们对模型评审的使用定了三条原则。第一，局部错误（无来源数字、程序口吻、评级矛盾）能被可靠判出，且会显著拉低分数，
+所以“没有命中负向条目”这个结论是可信的。第二，“缺了什么”类缺陷判出率低，高分不能证明报告结构完整，这部分仍要靠程序闸门（篇幅、章节、图表计数）和人工抽查。
+第三，生成用 Opus、评审用 Sonnet，同属一个模型家族，存在偏好同类文风的风险；我们的应对是把能程序判的条目尽量移到程序，
+再用人工复核估计剩余部分的精确率。用其他家族的模型做评审对照，是待做的实验之一。

@@ -1,0 +1,77 @@
+% 摘要与一页纸概览
+\renewcommand{\ledgerkicker}{SUMMARY}
+\chapter*{项目摘要}
+\markboth{项目摘要}{}
+
+卖方研究员写一份上市公司深度报告，有相当多的时间花在“搬数”上：从年报里把几百个数字抄进模型，算增速、算占比、核对三张表能不能对上，
+再把这些数字一个个写进正文。大语言模型很会读，也很会写，看上去正适合接手这份工作。我们在项目初期让模型直接读年报、写研报，
+得到的稿子读起来很像样，但逐个核对数字时问题很多：同比增速写错、把上年数当成本年数、把“净利润”当成“归母净利润”，
+行业规模、市场份额这类数字说不清出处。研报的价值建立在数字可信之上，一个错数就足以让读者怀疑整篇报告。
+
+\sysname{} 是我们为此搭建的投研多智能体系统，面向 A 股上市公司，输入一份年报（或招股书、季报），输出三类可以交给人核对的成果：
+带页码出处的财务真值表与分析报告、公式联动的估值工作簿、25～32 页的卖方体例深度研报。整个系统只遵守一条分工：
+\textbf{模型负责读、抄、写和判断，程序负责校验、计算和拦截}。模型抄下的每个数字都要在它所写的页码原文中逐字找到；
+增速、占比、估值全部由确定性 Python 计算；研报正文里的每个数字都要能对回本次运行的产物或外部来源登记表，否则护栏拒绝放行。
+
+研报生产由五个上下文互相隔离的无头 Claude Code 会话完成（研究助理、分析师、主笔、复核编辑、排版设计师），
+它们只通过工作区里的文件交接，每一步之后由程序检查 11 道闸门。质检由另一个看不到生成过程的盲评会话完成，
+评分标准分为程序判的硬闸门与数据闭合、模型判的分析质量与表达合规两部分，评分标准本身对生成方不可见。
+
+\paragraph{目前做到哪一步。}
+系统已在贵州茅台、宁德时代、招商轮船、中际旭创四家公司的 2025 年年报和宇树科技的招股说明书上完整跑通。
+三家年报的 301 个模型核验数值全部通过逐字证据校验，规则通道独立取到并一致的 280 个，两条通道之间没有一处冲突，56 项勾稽全部成立。
+研报流水线先后迭代三个版本，同一评分标准下的盲评总分从 46～49 分提高到 88～90 分；一次通过的研报平均耗时 65.5 分钟、折合 API 费用 26.07 美元。
+研报纠错核查在 1,334 条由真实真值表生成的断言上做到了零误报。计算引擎共 171 个测试通过。
+
+\paragraph{本计划书的内容。}
+第 1～2 章说明我们要解决的问题和设计原则；第 3 章介绍系统架构；第 4～9 章依次介绍六个选题方向的具体做法，
+每章都给出在真实数据上的结果；第 10 章整理团队内部的数据资产、运行记录和踩过的坑；第 11～12 章说明可追溯性、合规与应用价值；
+第 13 章是到决赛为止的实施计划。文中所有数字都可以在代码仓库的产物中找到出处，做不到的地方会直接说明。
+
+\clearpage
+\noindent{\heiti\bfseries\Large\color{ink}一页纸概览}\par\vspace{4pt}
+\noindent{\kaiti\color{mute}系统做了什么、做到了什么程度。所有数字均可在代码仓库的产物中找到出处。}\par\vspace{12pt}
+\noindent
+\begin{minipage}[t]{0.24\linewidth}\kpi{301\,/\,0}{核验数值 / 冲突}{三家真实年报，佐证率 93.0\%}\end{minipage}\hfill
+\begin{minipage}[t]{0.24\linewidth}\kpi{46\,$\rightarrow$\,90}{研报盲评总分}{三个流程版本，同一评分标准}\end{minipage}\hfill
+\begin{minipage}[t]{0.24\linewidth}\kpi{0\,\%}{纠错误报率}{1,334 条注入断言，召回 100\%}\end{minipage}\hfill
+\begin{minipage}[t]{0.24\linewidth}\kpi{65.5\,min}{一份深度研报}{一次通过平均，折合 26.07 美元}\end{minipage}
+
+\vspace{6pt}\noindent
+\begin{minipage}[t]{0.24\linewidth}\kpi{0}{无出处数字}{三份终稿共 2,586 个带出处数字}\end{minipage}\hfill
+\begin{minipage}[t]{0.24\linewidth}\kpi{84\,\%}{评审精确率}{评审判出的问题经人工确认}\end{minipage}\hfill
+\begin{minipage}[t]{0.24\linewidth}\kpi{1,712}{快照字段逐字段相等}{自研估值引擎对照参照实现}\end{minipage}\hfill
+\begin{minipage}[t]{0.24\linewidth}\kpi{171}{测试通过}{另 6 个浏览器打印测试跳过}\end{minipage}
+
+\vspace{16pt}
+\noindent{\heiti\bfseries\color{ink}一份研报怎么生产出来}\par\vspace{8pt}
+\begin{center}
+\begin{tikzpicture}[node distance=3.2mm,
+  role/.style={agent,minimum width=2.1cm,minimum height=1.25cm,font=\scriptsize},
+  g/.style={gate,minimum width=5mm,font=\tiny,inner sep=0.5pt}]
+  \node[doc,minimum height=1.25cm,font=\scriptsize] (in) {年报 PDF\\ 股价\\ 可比公司};
+  \node[role,right=4mm of in] (r1) {\textbf{研究助理}\\ 七类资料\\ 来源登记};
+  \node[g,right=of r1] (g1) {1};
+  \node[role,right=of g1] (r2) {\textbf{分析师}\\ 抽取 · 框架 · 专题\\ 经营数据 · 估值};
+  \node[g,right=of r2] (g2) {2–7};
+  \node[role,right=of g2] (r3) {\textbf{主笔}\\ 文稿\\ 数字护栏};
+  \node[g,right=of r3] (g3) {8};
+  \node[role,below=9mm of r3] (r4) {\textbf{复核编辑}\\ 改写\\ 数字锁};
+  \node[g,left=of r4] (g4) {9};
+  \node[role,left=of g4] (r5) {\textbf{排版设计师}\\ 25～32 页\\ $\ge$60 图表};
+  \node[g,left=of r5] (g5) {10–11};
+  \node[prog,left=of g5,minimum height=1.25cm,minimum width=2.1cm,font=\scriptsize,fill=seal!8,draw=seal] (qc) {\textbf{盲评质检}\\ 四层评分\\ 问题单返工};
+  \draw[arr] (in)--(r1); \draw[arr] (r1)--(g1); \draw[arr] (g1)--(r2); \draw[arr] (r2)--(g2); \draw[arr] (g2)--(r3); \draw[arr] (r3)--(g3);
+  \draw[arr] (g3) |- (r4); \draw[arr] (r4)--(g4); \draw[arr] (g4)--(r5); \draw[arr] (r5)--(g5); \draw[arr] (g5)--(qc);
+  \node[prog,fill=progc!14,below=7mm of qc.south west,anchor=north west,font=\scriptsize,minimum height=7mm,minimum width=11.0cm] (eng)
+    {\textbf{计算引擎}（不调用模型）：证据校验、双通道、真值表、勾稽、三表、DCF、可比公司、纠错、护栏、数字锁};
+  \foreach \n in {r2,r3,r4} {\draw[darr] (eng.north -| \n.south) -- (\n.south);}
+\end{tikzpicture}
+\end{center}
+\noindent{\small\color{mute} 橙色为模型会话（彼此不共享上下文，只靠文件交接），菱形为程序闸门，蓝色为计算引擎。}
+
+\vspace{12pt}
+\begin{note}[关于投资建议]
+本计划书及系统产出的研报、估值模型中的评级与目标价值均由程序依据文中列明的假设计算得出，用于展示系统能力，不构成任何投资建议。
+\end{note}
+\clearpage

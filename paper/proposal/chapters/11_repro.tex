@@ -1,0 +1,64 @@
+\chapter{可追溯、复现与合规}
+\chapterlead{评审拿到代码，应该能在自己的电脑上得到和我们一样的数字。}
+
+\section{三层记录}
+
+系统的记录分三层（表~\ref{tab:rp-layers}），复现能力各不相同，我们如实区分。
+
+\begin{table}[htbp]
+\centering
+\caption{三层记录与复现能力}
+\label{tab:rp-layers}
+\small
+\begin{tabularx}{\linewidth}{@{}l L L@{}}
+\toprule
+\hd{层} & \hd{记录了什么} & \hd{能否离线复现} \\
+\midrule
+计算引擎 & 每次运行的 \file{events.jsonl}（文件读取及其哈希、步骤起止、工具调用、产物写出）和 \file{manifest.json}（输入与产物哈希、命令行、版本、耗时） & 能。用保存的抽取文件与假设文件，逐位复算全部数字 \\
+\rowband
+模型会话 & 工作区 \file{.pipeline/agents/} 下每个会话的完整事件流（每一轮的工具调用与结果），\file{agent\_runs.json} 汇总轮数、token 与费用 & 可以逐轮查看，不能离线重放模型输出 \\
+质检 & 盲评的逐条判定、理由与证据，计分结果，问题单，每轮分数与停止原因 & 计分可重算；重新盲评需要调用模型 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+引擎内部，所有文件读取都经过统一的读取函数，所有产物都经过统一的写出函数，这样才能保证每个文件都被记下哈希；每个流水线步骤用装饰器注册，
+工具函数也有追踪装饰器。这几条写在开发指南里，是代码审查时的检查项。
+
+\section{一个数字的溯源}
+
+以研报里的任意一个数字为起点，可以沿下面的路径一直追到原始文档：
+\begin{enumerate}
+  \item 护栏结果给出它的出处类型和来源文件（真值表、估值产物或来源登记表）；
+  \item 如果来自真值表，单元格记录了文件、页码、表块编号、行和列，以及另一条通道的佐证位置；
+  \item 如果是程序计算的，计算步骤在运行目录的事件流里，输入单元格可以继续往下追；
+  \item 如果是外部数字，来源登记表给出网址、发布日期、访问日期和包含该数字的原文摘句；
+  \item 如果是估值假设，假设文件的依据字段写了为什么这样取值，并引用了资料包编号。
+\end{enumerate}
+第 4 章的茅台营业收入就是这样一条完整链路。决赛演示时，我们计划在界面上点击研报中的任一数字，直接跳到年报对应页并高亮那一格。
+
+\section{运行说明}
+
+仓库包含全部源码、依赖文件和运行说明。环境要求是 Python 3.12，计算引擎只依赖标准库和 pdfplumber；终端界面另需 Textual。
+不调用任何模型就能复现的部分如下，评审可以直接运行：
+
+\begin{keybox}\small\ttfamily\raggedright
+python -m pytest -q tests\hfill \textrm{\small\rmfamily 171 个测试，约 25 秒}\\[2pt]
+python eval/run\_eval.py\hfill \textrm{\small\rmfamily 样例抽取与纠错评测，约 0.01 秒}\\[2pt]
+python -m finagent all --input data/samples/annual\_report\_2024.md --year 2024 --company 星河智造 ...\hfill \textrm{\small\rmfamily 样例全流程}
+\end{keybox}
+
+真实年报的抽取、分析与估值，可以用仓库里保存的抽取文件和假设文件在几秒内重算。研报流水线需要安装并登录 Claude Code，命令见第 3 章。
+
+\section{第三方代码与模型}
+
+\file{THIRD\_PARTY.md} 按竞赛要求列明了全部第三方组件。估值、业绩分析、情景表等引擎的计算口径参照 OpenAI Public Equity Investing 插件（0.1.31），
+该插件许可证标注为仅限内部使用，所以仓库不包含它的任何代码，全部自研实现，参照关系逐个模块列出，一致性由对照测试和快照测试保证（第 5 章）。
+另有几处只借鉴了方法、没有复刻口径，例如研报内部一致性检查、工作簿公式审计、数字出处分类，也都逐项说明。
+开源依赖有 pdfplumber、pytest、Textual、Rich（均为 MIT 许可），以及仅在开发时用于生成样例 PDF 的 fpdf2。
+模型方面，生成侧使用 Claude Opus，复核与盲评使用 Claude Sonnet，通过无头 Claude Code 调用；Claude Code 由用户自行安装，不随源码分发。
+
+\section{投资建议与合规}
+
+系统产出的评级由程序按规则给出，研报中写明规则、假设、口径简化与适用范围，并区分事实、推论与观点；每份研报末尾都有“不构成投资建议”的声明，
+这一项是质检的硬闸门之一。研报引用的卖方研究和媒体报道只登记摘句与出处，不复制原文；评测用的卖方研报只在团队内部使用，入库的只有我们抽出的断言与标签。

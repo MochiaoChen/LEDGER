@@ -1,0 +1,198 @@
+% LEDGER 项目计划书版式
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{ledger}[2026/10/07 LEDGER proposal style]
+
+% ---------- 页面 ----------
+\RequirePackage[a4paper,top=2.6cm,bottom=2.4cm,inner=2.5cm,outer=2.5cm,headheight=15pt,headsep=10pt,footskip=26pt]{geometry}
+\RequirePackage{fontspec}
+\RequirePackage{xcolor}
+\RequirePackage{graphicx}
+\RequirePackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,shapes.geometric,shapes.misc,shapes.symbols,fit,backgrounds,calc,decorations.pathreplacing,matrix}
+\RequirePackage{pgfplots}
+\pgfplotsset{compat=1.18}
+\usepgfplotslibrary{groupplots}
+\RequirePackage{booktabs,tabularx,multirow,array,colortbl,makecell}
+\RequirePackage{enumitem}
+\RequirePackage[most]{tcolorbox}
+\RequirePackage{fancyhdr}
+\RequirePackage{titletoc}
+\RequirePackage{amsmath,amssymb}
+\RequirePackage{caption}
+\RequirePackage{subcaption}
+\RequirePackage{pifont}
+\RequirePackage{pdfpages}
+\RequirePackage{float}
+\RequirePackage{hyperref}
+\raggedbottom
+\renewcommand{\topfraction}{0.9}
+\renewcommand{\bottomfraction}{0.8}
+\renewcommand{\textfraction}{0.08}
+\renewcommand{\floatpagefraction}{0.75}
+\setcounter{topnumber}{3}
+\setcounter{totalnumber}{5}
+
+% ---------- 字体 ----------
+\setmainfont{Palatino}[Ligatures=TeX]
+\setsansfont{Avenir Next}[UprightFont=* Regular,BoldFont=* Demi Bold,ItalicFont=* Italic]
+\setmonofont{Menlo}[Scale=0.84]
+\setCJKmainfont{Songti SC}[BoldFont=Songti SC Bold,ItalicFont=Kaiti SC]
+\setCJKsansfont{PingFang SC}[BoldFont=PingFang SC Semibold]
+\setCJKmonofont{PingFang SC}
+\xeCJKDeclareCharClass{FullLeft}{"2018,"201C}
+\xeCJKDeclareCharClass{FullRight}{"2019,"201D}
+\newCJKfontfamily\kaiti{Kaiti SC}
+\newCJKfontfamily\heiti{PingFang SC}[BoldFont=PingFang SC Semibold]
+\newCJKfontfamily\heitilight{PingFang SC Light}
+\linespread{1.42}\selectfont
+\setlength{\parskip}{2pt plus 1pt}
+
+% ---------- 颜色 ----------
+\definecolor{ink}{HTML}{1C2F4A}       % 账簿墨蓝
+\definecolor{inkl}{HTML}{3E5A80}
+\definecolor{seal}{HTML}{A8382A}      % 印章红（研报体例的主色）
+\definecolor{gold}{HTML}{A88449}
+\definecolor{paper}{HTML}{F7F4EC}     % 账页底色
+\definecolor{rule}{HTML}{C9C2B2}
+\definecolor{mute}{HTML}{6B6B6B}
+\definecolor{progc}{HTML}{2F5E8C}     % 确定性程序
+\definecolor{agentc}{HTML}{C0782B}    % 模型会话
+\definecolor{gatec}{HTML}{A8382A}     % 闸门
+\definecolor{okc}{HTML}{3D7A4F}
+\definecolor{rowgray}{HTML}{F3F1EB}
+
+\hypersetup{colorlinks=true,linkcolor=ink,urlcolor=seal,citecolor=ink,
+  pdftitle={LEDGER 项目计划书},pdfauthor={LEDGER 团队}}
+
+% ---------- 章节标题 ----------
+\makeatletter
+\newcommand{\ledgerkicker}{CHAPTER\ \two@digits{\value{chapter}}}
+\newcommand{\ledger@gobble}[1]{}
+\newcommand{\ledger@chaptitle}[1]{%
+  \begin{tikzpicture}[remember picture,overlay]
+    \fill[paper] (current page.north west) rectangle ([yshift=-6.0cm]current page.north east);
+    \foreach \i in {1,...,9}{\draw[rule!80,line width=0.25pt] ([yshift=-\i*0.6cm]current page.north west) -- ([yshift=-\i*0.6cm]current page.north east);}
+    \draw[seal,line width=0.6pt] ([xshift=1.55cm]current page.north west) -- ([xshift=1.55cm,yshift=-6.0cm]current page.north west);
+    \draw[seal,line width=0.6pt] ([xshift=1.67cm]current page.north west) -- ([xshift=1.67cm,yshift=-6.0cm]current page.north west);
+    \draw[ink,line width=1.2pt] ([yshift=-6.0cm]current page.north west) -- ([yshift=-6.0cm]current page.north east);
+  \end{tikzpicture}%
+  \vspace*{-0.3cm}%
+  {\fontsize{10.5}{12}\selectfont\sffamily\bfseries\color{seal}\addfontfeature{LetterSpace=20}\ledgerkicker\par}%
+  \vspace{8pt}%
+  {\heiti\bfseries\fontsize{25}{31}\selectfont\color{ink}#1\par}%
+}
+\ctexset{
+  chapter={
+    format={\raggedright},
+    name={,},
+    number={\arabic{chapter}},
+    numberformat={\ledger@gobble},
+    aftername={},
+    titleformat={\ledger@chaptitle},
+    beforeskip={0pt},
+    afterskip={2.1cm},
+    fixskip=true,
+    pagestyle=plain,
+  },
+  section={
+    format={\raggedright\heiti\bfseries\large\color{ink}},
+    number={\thechapter.\arabic{section}},
+    aftername={\hspace{0.7em}},
+    beforeskip={16pt plus 3pt},
+    afterskip={7pt},
+    numberformat={\color{seal}},
+  },
+  subsection={
+    format={\raggedright\heiti\bfseries\normalsize\color{ink}},
+    number={\thechapter.\arabic{section}.\arabic{subsection}},
+    aftername={\hspace{0.6em}},
+    beforeskip={10pt plus 2pt},
+    afterskip={4pt},
+    numberformat={\color{inkl}},
+  },
+  paragraph={
+    format={\heiti\bfseries\color{ink}},
+    aftername={},
+    afterskip={0.8em},
+    beforeskip={4pt},
+    indent=0pt,
+  },
+}
+\makeatother
+\newcommand{\chapterlead}[1]{{\kaiti\color{mute}#1\par}\vspace{10pt}}
+
+% ---------- 页眉页脚 ----------
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\footnotesize\color{mute}\textsf{\textcolor{seal}{\textbf{LEDGER}}}\quad{\heitilight 项目计划书}}
+\fancyhead[R]{\footnotesize\color{mute}\heitilight\leftmark}
+\fancyfoot[C]{\footnotesize\sffamily\color{ink}\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+\makeatletter
+\renewcommand{\headrule}{{\color{rule}\hrule width\headwidth height 0.4pt\vskip-0.4pt}}
+\makeatother
+\fancypagestyle{plain}{\fancyhf{}\fancyfoot[C]{\footnotesize\sffamily\color{ink}\thepage}\renewcommand{\headrulewidth}{0pt}}
+
+% ---------- 目录 ----------
+\titlecontents{chapter}[0pt]{\addvspace{7pt}\heiti\bfseries\color{ink}}
+  {\makebox[2.2em][l]{\sffamily\color{seal}\thecontentslabel}}{}
+  {\hfill\sffamily\contentspage}
+\titlecontents{section}[2.2em]{\small\addvspace{1pt}}
+  {\makebox[2.6em][l]{\sffamily\color{inkl}\thecontentslabel}}{}
+  {\titlerule*[0.6pc]{\color{rule}.}\sffamily\contentspage}
+\setcounter{tocdepth}{1}
+
+% ---------- 图表 ----------
+\captionsetup{font={small},labelfont={bf,color=ink},labelsep=quad,skip=6pt}
+\captionsetup[table]{position=top}
+\renewcommand{\arraystretch}{1.22}
+\setlength{\aboverulesep}{0pt}\setlength{\belowrulesep}{0pt}
+\newcommand{\hd}[1]{{\heiti\bfseries #1}}
+\newcommand{\rowband}{\rowcolor{rowgray}}
+\newcolumntype{L}{>{\raggedright\arraybackslash}X}
+\newcolumntype{C}{>{\centering\arraybackslash}X}
+\setlist{nosep,leftmargin=1.6em,topsep=3pt,itemsep=1pt}
+\setlist[enumerate]{label=\textcolor{seal}{\arabic*.}}
+\setlist[itemize]{label=\textcolor{seal}{\scriptsize$\blacksquare$}}
+
+% ---------- 盒子 ----------
+\newtcolorbox{note}[1][]{enhanced,breakable,colback=paper,colframe=paper,boxrule=0pt,arc=0pt,
+  borderline west={2.2pt}{0pt}{seal},left=10pt,right=8pt,top=5pt,bottom=5pt,
+  fonttitle=\heiti\bfseries\small\color{seal},coltitle=seal,attach title to upper={\par\vspace{2pt}},title={#1},fontupper=\small}
+\newtcolorbox{story}[1][]{enhanced,breakable,colback=white,colframe=rule,boxrule=0.5pt,arc=1.5pt,
+  left=10pt,right=10pt,top=6pt,bottom=6pt,
+  title={\heiti\bfseries\small #1},colbacktitle=ink,coltitle=white,toptitle=2pt,bottomtitle=2pt,fontupper=\small}
+\newtcolorbox{keybox}{enhanced,colback=ink!4,colframe=ink,boxrule=0.6pt,arc=1.5pt,left=10pt,right=10pt,top=6pt,bottom=6pt,fontupper=\small}
+
+% 指标卡片
+\newcommand{\kpi}[3]{%
+  \begin{tcolorbox}[enhanced,colback=white,colframe=rule,boxrule=0.5pt,arc=1.5pt,
+    left=6pt,right=6pt,top=5pt,bottom=5pt,height=2.45cm,valign=top,
+    borderline north={2pt}{0pt}{seal}]
+    {\sffamily\fontsize{20}{22}\selectfont\color{ink}#1\par}\vspace{2pt}
+    {\heiti\bfseries\footnotesize\color{ink}#2\par}
+    {\scriptsize\color{mute}#3\par}
+  \end{tcolorbox}}
+
+% ---------- 记号与小工具 ----------
+\newcommand{\sysname}{LEDGER}
+\newcommand{\code}[1]{\texttt{\small #1}}
+\newcommand{\file}[1]{\texttt{\small #1}}
+\newcommand{\cmark}{\textcolor{okc}{\ding{51}}}
+\newcommand{\xmark}{\textcolor{seal}{\ding{55}}}
+\newcommand{\halfulp}{\tfrac12\,\mathrm{ulp}}
+\newcommand{\tbd}[1]{\textcolor{agentc}{#1}}   % 待团队确认的内容（定稿前处理）
+\newcommand{\en}[1]{\textsf{\small #1}}
+
+% TikZ 通用样式：蓝 = 确定性程序，橙 = 模型会话，红 = 闸门
+\tikzset{
+  prog/.style={draw=progc,fill=progc!8,rounded corners=2pt,align=center,font=\small,inner sep=4pt,minimum height=7mm},
+  agent/.style={draw=agentc,fill=agentc!12,rounded corners=2pt,align=center,font=\small,inner sep=4pt,minimum height=7mm},
+  gate/.style={draw=gatec,fill=gatec!8,diamond,aspect=2.2,align=center,font=\scriptsize,inner sep=1pt},
+  doc/.style={draw=mute,fill=white,align=center,font=\scriptsize,inner sep=3pt,minimum height=6mm},
+  arr/.style={-{Stealth[length=2mm]},thick,color=ink!80},
+  darr/.style={-{Stealth[length=2mm]},thick,dashed,color=ink!60},
+}
+\pgfplotsset{every axis/.append style={tick label style={font=\scriptsize},label style={font=\small},
+  legend style={font=\scriptsize,draw=none},axis line style={ink!60},major tick style={ink!60}}}
+\endinput

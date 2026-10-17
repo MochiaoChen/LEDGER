@@ -1,0 +1,110 @@
+\chapter{项目概述}
+\chapterlead{一份研报里的数字，读者大多不会去核对；但只要有人核对出一个错，整篇报告就不再可信。}
+
+\section{一份卖方研报是怎么做出来的}
+
+券商研究所写一份上市公司的首次覆盖深度报告，流程大致是固定的。研究员先通读年报，把利润表、资产负债表、现金流量表和附注里的经营数据录入
+Excel，算出各期增速、毛利率、费用率，检查三张表是否勾稽；然后找行业资料，包括行业规模、竞争格局、可比公司估值、近期公告和卖方一致预期；
+在此基础上搭预测模型，按业务分部拆收入，再联动出三张预测报表，做现金流折现和可比公司估值；最后写成二三十页的报告，
+经过所内质控和合规审核后发布。首次覆盖的深度报告往往要花上几周。
+
+这个流程里，真正需要研究员判断的是少数几件事：公司的增长靠什么驱动、市场的预期错在哪里、估值应该用哪些假设。
+其余大量时间花在搬运和核对数字上。录入、计算、对表、把数字写进正文，这些工作重复、枯燥，又特别容易出错，
+而且错误往往在发布之后才被读者发现。我们的项目从这里切入：让机器承担搬运与核对，让人和模型把精力放在判断上。
+
+\section{直接让模型写研报会出什么问题}
+
+项目开始时，我们做了最直接的尝试：把年报 PDF 交给模型，让它读完后写一份研报。模型写出的稿子结构完整、行文流畅，
+但我们逐个核对数字后，发现了三类反复出现的问题。
+
+第一类是\textbf{抄错和记错}。模型会把上年数当成本年数，把“净利润”当成“归属于上市公司股东的净利润”，或者把单位从“万元”写成“亿元”。
+年报里同一个科目常常出现在三四个表里，口径略有差别，模型选哪一个并不稳定。
+
+第二类是\textbf{心算出错}。增速、占比、利润率这些派生数字，模型多半是“估”出来的。贵州茅台 2025 年营业收入同比下降 1.21\%，
+我们早期一版初稿里写成了“同比增长 30.45\%”；招商轮船初稿写“资本性支出 358.72 亿元”，年报里的真实数字是 77.97 亿元。
+这两处后来都被我们的数字护栏拦了下来，但如果没有程序核对，它们读起来和正确的句子没有任何区别。
+
+第三类是\textbf{外部数字没有出处}。行业规模、市场份额、竞争对手的数据，模型会用参数里的记忆补上，写得很具体，但说不清来自哪里、截至何时。
+v0 版流程产出的三份研报，全部没有通过质检中“外部信息可追溯”这一项；其中两份还被判“数字前后矛盾”，各扣 8 分。
+
+此外还有一个更根本的问题：研报写得好不好，缺少一个能复核的评价办法。没有评价，就无法判断某次改动是在改进还是在退步。
+后来的流程改进证明，这一点和前三个问题一样重要。
+
+\begin{note}[一次真实的拦截记录]
+2026 年 9 月 29 日，主笔会话为贵州茅台写完第一稿后，数字护栏第一次运行拦下了 9 个找不到出处的数字和 28 条指标与数值对不上的断言；
+修改后第二次运行剩 3 条，第三次通过。运行记录保存在仓库 \file{runs/20260929-145719-valuation/} 和 \file{runs/20260929-145857-valuation/}。
+\end{note}
+
+\section{我们的做法}
+
+\sysname{} 的名字取自英文 ledger（账簿）。好的账簿每一笔都有凭证，任何一个数都能顺着凭证查回原始单据；
+我们希望研报里的数字也是这样。全称是 \textbf{L}LM-driven \textbf{E}quity Research with \textbf{D}eterministic \textbf{G}rounding,
+\textbf{E}valuation and \textbf{R}eporting，即“以确定性程序为依据、带评测与报告的大模型投研系统”。代码仓库与 Python 包名沿用早期的 \code{finagent}。
+
+系统的核心是一条分工：\textbf{模型负责读、抄、写和判断，程序负责校验、计算和拦截}。具体落在四件事上。
+\begin{enumerate}
+  \item 模型从 PDF 抄下的每个数字都必须带页码，程序在该页原文中按数字边界逐字查找，找不到就拒收；同时有一条不依赖模型的规则通道独立解析表格，两条通道的结果互相印证，不一致时阻断后续估值，不替任何一方做选择。
+  \item 所有经过校验的数字汇总成一张真值表（truth table），增速、占比、勾稽、预测、估值都只从这张表出发，由确定性 Python 计算，模型不做任何算术。
+  \item 研报正文写完后，程序检查正文中的每一个数字：要么能在本次运行的计算产物里按展示精度找到，要么登记在外部来源表中并标注编号，否则拒绝放行。之后任何改写环节都受“数字锁”约束，只能删减数字，不能新增或修改。
+  \item 研报由五个分工不同、上下文互相隔离的模型会话依次完成，每一步之后由程序检查闸门；质量由看不到生成过程的盲评会话按四层评分标准打分，问题单回传后返工。
+\end{enumerate}
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[node distance=5mm and 7mm]
+  \node[doc,minimum width=2.0cm,minimum height=1.0cm,font=\small] (pdf) {年报 / 招股书\\ PDF};
+  \node[agent,right=of pdf,minimum width=2.3cm] (read) {模型读、抄\\ \scriptsize facts.json};
+  \node[prog,right=of read,minimum width=2.4cm] (ver) {逐字证据校验\\ \scriptsize + 规则通道交叉};
+  \node[prog,right=of ver,minimum width=2.1cm,fill=progc!18] (tt) {\textbf{真值表}};
+  \node[prog,below=9mm of tt,minimum width=2.1cm] (calc) {分析与估值\\ \scriptsize 全部程序计算};
+  \node[agent,left=of calc,minimum width=2.4cm] (write) {模型写作、判断\\ \scriptsize narrative.md};
+  \node[gate,left=of write] (guard) {数字\\护栏};
+  \node[doc,left=of guard,minimum width=2.0cm,minimum height=1.0cm,font=\small] (out) {研报 PDF\\ 估值工作簿};
+  \draw[arr] (pdf) -- (read); \draw[arr] (read) -- (ver); \draw[arr] (ver) -- (tt); \draw[arr] (tt) -- (calc);
+  \draw[arr] (calc) -- (write); \draw[arr] (write) -- (guard); \draw[arr] (guard) -- (out);
+  \draw[darr] (tt.south west) to[bend right=12] node[above,font=\scriptsize,sloped]{引用} (write.north east);
+\end{tikzpicture}
+\caption{\sysname{} 的基本分工。橙色为模型会话，蓝色为确定性程序，红色为闸门。}
+\label{fig:ov-flow}
+\end{figure}
+
+\section{选题覆盖}
+
+竞赛给出的选题中，我们选择了三个主选题和三个子选题。它们共用同一个数据底座，即上面说的真值表，
+所以各项任务之间没有重复抽取或重复计算：财报分析产出真值表，估值建模在真值表上预测，纠错核查拿研报断言与真值表比对，
+研报质量评估则检查研报与真值表、估值产物是否一致。表~\ref{tab:ov-tracks} 列出每个选题的具体内容和对应章节。
+
+\begin{table}[htbp]
+\centering
+\caption{选题覆盖与对应章节}
+\label{tab:ov-tracks}
+\small
+\begin{tabularx}{\linewidth}{@{}l l L c@{}}
+\toprule
+\hd{层级} & \hd{选题} & \hd{做了什么} & \hd{章节} \\
+\midrule
+主选题 & 财报分析 & 指标抽取、同比环比、季报单季拆分、勾稽校验、8 类异常信号、利润变动归因、实际与一致预期及业绩预告对比、EPS 质量 & 第 4 章 \\
+\rowband
+主选题 & 自动化估值建模 & 分部量价预测 → 三表联动 → FCFF 现金流折现（三情景与敏感性）、股权价值桥、反向 DCF、可比公司、程序评级、公式联动工作簿 & 第 5 章 \\
+主选题 & 研究报告质量评估 & 四层评分标准、程序检查与盲评、程序计分、评审校准、问题单回传与多轮返工 & 第 9 章 \\
+\midrule
+\rowband
+子选题 & 数据提取 & 模型读 PDF 抄数 + 逐字证据校验 + 规则通道交叉（稀疏网格、跨页续表、科目折行）；经营数据表逐格回查 & 第 4 章 \\
+子选题 & 产业链分析 & 七类资料搜集、外部来源登记、从年报与资料推导分析框架、深度专题调研、产业链图 & 第 6 章 \\
+\rowband
+子选题 & 研究报告纠错核查 & 抽取研报中的数字断言与真值逐条核对，判断错误类型（数值 / 单位 / 期间 / 口径 / 方向）并给出修改建议；研报内部一致性检查 & 第 8 章 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\section{已有成果}
+
+截至 2026 年 10 月 7 日，项目已完成的成果如下。
+
+\begin{description}[leftmargin=0pt,labelsep=0.6em,font=\heiti\bfseries\color{ink}]
+  \item[计算引擎] Python 包 \code{finagent}，约 1.2 万行，除 PDF 解析使用 pdfplumber 外只依赖标准库，不调用任何模型。提供财报分析、估值建模、纠错核查三条流水线和十余个供模型会话调用的校验命令。171 个测试通过。
+  \item[研报流水线] 编排器 \code{report\_pipeline}，支持搭建隔离工作区、依次启动五个无头会话、检查 11 道闸门、盲评与多轮返工、收回产物、多工作区对比。
+  \item[质检系统] 三版评分标准（v0、v1、v2）、程序检查、盲评、计分与评审校准工具。
+  \item[真实样本] 五家公司（贵州茅台、宁德时代、招商轮船、中际旭创、宇树科技）的抽取文件、估值运行、九份交付研报及对应估值工作簿，另有恒瑞医药、农夫山泉的原始资料待处理。
+  \item[界面与文档] 统一命令行 \code{finagent}、终端界面 \code{finagent\_tui}、架构说明、254 页的完整技术报告。
+\end{description}

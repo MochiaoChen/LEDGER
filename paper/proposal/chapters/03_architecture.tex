@@ -1,0 +1,177 @@
+\chapter{系统架构}
+\chapterlead{编排器是一段确定性的 Python 程序，不是模型。模型在它划定的范围里工作，做完了由它来检查。}
+
+\section{四层结构}
+
+\sysname{} 自下而上分为四层（图~\ref{fig:arch-layers}）。最底层是\textbf{计算引擎}，负责解析、校验、计算与拦截，不调用任何模型；
+第二层是\textbf{角色说明}，即四份技能说明（skill）和编排器为每个工作区生成的 \file{CLAUDE.md}，告诉每个模型会话它是谁、读什么、不读什么、
+跑哪些命令、做到什么程度算完成；第三层是\textbf{多智能体编排}，为一家公司搭建隔离工作区，依次启动五个会话并在每一步之后检查闸门；
+最上层是\textbf{质检循环}，由盲评、程序计分和问题单回传组成。
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[
+  layer/.style={draw=#1,fill=#1!7,rounded corners=2pt,minimum width=14.6cm,minimum height=1.45cm,align=left,inner sep=6pt},
+  tag/.style={font=\sffamily\bfseries\small,text=white,fill=#1,rounded corners=1.5pt,inner sep=3pt,minimum width=1.0cm,align=center}]
+  \node[layer=seal] (l4) at (0,4.95) {};
+  \node[layer=ink] (l3) at (0,3.3) {};
+  \node[layer=agentc] (l2) at (0,1.65) {};
+  \node[layer=progc] (l1) at (0,0) {};
+  \foreach \n/\c/\t/\a/\b in {
+    l4/seal/4/质检循环/{\code{report\_pipeline refine} + \code{finagent/evaluation}：程序检查（L0/L1）+ 盲评会话（L2/L3/负向）$\rightarrow$ 程序计分 $\rightarrow$ 问题单路由 $\rightarrow$ 回滚到最佳轮},
+    l3/ink/3/多智能体编排/{\code{report\_pipeline build / run / status / collect / scorecard}：仓库外的隔离工作区，五个无头会话，11 道程序闸门},
+    l2/agentc/2/角色说明/{\file{.claude/skills/} 四份技能说明 + 工作区 \file{CLAUDE.md}：每个阶段读什么、不读什么、跑什么命令、闸门是什么},
+    l1/progc/1/计算引擎/{\code{python -m finagent}：locate · verify-facts · verify-extra · verify-sources · financials · valuation · check · guard · numlock}}{
+    \node[tag=\c,anchor=west] at ([xshift=6pt]\n.west) {\t};
+    \node[anchor=north west,font=\heiti\bfseries\small,text=\c] at ([xshift=1.35cm,yshift=-5pt]\n.north west) {\a};
+    \node[anchor=north west,font=\scriptsize,text width=12.6cm,align=left] at ([xshift=1.35cm,yshift=-21pt]\n.north west) {\b};
+  }
+  \node[font=\scriptsize,text=mute,anchor=north east] at ([yshift=-2pt]l1.south east) {确定性；只用标准库与 pdfplumber；全程记录哈希};
+\end{tikzpicture}
+\caption{\sysname{} 的四层结构}
+\label{fig:arch-layers}
+\end{figure}
+
+这种分层的好处是每一层都可以单独验证。计算引擎有 171 个单元测试和一套不调用模型的样例评测；角色说明是纯文本，可以逐条审读；
+编排器的闸门是程序判断，结果确定；质检循环的计分可以在保存的评审结果上重算。真正带有随机性的只有模型会话本身，而它们的输入和输出都落在文件里。
+
+\section{计算引擎}
+
+引擎的入口是 \code{python -m finagent}，内部有三条固定流水线，每一步用 \code{Pipeline.step} 注册，产物写入 \file{runs/<运行编号>/} 并记录哈希（表~\ref{tab:arch-pipelines}）。
+引擎还提供一组供模型会话调用的校验命令（表~\ref{tab:arch-cmds}），这些命令不生成运行目录，只返回结果和退出码，模型据此改正后重跑，直到通过。
+
+\begin{table}[htbp]
+\centering
+\caption{引擎的三条流水线}
+\label{tab:arch-pipelines}
+\small
+\begin{tabularx}{\linewidth}{@{}l >{\raggedright\arraybackslash}p{6.2cm} L@{}}
+\toprule
+\hd{流水线} & \hd{步骤} & \hd{主要产物} \\
+\midrule
+财报分析 & parse → extract → analyze → extras → earnings → report & \file{analysis.json}（含真值表）、分析报告 \\
+\rowband
+估值建模 & three\_statement → build\_plan → dcf → reverse\_dcf → scenarios → forecast\_summary → comps → valuation\_report & \file{model.xlsx}、\file{valuation.json}、\file{reverse\_dcf.json}、\file{forecast\_summary.json}（含程序评级） \\
+纠错核查 & parse\_report → claims → verify → consistency & \file{findings.json}、\file{consistency.json}、核查报告 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\begin{table}[htbp]
+\centering
+\caption{供模型会话调用的校验命令}
+\label{tab:arch-cmds}
+\small
+\begin{tabularx}{\linewidth}{@{}l L@{}}
+\toprule
+\hd{命令} & \hd{作用} \\
+\midrule
+\code{locate} & 定位关键页、母公司报表页、金额单位、扫描页 \\
+\rowband
+\code{schema} & 列出可抽取的指标清单（指标编号、中文名、别名、单位） \\
+\code{verify-facts} & 抽取文件逐条回到所写页码查原文；与规则通道比对；勾稽；拒收、冲突、勾稽失败、核心指标缺失都会阻断估值 \\
+\rowband
+\code{verify-extra} & 经营数据表（分产品、分地区、产销量等）逐格回查，派生比率由程序计算 \\
+\code{verify-sources} & 外部来源登记表的结构检查，以及“所登记的数字是否出现在摘句里” \\
+\rowband
+\code{guard} & 研报文稿的数字护栏：出处、指标与期间绑定、外部数字带编号、前后矛盾、出处分类 \\
+\code{numlock} & 数字锁：改写稿中的数字与来源编号必须是初稿的子集 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+引擎跑得很快。在三份真实年报上，一次完整的估值运行耗时 5～11 秒，其中 98\% 以上花在 PDF 解析上，全部计算合计不到 0.2 秒。
+这意味着模型会话可以把引擎当成随手可用的工具：分析师每改一次假设，就重跑一遍整条估值链，看结果是否合理。
+
+\section{五个生产角色与一个质检角色}
+
+研报生产拆成五个角色，每个角色是一次独立的无头 Claude Code 会话（\code{claude -p --output-format stream-json}），
+由编排器以工具白名单启动，会话结束后完整事件流保存到工作区 \file{.pipeline/agents/}，轮数、token 与折算费用汇总到 \file{agent\_runs.json}。
+角色划分参照了券商研究所的实际分工（表~\ref{tab:arch-roles}）。
+
+\begin{table}[htbp]
+\centering
+\caption{角色、模型与职责}
+\label{tab:arch-roles}
+\small
+\begin{tabularx}{\linewidth}{@{}l l c L@{}}
+\toprule
+\hd{角色} & \hd{模型} & \hd{阶段} & \hd{职责} \\
+\midrule
+研究助理 & Opus & 1 & 联网检索七类外部资料，登记来源，写资料包 \\
+\rowband
+分析师 & Opus & 2～7 & 读 PDF 抽取财务数据并通过校验；推导分析框架；做三个以上深度专题调研；抄经营数据；写估值假设并运行估值 \\
+主笔 & Opus & 8 & 依据真值表、估值产物、资料包和专题笔记写研报文稿，过数字护栏 \\
+\rowband
+复核编辑 & Sonnet & 9 & 以没有参与写作的质控编辑身份通读改写：删程序口吻、理顺论证、前后对账；拿不准的事项写进人工复核清单 \\
+排版设计师 & Opus & 10～11 & 编写排版脚本，生成 25～32 页、60 个以上图表的 PDF，写交付说明 \\
+\midrule
+盲评质检员 & Sonnet & -- & 在只含交付物的目录里按评分标准逐条判定，不联网，拿不准判不通过 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+为什么要拆成这么多会话，而不是让一个会话从头做到尾？最直接的原因是上下文长度。一个会话如果要读完整本年报、做二十多次检索、写四五份专题笔记、
+再写一万五千字的正文和几百行排版脚本，中途必然发生上下文压缩，压缩之后最先丢失的往往是“外部数字必须带编号”这类约束。
+拆开之后，每个会话只需要记住自己阶段的规则。另一个原因是独立性：复核编辑没有参与写作，才能像读者一样发现论证的跳跃；
+盲评质检员看不到生成过程，才不会因为“知道作者想表达什么”而放松标准。
+
+\section{隔离工作区}
+
+\code{build} 命令在仓库目录树之外为每家公司创建一个工作区（默认在 \file{\textasciitilde/finagent-samples/<公司>\_<年度>}）。工作区里只放这几样东西：
+三份执行用技能说明、计算引擎（不含质检模块）、这家公司的年报与定位结果、人工给定的外部输入（股价及其来源、可比公司清单）、格式样例，以及一个解释器包装脚本。
+
+工作区的权限文件允许运行引擎命令、读写 \file{data/} 目录、联网检索；禁止读取仓库所在目录及其上级目录，禁止修改引擎代码、技能说明、年报原件和 \file{CLAUDE.md}。
+无头运行时同一份白名单通过 \code{--allowedTools} 再传一次。\code{build} 拒绝把工作区建在仓库内，也拒绝建在任何上级目录含 \file{CLAUDE.md} 的位置，
+因为 Claude Code 会沿父目录加载这类文件，评分标准或其他公司的资料可能借此进入会话。
+
+\section{十一道闸门}
+
+会话之间不继承上下文，只通过工作区里的文件交接。每个会话做完自己的阶段后运行 \code{status} 并停止，编排器确认闸门通过才启动下一个。
+闸门全部由程序判断（表~\ref{tab:arch-gates}）。前序阶段没过，后面即使文件齐全也一律判“未通过”；输入文件比产物新时判为“产物过期”，
+避免拿旧结果冒充新成果。
+
+\begin{table}[htbp]
+\centering
+\caption{十一个阶段与闸门}
+\label{tab:arch-gates}
+\footnotesize
+\begin{tabularx}{\linewidth}{@{}c l l L@{}}
+\toprule
+\hd{阶段} & \hd{内容} & \hd{主要产物} & \hd{闸门（程序判断）} \\
+\midrule
+1 & 资料搜集 & \file{sources.json}、\file{dossier.md} & 七个资料类别全覆盖；检索不少于 20 次；近 90 天的来源不少于 3 个；来源校验通过 \\
+\rowband
+2 & 财务抽取 & \file{facts.verified.json} & 拒收、冲突、勾稽失败均为 0，且校验时间晚于最后修改 \\
+3 & 分析框架 & \file{framework.md} & 含“外部调研清单”和不少于 3 个深度专题 \\
+\rowband
+4 & 深度调研 & \file{topics/*.md} & 专题笔记不少于 3 份，每份不少于 1,500 字、不少于 3 个独立来源；补充检索不少于 8 个问题 \\
+5 & 经营数据 & \file{extras.json} & 经营数据表逐格校验，拒收 0 格 \\
+\rowband
+6 & 估值假设 & \file{valuation\_assumptions.json} & 有股价及来源；假设依据引用了资料包编号 \\
+7 & 估值运行 & \file{runs/<编号>/valuation/} & 运行时间晚于所有输入，且带了经营数据与可比公司 \\
+\rowband
+8 & 文稿 & \file{narrative.md} & 数字护栏通过且核对的是当前稿；正文不少于 15,000 字、深度研究部分不少于 60\% \\
+9 & 复核改写 & \file{edit\_log.md}、\file{review.md} & 数字锁通过（数字只减不增、不改） \\
+\rowband
+10 & 排版 & PDF & PDF 晚于文稿和脚本；25～32 页；不少于 60 个图表 \\
+11 & 交付说明 & \file{delivery.md} & 文件存在 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+七个资料类别是：最新定期报告与经营数据、股价与市值、一致预期与目标价、可比公司与倍数、行业规模与景气、竞争格局与份额、近三个月重大事件。
+
+\section{一份研报的生命周期}
+
+从使用者的角度看，为一家新公司出研报只需要几条命令：
+
+\begin{keybox}\small\ttfamily\raggedright
+python -m finagent.report\_pipeline build \ --company 贵州茅台 --year 2025 --price <股价> --price-source "<来源>"\\[2pt]
+python -m finagent.report\_pipeline refine --workspace \textasciitilde/finagent-samples/贵州茅台\_2025\\[2pt]
+python -m finagent.report\_pipeline collect --workspace \textasciitilde/finagent-samples/贵州茅台\_2025 --label Opus
+\end{keybox}
+
+\code{build} 搭工作区，\code{refine} 依次启动五个会话并在通过全部闸门后进入盲评与返工，\code{collect} 把抽取文件、调研资料、运行目录和交付物收回仓库。
+中途任何一个会话异常退出，再次运行时编排器按闸门状态从未通过的阶段继续，已经写出的文件保留。
+这一点在实践中很重要：在五个工作区的 40 次会话中，有 9 次没有正常结束（第 10 章），如果按会话退出码判断进度，这些工作区都要从头再来。
