@@ -2,8 +2,8 @@
 
 本仓库是 **2026 北京市大学生金融人工智能竞赛**（主题：金融投研智能体构建）的参赛作品。
 系统正式名 **LEDGER**（**L**LM-driven **E**quity Research with **D**eterministic **G**rounding, **E**valuation and **R**eporting）；
-代码仓库与 Python 包名仍为 `finagent`，不要为改名去动标识符。
-私有仓库：https://github.com/MochiaoChen/finagent
+GitHub 仓库已改名 LEDGER；Python 包名与命令行仍为 `finagent`，不要为改名去动标识符。
+公开仓库：https://github.com/MochiaoChen/LEDGER
 
 ## 我们选了什么
 

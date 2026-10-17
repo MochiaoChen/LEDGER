@@ -184,11 +184,11 @@ Generated reports and valuation workbooks for Kweichow Moutai, CATL, China Merch
 ### Setup
 
 ```bash
-git clone https://github.com/MochiaoChen/finagent.git
+git clone https://github.com/MochiaoChen/LEDGER.git
 ```
 
 ```bash
-cd finagent && bash scripts/setup.sh
+cd LEDGER && bash scripts/setup.sh
 ```
 
 On Windows PowerShell:
@@ -355,6 +355,17 @@ Workspaces default to `~/finagent-samples/` and blind-judge directories to `~/fi
 | [eval/calibration/report.md](eval/calibration/report.md) | Judge calibration report |
 | [THIRD_PARTY.md](THIRD_PARTY.md) | Third-party components and licenses |
 | [CLAUDE.md](CLAUDE.md) | Development guide for coding agents |
+
+## Team
+
+| Member | Affiliation |
+|---|---|
+| 陈沫樵 (corresponding author) | University of International Business and Economics |
+| 许冰洁 | University of International Business and Economics |
+| 赵千淳 | Renmin University of China |
+| 刘盈羽 | University of International Business and Economics |
+
+All four members are co-first authors. The GitHub repository is named LEDGER, while the Python package and CLI are still called `finagent`.
 
 ## License
 

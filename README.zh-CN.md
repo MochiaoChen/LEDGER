@@ -184,11 +184,11 @@ flowchart TB
 ### 安装
 
 ```bash
-git clone https://github.com/MochiaoChen/finagent.git
+git clone https://github.com/MochiaoChen/LEDGER.git
 ```
 
 ```bash
-cd finagent && bash scripts/setup.sh
+cd LEDGER && bash scripts/setup.sh
 ```
 
 Windows PowerShell：
@@ -355,6 +355,17 @@ tests/                    pytest；golden/ 为参照引擎的产出快照
 | [eval/calibration/report.md](eval/calibration/report.md) | 评审校准报告 |
 | [THIRD_PARTY.md](THIRD_PARTY.md) | 第三方组件与许可证 |
 | [CLAUDE.md](CLAUDE.md) | 给编码 Agent 的开发指南 |
+
+## 团队
+
+| 成员 | 学校 |
+|---|---|
+| 陈沫樵（通讯作者） | 对外经济贸易大学 |
+| 许冰洁 | 对外经济贸易大学 |
+| 赵千淳 | 中国人民大学 |
+| 刘盈羽 | 对外经济贸易大学 |
+
+四人为共同第一作者。GitHub 仓库名为 LEDGER，Python 包名与命令行仍为 `finagent`。
 
 ## 许可证
 
