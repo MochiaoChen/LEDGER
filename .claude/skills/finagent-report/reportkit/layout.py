@@ -82,9 +82,9 @@ class Doc:
         self.secs: list[tuple[str, str]] = []
         self.nonop_shown = False  # 正文已展示非经营性资产明细时，附录不再重复
 
-    def fig(self, title: str, body: str, note: str = "", cls: str = "", src: str = "公司公告，FinAgent") -> str:
+    def fig(self, title: str, body: str, note: str = "", cls: str = "", src: str = "公司公告，LEDGER") -> str:
         """图表外框：编号、标题、来源行。note 追加在来源之后（口径说明、“基准情景”等）；cls 可取 half / split。
-        src 换成外部资料时写发布方并带编号，如 src="Clarksons [S2]，FinAgent 整理"。"""
+        src 换成外部资料时写发布方并带编号，如 src="Clarksons [S2]，LEDGER 整理"。"""
         self.n += 1
         self.figs.append((self.n, title))
         extra = f"；{note}" if note else ""
@@ -127,7 +127,7 @@ def toc(doc: Doc, pages: dict[str, int]) -> str:
             f'<span class="toc-end">{TOC_END}</span></section>')
 
 
-TOC_END = "FINAGENTTOCEND"  # 目录末尾的不可见标记：定位页码时从它之后开始找，目录多页也不会误判
+TOC_END = "LEDGERTOCEND"  # 目录末尾的不可见标记：定位页码时从它之后开始找，目录多页也不会误判
 
 
 def _norm(t: str) -> str:
@@ -228,7 +228,7 @@ def cover(doc: Doc, cfg: Config, S: dict[str, str]) -> str:
 <section class="cover">
   <div class="mast">
     <div><div class="date">{html.escape(cfg.date)}</div><div class="who">{html.escape(cfg.company)}（{html.escape(cfg.ticker)}）<span>{html.escape(cfg.sector)}</span></div></div>
-    <div class="brand">FinAgent<small>投资研究</small></div>
+    <div class="brand">LEDGER<small>投资研究</small></div>
   </div>
   <h1>{html.escape(S['title'])}</h1>
   <div class="subline"><span>{html.escape(S['subtitle'])}</span><span class="kind">{html.escape(cfg.kind)}</span></div>
@@ -371,7 +371,7 @@ def appendix(doc: Doc, cfg: Config, forecast_secs: str = "盈利预测与估值�
 <section class="appendix">
   {doc.h2("附", "财务报表预测")}
   {appendix_statements(run)}
-  <div class="src">资料来源：公司公告，FinAgent 预测（基准情景）。经营费用为轧差项，含税金及附加；{run.period}A 净利润为报表值。</div>
+  <div class="src">资料来源：公司公告，LEDGER 预测（基准情景）。经营费用为轧差项，含税金及附加；{run.period}A 净利润为报表值。</div>
   {doc.fig("股权价值桥中的非经营性资产净额（亿元）", T.nonop(run), "类负债项目以负数列示，已在合计中扣减", cls="half")
    if run.non_op.get("items") and not doc.nonop_shown else ""}
   {appendix_notes(run, cfg, forecast_secs)}

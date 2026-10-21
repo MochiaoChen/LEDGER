@@ -1,4 +1,4 @@
-"""宁德时代 2025 年报深度点评：读 FinAgent 运行产物 → 图表 → HTML → PDF。
+"""宁德时代 2025 年报深度点评：读 LEDGER 运行产物 → 图表 → HTML → PDF。
 
 通用部分（读产物、格式化、标准图表、目录、附录、免责声明、打印）在 reportkit（.claude/skills/finagent-report/），
 本脚本只写宁德时代专属的经营数据图表（extras.json 的表与比率）和正文编排。数字全部从运行产物读出，

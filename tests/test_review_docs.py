@@ -47,6 +47,7 @@ def test_individual_review_pages_and_safe_content(tmp_path):
     text = (out / "甲公司.html").read_text(encoding="utf-8")
     assert "目录" not in text and "乙公司" not in text
     assert "甲公司 · 研报质检" in text
+    assert "LEDGER / 人工质检页" in text and "FinAgent / 人工质检页" not in text
     assert text.count('<details class="review-item ') == 3
     assert text.count('data-reviewable="true"') == 2  # L1 未过 + N 命中
     assert '<details class="review-item clear" data-item-id="L0-01">' in text

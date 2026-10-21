@@ -3,7 +3,7 @@ name: finagent-report
 description: 为 A 股公司生成卖方体例的年报点评暨深度研究 PDF（25～30 页、60 个以上图表）：在 finagent-research 跑完抽取与估值之后，补抄年报经营数据、写分析文稿并过数字护栏，再用 reportkit 排版成带目录、图表目录和免责声明的 PDF。用户要为某家公司出“研报 / 深度报告 / 年报点评 PDF”时使用。
 ---
 
-# FinAgent 研报生成（深度报告）
+# LEDGER 研报生成（深度报告）
 
 **新公司建议走流水线**：在仓库里运行 `python -m finagent.report_pipeline build --company <公司> --year <年度>`
 搭隔离工作区（只含两个 skill、引擎和该公司年报），在工作区里按其 CLAUDE.md 分阶段执行，`status` 查闸门，完成后 `collect`
